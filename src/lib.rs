@@ -16,11 +16,12 @@ use syntax::ext::base::MultiDecorator;
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_syntax_extension(intern("derive_From"), MultiDecorator(box expand_derive_from));
+    reg.register_syntax_extension(intern("derive_Add"), MultiDecorator(box expand_derive_add));
 }
 
 use std::collections::HashMap;
 
-use syntax::ast::{Ident, Ty, VariantData, ItemKind, MetaItem, EnumDef};
+use syntax::ast::*;
 use syntax::codemap::Span;
 use syntax::ext::base::{Annotatable, ExtCtxt};
 use syntax::ext::build::AstBuilder;
@@ -111,4 +112,51 @@ fn enum_from(cx: &mut ExtCtxt, enum_ident: Ident, definition: &EnumDef,
 
         push(Annotatable::Item(code));
     }
+}
+
+fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
+                     item: &Annotatable, push: &mut FnMut(Annotatable)) {
+
+    // Get the that is wrapped by the newtype and do some checks
+    let result = match *item {
+        Annotatable::Item(ref x) => {
+            match x.node {
+                ItemKind::Struct(VariantData::Tuple(ref structs, _), _) => {
+                    if structs.len() == 1 {
+                        Some((x.ident, newtype_add_content(cx, x, structs)))
+                    }
+                    else {
+                        None
+                    }
+                },
+                _ => None,
+            }
+        },
+        _ => None,
+    };
+
+    let (type_name, block) = match result {
+        Some(x) => x,
+        _ => cx.span_bug(span, "only newtype structs can use `derive(Add)`"),
+    };
+
+    let code = quote_item!(cx,
+        impl ::std::ops::Add for $type_name {
+            type Output = $type_name;
+            fn add(self, _rhs: $type_name) -> $type_name {
+                $block
+            }
+        }
+    ).unwrap();
+
+    push(Annotatable::Item(code));
+
+}
+
+fn newtype_add_content(cx: &mut ExtCtxt, item: &P<Item>, structs: &Vec<StructField>) -> P<Expr> {
+    let type_name = item.ident;
+    //for s in structs {
+    quote_expr!(cx,
+        $type_name(self.0 + _rhs.0)
+    )
 }

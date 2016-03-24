@@ -6,6 +6,7 @@ use syntax::codemap;
 
 #[derive(From)]
 #[derive(Eq, PartialEq, Debug)]
+#[derive(Add)]
 struct MyInt(i32);
 
 #[derive(From)]
@@ -40,4 +41,6 @@ fn main() {
     assert_eq!(MyIntEnum::Int(5), 5.into());
     assert_eq!(MyIntEnum::Bool(true), true.into());
     assert!(MyIntEnum::Bool(false) != true.into());
+
+    assert_eq!(MyInt(4) + MyInt(1), 5.into());
 }
