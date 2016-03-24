@@ -11,6 +11,9 @@ since this would be ambiguous.
 It can simply be used like this:
 
 ```rust
+#![feature(rustc_private, custom_derive, plugin)]
+#![plugin(derive_from)]
+
 #[derive(From)]
 struct MyInt(i32);
 
