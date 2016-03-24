@@ -1,7 +1,10 @@
 [package]
 name = "derive_from"
-version = "0.1.0"
+version = "0.1.1"
+description = "A simple derive(From) macro"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
+license = "MIT"
+repository = "https://github.com/JelteF/derive_from"
 
 [lib]
 name = "derive_from"
