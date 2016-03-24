@@ -9,9 +9,9 @@ use syntax::codemap;
 #[derive(Add)]
 struct MyInt(i32);
 
-#[derive(From)]
+#[derive(Add)]
 //#[derive(Eq, PartialEq, Debug)]
-struct MyUInt(u64);
+struct MyUInt(u64, u64);
 
 #[derive(From)]
 //#[derive(Eq, PartialEq, Debug)]

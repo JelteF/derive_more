@@ -122,12 +122,7 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
         Annotatable::Item(ref x) => {
             match x.node {
                 ItemKind::Struct(VariantData::Tuple(ref structs, _), _) => {
-                    if structs.len() == 1 {
-                        Some((x.ident, newtype_add_content(cx, x, structs)))
-                    }
-                    else {
-                        None
-                    }
+                    Some((x.ident, newtype_add_content(cx, span, x, structs)))
                 },
                 _ => None,
             }
@@ -153,10 +148,14 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
 
 }
 
-fn newtype_add_content(cx: &mut ExtCtxt, item: &P<Item>, structs: &Vec<StructField>) -> P<Expr> {
+fn newtype_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, structs: &Vec<StructField>) -> P<Expr> {
     let type_name = item.ident;
-    //for s in structs {
-    quote_expr!(cx,
-        $type_name(self.0 + _rhs.0)
-    )
+    let mut exprs: Vec<P<Expr>>= vec![];
+    for s in 0..structs.len() {
+        println!("{:#?}", s);
+        // TODO: This is wrong, the numbers should increment
+        exprs.push(quote_expr!(cx, self.0 + _rhs.0))
+    }
+    println!("{:#?}", exprs);
+    cx.expr_call_ident(span, type_name, exprs)
 }
