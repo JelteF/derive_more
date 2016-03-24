@@ -1,0 +1,10 @@
+[package]
+name = "derive_from"
+version = "0.0.1"
+authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
+
+[lib]
+name = "derive_from"
+plugin = true
+
+[dependencies]
