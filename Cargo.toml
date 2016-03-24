@@ -1,6 +1,6 @@
 [package]
 name = "derive_from"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 
 [lib]
