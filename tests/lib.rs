@@ -10,7 +10,7 @@ use syntax::codemap;
 struct MyInt(i32);
 
 #[derive(Add)]
-//#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug)]
 struct MyUInt(u64, u64);
 
 #[derive(From)]
@@ -43,4 +43,5 @@ fn main() {
     assert!(MyIntEnum::Bool(false) != true.into());
 
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
+    assert_eq!(MyUInt(4, 5) + MyUInt(1, 2), MyUInt(5, 7));
 }

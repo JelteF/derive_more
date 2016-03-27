@@ -25,6 +25,7 @@ use syntax::ast::*;
 use syntax::codemap::Span;
 use syntax::ext::base::{Annotatable, ExtCtxt};
 use syntax::ext::build::AstBuilder;
+use syntax::ext::quote::rt::ExtParseUtils;
 use syntax::ptr::P;
 use syntax::print::pprust::ty_to_string;
 
@@ -138,7 +139,7 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
     let code = quote_item!(cx,
         impl ::std::ops::Add for $type_name {
             type Output = $type_name;
-            fn add(self, _rhs: $type_name) -> $type_name {
+            fn add(self, rhs: $type_name) -> $type_name {
                 $block
             }
         }
@@ -151,11 +152,13 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
 fn newtype_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, structs: &Vec<StructField>) -> P<Expr> {
     let type_name = item.ident;
     let mut exprs: Vec<P<Expr>>= vec![];
-    for s in 0..structs.len() {
-        println!("{:#?}", s);
-        // TODO: This is wrong, the numbers should increment
-        exprs.push(quote_expr!(cx, self.0 + _rhs.0))
+
+    for i in 0..structs.len() {
+        let i = &i.to_string();
+        let self_ = cx.parse_expr("self.".to_string() + i);
+        let rhs = cx.parse_expr("rhs.".to_string() + i);
+        exprs.push(quote_expr!(cx, $self_ + $rhs))
     }
-    println!("{:#?}", exprs);
+
     cx.expr_call_ident(span, type_name, exprs)
 }
