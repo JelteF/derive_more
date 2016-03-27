@@ -122,9 +122,12 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
     let result = match *item {
         Annotatable::Item(ref x) => {
             match x.node {
-                ItemKind::Struct(VariantData::Tuple(ref structs, _), _) => {
-                    Some((x.ident, newtype_add_content(cx, span, x, structs)))
+                ItemKind::Struct(VariantData::Tuple(ref fields, _), _) => {
+                    Some((x.ident, newtype_add_content(cx, span, x, fields)))
                 },
+                ItemKind::Struct(VariantData::Struct(ref fields, _), _) => {
+                    Some((x.ident, struct_add_content(cx, span, x, fields)))
+                }
                 _ => None,
             }
         },
@@ -133,7 +136,9 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
 
     let (type_name, block) = match result {
         Some(x) => x,
-        _ => cx.span_bug(span, "only newtype structs can use `derive(Add)`"),
+        _ => {
+            cx.span_fatal(span, "only structs can use `derive(Add)`")
+        },
     };
 
     let code = quote_item!(cx,
@@ -149,11 +154,11 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
 
 }
 
-fn newtype_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, structs: &Vec<StructField>) -> P<Expr> {
+fn newtype_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>) -> P<Expr> {
     let type_name = item.ident;
     let mut exprs: Vec<P<Expr>>= vec![];
 
-    for i in 0..structs.len() {
+    for i in 0..fields.len() {
         let i = &i.to_string();
         let self_ = cx.parse_expr("self.".to_string() + i);
         let rhs = cx.parse_expr("rhs.".to_string() + i);
@@ -161,4 +166,21 @@ fn newtype_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, structs: &V
     }
 
     cx.expr_call_ident(span, type_name, exprs)
+}
+
+fn struct_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>) -> P<Expr> {
+    let type_name = item.ident;
+    let mut filled_fields = vec![];
+
+    for field in fields {
+        let attr = match field.node.kind {
+            NamedField(x, _) => x,
+            _ => unreachable!(),
+
+        };
+        filled_fields.push(cx.field_imm(span, attr,
+                                        quote_expr!(cx, self.$attr + rhs.$attr)))
+    }
+
+    cx.expr_struct_ident(span, type_name, filled_fields)
 }
