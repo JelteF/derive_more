@@ -1,13 +1,13 @@
 [package]
-name = "derive_from"
-version = "0.1.1"
-description = "A simple derive(From) macro"
+name = "derive_more"
+version = "0.1.0"
+description = "Derives more traits for simple types"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
-repository = "https://github.com/JelteF/derive_from"
+repository = "https://github.com/JelteF/derive_more"
 
 [lib]
-name = "derive_from"
+name = "derive_more"
 plugin = true
 
 [dependencies]

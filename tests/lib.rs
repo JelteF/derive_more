@@ -1,5 +1,5 @@
 #![feature(rustc_private, custom_derive, plugin)]
-#![plugin(derive_from)]
+#![plugin(derive_more)]
 
 extern crate syntax;
 use syntax::codemap;

@@ -1,9 +1,14 @@
-# derive_from
-Rust derive(From) macro
+# derive_more
+Rust derive macros for some common traits for simple types
 
-It only works for tuple structs with one element (newtypes) or enums containing
-these tuple structs. The types wrapped by these tuple structs can than simply be
-converted by using the `.into()` method.
+The traits that can be derived currently are `From` and infix arithmetic traits
+(`Add`, `Sub`, `Mul`, `Div`, `Rem`, `BitAnd`, `BitOr`, `BitXor`).
+The arithmetic traits currently only work for structs and simply do the
+respective operation on each pair of fields separately.
+
+The `From` trait only works for tuple structs with one element (newtypes) or
+enums containing these tuple structs. The types wrapped by these tuple structs
+can than simply be converted by using the `.into()` method.
 
 For enums no from code will be generated for types that occur multiple times
 since this would be ambiguous.
@@ -12,7 +17,7 @@ It can simply be used like this:
 
 ```rust
 #![feature(rustc_private, custom_derive, plugin)]
-#![plugin(derive_from)]
+#![plugin(derive_more)]
 
 #[derive(From)]
 struct MyInt(i32);
