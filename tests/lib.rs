@@ -14,7 +14,8 @@ struct MyInt(i32);
 struct MyUInt(u64, u64);
 
 #[derive(Add)]
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Sub)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 struct NormalStruct{int1: u64, int2: u64}
 
 #[derive(From)]
@@ -52,4 +53,5 @@ fn main() {
     let s2 = NormalStruct{int1: 2, int2: 3};
     let s3 = NormalStruct{int1: 3, int2: 5};
     assert_eq!(s1 + s2, s3);
+    assert_eq!(s3 - s2, s1);
 }

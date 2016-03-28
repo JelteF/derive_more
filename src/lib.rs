@@ -17,6 +17,7 @@ use syntax::ext::base::MultiDecorator;
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_syntax_extension(intern("derive_From"), MultiDecorator(box expand_derive_from));
     reg.register_syntax_extension(intern("derive_Add"), MultiDecorator(box expand_derive_add));
+    reg.register_syntax_extension(intern("derive_Sub"), MultiDecorator(box expand_derive_sub));
 }
 
 use std::collections::HashMap;
@@ -120,11 +121,17 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
     expand_derive_infix_op(cx, span, item, push, "Add")
 }
 
+fn expand_derive_sub(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
+                     item: &Annotatable, push: &mut FnMut(Annotatable)) {
+    expand_derive_infix_op(cx, span, item, push, "Sub")
+}
+
 
 fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
                           push: &mut FnMut(Annotatable), trait_name: &str) {
     let trait_name = trait_name.to_string();
     let method_name = trait_name.to_lowercase();
+    let method_ident = cx.ident_of(&method_name);
     // Get the that is wrapped by the newtype and do some checks
     let result = match *item {
         Annotatable::Item(ref x) => {
@@ -144,14 +151,17 @@ fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
     let (type_name, block) = match result {
         Some(x) => x,
         _ => {
-            cx.span_fatal(span, "only structs can use `derive(Add)`")
+            cx.span_fatal(span, &format!("only structs can use `derive({})`", trait_name))
         },
     };
 
+    let trait_path = cx.path_global(span, cx.std_path(&["ops", &trait_name]));
+    println!("{:#?}", trait_path);
+
     let code = quote_item!(cx,
-        impl ::std::ops::Add for $type_name {
+        impl $trait_path for $type_name {
             type Output = $type_name;
-            fn add(self, rhs: $type_name) -> $type_name {
+            fn $method_ident(self, rhs: $type_name) -> $type_name {
                 $block
             }
         }
