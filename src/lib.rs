@@ -117,16 +117,23 @@ fn enum_from(cx: &mut ExtCtxt, enum_ident: Ident, definition: &EnumDef,
 
 fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
                      item: &Annotatable, push: &mut FnMut(Annotatable)) {
+    expand_derive_infix_op(cx, span, item, push, "Add")
+}
 
+
+fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
+                          push: &mut FnMut(Annotatable), trait_name: &str) {
+    let trait_name = trait_name.to_string();
+    let method_name = trait_name.to_lowercase();
     // Get the that is wrapped by the newtype and do some checks
     let result = match *item {
         Annotatable::Item(ref x) => {
             match x.node {
                 ItemKind::Struct(VariantData::Tuple(ref fields, _), _) => {
-                    Some((x.ident, newtype_add_content(cx, span, x, fields)))
+                    Some((x.ident, tuple_infix_op_content(cx, span, x, fields, method_name)))
                 },
                 ItemKind::Struct(VariantData::Struct(ref fields, _), _) => {
-                    Some((x.ident, struct_add_content(cx, span, x, fields)))
+                    Some((x.ident, struct_infix_op_content(cx, span, x, fields, method_name)))
                 }
                 _ => None,
             }
@@ -154,32 +161,31 @@ fn expand_derive_add(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
 
 }
 
-fn newtype_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>) -> P<Expr> {
+fn tuple_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
     let type_name = item.ident;
     let mut exprs: Vec<P<Expr>>= vec![];
 
     for i in 0..fields.len() {
         let i = &i.to_string();
-        let self_ = cx.parse_expr("self.".to_string() + i);
-        let rhs = cx.parse_expr("rhs.".to_string() + i);
-        exprs.push(quote_expr!(cx, $self_ + $rhs))
+        exprs.push(cx.parse_expr(format!("self.{}.{}(rhs.{})", i, method_name, i)));
     }
 
     cx.expr_call_ident(span, type_name, exprs)
 }
 
-fn struct_add_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>) -> P<Expr> {
+fn struct_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
     let type_name = item.ident;
     let mut filled_fields = vec![];
 
     for field in fields {
-        let attr = match field.node.kind {
-            NamedField(x, _) => x,
+        let (field_id, field_name) = match field.node.kind {
+            NamedField(x, _) => (x, x.name.as_str()),
             _ => unreachable!(),
 
+
         };
-        filled_fields.push(cx.field_imm(span, attr,
-                                        quote_expr!(cx, self.$attr + rhs.$attr)))
+        filled_fields.push(cx.field_imm(span, field_id,
+                                        cx.parse_expr(format!("self.{}.{}(rhs.{})", field_name, method_name, field_name))));
     }
 
     cx.expr_struct_ident(span, type_name, filled_fields)
