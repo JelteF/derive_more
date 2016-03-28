@@ -13,8 +13,7 @@ struct MyInt(i32);
 #[derive(Eq, PartialEq, Debug)]
 struct MyUInt(u64, u64);
 
-#[derive(Add)]
-#[derive(Sub)]
+#[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 struct NormalStruct{int1: u64, int2: u64}
 
