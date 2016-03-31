@@ -31,6 +31,7 @@ struct MySpan2(::syntax::codemap::Span);
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
+#[derive(Add)]
 enum MyIntEnum{
     Int(i32),
     Bool(bool),

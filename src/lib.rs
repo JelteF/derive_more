@@ -132,18 +132,25 @@ fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
         Annotatable::Item(ref x) => {
             match x.node {
                 ItemKind::Struct(VariantData::Tuple(ref fields, _), _) => {
-                    Some((x.ident, tuple_infix_op_content(cx, span, x, fields, method_name)))
+                    Some((x.ident, cx.ty_ident(span, x.ident), tuple_infix_op_content(cx, span, x, fields, method_name)))
                 },
+
                 ItemKind::Struct(VariantData::Struct(ref fields, _), _) => {
-                    Some((x.ident, struct_infix_op_content(cx, span, x, fields, method_name)))
-                }
+                    Some((x.ident, cx.ty_ident(span, x.ident), struct_infix_op_content(cx, span, x, fields, method_name)))
+                },
+
+                ItemKind::Enum(ref definition, _) => {
+                    let input_type = x.ident;
+                    Some((x.ident, quote_ty!(cx, Result<$input_type, &'static str>), enum_infix_op_content(cx, span, x, definition, method_name)))
+                },
+
                 _ => None,
             }
         },
         _ => None,
     };
 
-    let (type_name, block) = match result {
+    let (input_type, output_type, block) = match result {
         Some(x) => x,
         _ => {
             cx.span_fatal(span, &format!("only structs can use `derive({})`", trait_name))
@@ -153,9 +160,9 @@ fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
     let trait_path = cx.path_global(span, cx.std_path(&["ops", &trait_name]));
 
     let code = quote_item!(cx,
-        impl $trait_path for $type_name {
-            type Output = $type_name;
-            fn $method_ident(self, rhs: $type_name) -> $type_name {
+        impl $trait_path for $input_type {
+            type Output = $output_type;
+            fn $method_ident(self, rhs: $input_type) -> $output_type {
                 $block
             }
         }
@@ -193,4 +200,8 @@ fn struct_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields:
     }
 
     cx.expr_struct_ident(span, type_name, filled_fields)
+}
+
+fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &EnumDef, method_name: String) -> P<Expr> {
+    quote_expr!(cx, Err("Trying to add mismatched enum types"))
 }
