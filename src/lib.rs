@@ -212,5 +212,5 @@ fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &
     }
 
     matches.push(quote_arm!(cx, _ => Err("Trying to add mismatched enum types"), ));
-    cx.expr_match(span, quote_expr!(cx, (self, rhs)), matches)
+    quote_expr!(cx, match (self, rhs) { $matches })
 }
