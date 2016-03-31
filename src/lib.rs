@@ -203,5 +203,14 @@ fn struct_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields:
 }
 
 fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &EnumDef, method_name: String) -> P<Expr> {
-    quote_expr!(cx, Err("Trying to add mismatched enum types"))
+    let mut matches: Vec<Arm> = vec![];
+    let enum_ident = item.ident;
+
+    for variant in &fields.variants {
+        let ident = variant.node.name;
+        matches.push(quote_arm!(cx, ($enum_ident::$ident(l), $enum_ident::$ident(r)) => Ok($enum_ident::$ident(l + r)),));
+    }
+
+    matches.push(quote_arm!(cx, _ => Err("Trying to add mismatched enum types"), ));
+    cx.expr_match(span, quote_expr!(cx, (self, rhs)), matches)
 }

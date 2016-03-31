@@ -32,6 +32,14 @@ struct MySpan2(::syntax::codemap::Span);
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
 #[derive(Add)]
+enum SimpleMyIntEnum{
+    Int(i32),
+    UnsignedOne(u32),
+    UnsignedTwo(u32),
+}
+
+#[derive(Eq, PartialEq, Debug)]
+#[derive(From)]
 enum MyIntEnum{
     Int(i32),
     Bool(bool),
@@ -54,4 +62,5 @@ fn main() {
     let s3 = NormalStruct{int1: 3, int2: 5};
     assert_eq!(s1 + s2, s3);
     assert_eq!(s3 - s2, s1);
+    assert_eq!((SimpleMyIntEnum::Int(6) + 5.into()).unwrap(), 11.into());
 }
