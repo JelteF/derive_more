@@ -205,14 +205,37 @@ fn struct_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields:
 fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &EnumDef, method_name: String) -> P<Expr> {
     let mut matches: Vec<Arm> = vec![];
     let enum_ident = item.ident;
-    let sub_expr = cx.parse_expr(format!("l.{}(r)", method_name));
 
-
+    // Add paterns for the same enum types for self and rhs
     for variant in &fields.variants {
         let ident = variant.node.name;
-        matches.push(quote_arm!(cx, ($enum_ident::$ident(l), $enum_ident::$ident(r)) => Ok($enum_ident::$ident($sub_expr)),));
+        let type_path = quote_path!(cx, $enum_ident::$ident);
+
+        match variant.node.data {
+            VariantData::Tuple(ref x, _)  => {
+                // The patern that is outputted should look like this:
+                // (TypePath(left_vars), TypePath(right_vars) => Ok(TypePath(exprs))
+                let mut left_vars = vec![];
+                let mut right_vars = vec![];
+                let mut exprs = vec![];
+
+                for i in 0..x.len() {
+                    left_vars.push(cx.pat_ident(span, cx.ident_of(&format!("__l_{}", i))));
+                    right_vars.push(cx.pat_ident(span, cx.ident_of(&format!("__r_{}", i))));
+                    exprs.push(cx.parse_expr(format!("__l_{}.{}(__r_{})", i, method_name, i)));
+                }
+
+                let left_patern = cx.pat_enum(span, type_path.clone(), left_vars);
+                let right_patern = cx.pat_enum(span, type_path.clone(), right_vars);
+                let new_tuple = cx.expr_call(span, cx.expr_path(type_path.clone()), exprs);
+                matches.push(quote_arm!(cx, ($left_patern, $right_patern) => Ok($new_tuple),));
+            },
+            _ =>  { }
+
+        }
     }
 
+    // Other combinations should result in an error
     matches.push(quote_arm!(cx, _ => Err("Trying to add mismatched enum types"), ));
     quote_expr!(cx, match (self, rhs) { $matches })
 }

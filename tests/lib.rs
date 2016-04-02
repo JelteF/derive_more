@@ -48,6 +48,13 @@ enum MyIntEnum{
     Nothing,
 }
 
+#[derive(Eq, PartialEq, Debug)]
+#[derive(Add, Sub)]
+enum DoubleEnum{
+    Ints(i32, i32),
+    Something,
+}
+
 #[test]
 fn main() {
     assert_eq!(MyInt(5), 5.into());
@@ -64,4 +71,5 @@ fn main() {
     assert_eq!(s3 - s2, s1);
     assert_eq!((SimpleMyIntEnum::Int(6) + 5.into()).unwrap(), 11.into());
     assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
+    assert_eq!((DoubleEnum::Ints(6, 5) + DoubleEnum::Ints(1, 4)).unwrap(), DoubleEnum::Ints(7, 9));
 }
