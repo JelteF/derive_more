@@ -29,7 +29,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
 use std::collections::HashMap;
 
 use syntax::ast::*;
-use syntax::codemap::Span;
+use syntax::codemap::{Span, Spanned};
 use syntax::ext::base::{Annotatable, ExtCtxt};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::quote::rt::ExtParseUtils;
@@ -202,24 +202,24 @@ fn struct_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields:
     cx.expr_struct_ident(span, type_name, filled_fields)
 }
 
-fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &EnumDef, method_name: String) -> P<Expr> {
+fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, enum_def: &EnumDef, method_name: String) -> P<Expr> {
     let mut matches: Vec<Arm> = vec![];
     let enum_ident = item.ident;
 
     // Add paterns for the same enum types for self and rhs
-    for variant in &fields.variants {
+    for variant in &enum_def.variants {
         let ident = variant.node.name;
         let type_path = quote_path!(cx, $enum_ident::$ident);
 
         match variant.node.data {
-            VariantData::Tuple(ref x, _)  => {
+            VariantData::Tuple(ref fields, _)  => {
                 // The patern that is outputted should look like this:
                 // (TypePath(left_vars), TypePath(right_vars) => Ok(TypePath(exprs))
                 let mut left_vars = vec![];
                 let mut right_vars = vec![];
                 let mut exprs = vec![];
 
-                for i in 0..x.len() {
+                for i in 0..fields.len() {
                     left_vars.push(cx.pat_ident(span, cx.ident_of(&format!("__l_{}", i))));
                     right_vars.push(cx.pat_ident(span, cx.ident_of(&format!("__r_{}", i))));
                     exprs.push(cx.parse_expr(format!("__l_{}.{}(__r_{})", i, method_name, i)));
@@ -230,7 +230,31 @@ fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &
                 let new_tuple = cx.expr_call(span, cx.expr_path(type_path.clone()), exprs);
                 matches.push(quote_arm!(cx, ($left_patern, $right_patern) => Ok($new_tuple),));
             },
-            _ =>  { }
+            VariantData::Struct(ref fields, _) => {
+                // The patern that is outputted should look like this:
+                // (TypePath{left_vars}, TypePath{right_vars} => Ok(TypePath{filled_fields})
+                let mut left_vars = vec![];
+                let mut right_vars = vec![];
+                let mut filled_fields = vec![];
+
+                for field in fields {
+                    let (field_id, field_name) = match field.node.kind {
+                        NamedField(x, _) => (x, x.name.as_str()),
+                        _ => unreachable!(),
+                    };
+                    filled_fields.push(cx.field_imm(
+                            span, field_id,
+                            cx.parse_expr(format!("__l_{}.{}(__r_{})", field_name, method_name, field_name))));
+                    left_vars.push(fieldpat_str(cx, span, field_id, &format!("__l_{}", field_name)));
+                    right_vars.push(fieldpat_str(cx, span, field_id, &format!("__r_{}", field_name)));
+                }
+
+                let left_patern = cx.pat_struct(span, type_path.clone(), left_vars);
+                let right_patern = cx.pat_struct(span, type_path.clone(), right_vars);
+                let new_tuple = cx.expr_struct(span, type_path.clone(), filled_fields);
+                matches.push(quote_arm!(cx, ($left_patern, $right_patern) => Ok($new_tuple),));
+            }
+            VariantData::Unit(_) => { },
 
         }
     }
@@ -238,4 +262,15 @@ fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &
     // Other combinations should result in an error
     matches.push(quote_arm!(cx, _ => Err("Trying to add mismatched enum types"), ));
     quote_expr!(cx, match (self, rhs) { $matches })
+}
+
+fn fieldpat_str(cx: &mut ExtCtxt, span: Span, field_id: Ident, pat: &str) -> Spanned<FieldPat> {
+    Spanned{
+        span: span,
+        node: FieldPat{
+            ident: field_id,
+            pat: cx.pat_ident(span, cx.ident_of(pat)),
+            is_shorthand: false,
+        },
+    }
 }

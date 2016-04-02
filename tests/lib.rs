@@ -49,10 +49,11 @@ enum MyIntEnum{
 }
 
 #[derive(Eq, PartialEq, Debug)]
-#[derive(Add, Sub)]
+#[derive(Add)]
 enum DoubleEnum{
     Ints(i32, i32),
-    Something,
+    LabeledInts{a: i32, b: i32},
+    SomeUnit,
 }
 
 #[test]
@@ -72,4 +73,6 @@ fn main() {
     assert_eq!((SimpleMyIntEnum::Int(6) + 5.into()).unwrap(), 11.into());
     assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
     assert_eq!((DoubleEnum::Ints(6, 5) + DoubleEnum::Ints(1, 4)).unwrap(), DoubleEnum::Ints(7, 9));
+    assert_eq!((DoubleEnum::LabeledInts{a: 6, b: 5} + DoubleEnum::LabeledInts{a: 1, b: 4}).unwrap(),
+               DoubleEnum::LabeledInts{a: 7, b: 9});
 }
