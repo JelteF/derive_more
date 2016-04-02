@@ -40,16 +40,6 @@ enum SimpleMyIntEnum{
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
-enum MyIntEnum{
-    Int(i32),
-    Bool(bool),
-    UnsignedOne(u32),
-    UnsignedTwo(u32),
-    Nothing,
-}
-
-#[derive(Eq, PartialEq, Debug)]
-#[derive(From)]
 #[derive(Add)]
 enum SimpleEnum{
     Int(i32),
@@ -58,12 +48,21 @@ enum SimpleEnum{
     SomeUnit,
 }
 
+#[derive(Eq, PartialEq, Debug)]
+#[derive(From, Add)]
+enum MyIntEnum{
+    SmallInt(i32),
+    BigInt(i64),
+    TwoInts(i32, i32),
+    UnsignedOne(u32),
+    UnsignedTwo(u32),
+    Nothing,
+}
+
 #[test]
 fn main() {
     assert_eq!(MyInt(5), 5.into());
-    assert_eq!(MyIntEnum::Int(5), 5.into());
-    assert_eq!(MyIntEnum::Bool(true), true.into());
-    assert!(MyIntEnum::Bool(false) != true.into());
+    assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
     assert_eq!(MyUInt(4, 5) + MyUInt(1, 2), MyUInt(5, 7));
@@ -77,4 +76,6 @@ fn main() {
     assert_eq!((SimpleEnum::Ints(6, 5) + SimpleEnum::Ints(1, 4)).unwrap(), SimpleEnum::Ints(7, 9));
     assert_eq!((SimpleEnum::LabeledInts{a: 6, b: 5} + SimpleEnum::LabeledInts{a: 1, b: 4}).unwrap(),
                SimpleEnum::LabeledInts{a: 7, b: 9});
+
+    let my_enum_val = (MyIntEnum::SmallInt(5) + 6.into()).unwrap();
 }
