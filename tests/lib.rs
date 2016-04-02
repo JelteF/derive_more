@@ -31,7 +31,7 @@ struct MySpan2(::syntax::codemap::Span);
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
-#[derive(Add)]
+#[derive(Add,Sub)]
 enum SimpleMyIntEnum{
     Int(i32),
     UnsignedOne(u32),
@@ -63,4 +63,5 @@ fn main() {
     assert_eq!(s1 + s2, s3);
     assert_eq!(s3 - s2, s1);
     assert_eq!((SimpleMyIntEnum::Int(6) + 5.into()).unwrap(), 11.into());
+    assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
 }
