@@ -254,7 +254,9 @@ fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, enum_def:
                 let new_tuple = cx.expr_struct(span, type_path.clone(), filled_fields);
                 matches.push(quote_arm!(cx, ($left_patern, $right_patern) => Ok($new_tuple),));
             }
-            VariantData::Unit(_) => { },
+            VariantData::Unit(_) =>  {
+                matches.push(quote_arm!(cx, ($type_path, $type_path) => Err("Cannot add unit types together"), ));
+            }
 
         }
     }
