@@ -12,14 +12,21 @@ use rustc_plugin::Registry;
 use syntax::parse::token::intern;
 use syntax::ext::base::MultiDecorator;
 
-const INFIX_OPS: &'static [&'static str] = &["Add", "Sub", "Mul", "Div", "Rem", "BitAnd", "BitOr", "BitXor"];
+const ADDLIKE_OPS: &'static [&'static str] = &["Add", "Sub", "BitAnd", "BitOr", "BitXor"];
+const MULLIKE_OPS: &'static [&'static str] = &["Mul", "Div", "Rem"];
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_syntax_extension(intern("derive_From"), MultiDecorator(box expand_derive_from));
-    for op in INFIX_OPS {
+    for op in ADDLIKE_OPS {
         let expand = move |cx: &mut ExtCtxt, span: Span, _: &MetaItem, item: &Annotatable, push: &mut FnMut(Annotatable)| {
-            expand_derive_infix_op(cx, span, item, push, op)
+            expand_derive_addlike(cx, span, item, push, op)
+        };
+        reg.register_syntax_extension(intern(&format!("derive_{}", op)), MultiDecorator(box expand));
+    }
+    for op in MULLIKE_OPS {
+        let expand = move |cx: &mut ExtCtxt, span: Span, _: &MetaItem, item: &Annotatable, push: &mut FnMut(Annotatable)| {
+            expand_derive_mullike(cx, span, item, push, op)
         };
         reg.register_syntax_extension(intern(&format!("derive_{}", op)), MultiDecorator(box expand));
     }
@@ -29,6 +36,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
 use std::collections::HashMap;
 
 use syntax::ast::*;
+use syntax_ext::deriving::generic::ty;
 use syntax::codemap::{Span, Spanned};
 use syntax::ext::base::{Annotatable, ExtCtxt};
 use syntax::ext::build::AstBuilder;
@@ -122,7 +130,72 @@ fn enum_from(cx: &mut ExtCtxt, enum_ident: Ident, definition: &EnumDef,
     }
 }
 
-fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
+fn expand_derive_mullike(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
+                         push: &mut FnMut(Annotatable), trait_name: &str) {
+    let trait_name = trait_name.to_string();
+    let method_name = trait_name.to_lowercase();
+    let method_ident = cx.ident_of(&method_name);
+    // Get the that is wrapped by the newtype and do some checks
+    let result = match *item {
+        Annotatable::Item(ref x) => {
+            match x.node {
+                ItemKind::Struct(VariantData::Tuple(ref fields, _), _) => {
+                    Some((x.ident, cx.ty_ident(span, x.ident), tuple_mullike_content(cx, span, x, fields, method_name)))
+                },
+
+                //ItemKind::Struct(VariantData::Struct(ref fields, _), _) => {
+                //    Some((x.ident, cx.ty_ident(span, x.ident), struct_mullike_content(cx, span, x, fields, method_name)))
+                //},
+
+                //ItemKind::Enum(ref definition, _) => {
+                //    let input_type = x.ident;
+                //    Some((x.ident, quote_ty!(cx, Result<$input_type, &'static str>), enum_mullike_content(cx, span, x, definition, method_name)))
+                //},
+
+                _ => None,
+            }
+        },
+        _ => None,
+    };
+
+    let (input_type, output_type, block) = match result {
+        Some(x) => x,
+        _ => {
+            cx.span_fatal(span, &format!("only structs can use `derive({})`", trait_name))
+        },
+    };
+
+
+    let trait_path = cx.path_global(span, cx.std_path(&["ops", &trait_name, "<T>"]));
+
+    let code = quote_item!(cx,
+        impl<T: ::std::ops::Mul<i32, Output=i32>> $trait_path for $input_type {
+            type Output = $output_type;
+            fn $method_ident(self, rhs: T) -> $output_type {
+                $block
+            }
+        }
+    ).unwrap();
+
+    push(Annotatable::Item(code));
+
+}
+
+fn tuple_mullike_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
+    let type_name = item.ident;
+    let mut exprs: Vec<P<Expr>>= vec![];
+
+    for i in 0..fields.len() {
+        let i = &i.to_string();
+        exprs.push(cx.parse_expr(format!("rhs.{}(self.{})", method_name, i)));
+    }
+
+    cx.expr_call_ident(span, type_name, exprs)
+}
+
+
+
+fn expand_derive_addlike(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
                           push: &mut FnMut(Annotatable), trait_name: &str) {
     let trait_name = trait_name.to_string();
     let method_name = trait_name.to_lowercase();
@@ -132,16 +205,16 @@ fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
         Annotatable::Item(ref x) => {
             match x.node {
                 ItemKind::Struct(VariantData::Tuple(ref fields, _), _) => {
-                    Some((x.ident, cx.ty_ident(span, x.ident), tuple_infix_op_content(cx, span, x, fields, method_name)))
+                    Some((x.ident, cx.ty_ident(span, x.ident), tuple_addlike_content(cx, span, x, fields, method_name)))
                 },
 
                 ItemKind::Struct(VariantData::Struct(ref fields, _), _) => {
-                    Some((x.ident, cx.ty_ident(span, x.ident), struct_infix_op_content(cx, span, x, fields, method_name)))
+                    Some((x.ident, cx.ty_ident(span, x.ident), struct_addlike_content(cx, span, x, fields, method_name)))
                 },
 
                 ItemKind::Enum(ref definition, _) => {
                     let input_type = x.ident;
-                    Some((x.ident, quote_ty!(cx, Result<$input_type, &'static str>), enum_infix_op_content(cx, span, x, definition, method_name)))
+                    Some((x.ident, quote_ty!(cx, Result<$input_type, &'static str>), enum_addlike_content(cx, span, x, definition, method_name)))
                 },
 
                 _ => None,
@@ -172,7 +245,7 @@ fn expand_derive_infix_op(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
 
 }
 
-fn tuple_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
+fn tuple_addlike_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
     let type_name = item.ident;
     let mut exprs: Vec<P<Expr>>= vec![];
 
@@ -184,7 +257,7 @@ fn tuple_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: 
     cx.expr_call_ident(span, type_name, exprs)
 }
 
-fn struct_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
+fn struct_addlike_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
     let type_name = item.ident;
     let mut filled_fields = vec![];
 
@@ -202,7 +275,7 @@ fn struct_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields:
     cx.expr_struct_ident(span, type_name, filled_fields)
 }
 
-fn enum_infix_op_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, enum_def: &EnumDef, method_name: String) -> P<Expr> {
+fn enum_addlike_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, enum_def: &EnumDef, method_name: String) -> P<Expr> {
     let mut matches: Vec<Arm> = vec![];
     let enum_ident = item.ident;
 
