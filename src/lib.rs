@@ -14,8 +14,7 @@ use syntax::ext::base::MultiDecorator;
 
 mod from;
 mod add_like;
-mod mul_like_traitdef;
-mod mul_like_quote;
+mod mul_like;
 
 const ADDLIKE_OPS: &'static [&'static str] = &["Add", "Sub", "BitAnd", "BitOr", "BitXor"];
 const MULLIKE_OPS: &'static [&'static str] = &["Mul", "Div", "Rem"];
@@ -32,7 +31,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
     for op in MULLIKE_OPS {
         let expand = move |cx: &mut ExtCtxt, span: Span, mitem: &MetaItem, item: &Annotatable, push: &mut FnMut(Annotatable)| {
             // mul_like_traitdef::expand(cx, span, mitem, item, push, op)
-            mul_like_quote::expand(cx, span, item, push, op)
+            mul_like::expand(cx, span, item, push, op)
         };
         reg.register_syntax_extension(intern(&format!("derive_{}", op)), MultiDecorator(box expand));
     }

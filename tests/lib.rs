@@ -4,13 +4,12 @@
 extern crate syntax;
 use syntax::codemap;
 
-#[derive(From)]
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Add, Mul)]
-struct MyInt(i32);
+struct MyInt(u32, u32);
 
 
 #[test]
 fn main() {
-    assert_eq!(MyInt(5) * 10, 50.into());
+    assert_eq!(MyInt(5, 6) * 10, MyInt(50, 60));
 }

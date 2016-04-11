@@ -37,7 +37,7 @@ pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable, push: &mut FnMut
         _ => None,
     };
 
-    let (input_type, output_type, block) = match result {
+    let (input_type, output_type, (block, tys)) = match result {
         Some(x) => x,
         _ => {
             cx.span_fatal(span, &format!("only structs can use `derive({})`", trait_name))
@@ -53,16 +53,23 @@ pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable, push: &mut FnMut
                                  vec![],
                                  );
 
-    let int = quote_ty!(cx, i32);
-    let binding = typebinding_str(cx, span, "Output", int.clone());
+    let mut bounds: Vec<_> = tys.iter().map(|ty| {
+        let binding = typebinding_str(cx, span, "Output", ty.clone());
 
-    let sub = cx.typarambound(cx.path_all(span, true,
-                              cx.std_path(&["ops", &trait_name]),
-                              vec![],
-                              vec![int.clone()],
-                              vec![binding],
-                              ));
-    let where_ = whereclause(span, t, P::from_vec(vec![sub]));
+        cx.typarambound(cx.path_all(span, true,
+                                    cx.std_path(&["ops", &trait_name]),
+                                    vec![],
+                                    vec![ty.clone()],
+                                    vec![binding],
+                                    ))
+    }).collect();
+
+    if bounds.len() > 1 {
+        bounds.push(cx.typarambound(cx.path_global(span, cx.std_path(&["marker", "Copy"]))));
+
+    }
+
+    let where_ = whereclause(span, t, P::from_vec(bounds));
 
     let code = quote_item!(cx,
         impl<T> $trait_path for $input_type $where_ {
@@ -77,16 +84,18 @@ pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable, push: &mut FnMut
 
 }
 
-fn tuple_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
+fn tuple_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> (P<Expr>, Vec<P<Ty>>) {
     let type_name = item.ident;
     let mut exprs: Vec<P<Expr>>= vec![];
+    let mut tys = vec![];
 
-    for i in 0..fields.len() {
+    for (i, f) in fields.iter().enumerate() {
         let i = &i.to_string();
         exprs.push(cx.parse_expr(format!("rhs.{}(self.{})", method_name, i)));
+        tys.push(f.node.ty.clone());
     }
 
-    cx.expr_call_ident(span, type_name, exprs)
+    (cx.expr_call_ident(span, type_name, exprs), tys)
 }
 
 fn typaram_str(cx: &mut ExtCtxt, span: Span, name: &str) -> TyParam {
