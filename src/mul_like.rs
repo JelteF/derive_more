@@ -22,9 +22,9 @@ pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable, push: &mut FnMut
                     Some((x.ident, cx.ty_ident(span, x.ident), tuple_content(cx, span, x, fields, method_name)))
                 },
 
-                //ItemKind::Struct(VariantData::Struct(ref fields, _), _) => {
-                //    Some((x.ident, cx.ty_ident(span, x.ident), struct_content(cx, span, x, fields, method_name)))
-                //},
+                ItemKind::Struct(VariantData::Struct(ref fields, _), _) => {
+                    Some((x.ident, cx.ty_ident(span, x.ident), struct_content(cx, span, x, fields, method_name)))
+                },
 
                 //ItemKind::Enum(ref definition, _) => {
                 //    let input_type = x.ident;
@@ -86,7 +86,7 @@ pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable, push: &mut FnMut
 
 fn tuple_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> (P<Expr>, Vec<P<Ty>>) {
     let type_name = item.ident;
-    let mut exprs: Vec<P<Expr>>= vec![];
+    let mut exprs = vec![];
     let mut tys = vec![];
 
     for (i, f) in fields.iter().enumerate() {
@@ -96,6 +96,24 @@ fn tuple_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<Stru
     }
 
     (cx.expr_call_ident(span, type_name, exprs), tys)
+}
+
+fn struct_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> (P<Expr>, Vec<P<Ty>>) {
+    let type_name = item.ident;
+    let mut filled_fields = vec![];
+    let mut tys = vec![];
+
+    for f in fields {
+        let (field_id, field_name) = match f.node.kind {
+            NamedField(x, _) => (x, x.name.as_str()),
+            _ => unreachable!(),
+        };
+        filled_fields.push(cx.field_imm(span, field_id,
+                                        cx.parse_expr(format!("rhs.{}(self.{})", method_name, field_name))));
+        tys.push(f.node.ty.clone())
+    }
+
+    (cx.expr_struct_ident(span, type_name, filled_fields), tys)
 }
 
 fn typaram_str(cx: &mut ExtCtxt, span: Span, name: &str) -> TyParam {
