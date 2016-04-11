@@ -31,8 +31,8 @@ pub fn plugin_registrar(reg: &mut Registry) {
     }
     for op in MULLIKE_OPS {
         let expand = move |cx: &mut ExtCtxt, span: Span, mitem: &MetaItem, item: &Annotatable, push: &mut FnMut(Annotatable)| {
-            mul_like_traitdef::expand(cx, span, mitem, item, push, op)
-            // mul_like_quote::expand(cx, span, item, push, op)
+            // mul_like_traitdef::expand(cx, span, mitem, item, push, op)
+            mul_like_quote::expand(cx, span, item, push, op)
         };
         reg.register_syntax_extension(intern(&format!("derive_{}", op)), MultiDecorator(box expand));
     }

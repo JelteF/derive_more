@@ -49,84 +49,32 @@ pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable, push: &mut FnMut
     let trait_path = cx.path_all(span, true,
                                  cx.std_path(&["ops", &trait_name]),
                                  vec![],
-                                 vec![t],
+                                 vec![t.clone()],
                                  vec![],
                                  );
 
     let int = quote_ty!(cx, i32);
     let binding = typebinding_str(cx, span, "Output", int.clone());
 
-    let sub = cx.trait_ref(cx.path_all(span, true,
+    let sub = cx.typarambound(cx.path_all(span, true,
                               cx.std_path(&["ops", &trait_name]),
                               vec![],
                               vec![int.clone()],
                               vec![binding],
                               ));
-    let sub = MyTraitRef(sub);
-    //println!("{:#?}", sub);
-    let typaram = MyTyParam(typaram_str(cx, span, "T"));
-
+    let where_ = whereclause(span, t, P::from_vec(vec![sub]));
 
     let code = quote_item!(cx,
-        impl<T: ::std::ops::Mul<i32, Output=i32> > $trait_path for $input_type {
+        impl<T> $trait_path for $input_type $where_ {
             type Output = $output_type;
             fn $method_ident(self, rhs: T) -> $output_type {
                 $block
             }
         }
     );
-    println!("{:#?}", code);
 
-    // println!("{:#?}", code);
+    push(Annotatable::Item(code.unwrap()));
 
-    //push(Annotatable::Item(code));
-
-}
-
-struct MyTraitRef(TraitRef);
-struct MyTyParam(TyParam);
-struct MyTyParamBound(TyParamBound);
-
-impl ToTokens for MyTyParam {
-    fn to_tokens(&self, cx: &ExtCtxt) -> Vec<TokenTree> {
-        let s = &self.0;
-        let mut v = s.ident.to_tokens(cx);
-        // v.push(TokenTree::Token(s.span, token::Colon));
-        v
-
-        // TokenTree::Token(s.span, token::Interpolated(token::NtTy(P(s.clone()))))
-    }
-}
-
-impl ToTokens for MyTraitRef {
-    fn to_tokens(&self, cx: &ExtCtxt) -> Vec<TokenTree> {
-        let s = &self.0;
-        let mut v = cx.ident_of("T").to_tokens(cx);
-        v.push(TokenTree::Token(s.path.span, token::Colon));
-        v.append(&mut s.path.to_tokens(cx));
-        // v.push(TokenTree::Token(s.span, token::Colon));
-        println!("{:#?}", v);
-        v
-
-        // TokenTree::Token(s.span, token::Interpolated(token::NtTy(P(s.clone()))))
-    }
-}
-
-impl ToTokens for MyTyParamBound {
-    fn to_tokens(&self, cx: &ExtCtxt) -> Vec<TokenTree> {
-        let s = &self.0;
-        let mut v = vec![];
-        match *s {
-            TyParamBound::TraitTyParamBound(ref x, _) => {
-            },
-            _ => panic!(),
-        }
-        // let mut v = s.ident.to_tokens(cx);
-        // v.push(TokenTree::Token(s.span, token::Colon));
-        v
-
-        // TokenTree::Token(s.span, token::Interpolated(token::NtTy(P(s.clone()))))
-    }
 }
 
 fn tuple_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<StructField>, method_name: String) -> P<Expr> {
@@ -151,5 +99,17 @@ fn typebinding_str(cx: &mut ExtCtxt, span: Span, name: &str, ty: P<Ty>) -> TypeB
         ident: cx.ident_of(name),
         ty: ty,
         span: span,
+    }
+}
+
+fn whereclause(span: Span, ty: P<Ty>, bounds: TyParamBounds) -> WhereClause {
+    WhereClause {
+        id: DUMMY_NODE_ID,
+        predicates: vec![WherePredicate::BoundPredicate(WhereBoundPredicate {
+            span: span,
+            bound_lifetimes: vec![],
+            bounded_ty: ty,
+            bounds: bounds,
+        })]
     }
 }
