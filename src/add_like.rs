@@ -1,11 +1,9 @@
 use syntax::ast::*;
-use syntax_ext::deriving::generic::ty;
 use syntax::codemap::{Span, Spanned};
 use syntax::ext::base::{Annotatable, ExtCtxt};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::quote::rt::ExtParseUtils;
 use syntax::ptr::P;
-use syntax::print::pprust::ty_to_string;
 
 pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable,
                           push: &mut FnMut(Annotatable), trait_name: &str) {

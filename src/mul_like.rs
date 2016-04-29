@@ -1,13 +1,9 @@
 use syntax::ast::*;
-use syntax_ext::deriving::generic::ty;
-use syntax::codemap::{Span, Spanned};
+use syntax::codemap::Span;
 use syntax::ext::base::{Annotatable, ExtCtxt};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::quote::rt::{ExtParseUtils, ToTokens};
 use syntax::ptr::P;
-use syntax::print::pprust::ty_to_string;
-
-use syntax::parse::token;
 
 pub fn expand(cx: &mut ExtCtxt, span: Span, item: &Annotatable, push: &mut FnMut(Annotatable),
           trait_name: &str) {
@@ -114,10 +110,6 @@ fn struct_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<Str
     }
 
     (cx.expr_struct_ident(span, type_name, filled_fields), tys)
-}
-
-fn typaram_str(cx: &mut ExtCtxt, span: Span, name: &str) -> TyParam {
-    cx.typaram(span, cx.ident_of(name), P::from_vec(vec![]), None)
 }
 
 fn typebinding_str(cx: &mut ExtCtxt, span: Span, name: &str, ty: P<Ty>) -> TypeBinding {

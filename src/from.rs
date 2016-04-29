@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
 use syntax::ast::*;
-use syntax_ext::deriving::generic::ty;
-use syntax::codemap::{Span, Spanned};
+use syntax::codemap::Span;
 use syntax::ext::base::{Annotatable, ExtCtxt};
 use syntax::ext::build::AstBuilder;
-use syntax::ext::quote::rt::ExtParseUtils;
 use syntax::ptr::P;
 use syntax::print::pprust::ty_to_string;
 
