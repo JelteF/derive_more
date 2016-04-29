@@ -2,7 +2,7 @@
 Rust derive macros for some common traits for general types.
 
 The traits that can be derived currently are `From` and infix arithmetic traits
-(`Add`, `Sub`, `Mul`, `Div`, `Rem`, `BitAnd`, `BitOr`, `BitXor`).
+(`Add`, `Sub`, `Mul`, `Div`, `Rem`, `BitAnd`, `BitOr`, `BitXor`, `Shl`, `Shr`).
 
 ## Installation
 
@@ -14,28 +14,55 @@ derive_more = "*"
 ```
 
 And this to to top of your Rust file:
-```
+
+```rust
 #![feature(rustc_private, custom_derive, plugin)]
 #![plugin(derive_more)]
 ```
 
 ## Explanation of traits
 This is a basic explanation of how the traits will be implemented, but the
-example code below might do a better job explaining.
+example code below might do a better job explaining. There are three different
+types of traits at the moment, `From`, `Add`-like and `Mul`-like.
 
-The arithmetic traits currently works for structs and enums.
+### `From`
+The `From` trait only works for tuple structs with one element (newtypes) or
+enums containing these tuple structs.
+The types wrapped by these tuple structs can than simply be converted by using
+the `.into()` method.
+For enums no from code will be generated for types that occur multiple times
+since this would be ambiguous.
+
+### `Add`-like
+The first group of arithmetic traits are the `Add`-like traits.
+These are the traits that operate on two arguments of the same type, they
+include `Add`, `Sub`, `BitAnd`, `BitOr` and `BitXor`.
+A simple example would be that one apple plus two apples logically equals
+three apples.
+
+These traits work for both structs and enums.
 For structs they simply do the respective operation on each pair of fields
 separately.
 For enums it will generate code that returns a `Result`, as adding different
-enum options together will not work. When adding the same ones together the same
-approach is done as for structs. Adding two unit types will result in an error.
+enum options together will not work.
+When adding the same ones together the same approach is done as for structs.
+Adding two unit types (e.g. `None`) will result in an error.
 
-The `From` trait only works for tuple structs with one element (newtypes) or
-enums containing these tuple structs. The types wrapped by these tuple structs
-can than simply be converted by using the `.into()` method.
+### `Mul`-like
+The second group of arithmetic traits are the `Mul`-like traits.
+These are the traits that can take arguments with different types, normally a
+user defined type and a primitive numeric type (e.g `u64`).
+These traits include the other types mentioned above, `Mul`, `Div`, `Rem`, `Shl`
+and `Shr`.
+A simple reason why these are different than the `Add`-like traits is doing
+arithmetic on meters, one meter times two would be two meters, but one meter
+times one meter would be one square meter.
+As this second case clearly requires more knowledge about the types this is not
+implemented.
 
-For enums no from code will be generated for types that occur multiple times
-since this would be ambiguous.
+Currently these traits can only be derived for structs.
+An extra requirement is that the other argument implements the trait for all
+types present in that struct, and it must also define `Copy`.
 
 ## Example usage
 It can simply be used like this:
@@ -58,6 +85,9 @@ enum MyIntEnum{
     UnsignedTwo(u32),
     Nothing,
 }
+
+#[derive(Mul)]
+struct DoubleUInt(u32, u32);
 
 ```
 
@@ -125,19 +155,35 @@ impl ::std::ops::Add for MyIntEnum {
     }
 }
 
+
+struct DoubleUInt(u32, u32);
+
+impl <T> ::std::ops::Mul<T> for DoubleUInt where T:
+        ::std::ops::Mul<u32, Output = u32> +
+        ::std::ops::Mul<u32, Output = u32> +
+        ::std::marker::Copy {
+
+    type Output = DoubleUInt;
+    fn mul(self, rhs: T) -> DoubleUInt {
+         DoubleUInt(rhs.mul(self.0), rhs.mul(self.1))
+    }
+}
+
+
 ```
 
 Because of this and Rust its built in type inference the following can be done
-now:
+now (this sample also requires some other derives such as `Eq` to be defined as
+well):
 
 ```rust
 fn main() {
     let my_enum_val = (MyIntEnum::SmallInt(5) + 6.into()).unwrap();
 
-    // To do this Eq and PartialEq also need to be derived
-    if en_enum_val == 5.into() {
+    if my_enum_val == 5.into() {
         println!("The content of my_enum_val is 5")
     }
+    assert_eq!(DoubleUInt(5, 6) * 10, DoubleUInt(50, 60));
 }
 ```
 
