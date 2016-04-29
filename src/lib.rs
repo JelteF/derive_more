@@ -17,7 +17,7 @@ mod add_like;
 mod mul_like;
 
 const ADDLIKE_OPS: &'static [&'static str] = &["Add", "Sub", "BitAnd", "BitOr", "BitXor"];
-const MULLIKE_OPS: &'static [&'static str] = &["Mul", "Div", "Rem"];
+const MULLIKE_OPS: &'static [&'static str] = &["Mul", "Div", "Rem", "Shr", "Shl"];
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
