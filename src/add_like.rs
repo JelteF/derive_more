@@ -106,8 +106,8 @@ fn enum_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, enum_def: &EnumDef
                     exprs.push(cx.parse_expr(format!("__l_{}.{}(__r_{})", i, method_name, i)));
                 }
 
-                let left_patern = cx.pat_enum(span, type_path.clone(), left_vars);
-                let right_patern = cx.pat_enum(span, type_path.clone(), right_vars);
+                let left_patern = cx.pat_tuple_struct(span, type_path.clone(), left_vars);
+                let right_patern = cx.pat_tuple_struct(span, type_path.clone(), right_vars);
                 let new_tuple = cx.expr_call(span, cx.expr_path(type_path.clone()), exprs);
                 matches.push(quote_arm!(cx, ($left_patern, $right_patern) => Ok($new_tuple),));
             },
