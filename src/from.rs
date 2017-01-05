@@ -17,7 +17,7 @@ pub fn expand(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
             match x.node {
                 ItemKind::Struct(VariantData::Tuple(ref structs, _), _) => {
                     if structs.len() == 1 {
-                        newtype_from(cx, x.ident, structs[0].node.ty.clone(), push);
+                        newtype_from(cx, x.ident, structs[0].ty.clone(), push);
                         false
                     }
                     else {
@@ -63,7 +63,7 @@ fn enum_from(cx: &mut ExtCtxt, enum_ident: Ident, definition: &EnumDef,
         match variant.node.data {
             VariantData::Tuple(ref structs, _) => {
                 if structs.len() == 1 {
-                    let ty = structs[0].node.ty.clone();
+                    let ty = structs[0].ty.clone();
                     idents.push(variant.node.name);
                     types.push(ty.clone());
                     let counter = type_counts.entry(ty_to_string(&*ty)).or_insert(0);

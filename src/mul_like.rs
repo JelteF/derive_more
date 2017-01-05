@@ -88,7 +88,7 @@ fn tuple_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<Stru
     for (i, f) in fields.iter().enumerate() {
         let i = &i.to_string();
         exprs.push(cx.parse_expr(format!("rhs.{}(self.{})", method_name, i)));
-        tys.push(f.node.ty.clone());
+        tys.push(f.ty.clone());
     }
 
     (cx.expr_call_ident(span, type_name, exprs), tys)
@@ -106,7 +106,7 @@ fn struct_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<Str
         };
         filled_fields.push(cx.field_imm(span, field_id,
                                         cx.parse_expr(format!("rhs.{}(self.{})", method_name, field_name))));
-        tys.push(f.node.ty.clone())
+        tys.push(f.ty.clone())
     }
 
     (cx.expr_struct_ident(span, type_name, filled_fields), tys)
