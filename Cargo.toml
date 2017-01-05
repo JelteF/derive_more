@@ -8,6 +8,8 @@ repository = "https://github.com/JelteF/derive_more"
 
 [lib]
 name = "derive_more"
-plugin = true
+proc-macro = true
 
 [dependencies]
+quote = "0.3"
+syn = "0.10.5"

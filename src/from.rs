@@ -7,6 +7,7 @@ use syntax::ext::build::AstBuilder;
 use syntax::ptr::P;
 use syntax::print::pprust::ty_to_string;
 
+
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
                           item: &Annotatable, push: &mut FnMut(Annotatable)) {
