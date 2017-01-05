@@ -72,11 +72,9 @@ fn struct_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<Str
     let mut filled_fields = vec![];
 
     for field in fields {
-        let (field_id, field_name) = match field.node.kind {
-            NamedField(x, _) => (x, x.name.as_str()),
+        let (field_id, field_name) = match field.ident {
+            Some(x) => (x, x.name.as_str()),
             _ => unreachable!(),
-
-
         };
         filled_fields.push(cx.field_imm(span, field_id,
                                         cx.parse_expr(format!("self.{}.{}(rhs.{})", field_name, method_name, field_name))));
@@ -121,8 +119,8 @@ fn enum_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, enum_def: &EnumDef
                 let mut filled_fields = vec![];
 
                 for field in fields {
-                    let (field_id, field_name) = match field.node.kind {
-                        NamedField(x, _) => (x, x.name.as_str()),
+                    let (field_id, field_name) = match field.ident {
+                        Some(x) => (x, x.name.as_str()),
                         _ => unreachable!(),
                     };
                     filled_fields.push(cx.field_imm(

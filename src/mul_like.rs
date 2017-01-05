@@ -100,8 +100,8 @@ fn struct_content(cx: &mut ExtCtxt, span: Span, item: &P<Item>, fields: &Vec<Str
     let mut tys = vec![];
 
     for f in fields {
-        let (field_id, field_name) = match f.node.kind {
-            NamedField(x, _) => (x, x.name.as_str()),
+        let (field_id, field_name) = match f.ident {
+            Some(x) => (x, x.name.as_str()),
             _ => unreachable!(),
         };
         filled_fields.push(cx.field_imm(span, field_id,
