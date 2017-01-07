@@ -1,97 +1,77 @@
 use std::collections::HashMap;
 
-use syntax::ast::*;
-use syntax::codemap::Span;
-use syntax::ext::base::{Annotatable, ExtCtxt};
-use syntax::ext::build::AstBuilder;
-use syntax::ptr::P;
-use syntax::print::pprust::ty_to_string;
+use quote::Tokens;
+use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
-pub fn expand(cx: &mut ExtCtxt, span: Span, _: &MetaItem,
-                          item: &Annotatable, push: &mut FnMut(Annotatable)) {
-
-    // Get the that is wrapped by the newtype and do some checks
-    let failed = match *item {
-        Annotatable::Item(ref x) => {
-            match x.node {
-                ItemKind::Struct(VariantData::Tuple(ref structs, _), _) => {
-                    if structs.len() == 1 {
-                        newtype_from(cx, x.ident, structs[0].ty.clone(), push);
-                        false
-                    }
-                    else {
-                        true
-                    }
-                },
-                ItemKind::Enum(ref definition, _) => {
-                    enum_from(cx, x.ident, definition, push);
-                    false
-
-                }
-                _ => true,
+pub fn expand(input: &MacroInput) -> Tokens {
+    let name = input.ident.clone();
+    match input.body {
+        Body::Struct(VariantData::Tuple(ref structs)) => {
+            if structs.len() == 1 {
+                newtype_from(name, structs[0].ty.clone())
             }
-        },
-        _ => true,
-    };
-
-    if failed {
-        cx.span_bug(span, "only newtype structs can use `derive(From)`");
+            else {
+                panic!("Only Tuple structs with a single field can derive From")
+            }
+        }
+        Body::Enum(ref variants) => {
+            enum_from(name, variants)
+        }
+        _ => panic!("Only newtype structs can derive From")
     }
 }
 
-fn newtype_from(cx: &mut ExtCtxt, ident: Ident, old_type: P<Ty>,
-                push: &mut FnMut(Annotatable)) {
-    let code = quote_item!(cx,
-        impl ::std::convert::From<$old_type> for $ident {
-            fn from(a: $old_type) -> $ident {
-                $ident(a)
+
+fn newtype_from(new_type: Ident, old_type: Ty) -> Tokens {
+    quote!{
+        impl ::std::convert::From<#old_type> for #new_type {
+            fn from(a: #old_type) -> #new_type {
+                #new_type(a)
             }
         }
-    ).unwrap();
-
-    push(Annotatable::Item(code));
+    }
 }
 
-fn enum_from(cx: &mut ExtCtxt, enum_ident: Ident, definition: &EnumDef,
-             push: &mut FnMut(Annotatable)) {
+fn enum_from(enum_ident: Ident, variants: &Vec<Variant>) -> Tokens {
     let mut types = vec![];
     let mut idents = vec![];
     let mut type_counts = HashMap::new();
 
-    for variant in &definition.variants {
-        match variant.node.data {
-            VariantData::Tuple(ref structs, _) => {
+    for variant in variants {
+        match variant.data {
+            VariantData::Tuple(ref structs) => {
                 if structs.len() == 1 {
                     let ty = structs[0].ty.clone();
-                    idents.push(variant.node.name);
+                    idents.push(variant.ident.clone());
                     types.push(ty.clone());
-                    let counter = type_counts.entry(ty_to_string(&*ty)).or_insert(0);
+                    let counter = type_counts.entry(ty).or_insert(0);
                     *counter += 1;
                 }
             }
-            _ => (),
+            _ => {},
         }
     }
 
+    let mut tokens = Tokens::new();
+
     for (ident, old_type) in idents.iter().zip(types) {
-        if *type_counts.get(&ty_to_string(&*old_type)).unwrap() != 1 {
+        if *type_counts.get(&old_type).unwrap() != 1 {
             // If more than one newtype is present don't add automatic From, since it is
             // ambiguous.
             continue
         }
 
-        let code = quote_item!(cx,
-            impl ::std::convert::From<$old_type> for $enum_ident {
-                fn from(a: $old_type) -> $enum_ident {
-                    $enum_ident::$ident(a)
+        tokens.append(&quote!(
+            impl ::std::convert::From<#old_type> for #enum_ident {
+                fn from(a: #old_type) -> #enum_ident {
+                    #enum_ident::#ident(a)
                 }
             }
-        ).unwrap();
-
-        push(Annotatable::Item(code));
+        ).to_string())
     }
+    tokens
 }
 
 

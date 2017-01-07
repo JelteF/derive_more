@@ -17,7 +17,6 @@ use syntax::ext::base::MultiDecorator;
 use proc_macro::TokenStream;
 
 mod from;
-mod from_new;
 mod add_like;
 mod mul_like;
 
@@ -28,7 +27,7 @@ const MULLIKE_OPS: &'static [&'static str] = &["Mul", "Div", "Rem", "Shr", "Shl"
 pub fn from_derive(input: TokenStream) -> TokenStream {
     let s = input.to_string();
     let ast = syn::parse_macro_input(&s).unwrap();
-    from_new::expand(&ast).parse().unwrap()
+    from::expand(&ast).parse().unwrap()
 }
 
 //pub fn plugin_registrar(reg: &mut Registry) {
