@@ -27,13 +27,13 @@ struct MyInt(i32);
 // struct MySpan2(::syntax::codemap::Span);
 // 
 // #[derive(Eq, PartialEq, Debug)]
-// #[derive(From)]
+ #[derive(From)]
 // #[derive(Add,Sub)]
-// enum SimpleMyIntEnum{
-//     Int(i32),
-//     UnsignedOne(u32),
-//     UnsignedTwo(u32),
-// }
+enum SimpleMyIntEnum{
+    Int(i32),
+    UnsignedOne(u32),
+    UnsignedTwo(u32),
+}
 // 
 // #[derive(Eq, PartialEq, Debug)]
 // #[derive(From)]
