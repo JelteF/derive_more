@@ -46,15 +46,16 @@ enum SimpleMyIntEnum{
 // }
 // 
 // #[derive(Eq, PartialEq, Debug)]
-// #[derive(From, Add)]
-// enum MyIntEnum{
-//     SmallInt(i32),
-//     BigInt(i64),
-//     TwoInts(i32, i32),
-//     UnsignedOne(u32),
-//     UnsignedTwo(u32),
-//     Nothing,
-// }
+#[derive(From)]
+// #[derive(Add)]
+enum MyIntEnum{
+    SmallInt(i32),
+    BigInt(i64),
+    TwoInts(i32, i32),
+    UnsignedOne(u32),
+    UnsignedTwo(u32),
+    Nothing,
+}
 // 
 // #[derive(Eq, PartialEq, Debug)]
 // #[derive(Add, Mul)]
@@ -68,6 +69,9 @@ enum SimpleMyIntEnum{
 #[test]
 fn main() {
     let _: MyInt = 5.into();
+    let _: SimpleMyIntEnum = 5i32.into();
+    let _: MyIntEnum = 5i32.into();
+    let _: MyIntEnum = 6i64.into();
     // assert_eq!(MyInt(5), 5.into());
     // assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 

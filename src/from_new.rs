@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use quote::Tokens;
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
-use syntax::print::pprust::ty_to_string;
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
@@ -35,7 +34,7 @@ fn newtype_from(new_type: Ident, old_type: Ty) -> Tokens {
     }
 }
 
-fn enum_from(name: Ident, variants: &Vec<Variant>) -> Tokens {
+fn enum_from(enum_ident: Ident, variants: &Vec<Variant>) -> Tokens {
     let mut types = vec![];
     let mut idents = vec![];
     let mut type_counts = HashMap::new();
@@ -45,9 +44,9 @@ fn enum_from(name: Ident, variants: &Vec<Variant>) -> Tokens {
             VariantData::Tuple(ref structs) => {
                 if structs.len() == 1 {
                     let ty = structs[0].ty.clone();
-                    idents.push(variant.ident);
+                    idents.push(variant.ident.clone());
                     types.push(ty.clone());
-                    let counter = type_counts.entry(ty_to_string(ty)).or_insert(0);
+                    let counter = type_counts.entry(ty).or_insert(0);
                     *counter += 1;
                 }
             }
@@ -55,25 +54,24 @@ fn enum_from(name: Ident, variants: &Vec<Variant>) -> Tokens {
         }
     }
 
-    quote!{}
+    let mut tokens = Tokens::new();
 
-    // for (ident, old_type) in idents.iter().zip(types) {
-    //     if *type_counts.get(&ty_to_string(&*old_type)).unwrap() != 1 {
-    //         // If more than one newtype is present don't add automatic From, since it is
-    //         // ambiguous.
-    //         continue
-    //     }
+    for (ident, old_type) in idents.iter().zip(types) {
+        if *type_counts.get(&old_type).unwrap() != 1 {
+            // If more than one newtype is present don't add automatic From, since it is
+            // ambiguous.
+            continue
+        }
 
-    //     let code = quote_item!(cx,
-    //         impl ::std::convert::From<$old_type> for $enum_ident {
-    //             fn from(a: $old_type) -> $enum_ident {
-    //                 $enum_ident::$ident(a)
-    //             }
-    //         }
-    //     ).unwrap();
-
-    //     push(Annotatable::Item(code));
-    // }
+        tokens.append(&quote!(
+            impl ::std::convert::From<#old_type> for #enum_ident {
+                fn from(a: #old_type) -> #enum_ident {
+                    #enum_ident::#ident(a)
+                }
+            }
+        ).to_string())
+    }
+    tokens
 }
 
 
