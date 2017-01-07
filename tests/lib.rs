@@ -67,6 +67,7 @@ struct MyInt(i32);
 
 #[test]
 fn main() {
+    let _: MyInt = 5.into();
     // assert_eq!(MyInt(5), 5.into());
     // assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 
