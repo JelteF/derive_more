@@ -30,6 +30,13 @@ pub fn from_derive(input: TokenStream) -> TokenStream {
     from::expand(&ast).parse().unwrap()
 }
 
+#[proc_macro_derive(Add)]
+pub fn add_derive(input: TokenStream) -> TokenStream {
+    let s = input.to_string();
+    let ast = syn::parse_macro_input(&s).unwrap();
+    add_like::expand(&ast).parse().unwrap()
+}
+
 //pub fn plugin_registrar(reg: &mut Registry) {
 //    reg.register_syntax_extension(Symbol::intern("derive_From"), MultiDecorator(box from::expand));
 //    for op in ADDLIKE_OPS {
