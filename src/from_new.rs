@@ -12,10 +12,10 @@ pub fn expand(input: &MacroInput) -> Tokens {
                 newtype_from(input.ident.clone(), structs[0].ty.clone())
             }
             else {
-                unreachable!()
+                panic!("Only Tuple structs with a single field can derive From")
             }
         }
-        _ => unreachable!()
+        _ => panic!("Only newtype structs can derive From")
     }
 }
 
