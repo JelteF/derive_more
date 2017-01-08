@@ -34,6 +34,7 @@ fn tuple_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) 
 
     for i in 0..fields.len() {
         let i = Ident::from(i.to_string());
+        // generates `self.0.add(rhs.0)`
         let expr = quote!(self.#i.#method_ident(rhs.#i));
         exprs.push(expr);
     }
@@ -48,6 +49,7 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
     for field in fields {
         // It's safe to unwrap because struct fields always have an identifier
         let field_id = field.ident.clone().unwrap();
+        // generates `x: self.x.add(rhs.x)`
         let expr = quote!(#field_id: self.#field_id.#method_ident(rhs.#field_id));
         exprs.push(expr)
     }
