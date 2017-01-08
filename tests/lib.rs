@@ -48,7 +48,7 @@ enum SimpleMyIntEnum{
 // 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
-// #[derive(Add)]
+#[derive(Add)]
 enum MyIntEnum{
     SmallInt(i32),
     BigInt(i64),

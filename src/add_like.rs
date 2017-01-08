@@ -68,21 +68,25 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
     let mut matches = vec![];
 
     for variant in variants {
+        let subtype = &variant.ident;
+        let subtype = quote!(#input_type::#subtype);
+
         match variant.data {
             VariantData::Tuple(ref fields) => {
-                let variant_ident = &variant.ident;
-                let variant_ident = quote!(#input_type::#variant_ident);
                 let size = fields.len();
                 let l_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__l_{}", i))).collect();
                 let r_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__r_{}", i))).collect();
                 let method_iter = iter::repeat(method_ident);
                 let matcher = quote!{
-                    (#variant_ident(#(#l_vars),*),
-                     #variant_ident(#(#r_vars),*)) => {
-                        Ok(#variant_ident(#(#l_vars.#method_iter(#r_vars)),*))
+                    (#subtype(#(#l_vars),*),
+                     #subtype(#(#r_vars),*)) => {
+                        Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
                     }
                 };
                 matches.push(matcher);
+            }
+            VariantData::Unit =>  {
+                matches.push(quote!((#subtype, #subtype) => Err("Cannot add unit types together")));
             }
             _ => {}
         }
