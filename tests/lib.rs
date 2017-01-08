@@ -12,7 +12,7 @@ struct MyUInt(u64, u64);
 // 
 // #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
-#[derive(Add)]
+#[derive(Add, Sub)]
 struct NormalStruct{int1: u64, int2: u64}
 // 
 // #[derive(From)]
@@ -29,7 +29,7 @@ struct NormalStruct{int1: u64, int2: u64}
 // 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
-#[derive(Add)]
+#[derive(Add, Sub)]
 enum SimpleMyIntEnum{
     Int(i32),
     UnsignedOne(u32),
@@ -38,7 +38,7 @@ enum SimpleMyIntEnum{
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
-#[derive(Add)]
+#[derive(Add, Sub)]
 enum SimpleEnum{
     Int(i32),
     Ints(i32, i32),
@@ -48,7 +48,7 @@ enum SimpleEnum{
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
-#[derive(Add)]
+#[derive(Add, Sub)]
 enum MyIntEnum{
     SmallInt(i32),
     BigInt(i64),
@@ -83,9 +83,9 @@ fn main() {
     let s2 = NormalStruct{int1: 2, int2: 3};
     let s3 = NormalStruct{int1: 3, int2: 5};
     assert_eq!(s1 + s2, s3);
-    // assert_eq!(s3 - s2, s1);
+    assert_eq!(s3 - s2, s1);
     assert_eq!((SimpleMyIntEnum::Int(6) + 5.into()).unwrap(), 11.into());
-    // assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
+    assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
     assert_eq!((SimpleEnum::Ints(6, 5) + SimpleEnum::Ints(1, 4)).unwrap(), SimpleEnum::Ints(7, 9));
     assert_eq!((SimpleEnum::LabeledInts{a: 6, b: 5} + SimpleEnum::LabeledInts{a: 1, b: 4}).unwrap(),
                 SimpleEnum::LabeledInts{a: 7, b: 9});

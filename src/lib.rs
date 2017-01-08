@@ -20,7 +20,6 @@ mod from;
 mod add_like;
 mod mul_like;
 
-const ADDLIKE_OPS: &'static [&'static str] = &["Add", "Sub", "BitAnd", "BitOr", "BitXor"];
 const MULLIKE_OPS: &'static [&'static str] = &["Mul", "Div", "Rem", "Shr", "Shl"];
 
 #[proc_macro_derive(From)]
@@ -30,12 +29,24 @@ pub fn from_derive(input: TokenStream) -> TokenStream {
     from::expand(&ast).parse().unwrap()
 }
 
-#[proc_macro_derive(Add)]
-pub fn add_derive(input: TokenStream) -> TokenStream {
-    let s = input.to_string();
-    let ast = syn::parse_macro_input(&s).unwrap();
-    add_like::expand(&ast).parse().unwrap()
-}
+macro_rules! create_add_like(
+    ($trait_:ident, $fn_name: ident) => {
+        #[proc_macro_derive($trait_)]
+        pub fn $fn_name(input: TokenStream) -> TokenStream {
+            let s = input.to_string();
+            let ast = syn::parse_macro_input(&s).unwrap();
+            add_like::expand(&ast, stringify!($trait_)).parse().unwrap()
+        }
+    }
+);
+
+create_add_like!(Add, add_derive);
+create_add_like!(Sub, sub_derive);
+create_add_like!(BitAnd, bit_and_derive);
+create_add_like!(BitOr, bit_or_derive);
+create_add_like!(BitXor, bit_xor_derive);
+
+
 
 //pub fn plugin_registrar(reg: &mut Registry) {
 //    reg.register_syntax_extension(Symbol::intern("derive_From"), MultiDecorator(box from::expand));

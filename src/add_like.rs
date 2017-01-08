@@ -2,8 +2,7 @@ use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
 use std::iter;
 
-pub fn expand(input: &MacroInput) -> Tokens {
-    let trait_name = "Add";
+pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
     let method_ident = Ident::from(method_name.clone());
