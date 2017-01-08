@@ -46,7 +46,7 @@ enum SimpleMyIntEnum{
 //     SomeUnit,
 // }
 // 
-// #[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
 // #[derive(Add)]
 enum MyIntEnum{
@@ -74,7 +74,7 @@ fn main() {
     let _: MyIntEnum = 5i32.into();
     let _: MyIntEnum = 6i64.into();
     assert_eq!(MyInt(5), 5.into());
-    // assert_eq!(MyIntEnum::SmallInt(5), 5.into());
+    assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
     assert_eq!(MyUInt(4, 5) + MyUInt(1, 2), MyUInt(5, 7));
