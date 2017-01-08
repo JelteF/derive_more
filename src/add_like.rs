@@ -66,6 +66,7 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
 
 fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> Tokens  {
     let mut matches = vec![];
+    let method_iter = iter::repeat(method_ident);
 
     for variant in variants {
         let subtype = &variant.ident;
@@ -73,10 +74,12 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
 
         match variant.data {
             VariantData::Tuple(ref fields) => {
+                // The patern that is outputted should look like this:
+                // (Subtype(left_vars), TypePath(right_vars)) => Ok(TypePath(exprs))
                 let size = fields.len();
                 let l_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__l_{}", i))).collect();
                 let r_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__r_{}", i))).collect();
-                let method_iter = iter::repeat(method_ident);
+                let method_iter = method_iter.clone();
                 let matcher = quote!{
                     (#subtype(#(#l_vars),*),
                      #subtype(#(#r_vars),*)) => {
@@ -84,11 +87,28 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                     }
                 };
                 matches.push(matcher);
-            }
+            },
+            VariantData::Struct(ref fields) => {
+                // The patern that is outputted should look like this:
+                // (Subtype{a: __l_a, ...}, Subtype{a: __r_a, ...} => {
+                //     Ok(Subtype{a: __l_a.add(__r_a), ...})
+                // }
+                let size = fields.len();
+                let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+                let l_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__l_{}", i))).collect();
+                let r_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__r_{}", i))).collect();
+                let method_iter = method_iter.clone();
+                let matcher = quote!{
+                    (#subtype{#(#field_names: #l_vars),*},
+                     #subtype{#(#field_names: #r_vars),*}) => {
+                        Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
+                    }
+                };
+                matches.push(matcher);
+            },
             VariantData::Unit =>  {
                 matches.push(quote!((#subtype, #subtype) => Err("Cannot add unit types together")));
-            }
-            _ => {}
+            },
         }
     }
 
