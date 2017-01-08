@@ -1,5 +1,6 @@
-use quote::Tokens;
+use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
+use std::iter;
 
 pub fn expand(input: &MacroInput) -> Tokens {
     let trait_name = "Add";
@@ -10,10 +11,16 @@ pub fn expand(input: &MacroInput) -> Tokens {
 
     let (output_type, block) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
-            (input_type, tuple_content(input_type, fields, &method_ident))
+            (quote!(#input_type),
+             tuple_content(input_type, fields, &method_ident))
         },
         Body::Struct(VariantData::Struct(ref fields)) => {
-            (input_type, struct_content(input_type, fields, &method_ident))
+            (quote!(#input_type),
+             struct_content(input_type, fields, &method_ident))
+        },
+        Body::Enum(ref definition) => {
+            (quote!(Result<#input_type, &'static str>),
+             enum_content(input_type, definition, &method_ident))
         },
 
         _ => panic!(format!("Only structs and enums can use dervie({})", trait_name))
@@ -29,7 +36,7 @@ pub fn expand(input: &MacroInput) -> Tokens {
     )
 }
 
-fn tuple_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -57,3 +64,38 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
     quote!(#input_type{#(#exprs),*})
 }
 
+fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> Tokens  {
+    let mut matches = vec![];
+
+    for variant in variants {
+        match variant.data {
+            VariantData::Tuple(ref fields) => {
+                let variant_ident = &variant.ident;
+                let variant_ident = quote!(#input_type::#variant_ident);
+                let size = fields.len();
+                let l_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__l_{}", i))).collect();
+                let r_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__r_{}", i))).collect();
+                let method_iter = iter::repeat(method_ident);
+                let matcher = quote!{
+                    (#variant_ident(#(#l_vars),*),
+                     #variant_ident(#(#r_vars),*)) => {
+                        Ok(#variant_ident(#(#l_vars.#method_iter(#r_vars)),*))
+                    }
+                };
+                matches.push(matcher);
+            }
+            _ => {}
+        }
+    }
+
+    if variants.len() > 1 {
+        // In the strange case where there's only one enum variant this is would be an unreachable
+        // match.
+        matches.push(quote!(_ => Err("Trying to add mismatched enum types")));
+    }
+    quote!(
+        match (self, rhs) {
+            #(#matches),*
+        }
+    )
+}
