@@ -3,7 +3,7 @@ extern crate derive_more;
 
 #[derive(From)]
 //#[derive(Eq, PartialEq, Debug)]
-// #[derive(Add)]
+#[derive(Add)]
 struct MyInt(i32);
 
 // #[derive(Add)]
@@ -72,7 +72,7 @@ fn main() {
     let _: SimpleMyIntEnum = 5i32.into();
     let _: MyIntEnum = 5i32.into();
     let _: MyIntEnum = 6i64.into();
-    // assert_eq!(MyInt(5), 5.into());
+    assert_eq!(MyInt(5), 5.into());
     // assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 
     // assert_eq!(MyInt(4) + MyInt(1), 5.into());
