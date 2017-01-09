@@ -5,7 +5,7 @@ use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
-pub fn expand(input: &MacroInput) -> Tokens {
+pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     let name = input.ident.clone();
     match input.body {
         Body::Struct(VariantData::Tuple(ref structs)) => {

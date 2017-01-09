@@ -22,29 +22,23 @@ mod mul_like;
 
 const MULLIKE_OPS: &'static [&'static str] = &["Mul", "Div", "Rem", "Shr", "Shl"];
 
-#[proc_macro_derive(From)]
-pub fn from_derive(input: TokenStream) -> TokenStream {
-    let s = input.to_string();
-    let ast = syn::parse_macro_input(&s).unwrap();
-    from::expand(&ast).parse().unwrap()
-}
-
-macro_rules! create_add_like(
-    ($trait_:ident, $fn_name: ident) => {
+macro_rules! create_derive(
+    ($mod_:ident, $trait_:ident, $fn_name: ident) => {
         #[proc_macro_derive($trait_)]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let s = input.to_string();
             let ast = syn::parse_macro_input(&s).unwrap();
-            add_like::expand(&ast, stringify!($trait_)).parse().unwrap()
+            $mod_::expand(&ast, stringify!($trait_)).parse().unwrap()
         }
     }
 );
 
-create_add_like!(Add, add_derive);
-create_add_like!(Sub, sub_derive);
-create_add_like!(BitAnd, bit_and_derive);
-create_add_like!(BitOr, bit_or_derive);
-create_add_like!(BitXor, bit_xor_derive);
+create_derive!(from, From, from_derive);
+create_derive!(add_like, Add, add_derive);
+create_derive!(add_like, Sub, sub_derive);
+create_derive!(add_like, BitAnd, bit_and_derive);
+create_derive!(add_like, BitOr, bit_or_derive);
+create_derive!(add_like, BitXor, bit_xor_derive);
 
 
 
