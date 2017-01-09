@@ -26,7 +26,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     };
 
     quote!(
-        impl std::ops::#trait_ident for #input_type {
+        impl ::std::ops::#trait_ident for #input_type {
             type Output = #output_type;
             fn #method_ident(self, rhs: #input_type) -> #output_type {
                 #block
