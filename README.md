@@ -6,11 +6,15 @@ The traits that can be derived currently are `From` and infix arithmetic traits
 
 ## Installation
 
-Add this to `Cargo.toml`:
+This library heavily uses Macros 1.1, which is to stabilized in Rust 1.15 (the next Rust
+release). To use it before that time you have to install the nightly or beta
+channel.
+
+After doing this, add this to `Cargo.toml`:
 
 ```toml
 [dependencies]
-derive_more = "*"
+derive_more = "0.4.0"
 ```
 
 And this to the top of your Rust file:
