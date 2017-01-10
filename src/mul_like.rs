@@ -1,5 +1,7 @@
 use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
+use std::iter;
+use std::collections::HashSet;
 
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
@@ -9,21 +11,28 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let method_ident = &Ident::from(method_name);
     let input_type = &input.ident;
 
-    let (block, types) = match input.body {
+    let ((block, tys), num_fields) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
-            tuple_content(input_type, fields, method_ident)
+            (tuple_content(input_type, fields, method_ident), fields.len())
         },
         Body::Struct(VariantData::Struct(ref fields)) => {
-            struct_content(input_type, fields, method_ident)
+            (struct_content(input_type, fields, method_ident), fields.len())
         },
 
         _ => panic!(format!("Only structs can use derive({})", trait_name))
     };
+    let mut constraints: Vec<_> = tys.iter().map(|t| quote!(#trait_path<#t, Output=#t>)).collect();
+
+    if num_fields > 1 {
+        // If the struct has more than one field the rhs needs to be copied for each
+        // field
+        constraints.push(quote!(::std::marker::Copy))
+    }
     quote!(
-        impl <T> #trait_path for #input_type where T:
-                ::std::marker::Copy {
+        impl <T> #trait_path<T> for #input_type where T:
+                #(#constraints)+* {
             type Output = #input_type;
-            fn #method_ident(self, rhs) {
+            fn #method_ident(self, rhs: T) -> #input_type {
                 #block
             }
         }
@@ -31,10 +40,15 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, Vec<Tokens>)  {
-    (quote!(), vec![])
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<Ty>)  {
+    let tys: HashSet<_> = fields.iter().map(|f| f.ty.clone()).collect();
+    let mut count = (0..fields.len()).map(|i| Ident::from(i.to_string()));
+    let method_iter = iter::repeat(method_ident);
+
+    let body = quote!(#input_type(#(rhs.#method_iter(self.#count)),*));
+    (body, tys)
 }
 
-fn struct_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, Vec<Tokens>)  {
-    (quote!(), vec![])
+fn struct_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<Ty>)  {
+    (quote!(), HashSet::new())
 }

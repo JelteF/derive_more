@@ -4,10 +4,12 @@ extern crate derive_more;
 #[derive(From)]
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Add)]
+#[derive(Mul)]
 struct MyInt(i32);
 
 #[derive(Add)]
 #[derive(Eq, PartialEq, Debug)]
+#[derive(Mul)]
 struct MyUInt(u64, u64);
 // 
 // #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
@@ -58,10 +60,10 @@ enum MyIntEnum{
     Nothing,
 }
 
-// 
-// #[derive(Eq, PartialEq, Debug)]
-// #[derive(Add, Mul)]
-// struct DoubleUInt(u32, u32);
+
+#[derive(Eq, PartialEq, Debug)]
+#[derive(Add, Mul)]
+struct DoubleUInt(u32, u32);
 // 
 // #[derive(Eq, PartialEq, Debug)]
 // #[derive(Add, Mul)]
@@ -92,6 +94,7 @@ fn main() {
 
     let my_enum_val = (MyIntEnum::SmallInt(5) + 6.into()).unwrap();
 
-    // assert_eq!(DoubleUInt(5, 6) * 10, DoubleUInt(50, 60));
+    assert_eq!(MyInt(50), MyInt(5) * 10);
+    assert_eq!(DoubleUInt(5, 6) * 10, DoubleUInt(50, 60));
     // assert_eq!(DoubleUIntStruct{x:5, y:6} * 10, DoubleUIntStruct{x:50, y:60});
 }
