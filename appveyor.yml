@@ -5,10 +5,10 @@ environment:
   global:
   # TODO This is the Rust channel that build jobs will use by default but can be
   # overridden on a case by case basis down below
-    RUST_VERSION: stable
+    RUST_VERSION: beta
 
     # TODO Update this to match the name of your project.
-    CRATE_NAME: trust
+    CRATE_NAME: derive_more
 
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
   # don't need

@@ -8,12 +8,12 @@ sudo: required
 
 # TODO This is the Rust channel that build jobs will use by default but can be
 # overridden on a case by case basis down below
-rust: stable
+rust: beta
 
 env:
   global:
     # TODO Update this to match the name of your project.
-    - CRATE_NAME=trust
+    - CRATE_NAME=derive_more
 
     # default job
     - TARGET=x86_64-unknown-linux-gnu
