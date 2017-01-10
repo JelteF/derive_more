@@ -40,6 +40,10 @@ create_derive!(add_like, BitAnd, bit_and_derive);
 create_derive!(add_like, BitOr, bit_or_derive);
 create_derive!(add_like, BitXor, bit_xor_derive);
 create_derive!(mul_like, Mul, mul_derive);
+create_derive!(mul_like, Div, div_derive);
+create_derive!(mul_like, Rem, rem_derive);
+create_derive!(mul_like, Shr, shr_derive);
+create_derive!(mul_like, Shl, shl_derive);
 
 
 

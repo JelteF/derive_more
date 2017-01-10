@@ -42,7 +42,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
 
 fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<Ty>)  {
     let tys: HashSet<_> = fields.iter().map(|f| f.ty.clone()).collect();
-    let mut count = (0..fields.len()).map(|i| Ident::from(i.to_string()));
+    let count = (0..fields.len()).map(|i| Ident::from(i.to_string()));
     let method_iter = iter::repeat(method_ident);
 
     let body = quote!(#input_type(#(rhs.#method_iter(self.#count)),*));
@@ -50,5 +50,15 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident:
 }
 
 fn struct_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<Ty>)  {
-    (quote!(), HashSet::new())
+    let tys: HashSet<_> = fields.iter().map(|f| f.ty.clone()).collect();
+    let field_names: &Vec<_> = &fields.iter()
+        .map(|f| f.ident.as_ref().unwrap())
+        .collect();
+    let field_names2 = field_names.clone();
+    let method_iter = iter::repeat(method_ident);
+
+    let body = quote!{
+        #input_type{#(#field_names: rhs.#method_iter(self.#field_names2)),*}
+    };
+    (body, tys)
 }

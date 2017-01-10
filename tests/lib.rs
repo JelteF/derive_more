@@ -11,24 +11,15 @@ struct MyInt(i32);
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Mul)]
 struct MyUInt(u64, u64);
-// 
-// #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
+
+#[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
-#[derive(Add, Sub)]
 struct NormalStruct{int1: u64, int2: u64}
-// 
-// #[derive(From)]
-// //#[derive(Eq, PartialEq, Debug)]
-// struct NestedInt(MyInt);
-// 
-// #[derive(From)]
-// //#[derive(Eq, PartialEq, Debug)]
-// struct MySpan(codemap::Span);
-// 
-// #[derive(From)]
-// //#[derive(Eq, PartialEq, Debug)]
-// struct MySpan2(::syntax::codemap::Span);
-// 
+
+#[derive(From)]
+#[derive(Eq, PartialEq, Debug)]
+struct NestedInt(MyInt);
+
 #[derive(Eq, PartialEq, Debug)]
 #[derive(From)]
 #[derive(Add, Sub)]
@@ -64,10 +55,10 @@ enum MyIntEnum{
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Add, Mul)]
 struct DoubleUInt(u32, u32);
-// 
-// #[derive(Eq, PartialEq, Debug)]
-// #[derive(Add, Mul)]
-// struct DoubleUIntStruct{x:u32, y:u32}
+
+#[derive(Eq, PartialEq, Debug)]
+#[derive(Add, Mul)]
+struct DoubleUIntStruct{x:u32, y:u32}
 
 
 #[test]
