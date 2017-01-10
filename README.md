@@ -13,11 +13,11 @@ Add this to `Cargo.toml`:
 derive_more = "*"
 ```
 
-And this to to top of your Rust file:
+And this to the top of your Rust file:
 
 ```rust
-#![feature(rustc_private, custom_derive, plugin)]
-#![plugin(derive_more)]
+#[macro_use]
+extern crate derive_more;
 ```
 
 ## Explanation of traits
@@ -68,8 +68,8 @@ types present in that struct, and it must also define `Copy`.
 It can simply be used like this:
 
 ```rust
-#![feature(rustc_private, custom_derive, plugin)]
-#![plugin(derive_more)]
+#[macro_use]
+extern crate derive_more;
 
 #[derive(From, Add)]
 struct MyInt(i32);
