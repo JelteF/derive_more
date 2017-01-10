@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use quote::Tokens;
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
+use syn::{Body, Ident, Variant, VariantData, MacroInput, Ty};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`

@@ -1,5 +1,5 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
+use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
 use std::iter;
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {

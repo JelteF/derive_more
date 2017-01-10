@@ -1,5 +1,5 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
+use syn::{Body, Field, Ident, VariantData, MacroInput, Ty};
 use std::iter;
 use std::collections::HashSet;
 
