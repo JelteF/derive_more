@@ -178,7 +178,6 @@ struct DoubleUInt(u32, u32);
 
 impl <T> ::std::ops::Mul<T> for DoubleUInt where T:
         ::std::ops::Mul<u32, Output = u32> +
-        ::std::ops::Mul<u32, Output = u32> +
         ::std::marker::Copy {
 
     type Output = DoubleUInt;
