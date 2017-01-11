@@ -8,6 +8,7 @@ use proc_macro::TokenStream;
 mod from;
 mod add_like;
 mod mul_like;
+mod not_like;
 
 macro_rules! create_derive(
     ($mod_:ident, $trait_:ident, $fn_name: ident) => {
@@ -31,3 +32,5 @@ create_derive!(mul_like, Div, div_derive);
 create_derive!(mul_like, Rem, rem_derive);
 create_derive!(mul_like, Shr, shr_derive);
 create_derive!(mul_like, Shl, shl_derive);
+create_derive!(not_like, Not, not_derive);
+create_derive!(not_like, Neg, neg_derive);
