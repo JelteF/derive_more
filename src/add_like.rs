@@ -22,7 +22,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
              enum_content(input_type, definition, &method_ident))
         },
 
-        _ => panic!(format!("Only structs and enums can use dervie({})", trait_name))
+        _ => panic!(format!("Only structs and enums can use derive({})", trait_name))
     };
 
     quote!(
@@ -35,7 +35,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+pub fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -49,7 +49,7 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident:
 }
 
 
-fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+pub fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
     let mut exprs = vec![];
 
     for field in fields {
