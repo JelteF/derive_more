@@ -35,7 +35,12 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-pub fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+    let exprs = tuple_exprs(fields, method_ident);
+    quote!(#input_type(#(#exprs),*))
+}
+
+pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -44,24 +49,32 @@ pub fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_id
         let expr = quote!(self.#i.#method_ident(rhs.#i));
         exprs.push(expr);
     }
+    return exprs
 
-    quote!(#input_type(#(#exprs),*))
 }
 
 
-pub fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+    // It's safe to unwrap because struct fields always have an identifier
+    let exprs = struct_exprs(fields, method_ident);
+    let field_ids = fields.iter().map(|f| f.clone().ident.unwrap());
+
+    quote!(#input_type{#(#field_ids: #exprs),*})
+}
+
+pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
     let mut exprs = vec![];
 
     for field in fields {
         // It's safe to unwrap because struct fields always have an identifier
         let field_id = field.ident.clone().unwrap();
         // generates `x: self.x.add(rhs.x)`
-        let expr = quote!(#field_id: self.#field_id.#method_ident(rhs.#field_id));
+        let expr = quote!(self.#field_id.#method_ident(rhs.#field_id));
         exprs.push(expr)
     }
-
-    quote!(#input_type{#(#exprs),*})
+    return exprs
 }
+
 
 fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> Tokens  {
     let mut matches = vec![];
