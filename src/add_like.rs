@@ -1,6 +1,7 @@
 use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
 use std::iter;
+use utils::numbered_vars;
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -89,8 +90,8 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                 // The patern that is outputted should look like this:
                 // (Subtype(left_vars), TypePath(right_vars)) => Ok(TypePath(exprs))
                 let size = fields.len();
-                let l_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__l_{}", i))).collect();
-                let r_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__r_{}", i))).collect();
+                let l_vars = &numbered_vars(size, "l_");
+                let r_vars = &numbered_vars(size, "r_");
                 let method_iter = method_iter.clone();
                 let matcher = quote!{
                     (#subtype(#(#l_vars),*),
@@ -107,8 +108,8 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                 // }
                 let size = fields.len();
                 let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
-                let l_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__l_{}", i))).collect();
-                let r_vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__r_{}", i))).collect();
+                let l_vars = &numbered_vars(size, "l_");
+                let r_vars = &numbered_vars(size, "r_");
                 let method_iter = method_iter.clone();
                 let matcher = quote!{
                     (#subtype{#(#field_names: #l_vars),*},

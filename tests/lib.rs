@@ -14,6 +14,7 @@ struct MyInt(i32);
 #[derive(From)]
 struct MyBool(bool);
 
+#[derive(From)]
 #[derive(Add)]
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Mul)]

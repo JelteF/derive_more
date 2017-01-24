@@ -1,40 +1,53 @@
 use std::collections::HashMap;
 
-use quote::Tokens;
-use syn::{Body, Ident, Variant, VariantData, MacroInput, Ty};
+use quote::{Tokens, ToTokens};
+use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
+use utils::{numbered_vars, number_idents};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &MacroInput, _: &str) -> Tokens {
-    let name = input.ident.clone();
+    let input_type = &input.ident;
     match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             if fields.len() == 1 {
-                newtype_from(name, fields[0].ty.clone())
+                newtype_from(input_type, fields[0].ty.clone())
             }
             else {
-                panic!("Only Tuple structs with a single field can derive From")
+                tuple_from(input_type, fields)
             }
         }
         Body::Enum(ref variants) => {
-            enum_from(name, variants)
+            enum_from(input_type, variants)
         }
-        _ => panic!("Only newtype structs can derive From")
+        _ => panic!("Only tuple structs and enums can derive From")
     }
 }
 
-
-fn newtype_from(new_type: Ident, old_type: Ty) -> Tokens {
+fn newtype_from(input_type: &Ident, original_type: Ty) -> Tokens {
     quote!{
-        impl ::std::convert::From<#old_type> for #new_type {
-            fn from(a: #old_type) -> #new_type {
-                #new_type(a)
+        impl ::std::convert::From<#original_type> for #input_type {
+            fn from(orig: #original_type) -> #input_type {
+                #input_type(orig)
             }
         }
     }
 }
 
-fn enum_from(enum_ident: Ident, variants: &Vec<Variant>) -> Tokens {
+
+fn tuple_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
+    let field_names = &number_idents(fields.len());
+    let types: &Vec<_> = &fields.iter().map(|f| f.ty.clone()).collect();
+    quote!{
+        impl ::std::convert::From<(#(#types),*)> for #input_type {
+            fn from(origin: (#(#types),*)) -> #input_type {
+                #input_type(#(origin.#field_names),*)
+            }
+        }
+    }
+}
+
+fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
     let mut types = vec![];
     let mut idents = vec![];
     let mut type_counts = HashMap::new();

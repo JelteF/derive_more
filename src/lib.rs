@@ -5,6 +5,8 @@ extern crate syn;
 
 use proc_macro::TokenStream;
 
+mod utils;
+
 mod from;
 mod add_like;
 mod add_assign_like;
