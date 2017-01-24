@@ -8,9 +8,9 @@ use syn::{Body, Ident, Variant, VariantData, MacroInput, Ty};
 pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     let name = input.ident.clone();
     match input.body {
-        Body::Struct(VariantData::Tuple(ref structs)) => {
-            if structs.len() == 1 {
-                newtype_from(name, structs[0].ty.clone())
+        Body::Struct(VariantData::Tuple(ref fields)) => {
+            if fields.len() == 1 {
+                newtype_from(name, fields[0].ty.clone())
             }
             else {
                 panic!("Only Tuple structs with a single field can derive From")
