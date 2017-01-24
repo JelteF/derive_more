@@ -1,5 +1,5 @@
 use quote::{Tokens};
-use syn::{Body, Ident, Variant, VariantData, MacroInput};
+use syn::{Body, Ident, VariantData, MacroInput};
 use add_like::{tuple_exprs, struct_exprs};
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
