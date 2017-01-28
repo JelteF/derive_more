@@ -25,6 +25,7 @@ struct MyUInt(u64, u64);
 #[derive(Eq, PartialEq, Debug)]
 struct SimpleStruct{int1: u64}
 
+#[derive(From)]
 #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 #[derive(AddAssign)]
@@ -95,6 +96,7 @@ fn main() {
     assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 
     assert_eq!(SimpleStruct{int1: 5}, 5.into());
+    assert_eq!(NormalStruct{int1: 5, int2: 6}, (5, 6).into());
 
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
     myint += MyInt(3);

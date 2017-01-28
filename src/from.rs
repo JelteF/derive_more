@@ -22,7 +22,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
                 newtype_struct_from(input_type, &fields[0])
             }
             else {
-                panic!("Only tuple structs and enums can derive From")
+                struct_from(input_type, fields)
             }
         }
         Body::Enum(ref variants) => {
@@ -62,6 +62,19 @@ fn tuple_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
         impl ::std::convert::From<(#(#types),*)> for #input_type {
             fn from(origin: (#(#types),*)) -> #input_type {
                 #input_type(#(origin.#field_names),*)
+            }
+        }
+    }
+}
+
+fn struct_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
+    let argument_field_names = &number_idents(fields.len());
+    let types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
+    let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+    quote!{
+        impl ::std::convert::From<(#(#types),*)> for #input_type {
+            fn from(origin: (#(#types),*)) -> #input_type {
+                #input_type{#(#field_names: origin.#argument_field_names),*}
             }
         }
     }
