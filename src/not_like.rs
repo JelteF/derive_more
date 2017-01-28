@@ -5,17 +5,17 @@ use std::iter;
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
-    let method_ident = Ident::from(method_name.clone());
+    let method_ident = &Ident::from(method_name);
     let input_type = &input.ident;
 
     let (output_type, block) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             (quote!(#input_type),
-             tuple_content(input_type, fields, &method_ident))
+             tuple_content(input_type, fields, method_ident))
         },
         Body::Struct(VariantData::Struct(ref fields)) => {
             (quote!(#input_type),
-             struct_content(input_type, fields, &method_ident))
+             struct_content(input_type, fields, method_ident))
         },
         Body::Enum(ref definition) => {
             enum_output_type_and_content(input_type, definition, &method_ident)
@@ -53,7 +53,7 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
 
     for field in fields {
         // It's safe to unwrap because struct fields always have an identifier
-        let field_id = field.ident.clone().unwrap();
+        let field_id = field.ident.as_ref();
         // generates `x: self.x.not()`
         let expr = quote!(#field_id: self.#field_id.#method_ident());
         exprs.push(expr)
@@ -64,7 +64,7 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
 
 fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> (Tokens, Tokens)  {
     let mut matches = vec![];
-    let method_iter = iter::repeat(method_ident);
+    let mut method_iter = iter::repeat(method_ident);
     // If the enum contains unit types that means it can error.
     let has_unit_type = variants.iter().any(|v| v.data == VariantData::Unit);
 
@@ -78,7 +78,7 @@ fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, met
                 // (Subtype(vars)) => Ok(TypePath(exprs))
                 let size = fields.len();
                 let vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
-                let method_iter = method_iter.clone();
+                let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype(#(#vars.#method_iter()),*));
                 if has_unit_type {
                     body = quote!(Ok(#body))
@@ -98,7 +98,7 @@ fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, met
                 let size = fields.len();
                 let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
                 let vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
-                let method_iter = method_iter.clone();
+                let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
                 if has_unit_type {
                     body = quote!(Ok(#body))

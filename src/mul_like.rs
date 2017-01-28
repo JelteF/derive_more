@@ -40,8 +40,8 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<Ty>)  {
-    let tys: HashSet<_> = fields.iter().map(|f| f.ty.clone()).collect();
+fn tuple_content<'a, T: ToTokens>(input_type: &T, fields: &'a Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<&'a Ty>)  {
+    let tys: HashSet<_> = fields.iter().map(|f| &f.ty).collect();
     let count = (0..fields.len()).map(|i| Ident::from(i.to_string()));
     let method_iter = iter::repeat(method_ident);
 
@@ -49,12 +49,13 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident:
     (body, tys)
 }
 
-fn struct_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<Ty>)  {
-    let tys: HashSet<_> = fields.iter().map(|f| f.ty.clone()).collect();
+fn struct_content<'a, T: ToTokens>(input_type: &T, fields: &'a Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<&'a Ty>)  {
+    let tys: HashSet<_> = fields.iter().map(|f| &f.ty).collect();
     let field_names: &Vec<_> = &fields.iter()
         .map(|f| f.ident.as_ref().unwrap())
         .collect();
-    let field_names2 = field_names.clone();
+    // This is to fix an error in quote when using the same name twice
+    let field_names2 = field_names;
     let method_iter = iter::repeat(method_ident);
 
     let body = quote!{

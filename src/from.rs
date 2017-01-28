@@ -11,7 +11,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             if fields.len() == 1 {
-                newtype_from(input_type, &fields[0].ty.clone())
+                newtype_from(input_type, &fields[0].ty)
             }
             else {
                 tuple_from(input_type, fields)
@@ -57,7 +57,7 @@ fn newtype_struct_from(input_type: &Ident, field: &Field) -> Tokens {
 
 fn tuple_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
     let field_names = &number_idents(fields.len());
-    let types: &Vec<_> = &fields.iter().map(|f| f.ty.clone()).collect();
+    let types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
     quote!{
         impl ::std::convert::From<(#(#types),*)> for #input_type {
             fn from(origin: (#(#types),*)) -> #input_type {
@@ -76,9 +76,9 @@ fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
         match variant.data {
             VariantData::Tuple(ref structs) => {
                 if structs.len() == 1 {
-                    let ty = structs[0].ty.clone();
-                    idents.push(variant.ident.clone());
-                    types.push(ty.clone());
+                    let ty = &structs[0].ty;
+                    idents.push(&variant.ident);
+                    types.push(ty);
                     let counter = type_counts.entry(ty).or_insert(0);
                     *counter += 1;
                 }

@@ -6,7 +6,7 @@ use utils::numbered_vars;
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
-    let method_ident = Ident::from(method_name.clone());
+    let method_ident = Ident::from(method_name);
     let input_type = &input.ident;
 
     let (output_type, block) = match input.body {
@@ -58,7 +58,7 @@ pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
 fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
-    let field_ids = fields.iter().map(|f| f.clone().ident.unwrap());
+    let field_ids = fields.iter().map(|f| f.ident.as_ref().unwrap());
 
     quote!(#input_type{#(#field_ids: #exprs),*})
 }
@@ -68,7 +68,7 @@ pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
 
     for field in fields {
         // It's safe to unwrap because struct fields always have an identifier
-        let field_id = field.ident.clone().unwrap();
+        let field_id = field.ident.as_ref().unwrap();
         // generates `x: self.x.add(rhs.x)`
         let expr = quote!(self.#field_id.#method_ident(rhs.#field_id));
         exprs.push(expr)
@@ -79,7 +79,7 @@ pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
 
 fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> Tokens  {
     let mut matches = vec![];
-    let method_iter = iter::repeat(method_ident);
+    let mut method_iter = iter::repeat(method_ident);
 
     for variant in variants {
         let subtype = &variant.ident;
@@ -92,7 +92,7 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                 let size = fields.len();
                 let l_vars = &numbered_vars(size, "l_");
                 let r_vars = &numbered_vars(size, "r_");
-                let method_iter = method_iter.clone();
+                let method_iter = method_iter.by_ref();
                 let matcher = quote!{
                     (#subtype(#(#l_vars),*),
                      #subtype(#(#r_vars),*)) => {
@@ -110,7 +110,7 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                 let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
                 let l_vars = &numbered_vars(size, "l_");
                 let r_vars = &numbered_vars(size, "r_");
-                let method_iter = method_iter.clone();
+                let method_iter = method_iter.by_ref();
                 let matcher = quote!{
                     (#subtype{#(#field_names: #l_vars),*},
                      #subtype{#(#field_names: #r_vars),*}) => {

@@ -7,7 +7,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let method_name = trait_name.to_string();
     let method_name = method_name.trim_right_matches("Assign");
     let method_name = method_name.to_lowercase();
-    let method_ident = Ident::from(method_name.clone().to_string() + "_assign");
+    let method_ident = Ident::from(method_name.to_string() + "_assign");
     let input_type = &input.ident;
 
     let exprs = match input.body {
