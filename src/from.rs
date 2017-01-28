@@ -35,8 +35,8 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
 fn newtype_from(input_type: &Ident, original_type: &Ty) -> Tokens {
     quote!{
         impl ::std::convert::From<#original_type> for #input_type {
-            fn from(orig: #original_type) -> #input_type {
-                #input_type(orig)
+            fn from(original: #original_type) -> #input_type {
+                #input_type(original)
             }
         }
     }
@@ -47,8 +47,8 @@ fn newtype_struct_from(input_type: &Ident, field: &Field) -> Tokens {
     let field_ty = &field.ty;
     quote!{
         impl ::std::convert::From<#field_ty> for #input_type {
-            fn from(orig: #field_ty) -> #input_type {
-                #input_type{#field_name: orig}
+            fn from(original: #field_ty) -> #input_type {
+                #input_type{#field_name: original}
             }
         }
     }
@@ -60,8 +60,8 @@ fn tuple_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
     let types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
     quote!{
         impl ::std::convert::From<(#(#types),*)> for #input_type {
-            fn from(origin: (#(#types),*)) -> #input_type {
-                #input_type(#(origin.#field_names),*)
+            fn from(original: (#(#types),*)) -> #input_type {
+                #input_type(#(original.#field_names),*)
             }
         }
     }
@@ -73,8 +73,8 @@ fn struct_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
     let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
     quote!{
         impl ::std::convert::From<(#(#types),*)> for #input_type {
-            fn from(origin: (#(#types),*)) -> #input_type {
-                #input_type{#(#field_names: origin.#argument_field_names),*}
+            fn from(original: (#(#types),*)) -> #input_type {
+                #input_type{#(#field_names: original.#argument_field_names),*}
             }
         }
     }
@@ -111,8 +111,8 @@ fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
 
         tokens.append(&quote!(
             impl ::std::convert::From<#old_type> for #enum_ident {
-                fn from(a: #old_type) -> #enum_ident {
-                    #enum_ident::#ident(a)
+                fn from(original: #old_type) -> #enum_ident {
+                    #enum_ident::#ident(original)
                 }
             }
         ).to_string())
