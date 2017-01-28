@@ -21,6 +21,10 @@ struct MyBool(bool);
 #[derive(AddAssign)]
 struct MyUInt(u64, u64);
 
+#[derive(From)]
+#[derive(Eq, PartialEq, Debug)]
+struct SimpleStruct{int1: u64}
+
 #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 #[derive(AddAssign)]
@@ -89,6 +93,8 @@ fn main() {
     assert_eq!(-MyInt(5), (-5).into());
     assert_eq!(!MyBool(true), false.into());
     assert_eq!(MyIntEnum::SmallInt(5), 5.into());
+
+    assert_eq!(SimpleStruct{int1: 5}, 5.into());
 
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
     myint += MyInt(3);

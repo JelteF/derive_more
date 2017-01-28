@@ -11,10 +11,18 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             if fields.len() == 1 {
-                newtype_from(input_type, fields[0].ty.clone())
+                newtype_from(input_type, &fields[0].ty.clone())
             }
             else {
                 tuple_from(input_type, fields)
+            }
+        }
+        Body::Struct(VariantData::Struct(ref fields)) => {
+            if fields.len() == 1 {
+                newtype_struct_from(input_type, &fields[0])
+            }
+            else {
+                panic!("Only tuple structs and enums can derive From")
             }
         }
         Body::Enum(ref variants) => {
@@ -24,11 +32,23 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     }
 }
 
-fn newtype_from(input_type: &Ident, original_type: Ty) -> Tokens {
+fn newtype_from(input_type: &Ident, original_type: &Ty) -> Tokens {
     quote!{
         impl ::std::convert::From<#original_type> for #input_type {
             fn from(orig: #original_type) -> #input_type {
                 #input_type(orig)
+            }
+        }
+    }
+}
+
+fn newtype_struct_from(input_type: &Ident, field: &Field) -> Tokens {
+    let field_name = &field.ident;
+    let field_ty = &field.ty;
+    quote!{
+        impl ::std::convert::From<#field_ty> for #input_type {
+            fn from(orig: #field_ty) -> #input_type {
+                #input_type{#field_name: orig}
             }
         }
     }
