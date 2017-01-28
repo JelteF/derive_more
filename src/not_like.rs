@@ -10,18 +10,16 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
 
     let (output_type, block) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
-            (quote!(#input_type),
-             tuple_content(input_type, fields, method_ident))
-        },
+            (quote!(#input_type), tuple_content(input_type, fields, method_ident))
+        }
         Body::Struct(VariantData::Struct(ref fields)) => {
-            (quote!(#input_type),
-             struct_content(input_type, fields, method_ident))
-        },
+            (quote!(#input_type), struct_content(input_type, fields, method_ident))
+        }
         Body::Enum(ref definition) => {
             enum_output_type_and_content(input_type, definition, &method_ident)
-        },
+        }
 
-        _ => panic!(format!("Only structs and enums can use dervie({})", trait_name))
+        _ => panic!(format!("Only structs and enums can use dervie({})", trait_name)),
     };
 
     quote!(
@@ -34,7 +32,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -48,7 +46,7 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident:
 }
 
 
-fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for field in fields {
@@ -62,7 +60,10 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
     quote!(#input_type{#(#exprs),*})
 }
 
-fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> (Tokens, Tokens)  {
+fn enum_output_type_and_content(input_type: &Ident,
+                                variants: &Vec<Variant>,
+                                method_ident: &Ident)
+                                -> (Tokens, Tokens) {
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
     // If the enum contains unit types that means it can error.
@@ -77,7 +78,7 @@ fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, met
                 // The patern that is outputted should look like this:
                 // (Subtype(vars)) => Ok(TypePath(exprs))
                 let size = fields.len();
-                let vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
+                let vars: &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype(#(#vars.#method_iter()),*));
                 if has_unit_type {
@@ -89,15 +90,16 @@ fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, met
                     }
                 };
                 matches.push(matcher);
-            },
+            }
             VariantData::Struct(ref fields) => {
                 // The patern that is outputted should look like this:
                 // (Subtype{a: __l_a, ...} => {
                 //     Ok(Subtype{a: __l_a.neg(__r_a), ...})
                 // }
                 let size = fields.len();
-                let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
-                let vars:  &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
+                let field_names: &Vec<_> =
+                    &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+                let vars: &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
                 if has_unit_type {
@@ -109,10 +111,10 @@ fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, met
                     }
                 };
                 matches.push(matcher);
-            },
-            VariantData::Unit =>  {
+            }
+            VariantData::Unit => {
                 matches.push(quote!(#subtype => Err("Cannot #method_ident unit types")));
-            },
+            }
         }
     }
 
@@ -124,8 +126,7 @@ fn enum_output_type_and_content(input_type: &Ident, variants: &Vec<Variant>, met
 
     let output_type = if has_unit_type {
         quote!(Result<#input_type, &'static str>)
-    }
-    else {
+    } else {
         quote!(#input_type)
     };
 

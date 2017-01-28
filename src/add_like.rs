@@ -11,19 +11,17 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
 
     let (output_type, block) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
-            (quote!(#input_type),
-             tuple_content(input_type, fields, &method_ident))
-        },
+            (quote!(#input_type), tuple_content(input_type, fields, &method_ident))
+        }
         Body::Struct(VariantData::Struct(ref fields)) => {
-            (quote!(#input_type),
-             struct_content(input_type, fields, &method_ident))
-        },
+            (quote!(#input_type), struct_content(input_type, fields, &method_ident))
+        }
         Body::Enum(ref definition) => {
             (quote!(Result<#input_type, &'static str>),
              enum_content(input_type, definition, &method_ident))
-        },
+        }
 
-        _ => panic!(format!("Only structs and enums can use derive({})", trait_name))
+        _ => panic!(format!("Only structs and enums can use derive({})", trait_name)),
     };
 
     quote!(
@@ -36,7 +34,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
     let exprs = tuple_exprs(fields, method_ident);
     quote!(#input_type(#(#exprs),*))
 }
@@ -50,12 +48,12 @@ pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
         let expr = quote!(self.#i.#method_ident(rhs.#i));
         exprs.push(expr);
     }
-    return exprs
+    return exprs;
 
 }
 
 
-fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens  {
+fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
     let field_ids = fields.iter().map(|f| f.ident.as_ref().unwrap());
@@ -73,11 +71,11 @@ pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
         let expr = quote!(self.#field_id.#method_ident(rhs.#field_id));
         exprs.push(expr)
     }
-    return exprs
+    return exprs;
 }
 
 
-fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> Tokens  {
+fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> Tokens {
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
 
@@ -100,14 +98,15 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                     }
                 };
                 matches.push(matcher);
-            },
+            }
             VariantData::Struct(ref fields) => {
                 // The patern that is outputted should look like this:
                 // (Subtype{a: __l_a, ...}, Subtype{a: __r_a, ...} => {
                 //     Ok(Subtype{a: __l_a.add(__r_a), ...})
                 // }
                 let size = fields.len();
-                let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+                let field_names: &Vec<_> =
+                    &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
                 let l_vars = &numbered_vars(size, "l_");
                 let r_vars = &numbered_vars(size, "r_");
                 let method_iter = method_iter.by_ref();
@@ -118,10 +117,10 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                     }
                 };
                 matches.push(matcher);
-            },
-            VariantData::Unit =>  {
+            }
+            VariantData::Unit => {
                 matches.push(quote!((#subtype, #subtype) => Err("Cannot add unit types together")));
-            },
+            }
         }
     }
 

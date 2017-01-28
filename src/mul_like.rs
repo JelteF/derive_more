@@ -14,12 +14,12 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let ((block, tys), num_fields) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             (tuple_content(input_type, fields, method_ident), fields.len())
-        },
+        }
         Body::Struct(VariantData::Struct(ref fields)) => {
             (struct_content(input_type, fields, method_ident), fields.len())
-        },
+        }
 
-        _ => panic!(format!("Only structs can use derive({})", trait_name))
+        _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };
     let mut constraints: Vec<_> = tys.iter().map(|t| quote!(#trait_path<#t, Output=#t>)).collect();
 
@@ -40,7 +40,10 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<'a, T: ToTokens>(input_type: &T, fields: &'a Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<&'a Ty>)  {
+fn tuple_content<'a, T: ToTokens>(input_type: &T,
+                                  fields: &'a Vec<Field>,
+                                  method_ident: &Ident)
+                                  -> (Tokens, HashSet<&'a Ty>) {
     let tys: HashSet<_> = fields.iter().map(|f| &f.ty).collect();
     let count = (0..fields.len()).map(|i| Ident::from(i.to_string()));
     let method_iter = iter::repeat(method_ident);
@@ -49,7 +52,10 @@ fn tuple_content<'a, T: ToTokens>(input_type: &T, fields: &'a Vec<Field>, method
     (body, tys)
 }
 
-fn struct_content<'a, T: ToTokens>(input_type: &T, fields: &'a Vec<Field>, method_ident: &Ident) -> (Tokens, HashSet<&'a Ty>)  {
+fn struct_content<'a, T: ToTokens>(input_type: &T,
+                                   fields: &'a Vec<Field>,
+                                   method_ident: &Ident)
+                                   -> (Tokens, HashSet<&'a Ty>) {
     let tys: HashSet<_> = fields.iter().map(|f| &f.ty).collect();
     let field_names: &Vec<_> = &fields.iter()
         .map(|f| f.ident.as_ref().unwrap())

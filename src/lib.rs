@@ -1,19 +1,20 @@
 //! # derive_more
-//! Rust has lots of builtin traits that are implemented for its basic types, such as [`Add`], [`Not`]
-//! or [`From`]. 
+//! Rust has lots of builtin traits that are implemented for its basic types, such as [`Add`],
+//! [`Not`] or [`From`].
 //! However, when wrapping these types inside your own structs or enums you lose the
 //! implementations of these traits and are required to recreate them.
 //! This is especially annoying when your own structures are very simple, such as when using the
 //! commonly advised newtype pattern (e.g. `MyInt(i32)`).
 //!
-//! This library tries to remove these annoyances and the corresponding boilerplate code. It does
-//! this by allowing you to derive lots of commonly used traits for both structs and enums.
+//! This library tries to remove these annoyances and the corresponding boilerplate code.
+//! It does this by allowing you to derive lots of commonly used traits for both structs and enums.
 //!
 //! ## The newly derivable traits
 //!
 //! Obviously not all traits should be derived to the same code, because they are different
-//! different traits after all. However, some of the semantics of the traits overlap a lot, so they
-//! have been grouped in the following way:
+//! different traits after all.
+//! However, some of the semantics of the traits overlap a lot, so they have been grouped in the
+//! following way:
 //!
 //! 1. `From`, only contains the [`From`].
 //! 2. `Not`-like, contains [`Not`] and [`Neg`].
@@ -26,8 +27,9 @@
 //! ## Generated code
 //!
 //! It is important to understand what code gets generated when using one of the derives from this
-//! crate. That is why the links below explain what code gets generated for a trait for each group
-//! from before.
+//! crate.
+//! That is why the links below explain what code gets generated for a trait for each group from
+//! before.
 //!
 //! 1. [`#[derive(From)]`](from.html)
 //! 2. [`#[derive(Not)]`](not.html)
@@ -35,14 +37,15 @@
 //! 4. [`#[derive(Mul)]`](mul.html)
 //! 5. [`#[derive(AddAssign)]`](add_assign.html)
 //!
-//! If you want to be sure what code is generated for your specific trait I recommend
-//! using the [`cargo-expand`] utility. This will show you your code with all macros and derives
-//! expanded.
+//! If you want to be sure what code is generated for your specific trait I recommend using the
+//! [`cargo-expand`] utility.
+//! This will show you your code with all macros and derives expanded.
 //!
 //! ## Installation
 //!
 //! This library heavily uses Macros 1.1, which is to stabilized in Rust 1.15 (the next Rust
-//! release). To use it before that time you have to install the nightly or beta channel.
+//! release).
+//! To use it before that time you have to install the nightly or beta channel.
 //!
 //! After doing this, add this to `Cargo.toml`:
 //!

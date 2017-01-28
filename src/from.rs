@@ -12,23 +12,19 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             if fields.len() == 1 {
                 newtype_from(input_type, &fields[0].ty)
-            }
-            else {
+            } else {
                 tuple_from(input_type, fields)
             }
         }
         Body::Struct(VariantData::Struct(ref fields)) => {
             if fields.len() == 1 {
                 newtype_struct_from(input_type, &fields[0])
-            }
-            else {
+            } else {
                 struct_from(input_type, fields)
             }
         }
-        Body::Enum(ref variants) => {
-            enum_from(input_type, variants)
-        }
-        _ => panic!("Only tuple structs and enums can derive From")
+        Body::Enum(ref variants) => enum_from(input_type, variants),
+        _ => panic!("Only tuple structs and enums can derive From"),
     }
 }
 
@@ -96,7 +92,7 @@ fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
                     *counter += 1;
                 }
             }
-            _ => {},
+            _ => {}
         }
     }
 
@@ -106,7 +102,7 @@ fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
         if *type_counts.get(&old_type).unwrap() != 1 {
             // If more than one newtype is present don't add automatic From, since it is
             // ambiguous.
-            continue
+            continue;
         }
 
         tokens.append(&quote!(
@@ -115,10 +111,8 @@ fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
                     #enum_ident::#ident(original)
                 }
             }
-        ).to_string())
+        )
+            .to_string())
     }
     tokens
 }
-
-
-

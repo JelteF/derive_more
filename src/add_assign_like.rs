@@ -1,4 +1,4 @@
-use quote::{Tokens};
+use quote::Tokens;
 use syn::{Body, Ident, VariantData, MacroInput};
 use add_like::{tuple_exprs, struct_exprs};
 
@@ -11,14 +11,10 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let input_type = &input.ident;
 
     let exprs = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => {
-             tuple_exprs(fields, &method_ident)
-        },
-        Body::Struct(VariantData::Struct(ref fields)) => {
-             struct_exprs(fields, &method_ident)
-        },
+        Body::Struct(VariantData::Tuple(ref fields)) => tuple_exprs(fields, &method_ident),
+        Body::Struct(VariantData::Struct(ref fields)) => struct_exprs(fields, &method_ident),
 
-        _ => panic!(format!("Only structs can use derive({})", trait_name))
+        _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };
 
     quote!(

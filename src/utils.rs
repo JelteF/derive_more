@@ -1,5 +1,5 @@
 use quote::{Tokens, ToTokens};
-use syn::{Ident};
+use syn::Ident;
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count).map(|i| Ident::from(format!("__{}{}", prefix, i))).collect()
