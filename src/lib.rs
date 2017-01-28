@@ -38,9 +38,9 @@
 //! 1. `From`, only contains the [`From`].
 //! 2. `Not`-like, contains [`Not`] and [`Neg`].
 //! 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
-//! 4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
-//! 5. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//! 4. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
 //!    and [`BitXorAssign`].
+//! 5. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
 //!
 //!
 //! ## Generated code
@@ -53,8 +53,8 @@
 //! 1. [`#[derive(From)]`](from.html)
 //! 2. [`#[derive(Not)]`](not.html)
 //! 3. [`#[derive(Add)]`](add.html)
-//! 4. [`#[derive(Mul)]`](mul.html)
-//! 5. [`#[derive(AddAssign)]`](add_assign.html)
+//! 4. [`#[derive(AddAssign)]`](add_assign.html)
+//! 5. [`#[derive(Mul)]`](mul.html)
 //!
 //! If you want to be sure what code is generated for your specific trait I recommend using the
 //! [`cargo-expand`] utility.
