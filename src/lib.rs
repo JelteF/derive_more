@@ -9,6 +9,25 @@
 //! This library tries to remove these annoyances and the corresponding boilerplate code.
 //! It does this by allowing you to derive lots of commonly used traits for both structs and enums.
 //!
+//! ## Example code
+//!
+//! By using this library the following code just works:
+//!
+//! ```rust
+//! #[derive(Eq, From, Add)]
+//! struct MyInt(i32);
+//!
+//! #[derive(Eq, Mul)]
+//! struct Point2D { x: i32, y: i32 };
+//!
+//! fn main() {
+//!     let my_11 = MyInt(5) + 6.into();
+//!     assert_eq!(MyInt(11), MyInt(5) + 6.into())
+//!     assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
+//! }
+//!
+//! ```
+
 //! ## The newly derivable traits
 //!
 //! Obviously not all traits should be derived to the same code, because they are different
