@@ -1,5 +1,15 @@
 % What #[derive(From)] generates
 
+The point of deriving this type is that it makes it easy to create a new
+instance of the type by using the `.into()` method on the value(s) that it
+should contain.
+For (tuple) structs with a single field this is done by calling `.into()` on
+the desired content itself.
+For structs that have multiple fields `.into()` needs to be called on a tuple
+containing the desired content for each field.
+Enums have a bit different semantics as can be read in the [Enums](#enums)
+section below.
+
 # Tuple structs
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
