@@ -111,4 +111,4 @@ impl ::std::ops::Add for MixedInts {
 }
 ```
 
-Also not the Unit type that throws an error when adding it to itself.
+Also note the Unit type that throws an error when adding it to itself.
