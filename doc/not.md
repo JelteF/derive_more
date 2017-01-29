@@ -6,7 +6,7 @@ When deriving for a tuple struct with two fields like this:
 
 ```
 #[derive(Not)]
-struct MyInt(i32, i32)
+struct MyInts(i32, i32)
 ```
 
 Code like this will be generated:
