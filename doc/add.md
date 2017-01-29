@@ -104,8 +104,8 @@ impl ::std::ops::Add for MixedInts {
             (MixedInts::UnsignedTwo(__l_0), MixedInts::UnsignedTwo(__r_0)) => {
                 Ok(MixedInts::UnsignedTwo(__l_0.add(__r_0)))
             }
-            (MixedInts::Unit, MixedInts::Unit) => Err("Cannot add unit types together"),
-            _ => Err("Trying to add mismatched enum types"),
+            (MixedInts::Unit, MixedInts::Unit) => Err("Cannot add() unit variants"),
+            _ => Err("Trying to add mismatched enum variants"),
         }
     }
 }

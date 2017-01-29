@@ -119,7 +119,8 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                 matches.push(matcher);
             }
             VariantData::Unit => {
-                matches.push(quote!((#subtype, #subtype) => Err("Cannot add unit types together")));
+                let message = format!("Cannot {}() unit variants", method_ident.to_string());
+                matches.push(quote!((#subtype, #subtype) => Err(#message)));
             }
         }
     }
@@ -127,7 +128,8 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
     if variants.len() > 1 {
         // In the strange case where there's only one enum variant this is would be an unreachable
         // match.
-        matches.push(quote!(_ => Err("Trying to add mismatched enum types")));
+        let message = format!("Trying to {} mismatched enum variants", method_ident.to_string());
+        matches.push(quote!(_ => Err(#message)));
     }
     quote!(
         match (self, rhs) {

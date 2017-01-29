@@ -113,7 +113,8 @@ fn enum_output_type_and_content(input_type: &Ident,
                 matches.push(matcher);
             }
             VariantData::Unit => {
-                matches.push(quote!(#subtype => Err("Cannot #method_ident unit types")));
+                let message = format!("Cannot {}() unit variants", method_ident.to_string());
+                matches.push(quote!(#subtype => Err(#message)));
             }
         }
     }
