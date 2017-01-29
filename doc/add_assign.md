@@ -54,3 +54,7 @@ The behaviour is similar with more or less fields.
 # Enums
 
 Deriving `AddAssign` is not (yet) supported for enums.
+This is mostly due to the fact that it is not trivial convert the `Add`
+derivation code, because that returns a `Result<EnumType>` instead of an
+`EnumType`.
+Handling the case where it errors would be hard and maybe impossible.
