@@ -12,6 +12,7 @@ When deriving for a tuple struct with two fields like this:
 #[derive(AddAssign)]
 struct MyInts(i32, i32)
 ```
+
 Code like this will be generated:
 
 ```
@@ -35,6 +36,7 @@ When deriving for a tuple struct with two fields like this:
 #[derive(AddAssign)]
 struct MyInts(i32, i32)
 ```
+
 Code like this will be generated:
 
 ```
