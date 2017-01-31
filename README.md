@@ -100,7 +100,7 @@ now (this sample also requires some other derives such as `Eq`):
 
 ```rust
 fn main() {
-    let my_enum_val = (MyIntEnum::SmallInt(5) + 6.into()).unwrap();
+    let my_enum_val = (MyIntEnum::Int(5) + 6.into()).unwrap();
 
     if my_enum_val == 5.into() {
         println!("The content of my_enum_val is 5")
