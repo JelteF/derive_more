@@ -19,6 +19,7 @@ struct MyInt(i32);
 
 #[derive(Eq, Mul)]
 struct Point2D { x: i32, y: i32 };
+
 #[derive(From, Add)]
 enum MyEnum{
     Int(i32),
