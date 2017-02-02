@@ -17,14 +17,14 @@ type in question deriving for this is not implemented.
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
-```
+```rust
 #[derive(From)]
 struct MyInt(i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl<T> ::std::ops::Mul<T> for MyInt
     where T: ::std::ops::Mul<i32, Output = i32>
 {
@@ -39,14 +39,14 @@ The behaviour is slightly different for multiple fields, since the right hand
 side of the multiplication now needs the `Copy` trait.
 For instance when deriving for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(Mul)]
 struct MyInts(i32, i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl<T> ::std::ops::Mul<T> for MyInts
     where T: ::std::ops::Mul<i32, Output = i32> + ::std::marker::Copy
 {
@@ -65,7 +65,7 @@ The behaviour is similar with more or less fields.
 
 When deriving `Mul` for a regular struct with a single field like this:
 
-```
+```rust
 #[derive(Mul)]
 struct Point1D {
     x: i32,
@@ -74,7 +74,7 @@ struct Point1D {
 
 Code like this will be generated:
 
-```
+```rust
 impl<T> ::std::ops::Mul<T> for Point1D
     where T: ::std::ops::Mul<i32, Output = i32>
 {
@@ -89,7 +89,7 @@ The behaviour is again slightly different when deriving for a struct with multip
 fields, because it still needs the `Copy` as well.
 For instance when deriving for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(Mul)]
 struct Point2D {
     x: i32,
@@ -99,7 +99,7 @@ struct Point2D {
 
 Code like this will be generated:
 
-```
+```rust
 impl<T> ::std::ops::Mul<T> for Point2D
     where T: ::std::ops::Mul<i32, Output = i32> + ::std::marker::Copy
 {

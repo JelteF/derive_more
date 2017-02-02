@@ -8,14 +8,14 @@ new one.
 
 When deriving for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(AddAssign)]
 struct MyInts(i32, i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::AddAssign for MyInts {
     fn add_assign(&mut self, rhs: MyInts) {
         self.0.add_assign(rhs.0);
@@ -32,14 +32,14 @@ The behaviour is similar with more or less fields.
 
 When deriving for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(AddAssign)]
 struct MyInts(i32, i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::AddAssign for MyInts {
     fn add_assign(&mut self, rhs: MyInts) {
         self.0.add_assign(rhs.0);

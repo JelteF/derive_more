@@ -83,7 +83,7 @@ derive_more = "0.4.0"
 
 And this to the top of your Rust file:
 
-```
+```rust
 #[macro_use]
 extern crate derive_more;
 ```

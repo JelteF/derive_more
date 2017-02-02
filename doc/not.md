@@ -9,14 +9,14 @@ instance of the same variant with these negated fields is returned.
 
 When deriving for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(Not)]
 struct MyInts(i32, i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::Not for MyInts {
     type Output = MyInts;
     fn not(self) -> MyInts {
@@ -32,7 +32,7 @@ The behaviour is similar with more or less fields.
 
 When deriving for a regular struct with two fields like this:
 
-```
+```rust
 #[derive(Not)]
 struct Point2D {
     x: i32,
@@ -42,7 +42,7 @@ struct Point2D {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::Not for Point2D {
     type Output = Point2D;
     fn not(self) -> Point2D {
@@ -63,7 +63,7 @@ For each enum variant `Not` is derived in a similar way as it would be derived
 if it would be its own type.
 For instance when deriving `Not` for an enum like this:
 
-```
+```rust
 #[derive(Not)]
 enum MixedInts {
     SmallInt(i32),
@@ -77,7 +77,7 @@ enum MixedInts {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::Not for MixedInts {
     type Output = MixedInts;
     fn not(self) -> MixedInts {
@@ -104,7 +104,7 @@ If you add a unit variant to the enum its return type will change from
 This is because Unit cannot have `Not` implemented.
 So, when deriving `Not` for an enum like this:
 
-```
+```rust
 #[derive(Not)]
 enum EnumWithUnit {
     SmallInt(i32),
@@ -114,7 +114,7 @@ enum EnumWithUnit {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::Not for EnumWithUnit {
     type Output = Result<EnumWithUnit, &'static str>;
     fn not(self) -> Result<EnumWithUnit, &'static str> {

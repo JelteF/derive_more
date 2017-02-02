@@ -12,14 +12,14 @@ added together.
 
 When deriving `Add` for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(Add)]
 struct MyInts(i32, i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::Add for MyInts {
     type Output = MyInts;
     fn add(self, rhs: MyInts) -> MyInts {
@@ -36,7 +36,7 @@ The behaviour is similar with more or less fields.
 
 When deriving `Add` for a regular struct with two fields like this:
 
-```
+```rust
 #[derive(Add)]
 struct Point2D {
     x: i32,
@@ -46,7 +46,7 @@ struct Point2D {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::Add for Point2D {
     type Output = Point2D;
     fn add(self, rhs: Point2D) -> Point2D {
@@ -70,7 +70,7 @@ enum to another enum is only possible if both are the same variant. This makes
 the generated code much more complex as well, because this check needs to be
 done. For instance when deriving `Add` for an enum like this:
 
-```
+```rust
 #[derive(Add)]
 enum MixedInts {
     SmallInt(i32),
@@ -85,7 +85,7 @@ enum MixedInts {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::ops::Add for MixedInts {
     type Output = Result<MixedInts, &'static str>;
     fn add(self, rhs: MixedInts) -> Result<MixedInts, &'static str> {

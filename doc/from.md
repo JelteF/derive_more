@@ -14,14 +14,14 @@ section below.
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
-```
+```rust
 #[derive(From)]
 struct MyInt(i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::convert::From<i32> for MyInt {
     fn from(original: i32) -> MyInt {
         MyInt(original)
@@ -32,14 +32,14 @@ impl ::std::convert::From<i32> for MyInt {
 The behaviour is a bit different when deriving for a struct with multiple
 fields. For instance when deriving for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(From)]
 struct MyInts(i32, i32)
 ```
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::convert::From<(i32, i32)> for MyInts {
     fn from(original: (i32, i32)) -> MyInts {
         MyInts(original.0, original.1)
@@ -55,7 +55,7 @@ For regular structs almost the same code is generated as for tuple structs
 except in the way the field values are assigned to the new struct.
 When deriving for a regular struct with a single field like this:
 
-```
+```rust
 #[derive(From)]
 struct Point1D {
     x: i32,
@@ -64,7 +64,7 @@ struct Point1D {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::convert::From<i32> for Point1D {
     fn from(original: i32) -> Point1D {
         Point1D { x: original }
@@ -75,7 +75,7 @@ impl ::std::convert::From<i32> for Point1D {
 The behaviour is a bit different when deriving for a struct with multiple
 fields. For instance when deriving for a tuple struct with two fields like this:
 
-```
+```rust
 #[derive(From)]
 struct Point2D {
     x: i32,
@@ -86,7 +86,7 @@ struct Point2D {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::convert::From<(i32, i32)> for Point2D {
     fn from(original: (i32, i32)) -> Point2D {
         Point2D {
@@ -105,7 +105,7 @@ variants.
 Currently this is only done for the variants of the enum that are newtypes.
 For instance When deriving for the following enum:
 
-```
+```rust
 #[derive(From)]
 enum MixedInts {
     SmallInt(i32),
@@ -119,7 +119,7 @@ enum MixedInts {
 
 Code like this will be generated:
 
-```
+```rust
 impl ::std::convert::From<i32> for MixedInts {
     fn from(original: i32) -> MixedInts {
         MixedInts::SmallInt(original)
