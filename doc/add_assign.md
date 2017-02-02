@@ -1,7 +1,7 @@
 % What #[derive(AddAssign)] generates
 
 This code is very similar to the code that is generated for `#[derive(Add)]`.
-The difference is that it changes the existing instance instead of creating a
+The difference is that it mutates the existing instance instead of creating a
 new one.
 
 # Tuple structs

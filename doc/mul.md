@@ -1,5 +1,18 @@
 % What #[derive(Mul)] generates
 
+Deriving `Mul` is quite different from deriving `Add`. It is not used to
+multiply two structs together. Instead it will normally multipy a struct, which
+can have multiple fields, with a single primitive type (e.g. a `u64`). A new
+struct is then created with all the fields from the previous struct multiplied
+by this other value.
+
+A simple way of explaining the reasoning behind this difference between `Add`
+and `Mul` deriving, is looking at arithmetic on meters.
+One meter can be added to one meter, to get two meters. Also, one meter times
+two would be two meters, but one meter times one meter would be one square meter.
+As this second case clearly requires more knowledge about the meaning of the
+type in question deriving for this is not implemented.
+
 # Tuple structs
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
