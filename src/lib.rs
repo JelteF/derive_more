@@ -20,14 +20,22 @@
 //! #[derive(Eq, Mul)]
 //! struct Point2D { x: i32, y: i32 };
 //!
+//! #[derive(From, Add)]
+//! enum MyEnum{
+//!     Int(i32),
+//!     Bool(bool),
+//!     Nothing,
+//! }
+//!
 //! fn main() {
 //!     let my_11 = MyInt(5) + 6.into();
 //!     assert_eq!(MyInt(11), MyInt(5) + 6.into())
 //!     assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
+//!     assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
 //! }
 //!
 //! ```
-
+//!
 //! ## The newly derivable traits
 //!
 //! Obviously not all traits should be derived to the same code, because they are different
