@@ -58,11 +58,11 @@ crate.
 That is why the links below explain what code gets generated for a trait for each group from
 before.
 
-1. [`#[derive(From)]`](from.html)
-2. [`#[derive(Not)]`](not.html)
-3. [`#[derive(Add)]`](add.html)
-4. [`#[derive(AddAssign)]`](add_assign.html)
-5. [`#[derive(Mul)]`](mul.html)
+1. [`#[derive(From)]`](doc/from.md)
+2. [`#[derive(Not)]`](doc/not.md)
+3. [`#[derive(Add)]`](doc/add.md)
+4. [`#[derive(AddAssign)]`](doc/add_assign.md)
+5. [`#[derive(Mul)]`](doc/mul.md)
 
 If you want to be sure what code is generated for your specific trait I recommend using the
 [`cargo-expand`] utility.
