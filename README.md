@@ -18,8 +18,7 @@ By using this library the following code just works:
 struct MyInt(i32);
 
 #[derive(Eq, Mul)]
-struct Point2D { x: i32, y: i32
-
+struct Point2D { x: i32, y: i32 };
 #[derive(From, Add)]
 enum MyEnum{
     Int(i32),
@@ -29,9 +28,9 @@ enum MyEnum{
 
 fn main() {
     let my_11 = MyInt(5) + 6.into();
-    assert_eq!(MyInt(11), MyInt(5) + 6.into())
-    assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
-    assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
+    assert_eq!(MyInt(11), MyInt(5) + 6.into());
+    assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
+    assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap());
 }
 
 ```
