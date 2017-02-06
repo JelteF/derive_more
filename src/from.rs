@@ -11,7 +11,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
         Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
-        Body::Enum(ref variants) => enum_from(input_type, variants),
+        Body::Enum(ref variants) => enum_from(input, variants),
         _ => panic!("Only tuple structs and enums can derive From"),
     }
 }
@@ -54,22 +54,21 @@ fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     from_impl(input, fields, body)
 }
 
-fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
+fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
     let mut types = vec![];
     let mut idents = vec![];
     let mut type_counts = HashMap::new();
 
     for variant in variants {
         match variant.data {
-            VariantData::Tuple(ref structs) => {
-                if structs.len() == 1 {
-                    let ty = &structs[0].ty;
-                    idents.push(&variant.ident);
-                    types.push(ty);
-                    let counter = type_counts.entry(ty).or_insert(0);
-                    *counter += 1;
-                }
+            VariantData::Tuple(ref fields) => {
+                let original_types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
+                idents.push(&variant.ident);
+                types.push(original_types);
+                let counter = type_counts.entry(original_types).or_insert(0);
+                *counter += 1;
             }
+            VariantData::Struct(ref fields) => {}
             _ => {}
         }
     }
@@ -78,18 +77,18 @@ fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
 
     for (ident, old_type) in idents.iter().zip(types) {
         if *type_counts.get(&old_type).unwrap() != 1 {
-            // If more than one newtype is present don't add automatic From, since it is
-            // ambiguous.
+            // If more than one variant is present with the same type signature don't
+            // add automatic From, since it is ambiguous.
             continue;
         }
 
-        tokens.append(&quote!(
+        tokens.append(&quote!{
             impl ::std::convert::From<#old_type> for #enum_ident {
                 fn from(original: #old_type) -> #enum_ident {
                     #enum_ident::#ident(original)
                 }
             }
-        )
+        }
             .to_string())
     }
     tokens
