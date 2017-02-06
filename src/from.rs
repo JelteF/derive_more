@@ -9,76 +9,49 @@ use utils::number_idents;
 pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     let input_type = &input.ident;
     match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => {
-            if fields.len() == 1 {
-                newtype_from(input, &fields[0].ty)
-            } else {
-                tuple_from(input_type, fields)
-            }
-        }
-        Body::Struct(VariantData::Struct(ref fields)) => {
-            if fields.len() == 1 {
-                newtype_struct_from(input, &fields[0])
-            } else {
-                struct_from(input_type, fields)
-            }
-        }
+        Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
+        Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
         Body::Enum(ref variants) => enum_from(input_type, variants),
         _ => panic!("Only tuple structs and enums can derive From"),
     }
 }
 
-pub fn from_impl<T: ToTokens, U: ToTokens>(input: &MacroInput,
-                                           original_type: T,
-                                           body: U)
-                                           -> Tokens {
+pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
     let generics = &input.generics;
     let input_type = &input.ident;
+    let original_types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
     quote!{
-        impl#generics ::std::convert::From<#original_type> for #input_type#generics {
-            fn from(original: #original_type) -> #input_type#generics {
+        impl#generics ::std::convert::From<(#(#original_types),*)> for #input_type#generics {
+            fn from(original: (#(#original_types),*)) -> #input_type#generics {
                 #body
             }
         }
     }
 }
 
-fn newtype_from(input: &MacroInput, original_type: &Ty) -> Tokens {
+fn tuple_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
-    from_impl(input, original_type, quote!(#input_type(original)))
+    let body = if fields.len() == 1 {
+        quote!(#input_type(original))
+    } else {
+        let field_names = &number_idents(fields.len());
+        quote!(#input_type(#(original.#field_names),*))
+
+    };
+    from_impl(input, fields, body)
 }
 
-fn newtype_struct_from(input: &MacroInput, field: &Field) -> Tokens {
-    let field_name = &field.ident;
-    let field_ty = &field.ty;
+fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
-    from_impl(input, field_ty, quote!(#input_type{#field_name :original}))
-}
-
-
-fn tuple_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
-    let field_names = &number_idents(fields.len());
-    let types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
-    quote!{
-        impl ::std::convert::From<(#(#types),*)> for #input_type {
-            fn from(original: (#(#types),*)) -> #input_type {
-                #input_type(#(original.#field_names),*)
-            }
-        }
-    }
-}
-
-fn struct_from<T: ToTokens>(input_type: &T, fields: &Vec<Field>) -> Tokens {
-    let argument_field_names = &number_idents(fields.len());
-    let types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
-    let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
-    quote!{
-        impl ::std::convert::From<(#(#types),*)> for #input_type {
-            fn from(original: (#(#types),*)) -> #input_type {
-                #input_type{#(#field_names: original.#argument_field_names),*}
-            }
-        }
-    }
+    let body = if fields.len() == 1 {
+        let field_name = &fields[0].ident;
+        quote!(#input_type{#field_name :original})
+    } else {
+        let argument_field_names = &number_idents(fields.len());
+        let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+        quote!(#input_type{#(#field_names: original.#argument_field_names),*})
+    };
+    from_impl(input, fields, body)
 }
 
 fn enum_from(enum_ident: &Ident, variants: &Vec<Variant>) -> Tokens {
