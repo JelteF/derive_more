@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
-use utils::{numbered_vars, number_idents};
+use utils::number_idents;
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
@@ -11,14 +11,14 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             if fields.len() == 1 {
-                newtype_from(input_type, &fields[0].ty)
+                newtype_from(input, &fields[0].ty)
             } else {
                 tuple_from(input_type, fields)
             }
         }
         Body::Struct(VariantData::Struct(ref fields)) => {
             if fields.len() == 1 {
-                newtype_struct_from(input_type, &fields[0])
+                newtype_struct_from(input, &fields[0])
             } else {
                 struct_from(input_type, fields)
             }
@@ -28,26 +28,31 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     }
 }
 
-fn newtype_from(input_type: &Ident, original_type: &Ty) -> Tokens {
+pub fn from_impl<T: ToTokens, U: ToTokens>(input: &MacroInput,
+                                           original_type: T,
+                                           body: U)
+                                           -> Tokens {
+    let generics = &input.generics;
+    let input_type = &input.ident;
     quote!{
-        impl ::std::convert::From<#original_type> for #input_type {
-            fn from(original: #original_type) -> #input_type {
-                #input_type(original)
+        impl#generics ::std::convert::From<#original_type> for #input_type#generics {
+            fn from(original: #original_type) -> #input_type#generics {
+                #body
             }
         }
     }
 }
 
-fn newtype_struct_from(input_type: &Ident, field: &Field) -> Tokens {
+fn newtype_from(input: &MacroInput, original_type: &Ty) -> Tokens {
+    let input_type = &input.ident;
+    from_impl(input, original_type, quote!(#input_type(original)))
+}
+
+fn newtype_struct_from(input: &MacroInput, field: &Field) -> Tokens {
     let field_name = &field.ident;
     let field_ty = &field.ty;
-    quote!{
-        impl ::std::convert::From<#field_ty> for #input_type {
-            fn from(original: #field_ty) -> #input_type {
-                #input_type{#field_name: original}
-            }
-        }
-    }
+    let input_type = &input.ident;
+    from_impl(input, field_ty, quote!(#input_type{#field_name :original}))
 }
 
 
