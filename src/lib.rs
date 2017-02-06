@@ -13,26 +13,33 @@
 //!
 //! By using this library the following code just works:
 //!
+//!
 //! ```rust
-//! #[derive(Eq, From, Add)]
+//! # #[macro_use] extern crate derive_more;
+//!
+//! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! struct MyInt(i32);
 //!
-//! #[derive(Eq, Mul)]
-//! struct Point2D { x: i32, y: i32 };
+//! #[derive(Debug, Eq, PartialEq, From, Mul)]
+//! struct Point2D {
+//!     x: i32,
+//!     y: i32,
+//! }
 //!
-//! #[derive(From, Add)]
-//! enum MyEnum{
+//! #[derive(Debug, Eq, PartialEq, From, Add)]
+//! enum MyEnum {
 //!     Int(i32),
-//!     Bool(bool),
+//!     UnsignedInt(u32),
 //!     Nothing,
 //! }
 //!
 //! fn main() {
 //!     let my_11 = MyInt(5) + 6.into();
-//!     assert_eq!(MyInt(11), MyInt(5) + 6.into())
+//!     assert_eq!(MyInt(11), MyInt(5) + 6.into());
 //!     assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
 //!     assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
 //! }
+//!
 //!
 //! ```
 //!
@@ -83,9 +90,10 @@
 //!
 //! And this to the top of your Rust file:
 //!
-//! ```
+//! ```rust
 //! #[macro_use]
 //! extern crate derive_more;
+//! # fn main () {}
 //! ```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
@@ -152,8 +160,8 @@ create_derive!(mul_like, Shl, shl_derive);
 create_derive!(not_like, Not, not_derive);
 create_derive!(not_like, Neg, neg_derive);
 
-create_derive!(add_assign_like, AddAssign,    add_assign_derive);
-create_derive!(add_assign_like, SubAssign,    sub_assign_derive);
+create_derive!(add_assign_like, AddAssign, add_assign_derive);
+create_derive!(add_assign_like, SubAssign, sub_assign_derive);
 create_derive!(add_assign_like, BitAndAssign, bit_and_assign_derive);
-create_derive!(add_assign_like, BitOrAssign,  bit_or_assign_derive);
+create_derive!(add_assign_like, BitOrAssign, bit_or_assign_derive);
 create_derive!(add_assign_like, BitXorAssign, bit_xor_assign_derive);
