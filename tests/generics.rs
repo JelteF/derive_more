@@ -18,3 +18,15 @@ struct DoubleStruct<T, U> {
     t: T,
     u: U,
 }
+
+#[derive(From)]
+enum TupleEnum<T, U> {
+    Tuple(T),
+    DoubleTuple(T, U),
+}
+
+#[derive(From)]
+enum StructEnum<T, U> {
+    Struct { t: T },
+    DoubleStruct { t: T, u: U },
+}

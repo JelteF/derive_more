@@ -73,9 +73,12 @@ enum SimpleEnum {
 enum MyIntEnum {
     SmallInt(i32),
     BigInt(i64),
-    _TwoInts(i32, i32),
+    TwoInts(i32, i32),
+    Point2D { x: i64, y: i64 },
     _UnsignedOne(u32),
     _UnsignedTwo(u32),
+    _Uints1(u64, u64),
+    _Uints2 { x: u64, y: u64 },
     _Nothing,
 }
 
@@ -98,6 +101,8 @@ fn main() {
     let _: SimpleMyIntEnum = 5i32.into();
     let _: MyIntEnum = 5i32.into();
     let _: MyIntEnum = 6i64.into();
+    let _: MyIntEnum = (5i32, 8i32).into();
+    let _: MyIntEnum = (5i64, 8i64).into();
     assert_eq!(MyInt(5), 5.into());
     assert_eq!(-MyInt(5), (-5).into());
     assert_eq!(!MyBool(true), false.into());

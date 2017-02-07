@@ -41,6 +41,15 @@ fn tuple_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     from_impl(input, fields, body)
 }
 
+fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
+    if fields.len() == 1 {
+        quote!(#return_type(original))
+    } else {
+        let field_names = &number_idents(fields.len());
+        quote!(#return_type(#(original.#field_names),*))
+    }
+}
+
 fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
     let body = if fields.len() == 1 {
@@ -54,42 +63,64 @@ fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     from_impl(input, fields, body)
 }
 
+fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
+    if fields.len() == 1 {
+        let field_name = &fields[0].ident;
+        quote!(#return_type{#field_name: original})
+    } else {
+        let argument_field_names = &number_idents(fields.len());
+        let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+        quote!(#return_type{#(#field_names: original.#argument_field_names),*})
+    }
+}
+
+
 fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
-    let mut types = vec![];
-    let mut idents = vec![];
-    let mut type_counts = HashMap::new();
+    let mut type_signature_counts = HashMap::new();
+    let input_type = &input.ident;
 
     for variant in variants {
         match variant.data {
-            VariantData::Tuple(ref fields) => {
-                let original_types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
-                idents.push(&variant.ident);
-                types.push(original_types);
-                let counter = type_counts.entry(original_types).or_insert(0);
+            VariantData::Tuple(ref fields) |
+            VariantData::Struct(ref fields) => {
+                let original_types = get_field_types(fields);
+                let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
             }
-            VariantData::Struct(ref fields) => {}
             _ => {}
         }
     }
 
     let mut tokens = Tokens::new();
 
-    for (ident, old_type) in idents.iter().zip(types) {
-        if *type_counts.get(&old_type).unwrap() != 1 {
-            // If more than one variant is present with the same type signature don't
-            // add automatic From, since it is ambiguous.
-            continue;
-        }
+    for variant in variants.iter() {
+        match variant.data {
 
-        tokens.append(&quote!{
-            impl ::std::convert::From<#old_type> for #enum_ident {
-                fn from(original: #old_type) -> #enum_ident {
-                    #enum_ident::#ident(original)
+            VariantData::Tuple(ref fields) => {
+                let original_types = get_field_types(fields);
+
+                if *type_signature_counts.get(&original_types).unwrap() == 1 {
+                    let variant_ident = &variant.ident;
+                    let body = tuple_body(quote!(#input_type::#variant_ident), fields);
+                    tokens.append(&from_impl(input, fields, body).to_string());
                 }
             }
+
+            VariantData::Struct(ref fields) => {
+                let original_types = get_field_types(fields);
+
+                if *type_signature_counts.get(&original_types).unwrap() == 1 {
+                    let variant_ident = &variant.ident;
+                    let body = struct_body(quote!(#input_type::#variant_ident), fields);
+                    tokens.append(&from_impl(input, fields, body).to_string());
+                }
+            }
+            _ => {}
         }
-            .to_string())
     }
     tokens
+}
+
+fn get_field_types<'a>(fields: &'a Vec<Field>) -> Vec<&'a Ty> {
+    fields.iter().map(|f| &f.ty).collect()
 }
