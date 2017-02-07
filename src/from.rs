@@ -2,12 +2,11 @@ use std::collections::HashMap;
 
 use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
-use utils::number_idents;
+use utils::{number_idents, get_field_types};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &MacroInput, _: &str) -> Tokens {
-    let input_type = &input.ident;
     match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
         Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
@@ -19,7 +18,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
 pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
     let generics = &input.generics;
     let input_type = &input.ident;
-    let original_types: &Vec<_> = &fields.iter().map(|f| &f.ty).collect();
+    let original_types = &get_field_types(fields);
     quote!{
         impl#generics ::std::convert::From<(#(#original_types),*)> for #input_type#generics {
             fn from(original: (#(#original_types),*)) -> #input_type#generics {
@@ -31,13 +30,7 @@ pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) 
 
 fn tuple_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
-    let body = if fields.len() == 1 {
-        quote!(#input_type(original))
-    } else {
-        let field_names = &number_idents(fields.len());
-        quote!(#input_type(#(original.#field_names),*))
-
-    };
+    let body = tuple_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
@@ -52,14 +45,7 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
 
 fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
-    let body = if fields.len() == 1 {
-        let field_name = &fields[0].ident;
-        quote!(#input_type{#field_name :original})
-    } else {
-        let argument_field_names = &number_idents(fields.len());
-        let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
-        quote!(#input_type{#(#field_names: original.#argument_field_names),*})
-    };
+    let body = struct_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
@@ -119,8 +105,4 @@ fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
         }
     }
     tokens
-}
-
-fn get_field_types<'a>(fields: &'a Vec<Field>) -> Vec<&'a Ty> {
-    fields.iter().map(|f| &f.ty).collect()
 }

@@ -2,6 +2,7 @@ use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, VariantData, MacroInput, Ty};
 use std::iter;
 use std::collections::HashSet;
+use utils::get_field_types_iter;
 
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
@@ -44,7 +45,7 @@ fn tuple_content<'a, T: ToTokens>(input_type: &T,
                                   fields: &'a Vec<Field>,
                                   method_ident: &Ident)
                                   -> (Tokens, HashSet<&'a Ty>) {
-    let tys: HashSet<_> = fields.iter().map(|f| &f.ty).collect();
+    let tys: HashSet<_> = get_field_types_iter(fields).collect();
     let count = (0..fields.len()).map(|i| Ident::from(i.to_string()));
     let method_iter = iter::repeat(method_ident);
 
@@ -56,7 +57,7 @@ fn struct_content<'a, T: ToTokens>(input_type: &T,
                                    fields: &'a Vec<Field>,
                                    method_ident: &Ident)
                                    -> (Tokens, HashSet<&'a Ty>) {
-    let tys: HashSet<_> = fields.iter().map(|f| &f.ty).collect();
+    let tys: HashSet<_> = get_field_types_iter(fields).collect();
     let field_names: &Vec<_> = &fields.iter()
         .map(|f| f.ident.as_ref().unwrap())
         .collect();
