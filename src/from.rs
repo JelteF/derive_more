@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Ty};
+use syn::{Body, Field, Variant, VariantData, MacroInput, Ty};
 use utils::{number_idents, get_field_types};
 
 
@@ -16,12 +16,12 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
 }
 
 pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
-    let generics = &input.generics;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
     quote!{
-        impl#generics ::std::convert::From<(#(#original_types),*)> for #input_type#generics {
-            fn from(original: (#(#original_types),*)) -> #input_type#generics {
+        impl#impl_generics ::std::convert::From<(#(#original_types),*)> for #input_type#ty_generics #where_clause {
+            fn from(original: (#(#original_types),*)) -> #input_type#ty_generics {
                 #body
             }
         }
