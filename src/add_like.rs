@@ -1,25 +1,15 @@
 use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
 use std::iter;
-use utils::numbered_vars;
-use syn::parse_ty_param_bound;
+use utils::{numbered_vars, add_extra_ty_param_bound};
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
     let method_ident = Ident::from(method_name);
     let input_type = &input.ident;
-    let generics = &input.generics;
 
-    let ref mut generics = &mut input.generics.clone();
-    for ref mut ty_param in &mut generics.ty_params {
-        let ty_ident = &ty_param.ident;
-        ty_param.bounds
-            .push(parse_ty_param_bound(&quote!(::std::ops::#trait_ident<Output=#ty_ident>)
-                    .to_string())
-                .unwrap());
-    }
-
+    let generics = add_extra_ty_param_bound(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.body {

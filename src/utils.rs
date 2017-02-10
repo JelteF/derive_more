@@ -1,4 +1,5 @@
-use syn::{Ident, Ty, Field};
+use syn::{Ident, Ty, Field, Generics};
+use syn::parse_ty_param_bound;
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count).map(|i| Ident::from(format!("__{}{}", prefix, i))).collect()
@@ -14,4 +15,17 @@ pub fn get_field_types_iter<'a>(fields: &'a Vec<Field>) -> Box<Iterator<Item = &
 
 pub fn get_field_types<'a>(fields: &'a Vec<Field>) -> Vec<&'a Ty> {
     get_field_types_iter(fields).collect()
+}
+
+pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, trait_ident: &'a Ident) -> Generics {
+    let mut generics = generics.clone();
+    for ref mut ty_param in &mut generics.ty_params {
+        let ty_ident = &ty_param.ident;
+        ty_param.bounds
+            .push(parse_ty_param_bound(&quote!(::std::ops::#trait_ident<Output=#ty_ident>)
+                    .to_string())
+                .unwrap());
+    }
+
+    generics
 }
