@@ -1,29 +1,40 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
+use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Generics, TyParamBound};
 use std::iter;
+use syn::parse_ty_param_bound;
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::from(method_name);
     let input_type = &input.ident;
+    let ref mut generics = &mut input.generics.clone();
+    for ref mut ty_param in &mut generics.ty_params {
+        let ty_ident = &ty_param.ident;
+        ty_param.bounds
+            .push(parse_ty_param_bound(&quote!(::std::ops::#trait_ident<Output=#ty_ident>)
+                    .to_string())
+                .unwrap());
+    }
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
-            (quote!(#input_type), tuple_content(input_type, fields, method_ident))
+            (quote!(#input_type#ty_generics), tuple_content(input_type, fields, method_ident))
         }
         Body::Struct(VariantData::Struct(ref fields)) => {
-            (quote!(#input_type), struct_content(input_type, fields, method_ident))
+            (quote!(#input_type#ty_generics), struct_content(input_type, fields, method_ident))
         }
         Body::Enum(ref definition) => {
-            enum_output_type_and_content(input_type, definition, &method_ident)
+            enum_output_type_and_content(input, definition, &method_ident)
         }
 
         _ => panic!(format!("Only structs and enums can use dervie({})", trait_name)),
     };
 
     quote!(
-        impl ::std::ops::#trait_ident for #input_type {
+        impl#impl_generics ::std::ops::#trait_ident for #input_type#ty_generics #where_clause {
             type Output = #output_type;
             fn #method_ident(self) -> #output_type {
                 #block
@@ -60,10 +71,12 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
     quote!(#input_type{#(#exprs),*})
 }
 
-fn enum_output_type_and_content(input_type: &Ident,
+fn enum_output_type_and_content(input: &MacroInput,
                                 variants: &Vec<Variant>,
                                 method_ident: &Ident)
                                 -> (Tokens, Tokens) {
+    let input_type = &input.ident;
+    let (_, ty_generics, _) = input.generics.split_for_impl();
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
     // If the enum contains unit types that means it can error.
@@ -126,9 +139,9 @@ fn enum_output_type_and_content(input_type: &Ident,
     );
 
     let output_type = if has_unit_type {
-        quote!(Result<#input_type, &'static str>)
+        quote!(Result<#input_type#ty_generics, &'static str>)
     } else {
-        quote!(#input_type)
+        quote!(#input_type#ty_generics)
     };
 
     (output_type, body)
