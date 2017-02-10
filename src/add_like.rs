@@ -2,22 +2,35 @@ use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
 use std::iter;
 use utils::numbered_vars;
+use syn::parse_ty_param_bound;
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
     let method_ident = Ident::from(method_name);
     let input_type = &input.ident;
+    let generics = &input.generics;
+
+    let ref mut generics = &mut input.generics.clone();
+    for ref mut ty_param in &mut generics.ty_params {
+        let ty_ident = &ty_param.ident;
+        ty_param.bounds
+            .push(parse_ty_param_bound(&quote!(::std::ops::#trait_ident<Output=#ty_ident>)
+                    .to_string())
+                .unwrap());
+    }
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
-            (quote!(#input_type), tuple_content(input_type, fields, &method_ident))
+            (quote!(#input_type#ty_generics), tuple_content(input_type, fields, &method_ident))
         }
         Body::Struct(VariantData::Struct(ref fields)) => {
-            (quote!(#input_type), struct_content(input_type, fields, &method_ident))
+            (quote!(#input_type#ty_generics), struct_content(input_type, fields, &method_ident))
         }
         Body::Enum(ref definition) => {
-            (quote!(Result<#input_type, &'static str>),
+            (quote!(Result<#input_type#ty_generics, &'static str>),
              enum_content(input_type, definition, &method_ident))
         }
 
@@ -25,9 +38,9 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     };
 
     quote!(
-        impl ::std::ops::#trait_ident for #input_type {
+        impl#impl_generics ::std::ops::#trait_ident for #input_type#ty_generics {
             type Output = #output_type;
-            fn #method_ident(self, rhs: #input_type) -> #output_type {
+            fn #method_ident(self, rhs: #input_type#ty_generics) -> #output_type {
                 #block
             }
         }
