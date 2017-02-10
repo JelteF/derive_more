@@ -29,3 +29,15 @@ pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, trait_ident: &'a Ide
 
     generics
 }
+
+pub fn add_extra_ty_param_bound_simple<'a>(generics: &'a Generics,
+                                           trait_ident: &'a Ident)
+                                           -> Generics {
+    let mut generics = generics.clone();
+    for ref mut ty_param in &mut generics.ty_params {
+        ty_param.bounds
+            .push(parse_ty_param_bound(&quote!(::std::ops::#trait_ident).to_string()).unwrap());
+    }
+
+    generics
+}
