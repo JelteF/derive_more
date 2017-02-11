@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Token` enum in crate `syn`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Token">
+
+    <title>syn::Token - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='index.html'>syn</a></p><script>window.sidebarCurrent = {name: 'Token', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content enum">
+<h1 class='fqn'><span class='in-band'>Enum <a href='index.html'>syn</a>::<wbr><a class='enum' href=''>Token</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/syn/mac.rs.html#44-85' title='goto source code'>[src]</a></span></h1>
+<pre class='rust enum'>pub enum Token {
+    Eq,
+    Lt,
+    Le,
+    EqEq,
+    Ne,
+    Ge,
+    Gt,
+    AndAnd,
+    OrOr,
+    Not,
+    Tilde,
+    BinOp(<a class='enum' href='../syn/enum.BinOpToken.html' title='syn::BinOpToken'>BinOpToken</a>),
+    BinOpEq(<a class='enum' href='../syn/enum.BinOpToken.html' title='syn::BinOpToken'>BinOpToken</a>),
+    At,
+    Dot,
+    DotDot,
+    DotDotDot,
+    Comma,
+    Semi,
+    Colon,
+    ModSep,
+    RArrow,
+    LArrow,
+    FatArrow,
+    Pound,
+    Dollar,
+    Question,
+    Literal(<a class='enum' href='../syn/enum.Lit.html' title='syn::Lit'>Lit</a>),
+    Ident(<a class='struct' href='../syn/struct.Ident.html' title='syn::Ident'>Ident</a>),
+    Underscore,
+    Lifetime(<a class='struct' href='../syn/struct.Ident.html' title='syn::Ident'>Ident</a>),
+    DocComment(<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>),
+}</pre><h2 class='variants'>Variants</h2>
+<span id='variant.Eq' class='variant'><span id='Eq.v' class='invisible'><code>Eq</code></span></span><span id='variant.Lt' class='variant'><span id='Lt.v' class='invisible'><code>Lt</code></span></span><span id='variant.Le' class='variant'><span id='Le.v' class='invisible'><code>Le</code></span></span><span id='variant.EqEq' class='variant'><span id='EqEq.v' class='invisible'><code>EqEq</code></span></span><span id='variant.Ne' class='variant'><span id='Ne.v' class='invisible'><code>Ne</code></span></span><span id='variant.Ge' class='variant'><span id='Ge.v' class='invisible'><code>Ge</code></span></span><span id='variant.Gt' class='variant'><span id='Gt.v' class='invisible'><code>Gt</code></span></span><span id='variant.AndAnd' class='variant'><span id='AndAnd.v' class='invisible'><code>AndAnd</code></span></span><span id='variant.OrOr' class='variant'><span id='OrOr.v' class='invisible'><code>OrOr</code></span></span><span id='variant.Not' class='variant'><span id='Not.v' class='invisible'><code>Not</code></span></span><span id='variant.Tilde' class='variant'><span id='Tilde.v' class='invisible'><code>Tilde</code></span></span><span id='variant.BinOp' class='variant'><span id='BinOp.v' class='invisible'><code>BinOp(<a class='enum' href='../syn/enum.BinOpToken.html' title='syn::BinOpToken'>BinOpToken</a>)</code></span></span><span id='variant.BinOpEq' class='variant'><span id='BinOpEq.v' class='invisible'><code>BinOpEq(<a class='enum' href='../syn/enum.BinOpToken.html' title='syn::BinOpToken'>BinOpToken</a>)</code></span></span><span id='variant.At' class='variant'><span id='At.v' class='invisible'><code>At</code></span></span><span id='variant.Dot' class='variant'><span id='Dot.v' class='invisible'><code>Dot</code></span></span><span id='variant.DotDot' class='variant'><span id='DotDot.v' class='invisible'><code>DotDot</code></span></span><span id='variant.DotDotDot' class='variant'><span id='DotDotDot.v' class='invisible'><code>DotDotDot</code></span></span><span id='variant.Comma' class='variant'><span id='Comma.v' class='invisible'><code>Comma</code></span></span><span id='variant.Semi' class='variant'><span id='Semi.v' class='invisible'><code>Semi</code></span></span><span id='variant.Colon' class='variant'><span id='Colon.v' class='invisible'><code>Colon</code></span></span><span id='variant.ModSep' class='variant'><span id='ModSep.v' class='invisible'><code>ModSep</code></span></span><span id='variant.RArrow' class='variant'><span id='RArrow.v' class='invisible'><code>RArrow</code></span></span><span id='variant.LArrow' class='variant'><span id='LArrow.v' class='invisible'><code>LArrow</code></span></span><span id='variant.FatArrow' class='variant'><span id='FatArrow.v' class='invisible'><code>FatArrow</code></span></span><span id='variant.Pound' class='variant'><span id='Pound.v' class='invisible'><code>Pound</code></span></span><span id='variant.Dollar' class='variant'><span id='Dollar.v' class='invisible'><code>Dollar</code></span></span><span id='variant.Question' class='variant'><span id='Question.v' class='invisible'><code>Question</code></span></span><span id='variant.Literal' class='variant'><span id='Literal.v' class='invisible'><code>Literal(<a class='enum' href='../syn/enum.Lit.html' title='syn::Lit'>Lit</a>)</code></span></span><span id='variant.Ident' class='variant'><span id='Ident.v' class='invisible'><code>Ident(<a class='struct' href='../syn/struct.Ident.html' title='syn::Ident'>Ident</a>)</code></span></span><span id='variant.Underscore' class='variant'><span id='Underscore.v' class='invisible'><code>Underscore</code></span></span><span id='variant.Lifetime' class='variant'><span id='Lifetime.v' class='invisible'><code>Lifetime(<a class='struct' href='../syn/struct.Ident.html' title='syn::Ident'>Ident</a>)</code></span></span><span id='variant.DocComment' class='variant'><span id='DocComment.v' class='invisible'><code>DocComment(<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>)</code></span></span><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='../quote/to_tokens/trait.ToTokens.html' title='quote::to_tokens::ToTokens'>ToTokens</a> for <a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/syn/mac.rs.html#352-391' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.to_tokens' class='method'><span id='to_tokens.v' class='invisible'><code>fn <a href='../quote/to_tokens/trait.ToTokens.html#tymethod.to_tokens' class='fnname'>to_tokens</a>(&amp;self, tokens: &amp;mut <a class='struct' href='../quote/tokens/struct.Tokens.html' title='quote::tokens::Tokens'>Tokens</a>)</code></span></h4>
+<div class='docblock'><p>Write <code>self</code> to the given <code>Tokens</code>. <a href="../quote/to_tokens/trait.ToTokens.html#tymethod.to_tokens">Read more</a></p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/syn/mac.rs.html#43' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter.</p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/syn/mac.rs.html#43' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class='method'><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a></code></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class='method'><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html' title='core::cmp::Eq'>Eq</a> for <a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/syn/mac.rs.html#43' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/syn/mac.rs.html#43' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.eq' class='method'><span id='eq.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></span></h4>
+<div class='docblock'><p>This method tests for <code>self</code> and <code>other</code> values to be equal, and is used by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq">Read more</a></p>
+</div><h4 id='method.ne' class='method'><span id='ne.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></span></h4>
+<div class='docblock'><p>This method tests for <code>!=</code>.</p>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html' title='core::hash::Hash'>Hash</a> for <a class='enum' href='../syn/enum.Token.html' title='syn::Token'>Token</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/syn/mac.rs.html#43' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.hash' class='method'><span id='hash.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html#tymethod.hash' class='fnname'>hash</a>&lt;__H:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/core/hash/trait.Hasher.html' title='core::hash::Hasher'>Hasher</a>&gt;(&amp;self, __arg_0: &amp;mut __H)</code></span></h4>
+<div class='docblock'><p>Feeds this value into the state given, updating the hasher as necessary.</p>
+</div><h4 id='method.hash_slice' class='method'><span id='hash_slice.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html#method.hash_slice' class='fnname'>hash_slice</a>&lt;H&gt;(data: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[Self]</a>, state: &amp;mut H) <span class='where'>where H: <a class='trait' href='https://doc.rust-lang.org/nightly/core/hash/trait.Hasher.html' title='core::hash::Hasher'>Hasher</a></span></code><div class='since' title='Stable since Rust version 1.3.0'>1.3.0</div></span></h4>
+<div class='docblock'><p>Feeds a slice of this type into the state provided.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "syn";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ToTokens` trait in crate `quote`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ToTokens">
+
+    <title>quote::ToTokens - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='index.html'>quote</a></p><script>window.sidebarCurrent = {name: 'ToTokens', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content trait">
+<h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>quote</a>::<wbr><a class='trait' href=''>ToTokens</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/quote/to_tokens.rs.html#6-30' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait ToTokens {
+    fn <a href='#tymethod.to_tokens' class='fnname'>to_tokens</a>(&amp;self, &amp;mut <a class='struct' href='../quote/struct.Tokens.html' title='quote::Tokens'>Tokens</a>);
+}</pre><div class='docblock'><p>Types that can be interpolated inside a <code>quote!(...)</code> invocation.</p>
+</div>
+            <h2 id='required-methods'>Required Methods</h2>
+            <div class='methods'>
+        <h3 id='tymethod.to_tokens' class='method stab '><span id='to_tokens.v' class='invisible'><code>fn <a href='#tymethod.to_tokens' class='fnname'>to_tokens</a>(&amp;self, &amp;mut <a class='struct' href='../quote/struct.Tokens.html' title='quote::Tokens'>Tokens</a>)</code></span></h3><div class='docblock'><p>Write <code>self</code> to the given <code>Tokens</code>.</p>
+
+<p>Example implementation for a struct representing Rust paths like
+<code>std::cmp::PartialEq</code>:</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Path</span> {
+    <span class='kw'>pub</span> <span class='ident'>global</span>: <span class='ident'>bool</span>,
+    <span class='kw'>pub</span> <span class='ident'>segments</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>PathSegment</span><span class='op'>&gt;</span>,
+}
+
+<span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>Path</span> {
+    <span class='kw'>fn</span> <span class='ident'>to_tokens</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>tokens</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Tokens</span>) {
+        <span class='kw'>for</span> (<span class='ident'>i</span>, <span class='ident'>segment</span>) <span class='kw'>in</span> <span class='self'>self</span>.<span class='ident'>segments</span>.<span class='ident'>iter</span>().<span class='ident'>enumerate</span>() {
+            <span class='kw'>if</span> <span class='ident'>i</span> <span class='op'>&gt;</span> <span class='number'>0</span> <span class='op'>||</span> <span class='self'>self</span>.<span class='ident'>global</span> {
+                <span class='ident'>tokens</span>.<span class='ident'>append</span>(<span class='string'>&quot;::&quot;</span>);
+            }
+            <span class='ident'>segment</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>);
+        }
+    }
+}</pre>
+</div></div>
+        <h2 id='implementors'>Implementors</h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><code>impl&lt;'a, T:&nbsp;?<a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a> + <a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for &amp;'a T</code></li>
+<li><code>impl&lt;'a, T:&nbsp;?<a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/collections/borrow/trait.ToOwned.html' title='collections::borrow::ToOwned'>ToOwned</a> + <a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='enum' href='https://doc.rust-lang.org/nightly/collections/borrow/enum.Cow.html' title='collections::borrow::Cow'>Cow</a>&lt;'a, T&gt;</code></li>
+<li><code>impl&lt;T:&nbsp;?<a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a> + <a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;T&gt;</code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;T&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a></code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.char.html'>char</a></code></li>
+<li><code>impl&lt;'a&gt; ToTokens for <a class='struct' href='../quote/struct.ByteStr.html' title='quote::ByteStr'>ByteStr</a>&lt;'a&gt;</code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Tokens.html' title='quote::Tokens'>Tokens</a></code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i8.html'>i8</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i8.html'>i8</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i16.html'>i16</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i16.html'>i16</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i32.html'>i32</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.i64.html'>i64</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Hex.html' title='quote::Hex'>Hex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.f32.html'>f32</a></code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.f64.html'>f64</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;</code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 0]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 1]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 2]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 3]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 4]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 5]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 6]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 7]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 8]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 9]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 10]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 11]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 12]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 13]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 14]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 15]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 16]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 17]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 18]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 19]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 20]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 21]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 22]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 23]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 24]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 25]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 26]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 27]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 28]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 29]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 30]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 31]</a></code></li>
+<li><code>impl&lt;T:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a>T<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 32]</a></code></li>
+<li><code>impl ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>,)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, F:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E, F<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, F:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, G:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E, F, G<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, F:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, G:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, H:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E, F, G, H<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, F:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, G:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, H:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, I:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E, F, G, H, I<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, F:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, G:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, H:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, I:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, J:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E, F, G, H, I, J<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, F:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, G:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, H:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, I:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, J:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, K:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E, F, G, H, I, J, K<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl&lt;A:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, B:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, C:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, D:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, E:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, F:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, G:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, H:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, I:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, J:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, K:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>, L:&nbsp;<a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a>&gt; ToTokens for <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a>A, B, C, D, E, F, G, H, I, J, K, L<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></li>
+<li><code>impl ToTokens for <a class='struct' href='../quote/struct.Ident.html' title='quote::Ident'>Ident</a></code></li>
+</ul><script type="text/javascript" async
+                         src="../implementors/quote/trait.ToTokens.js">
+                 </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "quote";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>
