@@ -13,26 +13,31 @@ It does this by allowing you to derive lots of commonly used traits for both str
 
 By using this library the following code just works:
 
+
 ```rust
-#[derive(Eq, From, Add)]
+#[derive(Debug, Eq, PartialEq, From, Add)]
 struct MyInt(i32);
 
-#[derive(Eq, Mul)]
-struct Point2D { x: i32, y: i32 };
+#[derive(Debug, Eq, PartialEq, From, Mul)]
+struct Point2D {
+    x: i32,
+    y: i32,
+}
 
-#[derive(From, Add)]
-enum MyEnum{
+#[derive(Debug, Eq, PartialEq, From, Add)]
+enum MyEnum {
     Int(i32),
-    Bool(bool),
+    UnsignedInt(u32),
     Nothing,
 }
 
 fn main() {
     let my_11 = MyInt(5) + 6.into();
-    assert_eq!(MyInt(11), MyInt(5) + 6.into());
-    assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
-    assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap());
+    assert_eq!(MyInt(11), MyInt(5) + 6.into());
+    assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
+    assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
 }
+
 
 ```
 
@@ -58,11 +63,11 @@ crate.
 That is why the links below explain what code gets generated for a trait for each group from
 before.
 
-1. [`#[derive(From)]`](doc/from.md)
-2. [`#[derive(Not)]`](doc/not.md)
-3. [`#[derive(Add)]`](doc/add.md)
-4. [`#[derive(AddAssign)]`](doc/add_assign.md)
-5. [`#[derive(Mul)]`](doc/mul.md)
+1. [`#[derive(From)]`](https://jeltef.github.io/derive_more/derive_more/from.html)
+2. [`#[derive(Not)]`](https://jeltef.github.io/derive_more/derive_more/not.html)
+3. [`#[derive(Add)]`](https://jeltef.github.io/derive_more/derive_more/add.html)
+4. [`#[derive(AddAssign)]`](https://jeltef.github.io/derive_more/derive_more/add_assign.html)
+5. [`#[derive(Mul)]`](https://jeltef.github.io/derive_more/derive_more/mul.html)
 
 If you want to be sure what code is generated for your specific trait I recommend using the
 [`cargo-expand`] utility.
@@ -108,6 +113,3 @@ extern crate derive_more;
 [`BitOrAssign`]: https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html
 [`BitXorAssign`]: https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html
 
-## Licence
-
-MIT
