@@ -1,21 +1,21 @@
-#![allow(dead_code)]
+#![allow(dead_code, non_camel_case_types)]
 #[macro_use]
 extern crate derive_more;
 
 
-#[derive(From, Not, Add, AddAssign)]
+#[derive(From, Not, Add, AddAssign, Mul)]
 struct Wrapped<T: Clone>(T);
 
 
-#[derive(From, Not, Add, AddAssign)]
+#[derive(From, Not, Add, AddAssign, Mul)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
 
-#[derive(From, Not, Add, AddAssign)]
+#[derive(From, Not, Add, AddAssign, Mul)]
 struct Struct<T: Clone> {
     t: T,
 }
 
-#[derive(From, Not, Add, AddAssign)]
+#[derive(From, Not, Add, AddAssign, Mul)]
 struct DoubleStruct<T: Clone, U: Clone> {
     t: T,
     u: U,

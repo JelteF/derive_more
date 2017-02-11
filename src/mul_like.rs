@@ -1,5 +1,6 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, VariantData, MacroInput, Ty};
+use syn::{Body, Field, Ident, VariantData, MacroInput, Ty, TyParam, TyParamBound,
+          parse_ty_param_bound};
 use std::iter;
 use std::collections::HashSet;
 use utils::get_field_types_iter;
@@ -7,10 +8,12 @@ use utils::get_field_types_iter;
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
+    let scalar_ident = &Ident::from("__rhs_T");
     let trait_path = quote!(::std::ops::#trait_ident);
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::from(method_name);
     let input_type = &input.ident;
+    let mut generics = input.generics.clone();
 
     let ((block, tys), num_fields) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
@@ -22,18 +25,34 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
 
         _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };
-    let mut constraints: Vec<_> = tys.iter().map(|t| quote!(#trait_path<#t, Output=#t>)).collect();
+
+    let mut constraints: Vec<TyParamBound> = vec![];
+    for t in tys {
+        constraints.push(parse_ty_param_bound(
+                &quote!(#trait_path<#t, Output=#t>).to_string())
+            .unwrap());
+    }
 
     if num_fields > 1 {
         // If the struct has more than one field the rhs needs to be copied for each
         // field
-        constraints.push(quote!(::std::marker::Copy))
+        constraints.push(parse_ty_param_bound("::std::marker::Copy").unwrap())
     }
+
+    let new_typaram = TyParam {
+        attrs: vec![],
+        ident: scalar_ident.clone(),
+        bounds: constraints,
+        default: None,
+    };
+    generics.ty_params.push(new_typaram);
+
+    let (impl_generics, _, _) = generics.split_for_impl();
+    let (_, ty_generics, where_clause) = input.generics.split_for_impl();
     quote!(
-        impl <T> #trait_path<T> for #input_type where T:
-                #(#constraints)+* {
-            type Output = #input_type;
-            fn #method_ident(self, rhs: T) -> #input_type {
+        impl#impl_generics  #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause {
+            type Output = #input_type#ty_generics;
+            fn #method_ident(self, rhs: #scalar_ident) -> #input_type#ty_generics {
                 #block
             }
         }
