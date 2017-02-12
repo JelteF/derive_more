@@ -5,6 +5,7 @@ extern crate derive_more;
 #[derive(Mul)]
 struct MyInt(i32);
 
+
 #[derive(Mul)]
 struct MyInts(i32, i32);
 
