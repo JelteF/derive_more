@@ -45,7 +45,7 @@ pub fn get_mul_generics<'a>(input: &'a MacroInput,
                             trait_path: &Tokens)
                             -> (Generics, Ident) {
     let tys: &HashSet<_> = &get_field_types_iter(fields).collect();
-    let scalar_ident = Ident::from("__rhs_T");
+    let scalar_ident = Ident::from("__RhsT");
     let tys2 = tys;
     let scalar_iter = iter::repeat(scalar_ident.clone());
     let trait_path_iter = iter::repeat(trait_path);

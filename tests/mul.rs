@@ -1,4 +1,3 @@
-#![allow(dead_code, non_camel_case_types)]
 #![allow(dead_code)]
 #[macro_use]
 extern crate derive_more;
