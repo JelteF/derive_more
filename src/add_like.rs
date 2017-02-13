@@ -1,7 +1,7 @@
 use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
 use std::iter;
-use utils::{numbered_vars, add_extra_ty_param_bound};
+use utils::{numbered_vars, add_extra_ty_param_bound, field_idents};
 
 pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -59,9 +59,9 @@ pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
 fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
-    let field_ids = fields.iter().map(|f| f.ident.as_ref().unwrap());
+    let field_names = field_idents(fields);
 
-    quote!(#input_type{#(#field_ids: #exprs),*})
+    quote!(#input_type{#(#field_names: #exprs),*})
 }
 
 pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
@@ -108,8 +108,7 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
                 //     Ok(Subtype{a: __l_a.add(__r_a), ...})
                 // }
                 let size = fields.len();
-                let field_names: &Vec<_> =
-                    &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+                let field_names = &field_idents(fields);
                 let l_vars = &numbered_vars(size, "l_");
                 let r_vars = &numbered_vars(size, "r_");
                 let method_iter = method_iter.by_ref();

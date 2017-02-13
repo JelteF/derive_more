@@ -129,6 +129,7 @@ mod from;
 mod add_like;
 mod add_assign_like;
 mod mul_like;
+mod mul_assign_like;
 mod not_like;
 
 macro_rules! create_derive(
@@ -165,3 +166,9 @@ create_derive!(add_assign_like, SubAssign, sub_assign_derive);
 create_derive!(add_assign_like, BitAndAssign, bit_and_assign_derive);
 create_derive!(add_assign_like, BitOrAssign, bit_or_assign_derive);
 create_derive!(add_assign_like, BitXorAssign, bit_xor_assign_derive);
+
+create_derive!(mul_assign_like, MulAssign, mul_assign_derive);
+create_derive!(mul_assign_like, DivAssign, div_assign_derive);
+create_derive!(mul_assign_like, RemAssign, rem_assign_derive);
+create_derive!(mul_assign_like, ShrAssign, shr_assign_derive);
+create_derive!(mul_assign_like, ShlAssign, shl_assign_derive);
