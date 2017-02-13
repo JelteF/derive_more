@@ -1,6 +1,6 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, VariantData, MacroInput, Ty, TyParam, TyParamBound,
-          parse_ty_param_bound, parse_where_clause, TyGenerics, WhereClause, ImplGenerics, Generics};
+use syn::{Body, Field, Ident, VariantData, MacroInput, TyParam, parse_ty_param_bound,
+          parse_where_clause, TyGenerics, WhereClause, ImplGenerics, Generics};
 use std::iter;
 use std::collections::HashSet;
 use utils::{get_field_types_iter, number_idents, field_idents};
@@ -24,7 +24,19 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
         _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };
 
-    let (new_generics, scalar_ident) = get_mul_generics(input, fields, trait_path);
+
+    let scalar_ident = &Ident::from("__RhsT");
+    let tys: &HashSet<_> = &get_field_types_iter(fields).collect();
+    let tys2 = tys;
+    let scalar_iter = iter::repeat(scalar_ident);
+    let trait_path_iter = iter::repeat(trait_path);
+
+    let type_where_clauses = quote!{
+        where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
+    };
+
+
+    let new_generics = get_mul_generics(input, fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 
@@ -42,18 +54,9 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
 
 pub fn get_mul_generics<'a>(input: &'a MacroInput,
                             fields: &'a Vec<Field>,
-                            trait_path: &Tokens)
-                            -> (Generics, Ident) {
-    let tys: &HashSet<_> = &get_field_types_iter(fields).collect();
-    let scalar_ident = Ident::from("__RhsT");
-    let tys2 = tys;
-    let scalar_iter = iter::repeat(scalar_ident.clone());
-    let trait_path_iter = iter::repeat(trait_path);
-
-
-    let type_where_clauses = quote!{
-        where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
-    };
+                            scalar_ident: &Ident,
+                            type_where_clauses: Tokens)
+                            -> Generics {
 
     let mut type_where_clauses = parse_where_clause(&type_where_clauses.to_string()).unwrap();
 
@@ -76,7 +79,7 @@ pub fn get_mul_generics<'a>(input: &'a MacroInput,
     new_generics.ty_params.push(new_typaram);
     new_generics.where_clause.predicates.append(&mut type_where_clauses.predicates);
 
-    (new_generics, scalar_ident)
+    new_generics
 }
 
 

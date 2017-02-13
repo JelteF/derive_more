@@ -7,6 +7,7 @@ extern crate derive_more;
 #[derive(Mul)]
 #[derive(Neg)]
 #[derive(AddAssign)]
+#[derive(MulAssign)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -114,6 +115,8 @@ fn main() {
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
     myint += MyInt(3);
     assert_eq!(myint, 8.into());
+    myint *= 5;
+    assert_eq!(myint, 40.into());
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
     assert_eq!(MyUInt(4, 5) + MyUInt(1, 2), MyUInt(5, 7));
     let mut s1 = NormalStruct { int1: 1, int2: 2 };
