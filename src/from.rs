@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Variant, VariantData, MacroInput, Ty};
-use utils::{number_idents, get_field_types};
+use syn::{Body, Field, Variant, VariantData, MacroInput};
+use utils::{number_idents, get_field_types, field_idents};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
@@ -55,7 +55,7 @@ fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
         quote!(#return_type{#field_name: original})
     } else {
         let argument_field_names = &number_idents(fields.len());
-        let field_names: &Vec<_> = &fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+        let field_names = &field_idents(fields);
         quote!(#return_type{#(#field_names: original.#argument_field_names),*})
     }
 }

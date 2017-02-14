@@ -10,7 +10,9 @@ pub fn number_idents(count: usize) -> Vec<Ident> {
 }
 
 pub fn field_idents<'a>(fields: &'a Vec<Field>) -> Vec<&'a Ident> {
-    fields.iter().map(|f| f.ident.as_ref().unwrap()).collect()
+    fields.iter()
+        .map(|f| f.ident.as_ref().expect("Tried to get field names of a tuple struct"))
+        .collect()
 }
 
 pub fn get_field_types_iter<'a>(fields: &'a Vec<Field>) -> Box<Iterator<Item = &'a Ty> + 'a> {

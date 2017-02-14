@@ -126,6 +126,7 @@ use proc_macro::TokenStream;
 mod utils;
 
 mod from;
+mod constructor;
 mod add_like;
 mod add_assign_like;
 mod mul_like;
@@ -139,12 +140,14 @@ macro_rules! create_derive(
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let s = input.to_string();
             let ast = syn::parse_macro_input(&s).unwrap();
-            $mod_::expand(&ast, stringify!($trait_)).parse().unwrap()
+            $mod_::expand(&ast, stringify!($trait_)).parse().expect("Expanded output was no correct Rust code")
         }
     }
 );
 
 create_derive!(from, From, from_derive);
+
+create_derive!(constructor, Constructor, constructor_derive);
 
 create_derive!(add_like, Add, add_derive);
 create_derive!(add_like, Sub, sub_derive);
