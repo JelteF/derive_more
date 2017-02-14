@@ -11,7 +11,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
         Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
         Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
         Body::Enum(ref variants) => enum_from(input, variants),
-        _ => panic!("Only tuple structs and enums can derive From"),
+        _ => panic!("Only structs and enums can derive From"),
     }
 }
 
