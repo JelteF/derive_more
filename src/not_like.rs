@@ -1,5 +1,5 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput, Generics, TyParamBound};
+use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
 use std::iter;
 use utils::add_extra_ty_param_bound;
 

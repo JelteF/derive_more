@@ -1,6 +1,6 @@
 use quote::{Tokens, ToTokens};
 use syn::{Body, Field, Ident, VariantData, MacroInput, TyParam, parse_ty_param_bound,
-          parse_where_clause, TyGenerics, WhereClause, ImplGenerics, Generics};
+          parse_where_clause, Generics};
 use std::iter;
 use std::collections::HashSet;
 use utils::{get_field_types_iter, number_idents, field_idents};

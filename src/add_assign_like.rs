@@ -23,7 +23,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     };
 
     quote!(
-        impl#impl_generics ::std::ops::#trait_ident for #input_type#ty_generics {
+        impl#impl_generics ::std::ops::#trait_ident for #input_type#ty_generics #where_clause {
             fn #method_ident(&mut self, rhs: #input_type#ty_generics) {
                 #(#exprs;
                   )*

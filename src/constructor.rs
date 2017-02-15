@@ -1,6 +1,6 @@
-use quote::{Tokens, ToTokens};
+use quote::Tokens;
 use syn::{Body, Ident, Field, VariantData, MacroInput};
-use utils::{number_idents, get_field_types, field_idents, numbered_vars};
+use utils::{get_field_types, field_idents, numbered_vars};
 
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
