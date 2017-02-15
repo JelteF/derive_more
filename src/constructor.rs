@@ -6,13 +6,13 @@ use utils::{number_idents, get_field_types, field_idents, numbered_vars};
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
 pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
-        Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
+        Body::Struct(VariantData::Tuple(ref fields)) => tuple_constructor(input, fields),
+        Body::Struct(VariantData::Struct(ref fields)) => struct_constructor(input, fields),
         _ => panic!("Only structs can derive a constructor"),
     }
 }
 
-fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
+fn constructor_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
@@ -28,10 +28,10 @@ fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> T
     }
 }
 
-fn tuple_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
+fn tuple_constructor(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
     let body = tuple_body(input_type, fields);
-    from_impl(input, fields, body)
+    constructor_impl(input, fields, body)
 }
 
 fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
@@ -43,10 +43,10 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
     }
 }
 
-fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
+fn struct_constructor(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
     let body = struct_body(input_type, fields);
-    from_impl(input, fields, body)
+    constructor_impl(input, fields, body)
 }
 
 fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
