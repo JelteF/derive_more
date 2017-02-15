@@ -25,12 +25,12 @@ struct MyInt(i32)
 Code like this will be generated:
 
 ```rust
-impl<T> ::std::ops::Mul<T> for MyInt
-    where T: ::std::ops::Mul<i32, Output = i32>
+impl<__RhsT> ::std::ops::Mul<__RhsT> for MyInt
+    where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
     type Output = MyInt;
-    fn mul(self, rhs: T) -> MyInt {
-        MyInt(rhs.mul(self.0))
+    fn mul(self, rhs: __RhsT) -> MyInt {
+        MyInt(self.0.mul(rhs))
     }
 }
 ```
@@ -47,12 +47,12 @@ struct MyInts(i32, i32)
 Code like this will be generated:
 
 ```rust
-impl<T> ::std::ops::Mul<T> for MyInts
-    where T: ::std::ops::Mul<i32, Output = i32> + ::std::marker::Copy
+impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for MyInts
+    where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
     type Output = MyInts;
-    fn mul(self, rhs: T) -> MyInts {
-        MyInts(rhs.mul(self.0), rhs.mul(self.1))
+    fn mul(self, rhs: __RhsT) -> MyInts {
+        MyInts(self.0.mul(rhs), self.1.mul(rhs))
     }
 }
 ```
@@ -75,12 +75,12 @@ struct Point1D {
 Code like this will be generated:
 
 ```rust
-impl<T> ::std::ops::Mul<T> for Point1D
-    where T: ::std::ops::Mul<i32, Output = i32>
+impl<__RhsT> ::std::ops::Mul<__RhsT> for Point1D
+    where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
     type Output = Point1D;
-    fn mul(self, rhs: T) -> Point1D {
-        Point1D { x: rhs.mul(self.x) }
+    fn mul(self, rhs: __RhsT) -> Point1D {
+        Point1D { x: self.x.mul(rhs) }
     }
 }
 ```
@@ -100,14 +100,14 @@ struct Point2D {
 Code like this will be generated:
 
 ```rust
-impl<T> ::std::ops::Mul<T> for Point2D
-    where T: ::std::ops::Mul<i32, Output = i32> + ::std::marker::Copy
+impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for Point2D
+    where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
     type Output = Point2D;
-    fn mul(self, rhs: T) -> Point2D {
+    fn mul(self, rhs: __RhsT) -> Point2D {
         Point2D {
-            x: rhs.mul(self.x),
-            y: rhs.mul(self.y),
+            x: self.x.mul(rhs),
+            y: self.y.mul(rhs),
         }
     }
 }
