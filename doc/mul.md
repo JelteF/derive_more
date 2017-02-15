@@ -18,7 +18,7 @@ type in question deriving for this is not implemented.
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
-#[derive(From)]
+#[derive(Mul)]
 struct MyInt(i32)
 ```
 
