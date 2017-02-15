@@ -127,11 +127,11 @@ mod utils;
 
 mod from;
 mod constructor;
+mod not_like;
 mod add_like;
 mod add_assign_like;
 mod mul_like;
 mod mul_assign_like;
-mod not_like;
 
 macro_rules! create_derive(
     ($mod_:ident, $trait_:ident, $fn_name: ident) => {
@@ -149,6 +149,9 @@ create_derive!(from, From, from_derive);
 
 create_derive!(constructor, Constructor, constructor_derive);
 
+create_derive!(not_like, Not, not_derive);
+create_derive!(not_like, Neg, neg_derive);
+
 create_derive!(add_like, Add, add_derive);
 create_derive!(add_like, Sub, sub_derive);
 create_derive!(add_like, BitAnd, bit_and_derive);
@@ -160,9 +163,6 @@ create_derive!(mul_like, Div, div_derive);
 create_derive!(mul_like, Rem, rem_derive);
 create_derive!(mul_like, Shr, shr_derive);
 create_derive!(mul_like, Shl, shl_derive);
-
-create_derive!(not_like, Not, not_derive);
-create_derive!(not_like, Neg, neg_derive);
 
 create_derive!(add_assign_like, AddAssign, add_assign_derive);
 create_derive!(add_assign_like, SubAssign, sub_assign_derive);
