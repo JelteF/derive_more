@@ -56,6 +56,7 @@
 //! 4. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
 //!    and [`BitXorAssign`].
 //! 5. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
+//! 6. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
 //!
 //!
 //! ## Generated code
@@ -70,6 +71,7 @@
 //! 3. [`#[derive(Add)]`](add.html)
 //! 4. [`#[derive(AddAssign)]`](add_assign.html)
 //! 5. [`#[derive(Mul)]`](mul.html)
+//! 5. [`#[derive(MulAssign)]`](mul_assign.html)
 //!
 //! If you want to be sure what code is generated for your specific trait I recommend using the
 //! [`cargo-expand`] utility.
@@ -105,16 +107,21 @@
 //! [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 //! [`BitOr`]: https://doc.rust-lang.org/std/ops/trait.BitOr.html
 //! [`BitXor`]: https://doc.rust-lang.org/std/ops/trait.BitXor.html
-//! [`Mul`]: https://doc.rust-lang.org/std/ops/trait.Mul.html
-//! [`Div`]: https://doc.rust-lang.org/std/ops/trait.Div.html
-//! [`Rem`]: https://doc.rust-lang.org/std/ops/trait.Rem.html
-//! [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html
-//! [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html
 //! [`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html
 //! [`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html
 //! [`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html
 //! [`BitOrAssign`]: https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html
 //! [`BitXorAssign`]: https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html
+//! [`Mul`]: https://doc.rust-lang.org/std/ops/trait.Mul.html
+//! [`Div`]: https://doc.rust-lang.org/std/ops/trait.Div.html
+//! [`Rem`]: https://doc.rust-lang.org/std/ops/trait.Rem.html
+//! [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html
+//! [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html
+//! [`MulAssign`]: https://doc.rust-lang.org/std/ops/trait.MulAssign.html
+//! [`DivAssign`]: https://doc.rust-lang.org/std/ops/trait.DivAssign.html
+//! [`RemAssign`]: https://doc.rust-lang.org/std/ops/trait.RemAssign.html
+//! [`ShrAssign`]: https://doc.rust-lang.org/std/ops/trait.ShrAssign.html
+//! [`ShlAssign`]: https://doc.rust-lang.org/std/ops/trait.ShlAssign.html
 
 extern crate proc_macro;
 #[macro_use]
