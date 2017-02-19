@@ -51,12 +51,14 @@
 //! following way:
 //!
 //! 1. `From`, only contains the [`From`].
-//! 2. `Not`-like, contains [`Not`] and [`Neg`].
-//! 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
-//! 4. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//! 2. `Constructor`, this doesn't derive a trait, but it derives a `new` method that can be
+//!    used as a constructor.
+//! 3. `Not`-like, contains [`Not`] and [`Neg`].
+//! 4. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
+//! 5. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
 //!    and [`BitXorAssign`].
-//! 5. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
-//! 6. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
+//! 6. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
+//! 7. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
 //!
 //!
 //! ## Generated code
@@ -67,11 +69,12 @@
 //! before.
 //!
 //! 1. [`#[derive(From)]`](from.html)
-//! 2. [`#[derive(Not)]`](not.html)
-//! 3. [`#[derive(Add)]`](add.html)
-//! 4. [`#[derive(AddAssign)]`](add_assign.html)
-//! 5. [`#[derive(Mul)]`](mul.html)
-//! 5. [`#[derive(MulAssign)]`](mul_assign.html)
+//! 2. [`#[derive(Constructor)]`](constructor.html)
+//! 3. [`#[derive(Not)]`](not.html)
+//! 4. [`#[derive(Add)]`](add.html)
+//! 5. [`#[derive(AddAssign)]`](add_assign.html)
+//! 6. [`#[derive(Mul)]`](mul.html)
+//! 7. [`#[derive(MulAssign)]`](mul_assign.html)
 //!
 //! If you want to be sure what code is generated for your specific trait I recommend using the
 //! [`cargo-expand`] utility.
