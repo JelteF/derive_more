@@ -22,9 +22,9 @@ struct Point2D {
 #[derive(From)]
 enum MixedInts {
     SmallInt(i32),
-    BigInt(i64),
+    NamedBigInt { int: i64 },
     TwoSmallInts(i32, i32),
-    NamedSmallInts { x: i32, y: i32 },
-    UnsignedOne(u32),
-    UnsignedTwo(u32),
+    NamedBigInts { x: i64, y: i64 },
+    Unsigned(u32),
+    NamedUnsigned { x: u32 },
 }

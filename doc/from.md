@@ -3,12 +3,15 @@
 The point of deriving this type is that it makes it easy to create a new
 instance of the type by using the `.into()` method on the value(s) that it
 should contain.
-For (tuple) structs with a single field this is done by calling `.into()` on
-the desired content itself.
+This is done by implementing the `From` trait for the type that is passed to the
+derive.
+For structs with a single field you can call `.into()` on the desired content
+itself after deriving `From`.
 For structs that have multiple fields `.into()` needs to be called on a tuple
 containing the desired content for each field.
-Enums have a bit different semantics as can be read in the [Enums](#enums)
-section below.
+For enums `.into()` works for each variant as if they were structs. 
+This way the variant can not only be initialized, but also be chosen based on
+the type that `.into()` is called on.
 
 # Tuple structs
 
@@ -22,8 +25,8 @@ struct MyInt(i32)
 Code like this will be generated:
 
 ```rust
-impl ::std::convert::From<i32> for MyInt {
-    fn from(original: i32) -> MyInt {
+impl ::std::convert::From<(i32)> for MyInt {
+    fn from(original: (i32)) -> MyInt {
         MyInt(original)
     }
 }
@@ -65,8 +68,8 @@ struct Point1D {
 Code like this will be generated:
 
 ```rust
-impl ::std::convert::From<i32> for Point1D {
-    fn from(original: i32) -> Point1D {
+impl ::std::convert::From<(i32)> for Point1D {
+    fn from(original: (i32)) -> Point1D {
         Point1D { x: original }
     }
 }
@@ -102,37 +105,54 @@ impl ::std::convert::From<(i32, i32)> for Point2D {
 
 When deriving `From` for enums a new `impl` will be generated for each of its
 variants.
-Currently this is only done for the variants of the enum that are newtypes.
-For instance When deriving for the following enum:
+There's one exception, if multiple variants have the same type signature no `From`
+implementation will be derived for any of those variants.
+For instance when deriving `From` for the following enum:
 
 ```rust
 #[derive(From)]
 enum MixedInts {
     SmallInt(i32),
-    BigInt(i64),
+    NamedBigInt { int: i64 },
     TwoSmallInts(i32, i32),
-    NamedSmallInts { x: i32, y: i32 },
-    UnsignedOne(u32),
-    UnsignedTwo(u32),
+    NamedBigInts { x: i64, y: i64 },
+    Unsigned(u32),
+    NamedUnsigned { x: u32 },
 }
+
 ```
 
 Code like this will be generated:
 
 ```rust
-impl ::std::convert::From<i32> for MixedInts {
-    fn from(original: i32) -> MixedInts {
+impl ::std::convert::From<(i32)> for MixedInts {
+    fn from(original: (i32)) -> MixedInts {
         MixedInts::SmallInt(original)
     }
 }
-impl ::std::convert::From<i64> for MixedInts {
-    fn from(original: i64) -> MixedInts {
-        MixedInts::BigInt(original)
+
+impl ::std::convert::From<(i64)> for MixedInts {
+    fn from(original: (i64)) -> MixedInts {
+        MixedInts::NamedBigInt { int: original }
+    }
+}
+
+impl ::std::convert::From<(i32, i32)> for MixedInts {
+    fn from(original: (i32, i32)) -> MixedInts {
+        MixedInts::TwoSmallInts(original.0, original.1)
+    }
+}
+
+impl ::std::convert::From<(i64, i64)> for MixedInts {
+    fn from(original: (i64, i64)) -> MixedInts {
+        MixedInts::NamedBigInts {
+            x: original.0,
+            y: original.1,
+        }
     }
 }
 ```
 
-Notice that for `UnsignedOne` and `UnsignedTwo` no `impl` is generated, even
-though they are newtypes. The reason for this is that it would be impossible for
-the compiler to know which implementation to choose, since they have the would
-both implement `From<u32>`.
+Notice that for `Unsigned` and `NamedUnsigned` no `impl` is generated.
+The reason for this is that it would be impossible for the compiler to know
+which implementation to choose, since they would both implement `From<u32>`.
