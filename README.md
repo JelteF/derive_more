@@ -21,8 +21,6 @@ By using this library the following code just works:
 
 
 ```rust
-# #[macro_use] extern crate derive_more;
-
 #[derive(Debug, Eq, PartialEq, From, Add)]
 struct MyInt(i32);
 
@@ -103,7 +101,6 @@ And this to the top of your Rust file:
 ```rust
 #[macro_use]
 extern crate derive_more;
-# fn main () {}
 ```
 
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
