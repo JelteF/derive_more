@@ -136,6 +136,7 @@ use proc_macro::TokenStream;
 mod utils;
 
 mod from;
+mod into;
 mod constructor;
 mod not_like;
 mod add_like;
@@ -156,6 +157,8 @@ macro_rules! create_derive(
 );
 
 create_derive!(from, From, from_derive);
+
+create_derive!(into, Into, into_derive);
 
 create_derive!(constructor, Constructor, constructor_derive);
 
