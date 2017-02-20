@@ -57,3 +57,8 @@ The generated code is similar for more or less fields.
 
 # Enums
 
+Currently `Constructor` cannot be derived for enums. This is because the `new`
+method might then need to have a different number of arguments. This is
+currently not supported by Rust. So this functionality will not be added until
+this [RFC](https://github.com/rust-lang/rfcs/issues/376) (or a similar one) is
+accepted and implemented.
