@@ -50,8 +50,8 @@
 //! However, some of the semantics of the traits overlap a lot, so they have been grouped in the
 //! following way:
 //!
-//! 1. `From`, only contains the [`From`].
-//! 2. `Into`, only contains the [`Into`].
+//! 1. `From`, only contains [`From`].
+//! 2. `Into`, only contains [`Into`].
 //! 3. `Constructor`, this doesn't derive a trait, but it derives a `new` method that can be
 //!    used as a constructor.
 //! 4. `Not`-like, contains [`Not`] and [`Neg`].
@@ -78,21 +78,18 @@
 //! 7. [`#[derive(Mul)]`](mul.html)
 //! 8. [`#[derive(MulAssign)]`](mul_assign.html)
 //!
-//! If you want to be sure what code is generated for your specific trait I recommend using the
+//! If you want to be sure what code is generated for your specific type I recommend using the
 //! [`cargo-expand`] utility.
 //! This will show you your code with all macros and derives expanded.
 //!
 //! ## Installation
 //!
-//! This library heavily uses Macros 1.1, which is to stabilized in Rust 1.15 (the next Rust
-//! release).
-//! To use it before that time you have to install the nightly or beta channel.
-//!
-//! After doing this, add this to `Cargo.toml`:
+//! This library requires Rust 1.15 or higher, so this needs to be installed.
+//! Then add the following to `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! derive_more = "0.4.0"
+//! derive_more = "0.6.0"
 //! ```
 //!
 //! And this to the top of your Rust file:
