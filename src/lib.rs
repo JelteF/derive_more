@@ -20,7 +20,7 @@
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! struct MyInt(i32);
 //!
-//! #[derive(Debug, Eq, PartialEq, From, Mul)]
+//! #[derive(Debug, Eq, PartialEq, From, Into, Constructor, Mul)]
 //! struct Point2D {
 //!     x: i32,
 //!     y: i32,
@@ -37,10 +37,10 @@
 //!     let my_11 = MyInt(5) + 6.into();
 //!     assert_eq!(MyInt(11), MyInt(5) + 6.into());
 //!     assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
+//!     assert_eq!((5, 6), Point2D { x: 5, y: 6 }.into());
+//!     assert_eq!(Point2D { x: 5, y: 6 }, Point2D::new(5, 6));
 //!     assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
 //! }
-//!
-//!
 //! ```
 //!
 //! ## The newly derivable traits
