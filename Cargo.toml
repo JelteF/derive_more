@@ -1,10 +1,16 @@
 [package]
 name = "derive_more"
-version = "0.5.0"
+version = "0.6.0"
 description = "Adds #[derive(x)] macros for more traits"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
 repository = "https://github.com/JelteF/derive_more"
+include = [
+    "src/**/*.rs",
+    "Cargo.toml",
+    "LICENSE",
+    "README.md",
+]
 
 [lib]
 name = "derive_more"
