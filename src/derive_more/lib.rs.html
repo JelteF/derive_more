@@ -9,6 +9,7 @@
 
     <title>lib.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -209,6 +210,29 @@
 <span id="165">165</span>
 <span id="166">166</span>
 <span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
 </pre><pre class='rust '>
 <span class='doccomment'>//! # derive_more</span>
 <span class='doccomment'>//! Rust has lots of builtin traits that are implemented for its basic types, such as [`Add`],</span>
@@ -232,7 +256,7 @@
 <span class='doccomment'>//! #[derive(Debug, Eq, PartialEq, From, Add)]</span>
 <span class='doccomment'>//! struct MyInt(i32);</span>
 <span class='doccomment'>//!</span>
-<span class='doccomment'>//! #[derive(Debug, Eq, PartialEq, From, Mul)]</span>
+<span class='doccomment'>//! #[derive(Debug, Eq, PartialEq, From, Into, Constructor, Mul)]</span>
 <span class='doccomment'>//! struct Point2D {</span>
 <span class='doccomment'>//!     x: i32,</span>
 <span class='doccomment'>//!     y: i32,</span>
@@ -249,10 +273,10 @@
 <span class='doccomment'>//!     let my_11 = MyInt(5) + 6.into();</span>
 <span class='doccomment'>//!     assert_eq!(MyInt(11), MyInt(5) + 6.into());</span>
 <span class='doccomment'>//!     assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());</span>
+<span class='doccomment'>//!     assert_eq!((5, 6), Point2D { x: 5, y: 6 }.into());</span>
+<span class='doccomment'>//!     assert_eq!(Point2D { x: 5, y: 6 }, Point2D::new(5, 6));</span>
 <span class='doccomment'>//!     assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())</span>
 <span class='doccomment'>//! }</span>
-<span class='doccomment'>//!</span>
-<span class='doccomment'>//!</span>
 <span class='doccomment'>//! ```</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! ## The newly derivable traits</span>
@@ -262,12 +286,16 @@
 <span class='doccomment'>//! However, some of the semantics of the traits overlap a lot, so they have been grouped in the</span>
 <span class='doccomment'>//! following way:</span>
 <span class='doccomment'>//!</span>
-<span class='doccomment'>//! 1. `From`, only contains the [`From`].</span>
-<span class='doccomment'>//! 2. `Not`-like, contains [`Not`] and [`Neg`].</span>
-<span class='doccomment'>//! 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].</span>
-<span class='doccomment'>//! 4. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]</span>
+<span class='doccomment'>//! 1. `From`, only contains [`From`].</span>
+<span class='doccomment'>//! 2. `Into`, only contains [`Into`].</span>
+<span class='doccomment'>//! 3. `Constructor`, this doesn&#39;t derive a trait, but it derives a `new` method that can be</span>
+<span class='doccomment'>//!    used as a constructor.</span>
+<span class='doccomment'>//! 4. `Not`-like, contains [`Not`] and [`Neg`].</span>
+<span class='doccomment'>//! 5. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].</span>
+<span class='doccomment'>//! 6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]</span>
 <span class='doccomment'>//!    and [`BitXorAssign`].</span>
-<span class='doccomment'>//! 5. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].</span>
+<span class='doccomment'>//! 7. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].</span>
+<span class='doccomment'>//! 8. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! ## Generated code</span>
@@ -278,26 +306,26 @@
 <span class='doccomment'>//! before.</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! 1. [`#[derive(From)]`](from.html)</span>
-<span class='doccomment'>//! 2. [`#[derive(Not)]`](not.html)</span>
-<span class='doccomment'>//! 3. [`#[derive(Add)]`](add.html)</span>
-<span class='doccomment'>//! 4. [`#[derive(AddAssign)]`](add_assign.html)</span>
-<span class='doccomment'>//! 5. [`#[derive(Mul)]`](mul.html)</span>
+<span class='doccomment'>//! 2. [`#[derive(Into)]`](into.html)</span>
+<span class='doccomment'>//! 3. [`#[derive(Constructor)]`](constructor.html)</span>
+<span class='doccomment'>//! 4. [`#[derive(Not)]`](not.html)</span>
+<span class='doccomment'>//! 5. [`#[derive(Add)]`](add.html)</span>
+<span class='doccomment'>//! 6. [`#[derive(AddAssign)]`](add_assign.html)</span>
+<span class='doccomment'>//! 7. [`#[derive(Mul)]`](mul.html)</span>
+<span class='doccomment'>//! 8. [`#[derive(MulAssign)]`](mul_assign.html)</span>
 <span class='doccomment'>//!</span>
-<span class='doccomment'>//! If you want to be sure what code is generated for your specific trait I recommend using the</span>
+<span class='doccomment'>//! If you want to be sure what code is generated for your specific type I recommend using the</span>
 <span class='doccomment'>//! [`cargo-expand`] utility.</span>
 <span class='doccomment'>//! This will show you your code with all macros and derives expanded.</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! ## Installation</span>
 <span class='doccomment'>//!</span>
-<span class='doccomment'>//! This library heavily uses Macros 1.1, which is to stabilized in Rust 1.15 (the next Rust</span>
-<span class='doccomment'>//! release).</span>
-<span class='doccomment'>//! To use it before that time you have to install the nightly or beta channel.</span>
-<span class='doccomment'>//!</span>
-<span class='doccomment'>//! After doing this, add this to `Cargo.toml`:</span>
+<span class='doccomment'>//! This library requires Rust 1.15 or higher, so this needs to be installed.</span>
+<span class='doccomment'>//! Then add the following to `Cargo.toml`:</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! ```toml</span>
 <span class='doccomment'>//! [dependencies]</span>
-<span class='doccomment'>//! derive_more = &quot;0.4.0&quot;</span>
+<span class='doccomment'>//! derive_more = &quot;0.6.0&quot;</span>
 <span class='doccomment'>//! ```</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! And this to the top of your Rust file:</span>
@@ -309,7 +337,8 @@
 <span class='doccomment'>//! ```</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand</span>
-<span class='doccomment'>//! [`From`]: https://doc.rust-lang.org/std/convert/trait.From.html</span>
+<span class='doccomment'>//! [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html</span>
+<span class='doccomment'>//! [`Into`]: https://doc.rust-lang.org/core/convert/trait.Into.html</span>
 <span class='doccomment'>//! [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html</span>
 <span class='doccomment'>//! [`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html</span>
 <span class='doccomment'>//! [`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html</span>
@@ -317,16 +346,21 @@
 <span class='doccomment'>//! [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html</span>
 <span class='doccomment'>//! [`BitOr`]: https://doc.rust-lang.org/std/ops/trait.BitOr.html</span>
 <span class='doccomment'>//! [`BitXor`]: https://doc.rust-lang.org/std/ops/trait.BitXor.html</span>
-<span class='doccomment'>//! [`Mul`]: https://doc.rust-lang.org/std/ops/trait.Mul.html</span>
-<span class='doccomment'>//! [`Div`]: https://doc.rust-lang.org/std/ops/trait.Div.html</span>
-<span class='doccomment'>//! [`Rem`]: https://doc.rust-lang.org/std/ops/trait.Rem.html</span>
-<span class='doccomment'>//! [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html</span>
-<span class='doccomment'>//! [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html</span>
 <span class='doccomment'>//! [`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html</span>
 <span class='doccomment'>//! [`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html</span>
 <span class='doccomment'>//! [`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html</span>
 <span class='doccomment'>//! [`BitOrAssign`]: https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html</span>
 <span class='doccomment'>//! [`BitXorAssign`]: https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html</span>
+<span class='doccomment'>//! [`Mul`]: https://doc.rust-lang.org/std/ops/trait.Mul.html</span>
+<span class='doccomment'>//! [`Div`]: https://doc.rust-lang.org/std/ops/trait.Div.html</span>
+<span class='doccomment'>//! [`Rem`]: https://doc.rust-lang.org/std/ops/trait.Rem.html</span>
+<span class='doccomment'>//! [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html</span>
+<span class='doccomment'>//! [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html</span>
+<span class='doccomment'>//! [`MulAssign`]: https://doc.rust-lang.org/std/ops/trait.MulAssign.html</span>
+<span class='doccomment'>//! [`DivAssign`]: https://doc.rust-lang.org/std/ops/trait.DivAssign.html</span>
+<span class='doccomment'>//! [`RemAssign`]: https://doc.rust-lang.org/std/ops/trait.RemAssign.html</span>
+<span class='doccomment'>//! [`ShrAssign`]: https://doc.rust-lang.org/std/ops/trait.ShrAssign.html</span>
+<span class='doccomment'>//! [`ShlAssign`]: https://doc.rust-lang.org/std/ops/trait.ShlAssign.html</span>
 
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>proc_macro</span>;
 <span class='attribute'>#[<span class='ident'>macro_use</span>]</span>
@@ -338,10 +372,13 @@
 <span class='kw'>mod</span> <span class='ident'>utils</span>;
 
 <span class='kw'>mod</span> <span class='ident'>from</span>;
+<span class='kw'>mod</span> <span class='ident'>into</span>;
+<span class='kw'>mod</span> <span class='ident'>constructor</span>;
+<span class='kw'>mod</span> <span class='ident'>not_like</span>;
 <span class='kw'>mod</span> <span class='ident'>add_like</span>;
 <span class='kw'>mod</span> <span class='ident'>add_assign_like</span>;
 <span class='kw'>mod</span> <span class='ident'>mul_like</span>;
-<span class='kw'>mod</span> <span class='ident'>not_like</span>;
+<span class='kw'>mod</span> <span class='ident'>mul_assign_like</span>;
 
 <span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>create_derive</span>(
     (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>mod_</span>:<span class='ident'>ident</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>trait_</span>:<span class='ident'>ident</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>fn_name</span>: <span class='ident'>ident</span>) <span class='op'>=&gt;</span> {
@@ -350,12 +387,19 @@
         <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>fn_name</span>(<span class='ident'>input</span>: <span class='ident'>TokenStream</span>) <span class='op'>-&gt;</span> <span class='ident'>TokenStream</span> {
             <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>input</span>.<span class='ident'>to_string</span>();
             <span class='kw'>let</span> <span class='ident'>ast</span> <span class='op'>=</span> <span class='ident'>syn</span>::<span class='ident'>parse_macro_input</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>).<span class='ident'>unwrap</span>();
-            <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>mod_</span>::<span class='ident'>expand</span>(<span class='kw-2'>&amp;</span><span class='ident'>ast</span>, <span class='macro'>stringify</span><span class='macro'>!</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>trait_</span>)).<span class='ident'>parse</span>().<span class='ident'>unwrap</span>()
+            <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>mod_</span>::<span class='ident'>expand</span>(<span class='kw-2'>&amp;</span><span class='ident'>ast</span>, <span class='macro'>stringify</span><span class='macro'>!</span>(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>trait_</span>)).<span class='ident'>parse</span>().<span class='ident'>expect</span>(<span class='string'>&quot;Expanded output was no correct Rust code&quot;</span>)
         }
     }
 );
 
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>from</span>, <span class='ident'>From</span>, <span class='ident'>from_derive</span>);
+
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>into</span>, <span class='ident'>Into</span>, <span class='ident'>into_derive</span>);
+
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>constructor</span>, <span class='ident'>Constructor</span>, <span class='ident'>constructor_derive</span>);
+
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>not_like</span>, <span class='ident'>Not</span>, <span class='ident'>not_derive</span>);
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>not_like</span>, <span class='ident'>Neg</span>, <span class='ident'>neg_derive</span>);
 
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>add_like</span>, <span class='ident'>Add</span>, <span class='ident'>add_derive</span>);
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>add_like</span>, <span class='ident'>Sub</span>, <span class='ident'>sub_derive</span>);
@@ -369,14 +413,17 @@
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>mul_like</span>, <span class='ident'>Shr</span>, <span class='ident'>shr_derive</span>);
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>mul_like</span>, <span class='ident'>Shl</span>, <span class='ident'>shl_derive</span>);
 
-<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>not_like</span>, <span class='ident'>Not</span>, <span class='ident'>not_derive</span>);
-<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>not_like</span>, <span class='ident'>Neg</span>, <span class='ident'>neg_derive</span>);
-
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>add_assign_like</span>, <span class='ident'>AddAssign</span>, <span class='ident'>add_assign_derive</span>);
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>add_assign_like</span>, <span class='ident'>SubAssign</span>, <span class='ident'>sub_assign_derive</span>);
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>add_assign_like</span>, <span class='ident'>BitAndAssign</span>, <span class='ident'>bit_and_assign_derive</span>);
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>add_assign_like</span>, <span class='ident'>BitOrAssign</span>, <span class='ident'>bit_or_assign_derive</span>);
 <span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>add_assign_like</span>, <span class='ident'>BitXorAssign</span>, <span class='ident'>bit_xor_assign_derive</span>);
+
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>mul_assign_like</span>, <span class='ident'>MulAssign</span>, <span class='ident'>mul_assign_derive</span>);
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>mul_assign_like</span>, <span class='ident'>DivAssign</span>, <span class='ident'>div_assign_derive</span>);
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>mul_assign_like</span>, <span class='ident'>RemAssign</span>, <span class='ident'>rem_assign_derive</span>);
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>mul_assign_like</span>, <span class='ident'>ShrAssign</span>, <span class='ident'>shr_assign_derive</span>);
+<span class='macro'>create_derive</span><span class='macro'>!</span>(<span class='ident'>mul_assign_like</span>, <span class='ident'>ShlAssign</span>, <span class='ident'>shl_assign_derive</span>);
 </pre>
 </section>
     <section id='search' class="content hidden"></section>

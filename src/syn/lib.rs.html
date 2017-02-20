@@ -9,6 +9,7 @@
 
     <title>lib.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -302,11 +303,11 @@
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>visit</span>;
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>parsing</span>::<span class='op'>*</span>;
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>parsing</span>::<span class='kw-2'>*</span>;
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>parsing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> {<span class='ident'>derive</span>, <span class='ident'>generics</span>, <span class='ident'>ident</span>, <span class='ident'>mac</span>, <span class='ident'>space</span>, <span class='ident'>ty</span>};
     <span class='kw'>use</span> <span class='ident'>nom</span>::<span class='ident'>IResult</span>;
 

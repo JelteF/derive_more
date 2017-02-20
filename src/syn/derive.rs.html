@@ -9,6 +9,7 @@
 
     <title>derive.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -153,7 +154,7 @@
 <span id="109">109</span>
 <span id="110">110</span>
 </pre><pre class='rust '>
-<span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+<span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
 
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Debug</span>, <span class='ident'>Clone</span>, <span class='ident'>Eq</span>, <span class='ident'>PartialEq</span>, <span class='ident'>Hash</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>DeriveInput</span> {
@@ -172,7 +173,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>parsing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>Generics</span>;
     <span class='kw'>use</span> <span class='ident'>attr</span>::<span class='ident'>parsing</span>::<span class='ident'>outer_attr</span>;
     <span class='kw'>use</span> <span class='ident'>data</span>::<span class='ident'>parsing</span>::{<span class='ident'>visibility</span>, <span class='ident'>struct_body</span>, <span class='ident'>enum_body</span>};
@@ -214,7 +215,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;printing&quot;</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>printing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>attr</span>::<span class='ident'>FilterAttrs</span>;
     <span class='kw'>use</span> <span class='ident'>data</span>::<span class='ident'>VariantData</span>;
     <span class='kw'>use</span> <span class='ident'>quote</span>::{<span class='ident'>Tokens</span>, <span class='ident'>ToTokens</span>};
@@ -242,7 +243,7 @@
                     <span class='ident'>tokens</span>.<span class='ident'>append</span>(<span class='string'>&quot;}&quot;</span>);
                 }
                 <span class='ident'>Body</span>::<span class='ident'>Struct</span>(<span class='kw-2'>ref</span> <span class='ident'>variant_data</span>) <span class='op'>=&gt;</span> {
-                    <span class='kw'>match</span> <span class='op'>*</span><span class='ident'>variant_data</span> {
+                    <span class='kw'>match</span> <span class='kw-2'>*</span><span class='ident'>variant_data</span> {
                         <span class='ident'>VariantData</span>::<span class='ident'>Struct</span>(_) <span class='op'>=&gt;</span> {
                             <span class='self'>self</span>.<span class='ident'>generics</span>.<span class='ident'>where_clause</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>);
                             <span class='ident'>variant_data</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>);

@@ -9,6 +9,7 @@
 
     <title>lit.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -628,7 +629,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>parsing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>escape</span>::{<span class='ident'>cooked_byte</span>, <span class='ident'>cooked_byte_string</span>, <span class='ident'>cooked_char</span>, <span class='ident'>cooked_string</span>, <span class='ident'>raw_string</span>};
     <span class='kw'>use</span> <span class='ident'>space</span>::<span class='ident'>skip_whitespace</span>;
     <span class='kw'>use</span> <span class='ident'>nom</span>::<span class='ident'>IResult</span>;
@@ -872,7 +873,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;printing&quot;</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>printing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>quote</span>::{<span class='ident'>Tokens</span>, <span class='ident'>ToTokens</span>};
     <span class='kw'>use</span> <span class='ident'>std</span>::{<span class='ident'>ascii</span>, <span class='ident'>iter</span>};
     <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>::{<span class='self'>self</span>, <span class='ident'>Display</span>};
@@ -880,7 +881,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>Lit</span> {
         <span class='kw'>fn</span> <span class='ident'>to_tokens</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>tokens</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Tokens</span>) {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>Lit</span>::<span class='ident'>Str</span>(<span class='kw-2'>ref</span> <span class='ident'>s</span>, <span class='ident'>StrStyle</span>::<span class='ident'>Cooked</span>) <span class='op'>=&gt;</span> <span class='ident'>s</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>),
                 <span class='ident'>Lit</span>::<span class='ident'>Str</span>(<span class='kw-2'>ref</span> <span class='ident'>s</span>, <span class='ident'>StrStyle</span>::<span class='ident'>Raw</span>(<span class='ident'>n</span>)) <span class='op'>=&gt;</span> {
                     <span class='ident'>tokens</span>.<span class='ident'>append</span>(<span class='kw-2'>&amp;</span><span class='macro'>format</span><span class='macro'>!</span>(<span class='string'>&quot;r{delim}\&quot;{string}\&quot;{delim}&quot;</span>,
@@ -927,7 +928,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>Display</span> <span class='kw'>for</span> <span class='ident'>IntTy</span> {
         <span class='kw'>fn</span> <span class='ident'>fmt</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>formatter</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>fmt</span>::<span class='ident'>Formatter</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>fmt</span>::<span class='ident'>Error</span><span class='op'>&gt;</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>IntTy</span>::<span class='ident'>Isize</span> <span class='op'>=&gt;</span> <span class='ident'>formatter</span>.<span class='ident'>write_str</span>(<span class='string'>&quot;isize&quot;</span>),
                 <span class='ident'>IntTy</span>::<span class='ident'>I8</span> <span class='op'>=&gt;</span> <span class='ident'>formatter</span>.<span class='ident'>write_str</span>(<span class='string'>&quot;i8&quot;</span>),
                 <span class='ident'>IntTy</span>::<span class='ident'>I16</span> <span class='op'>=&gt;</span> <span class='ident'>formatter</span>.<span class='ident'>write_str</span>(<span class='string'>&quot;i16&quot;</span>),
@@ -945,7 +946,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>Display</span> <span class='kw'>for</span> <span class='ident'>FloatTy</span> {
         <span class='kw'>fn</span> <span class='ident'>fmt</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>formatter</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>fmt</span>::<span class='ident'>Formatter</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>fmt</span>::<span class='ident'>Error</span><span class='op'>&gt;</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>FloatTy</span>::<span class='ident'>F32</span> <span class='op'>=&gt;</span> <span class='ident'>formatter</span>.<span class='ident'>write_str</span>(<span class='string'>&quot;f32&quot;</span>),
                 <span class='ident'>FloatTy</span>::<span class='ident'>F64</span> <span class='op'>=&gt;</span> <span class='ident'>formatter</span>.<span class='ident'>write_str</span>(<span class='string'>&quot;f64&quot;</span>),
                 <span class='ident'>FloatTy</span>::<span class='ident'>Unsuffixed</span> <span class='op'>=&gt;</span> <span class='prelude-val'>Ok</span>(()),

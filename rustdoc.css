@@ -1,5 +1,3 @@
-@import "normalize.css";
-
 /**
  * Copyright 2013 The Rust Project Developers. See the COPYRIGHT
  * file at the top-level directory of this distribution and at
@@ -525,20 +523,28 @@ body.blur > :not(#help) {
 	padding: 20px;
 }
 
-em.stab {
-	display: inline-block;
+.stab {
+	display: table;
 	border-width: 1px;
 	border-style: solid;
 	padding: 3px;
 	margin-bottom: 5px;
 	font-size: 90%;
-	font-style: normal;
 }
-em.stab p {
+.stab p {
 	display: inline;
 }
 
+.stab summary {
+	display: list-item;
+}
+
+.stab .microscope {
+	font-size: 1.5em;
+}
+
 .module-item .stab {
+	display: inline;
 	border-width: 0;
 	padding: 0;
 	margin: 0;

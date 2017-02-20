@@ -9,6 +9,7 @@
 
     <title>op.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -287,7 +288,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>parsing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
 
     <span class='macro'>named</span><span class='macro'>!</span>(<span class='kw'>pub</span> <span class='ident'>binop</span> <span class='op'>-&gt;</span> <span class='ident'>BinOp</span>, <span class='macro'>alt</span><span class='macro'>!</span>(
         <span class='macro'>punct</span><span class='macro'>!</span>(<span class='string'>&quot;&amp;&amp;&quot;</span>) <span class='op'>=&gt;</span> { <span class='op'>|</span>_<span class='op'>|</span> <span class='ident'>BinOp</span>::<span class='ident'>And</span> }
@@ -361,12 +362,12 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;printing&quot;</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>printing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>quote</span>::{<span class='ident'>Tokens</span>, <span class='ident'>ToTokens</span>};
 
     <span class='kw'>impl</span> <span class='ident'>BinOp</span> {
         <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>op</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>BinOp</span>::<span class='ident'>Add</span> <span class='op'>=&gt;</span> <span class='string'>&quot;+&quot;</span>,
                 <span class='ident'>BinOp</span>::<span class='ident'>Sub</span> <span class='op'>=&gt;</span> <span class='string'>&quot;-&quot;</span>,
                 <span class='ident'>BinOp</span>::<span class='ident'>Mul</span> <span class='op'>=&gt;</span> <span class='string'>&quot;*&quot;</span>,
@@ -389,7 +390,7 @@
         }
 
         <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>assign_op</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span><span class='op'>&gt;</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>BinOp</span>::<span class='ident'>Add</span> <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>(<span class='string'>&quot;+=&quot;</span>),
                 <span class='ident'>BinOp</span>::<span class='ident'>Sub</span> <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>(<span class='string'>&quot;-=&quot;</span>),
                 <span class='ident'>BinOp</span>::<span class='ident'>Mul</span> <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>(<span class='string'>&quot;*=&quot;</span>),
@@ -413,7 +414,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>UnOp</span> {
         <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>op</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>UnOp</span>::<span class='ident'>Deref</span> <span class='op'>=&gt;</span> <span class='string'>&quot;*&quot;</span>,
                 <span class='ident'>UnOp</span>::<span class='ident'>Not</span> <span class='op'>=&gt;</span> <span class='string'>&quot;!&quot;</span>,
                 <span class='ident'>UnOp</span>::<span class='ident'>Neg</span> <span class='op'>=&gt;</span> <span class='string'>&quot;-&quot;</span>,

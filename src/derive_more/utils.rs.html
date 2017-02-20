@@ -9,6 +9,7 @@
 
     <title>utils.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -85,6 +86,12 @@
 <span id="41">41</span>
 <span id="42">42</span>
 <span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>syn</span>::{<span class='ident'>Ident</span>, <span class='ident'>Ty</span>, <span class='ident'>Field</span>, <span class='ident'>Generics</span>};
 <span class='kw'>use</span> <span class='ident'>syn</span>::<span class='ident'>parse_ty_param_bound</span>;
@@ -95,6 +102,12 @@
 
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>number_idents</span>(<span class='ident'>count</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>Ident</span><span class='op'>&gt;</span> {
     (<span class='number'>0</span>..<span class='ident'>count</span>).<span class='ident'>map</span>(<span class='op'>|</span><span class='ident'>i</span><span class='op'>|</span> <span class='ident'>Ident</span>::<span class='ident'>from</span>(<span class='ident'>i</span>.<span class='ident'>to_string</span>())).<span class='ident'>collect</span>()
+}
+
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>field_idents</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='ident'>fields</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>Field</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Ident</span><span class='op'>&gt;</span> {
+    <span class='ident'>fields</span>.<span class='ident'>iter</span>()
+        .<span class='ident'>map</span>(<span class='op'>|</span><span class='ident'>f</span><span class='op'>|</span> <span class='ident'>f</span>.<span class='ident'>ident</span>.<span class='ident'>as_ref</span>().<span class='ident'>expect</span>(<span class='string'>&quot;Tried to get field names of a tuple struct&quot;</span>))
+        .<span class='ident'>collect</span>()
 }
 
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>get_field_types_iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='ident'>fields</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>Field</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>Box</span><span class='op'>&lt;</span><span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Ty</span><span class='op'>&gt;</span> <span class='op'>+</span> <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {

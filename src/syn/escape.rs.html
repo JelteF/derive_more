@@ -9,6 +9,7 @@
 
     <title>escape.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -531,7 +532,7 @@
 }
 
 <span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>next_ch</span> {
-    (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>chars</span>:<span class='ident'>ident</span> @ <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>pat</span>:<span class='ident'>pat</span> $(<span class='op'>|</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>rest</span>:<span class='ident'>pat</span>)<span class='op'>*</span>) <span class='op'>=&gt;</span> {
+    (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>chars</span>:<span class='ident'>ident</span> @ <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>pat</span>:<span class='ident'>pat</span> $(<span class='op'>|</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>rest</span>:<span class='ident'>pat</span>)<span class='kw-2'>*</span>) <span class='op'>=&gt;</span> {
         <span class='kw'>match</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>chars</span>.<span class='ident'>next</span>() {
             <span class='prelude-val'>Some</span>((_, <span class='ident'>ch</span>)) <span class='op'>=&gt;</span> <span class='kw'>match</span> <span class='ident'>ch</span> {
                 <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>pat</span> $(<span class='op'>|</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>rest</span>)<span class='op'>*</span>  <span class='op'>=&gt;</span> <span class='ident'>ch</span>,
@@ -560,7 +561,7 @@
 
 <span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>from_hex</span> {
     ($(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>ch</span>:<span class='ident'>ident</span>)<span class='op'>+</span>) <span class='op'>=&gt;</span> {{
-        <span class='kw'>let</span> <span class='ident'>hex_bytes</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span>[$(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>ch</span> <span class='kw'>as</span> <span class='ident'>u8</span>),<span class='op'>*</span>];
+        <span class='kw'>let</span> <span class='ident'>hex_bytes</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span>[$(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>ch</span> <span class='kw'>as</span> <span class='ident'>u8</span>),<span class='kw-2'>*</span>];
         <span class='kw'>let</span> <span class='ident'>hex_str</span> <span class='op'>=</span> <span class='ident'>str</span>::<span class='ident'>from_utf8</span>(<span class='ident'>hex_bytes</span>).<span class='ident'>unwrap</span>();
         <span class='ident'>FromStrRadix</span>::<span class='ident'>from_str_radix</span>(<span class='ident'>hex_str</span>, <span class='number'>16</span>).<span class='ident'>unwrap</span>()
     }};

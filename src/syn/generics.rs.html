@@ -9,6 +9,7 @@
 
     <title>generics.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -535,7 +536,7 @@
 <span id="491">491</span>
 <span id="492">492</span>
 </pre><pre class='rust '>
-<span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+<span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
 
 <span class='doccomment'>/// Represents lifetimes and type parameters attached to a declaration</span>
 <span class='doccomment'>/// of a function, enum, trait, etc.</span>
@@ -712,7 +713,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>parsing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>attr</span>::<span class='ident'>parsing</span>::<span class='ident'>outer_attr</span>;
     <span class='kw'>use</span> <span class='ident'>ident</span>::<span class='ident'>parsing</span>::<span class='ident'>ident</span>;
     <span class='kw'>use</span> <span class='ident'>ty</span>::<span class='ident'>parsing</span>::{<span class='ident'>ty</span>, <span class='ident'>poly_trait_ref</span>};
@@ -846,7 +847,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;printing&quot;</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>printing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>attr</span>::<span class='ident'>FilterAttrs</span>;
     <span class='kw'>use</span> <span class='ident'>quote</span>::{<span class='ident'>Tokens</span>, <span class='ident'>ToTokens</span>};
 
@@ -955,7 +956,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>TyParamBound</span> {
         <span class='kw'>fn</span> <span class='ident'>to_tokens</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>tokens</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Tokens</span>) {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>TyParamBound</span>::<span class='ident'>Region</span>(<span class='kw-2'>ref</span> <span class='ident'>lifetime</span>) <span class='op'>=&gt;</span> <span class='ident'>lifetime</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>),
                 <span class='ident'>TyParamBound</span>::<span class='ident'>Trait</span>(<span class='kw-2'>ref</span> <span class='ident'>trait_ref</span>, <span class='ident'>modifier</span>) <span class='op'>=&gt;</span> {
                     <span class='kw'>match</span> <span class='ident'>modifier</span> {
@@ -979,7 +980,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>WherePredicate</span> {
         <span class='kw'>fn</span> <span class='ident'>to_tokens</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>tokens</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Tokens</span>) {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>WherePredicate</span>::<span class='ident'>BoundPredicate</span>(<span class='kw-2'>ref</span> <span class='ident'>predicate</span>) <span class='op'>=&gt;</span> {
                     <span class='ident'>predicate</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>);
                 }

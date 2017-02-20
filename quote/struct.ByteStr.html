@@ -9,6 +9,7 @@
 
     <title>quote::ByteStr - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
     <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
     
@@ -49,11 +50,11 @@
                    </a>
                </span><a class='srclink' href='../src/quote/to_tokens.rs.html#92' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct ByteStr&lt;'a&gt;(pub &amp;'a <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>);</pre><div class='docblock'><p>Wrap a <code>&amp;str</code> so it interpolates as a byte-string: <code>b&quot;abc&quot;</code>.</p>
-</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../quote/struct.ByteStr.html' title='quote::ByteStr'>ByteStr</a>&lt;'a&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/quote/to_tokens.rs.html#91' title='goto source code'>[src]</a></span></h3>
-<div class='impl-items'><h4 id='method.fmt' class='method'><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></span></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='trait core::fmt::Debug'>Debug</a> for <a class='struct' href='../quote/struct.ByteStr.html' title='struct quote::ByteStr'>ByteStr</a>&lt;'a&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/quote/to_tokens.rs.html#91' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='struct core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='type core::fmt::Result'>Result</a></code></span></h4>
 <div class='docblock'><p>Formats the value using the given formatter.</p>
-</div></div><h3 class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class='trait' href='../quote/trait.ToTokens.html' title='quote::ToTokens'>ToTokens</a> for <a class='struct' href='../quote/struct.ByteStr.html' title='quote::ByteStr'>ByteStr</a>&lt;'a&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/quote/to_tokens.rs.html#94-113' title='goto source code'>[src]</a></span></h3>
-<div class='impl-items'><h4 id='method.to_tokens' class='method'><span id='to_tokens.v' class='invisible'><code>fn <a href='../quote/trait.ToTokens.html#tymethod.to_tokens' class='fnname'>to_tokens</a>(&amp;self, tokens: &amp;mut <a class='struct' href='../quote/struct.Tokens.html' title='quote::Tokens'>Tokens</a>)</code></span></h4>
+</div></div><h3 class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class='trait' href='../quote/trait.ToTokens.html' title='trait quote::ToTokens'>ToTokens</a> for <a class='struct' href='../quote/struct.ByteStr.html' title='struct quote::ByteStr'>ByteStr</a>&lt;'a&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/quote/to_tokens.rs.html#94-113' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.to_tokens' class='method'><span id='to_tokens.v' class='invisible'><code>fn <a href='../quote/trait.ToTokens.html#tymethod.to_tokens' class='fnname'>to_tokens</a>(&amp;self, tokens: &amp;mut <a class='struct' href='../quote/struct.Tokens.html' title='struct quote::Tokens'>Tokens</a>)</code></span></h4>
 <div class='docblock'><p>Write <code>self</code> to the given <code>Tokens</code>. <a href="../quote/trait.ToTokens.html#tymethod.to_tokens">Read more</a></p>
 </div></div></section>
     <section id='search' class="content hidden"></section>

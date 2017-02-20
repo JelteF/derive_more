@@ -9,6 +9,7 @@
 
     <title>constant.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -210,7 +211,7 @@
 <span id="166">166</span>
 <span id="167">167</span>
 </pre><pre class='rust '>
-<span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+<span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
 
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Debug</span>, <span class='ident'>Clone</span>, <span class='ident'>Eq</span>, <span class='ident'>PartialEq</span>, <span class='ident'>Hash</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>ConstExpr</span> {
@@ -250,7 +251,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>parsing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> {<span class='ident'>BinOp</span>, <span class='ident'>Ty</span>};
     <span class='kw'>use</span> <span class='ident'>lit</span>::<span class='ident'>parsing</span>::<span class='ident'>lit</span>;
     <span class='kw'>use</span> <span class='ident'>op</span>::<span class='ident'>parsing</span>::{<span class='ident'>binop</span>, <span class='ident'>unop</span>};
@@ -324,12 +325,12 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;printing&quot;</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>printing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>quote</span>::{<span class='ident'>Tokens</span>, <span class='ident'>ToTokens</span>};
 
     <span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>ConstExpr</span> {
         <span class='kw'>fn</span> <span class='ident'>to_tokens</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>tokens</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Tokens</span>) {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>ConstExpr</span>::<span class='ident'>Call</span>(<span class='kw-2'>ref</span> <span class='ident'>func</span>, <span class='kw-2'>ref</span> <span class='ident'>args</span>) <span class='op'>=&gt;</span> {
                     <span class='ident'>func</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>);
                     <span class='ident'>tokens</span>.<span class='ident'>append</span>(<span class='string'>&quot;(&quot;</span>);

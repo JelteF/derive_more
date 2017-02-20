@@ -9,6 +9,7 @@
 
     <title>mac.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
     
@@ -473,7 +474,7 @@
 <span id="429">429</span>
 <span id="430">430</span>
 </pre><pre class='rust '>
-<span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+<span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
 
 <span class='doccomment'>/// Represents a macro invocation. The Path indicates which macro</span>
 <span class='doccomment'>/// is being invoked, and the vector of token-trees contains the source</span>
@@ -586,7 +587,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;parsing&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>parsing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>Lifetime</span>;
     <span class='kw'>use</span> <span class='ident'>generics</span>::<span class='ident'>parsing</span>::<span class='ident'>lifetime</span>;
     <span class='kw'>use</span> <span class='ident'>ident</span>::<span class='ident'>parsing</span>::<span class='ident'>word</span>;
@@ -774,7 +775,7 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;printing&quot;</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>printing</span> {
-    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='op'>*</span>;
+    <span class='kw'>use</span> <span class='kw'>super</span>::<span class='kw-2'>*</span>;
     <span class='kw'>use</span> <span class='ident'>quote</span>::{<span class='ident'>Tokens</span>, <span class='ident'>ToTokens</span>};
 
     <span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>Mac</span> {
@@ -789,7 +790,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>TokenTree</span> {
         <span class='kw'>fn</span> <span class='ident'>to_tokens</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>tokens</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Tokens</span>) {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>TokenTree</span>::<span class='ident'>Token</span>(<span class='kw-2'>ref</span> <span class='ident'>token</span>) <span class='op'>=&gt;</span> <span class='ident'>token</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>),
                 <span class='ident'>TokenTree</span>::<span class='ident'>Delimited</span>(<span class='kw-2'>ref</span> <span class='ident'>delimited</span>) <span class='op'>=&gt;</span> <span class='ident'>delimited</span>.<span class='ident'>to_tokens</span>(<span class='ident'>tokens</span>),
             }
@@ -798,7 +799,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>DelimToken</span> {
         <span class='kw'>fn</span> <span class='ident'>open</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>DelimToken</span>::<span class='ident'>Paren</span> <span class='op'>=&gt;</span> <span class='string'>&quot;(&quot;</span>,
                 <span class='ident'>DelimToken</span>::<span class='ident'>Bracket</span> <span class='op'>=&gt;</span> <span class='string'>&quot;[&quot;</span>,
                 <span class='ident'>DelimToken</span>::<span class='ident'>Brace</span> <span class='op'>=&gt;</span> <span class='string'>&quot;{&quot;</span>,
@@ -806,7 +807,7 @@
         }
 
         <span class='kw'>fn</span> <span class='ident'>close</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>DelimToken</span>::<span class='ident'>Paren</span> <span class='op'>=&gt;</span> <span class='string'>&quot;)&quot;</span>,
                 <span class='ident'>DelimToken</span>::<span class='ident'>Bracket</span> <span class='op'>=&gt;</span> <span class='string'>&quot;]&quot;</span>,
                 <span class='ident'>DelimToken</span>::<span class='ident'>Brace</span> <span class='op'>=&gt;</span> <span class='string'>&quot;}&quot;</span>,
@@ -826,7 +827,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>ToTokens</span> <span class='kw'>for</span> <span class='ident'>Token</span> {
         <span class='kw'>fn</span> <span class='ident'>to_tokens</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>tokens</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Tokens</span>) {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>Token</span>::<span class='ident'>Eq</span> <span class='op'>=&gt;</span> <span class='ident'>tokens</span>.<span class='ident'>append</span>(<span class='string'>&quot;=&quot;</span>),
                 <span class='ident'>Token</span>::<span class='ident'>Lt</span> <span class='op'>=&gt;</span> <span class='ident'>tokens</span>.<span class='ident'>append</span>(<span class='string'>&quot;&lt;&quot;</span>),
                 <span class='ident'>Token</span>::<span class='ident'>Le</span> <span class='op'>=&gt;</span> <span class='ident'>tokens</span>.<span class='ident'>append</span>(<span class='string'>&quot;&lt;=&quot;</span>),
@@ -867,7 +868,7 @@
 
     <span class='kw'>impl</span> <span class='ident'>BinOpToken</span> {
         <span class='kw'>fn</span> <span class='ident'>op</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>BinOpToken</span>::<span class='ident'>Plus</span> <span class='op'>=&gt;</span> <span class='string'>&quot;+&quot;</span>,
                 <span class='ident'>BinOpToken</span>::<span class='ident'>Minus</span> <span class='op'>=&gt;</span> <span class='string'>&quot;-&quot;</span>,
                 <span class='ident'>BinOpToken</span>::<span class='ident'>Star</span> <span class='op'>=&gt;</span> <span class='string'>&quot;*&quot;</span>,
@@ -882,7 +883,7 @@
         }
 
         <span class='kw'>fn</span> <span class='ident'>assign_op</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-            <span class='kw'>match</span> <span class='op'>*</span><span class='self'>self</span> {
+            <span class='kw'>match</span> <span class='kw-2'>*</span><span class='self'>self</span> {
                 <span class='ident'>BinOpToken</span>::<span class='ident'>Plus</span> <span class='op'>=&gt;</span> <span class='string'>&quot;+=&quot;</span>,
                 <span class='ident'>BinOpToken</span>::<span class='ident'>Minus</span> <span class='op'>=&gt;</span> <span class='string'>&quot;-=&quot;</span>,
                 <span class='ident'>BinOpToken</span>::<span class='ident'>Star</span> <span class='op'>=&gt;</span> <span class='string'>&quot;*=&quot;</span>,

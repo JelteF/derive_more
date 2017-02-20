@@ -72,18 +72,18 @@ type in question deriving for this is not implemented.</p>
 <p>When deriving for a tuple struct with a single field (i.e. a newtype) like this:</p>
 
 <pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>From</span>)]</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Mul</span>)]</span>
 <span class='kw'>struct</span> <span class='ident'>MyInt</span>(<span class='ident'>i32</span>)</pre>
 
 <p>Code like this will be generated:</p>
 
 <pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInt</span>
-    <span class='kw'>where</span> <span class='ident'>T</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>i32</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInt</span>
+    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
 {
     <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>MyInt</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>MyInt</span> {
-        <span class='ident'>MyInt</span>(<span class='ident'>rhs</span>.<span class='ident'>mul</span>(<span class='self'>self</span>.<span class='number'>0</span>))
+    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>MyInt</span> {
+        <span class='ident'>MyInt</span>(<span class='self'>self</span>.<span class='number'>0</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>))
     }
 }</pre>
 
@@ -98,12 +98,12 @@ For instance when deriving for a tuple struct with two fields like this:</p>
 <p>Code like this will be generated:</p>
 
 <pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInts</span>
-    <span class='kw'>where</span> <span class='ident'>T</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>i32</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span> <span class='op'>+</span> ::<span class='ident'>std</span>::<span class='ident'>marker</span>::<span class='ident'>Copy</span>
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>: ::<span class='ident'>std</span>::<span class='ident'>marker</span>::<span class='ident'>Copy</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInts</span>
+    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
 {
     <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>MyInts</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>MyInts</span> {
-        <span class='ident'>MyInts</span>(<span class='ident'>rhs</span>.<span class='ident'>mul</span>(<span class='self'>self</span>.<span class='number'>0</span>), <span class='ident'>rhs</span>.<span class='ident'>mul</span>(<span class='self'>self</span>.<span class='number'>1</span>))
+    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>MyInts</span> {
+        <span class='ident'>MyInts</span>(<span class='self'>self</span>.<span class='number'>0</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>), <span class='self'>self</span>.<span class='number'>1</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>))
     }
 }</pre>
 
@@ -121,12 +121,12 @@ For instance when deriving for a tuple struct with two fields like this:</p>
 <p>Code like this will be generated:</p>
 
 <pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point1D</span>
-    <span class='kw'>where</span> <span class='ident'>T</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>i32</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point1D</span>
+    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
 {
     <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Point1D</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>Point1D</span> {
-        <span class='ident'>Point1D</span> { <span class='ident'>x</span>: <span class='ident'>rhs</span>.<span class='ident'>mul</span>(<span class='self'>self</span>.<span class='ident'>x</span>) }
+    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>Point1D</span> {
+        <span class='ident'>Point1D</span> { <span class='ident'>x</span>: <span class='self'>self</span>.<span class='ident'>x</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>) }
     }
 }</pre>
 
@@ -144,14 +144,14 @@ For instance when deriving for a tuple struct with two fields like this:</p>
 <p>Code like this will be generated:</p>
 
 <pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point2D</span>
-    <span class='kw'>where</span> <span class='ident'>T</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>i32</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span> <span class='op'>+</span> ::<span class='ident'>std</span>::<span class='ident'>marker</span>::<span class='ident'>Copy</span>
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>: ::<span class='ident'>std</span>::<span class='ident'>marker</span>::<span class='ident'>Copy</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point2D</span>
+    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
 {
     <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Point2D</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>Point2D</span> {
+    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>Point2D</span> {
         <span class='ident'>Point2D</span> {
-            <span class='ident'>x</span>: <span class='ident'>rhs</span>.<span class='ident'>mul</span>(<span class='self'>self</span>.<span class='ident'>x</span>),
-            <span class='ident'>y</span>: <span class='ident'>rhs</span>.<span class='ident'>mul</span>(<span class='self'>self</span>.<span class='ident'>y</span>),
+            <span class='ident'>x</span>: <span class='self'>self</span>.<span class='ident'>x</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>),
+            <span class='ident'>y</span>: <span class='self'>self</span>.<span class='ident'>y</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>),
         }
     }
 }</pre>
