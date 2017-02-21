@@ -78,7 +78,7 @@ before.
 3. [`#[derive(Constructor)]`](https://jeltef.github.io/derive_more/derive_more/constructor.html)
 4. [`#[derive(Not)]`](https://jeltef.github.io/derive_more/derive_more/not.html)
 5. [`#[derive(Add)]`](https://jeltef.github.io/derive_more/derive_more/add.html)
-6. [`#[derive(AddAssign)]`](ahttps://jeltef.github.io/derive_more/derive_more/dd_assign.html)
+6. [`#[derive(AddAssign)]`](https://jeltef.github.io/derive_more/derive_more/add_assign.html)
 7. [`#[derive(Mul)]`](https://jeltef.github.io/derive_more/derive_more/mul.html)
 8. [`#[derive(MulAssign)]`](https://jeltef.github.io/derive_more/derive_more/mul_assign.html)
 
