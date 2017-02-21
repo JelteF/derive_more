@@ -73,14 +73,14 @@ crate.
 That is why the links below explain what code gets generated for a trait for each group from
 before.
 
-1. [`#[derive(From)]`](from.html)
-2. [`#[derive(Into)]`](into.html)
-3. [`#[derive(Constructor)]`](constructor.html)
-4. [`#[derive(Not)]`](not.html)
-5. [`#[derive(Add)]`](add.html)
-6. [`#[derive(AddAssign)]`](add_assign.html)
-7. [`#[derive(Mul)]`](mul.html)
-8. [`#[derive(MulAssign)]`](mul_assign.html)
+1. [`#[derive(From)]`](https://jeltef.github.io/derive_more/derive_more/from.html)
+2. [`#[derive(Into)]`](https://jeltef.github.io/derive_more/derive_more/into.html)
+3. [`#[derive(Constructor)]`](https://jeltef.github.io/derive_more/derive_more/constructor.html)
+4. [`#[derive(Not)]`](https://jeltef.github.io/derive_more/derive_more/not.html)
+5. [`#[derive(Add)]`](https://jeltef.github.io/derive_more/derive_more/add.html)
+6. [`#[derive(AddAssign)]`](ahttps://jeltef.github.io/derive_more/derive_more/dd_assign.html)
+7. [`#[derive(Mul)]`](https://jeltef.github.io/derive_more/derive_more/mul.html)
+8. [`#[derive(MulAssign)]`](https://jeltef.github.io/derive_more/derive_more/mul_assign.html)
 
 If you want to be sure what code is generated for your specific type I recommend using the
 [`cargo-expand`] utility.
