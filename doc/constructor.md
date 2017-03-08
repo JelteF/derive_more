@@ -21,7 +21,7 @@ Code like this will be generated:
 
 ```rust
 impl MyInts {
-    fn new(__0: i32, __1: i32) -> MyInts {
+    pub fn new(__0: i32, __1: i32) -> MyInts {
         MyInts(__0, __1)
     }
 }
@@ -47,7 +47,7 @@ Code like this will be generated:
 
 ```rust
 impl Point2D {
-    fn new(x: i32, y: i32) -> Point2D {
+    pub fn new(x: i32, y: i32) -> Point2D {
         Point2D { x: x, y: y }
     }
 }

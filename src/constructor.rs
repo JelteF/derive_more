@@ -15,7 +15,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     let original_types = &get_field_types(fields);
     quote!{
         impl#impl_generics #input_type#ty_generics #where_clause {
-            fn new(#(#vars: #original_types),*) -> #input_type#ty_generics {
+            pub fn new(#(#vars: #original_types),*) -> #input_type#ty_generics {
                 #body
             }
         }
