@@ -1,6 +1,6 @@
 [package]
 name = "derive_more"
-version = "0.6.0"
+version = "0.6.1"
 description = "Adds #[derive(x)] macros for more traits"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
