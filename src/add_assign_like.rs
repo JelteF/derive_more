@@ -11,6 +11,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     let method_ident = Ident::from(method_name.to_string() + "_assign");
     let input_type = &input.ident;
 
+    let input_type = &input.ident
     let generics = add_extra_ty_param_bound_simple(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
