@@ -87,7 +87,7 @@ enum MyIntEnum {
     _UnsignedTwo(u32),
     _Uints1(u64, u64),
     _Uints2 { x: u64, y: u64 },
-    _Nothing,
+    Nothing,
 }
 
 
@@ -102,6 +102,9 @@ struct DoubleUIntStruct {
     y: u32,
 }
 
+#[derive(Eq, PartialEq, Debug)]
+#[derive(From, Into, Constructor)]
+struct Unit;
 
 #[test]
 fn main() {
@@ -111,6 +114,11 @@ fn main() {
     let _: MyIntEnum = 6i64.into();
     let _: MyIntEnum = (5i32, 8i32).into();
     let _: MyIntEnum = (5i64, 8i64).into();
+    let _: MyIntEnum = ().into();
+
+    let _: Unit = ().into();
+    assert_eq!((), Unit.into());
+    assert_eq!(Unit, Unit::new());
     assert_eq!(MyInt(5), 5.into());
     assert_eq!(5, MyInt(5).into());
     assert_eq!(MyInt(5), MyInt::new(5));

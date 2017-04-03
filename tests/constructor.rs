@@ -3,6 +3,15 @@
 extern crate derive_more;
 
 #[derive(Constructor)]
+struct EmptyTuple();
+
+#[derive(Constructor)]
+struct EmptyStruct {}
+
+#[derive(Constructor)]
+struct EmptyUnit;
+
+#[derive(Constructor)]
 struct MyInts(i32, i32);
 
 #[derive(Constructor)]

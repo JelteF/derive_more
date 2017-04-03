@@ -11,7 +11,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
         Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
         Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
         Body::Enum(ref variants) => enum_from(input, variants),
-        _ => panic!("Only structs and enums can derive From"),
+        Body::Struct(VariantData::Unit) => struct_from(input, &vec![]),
     }
 }
 
@@ -21,6 +21,8 @@ pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) 
     let original_types = &get_field_types(fields);
     quote!{
         impl#impl_generics ::std::convert::From<(#(#original_types),*)> for #input_type#ty_generics #where_clause {
+
+            #[allow(unused_variables)]
             fn from(original: (#(#original_types),*)) -> #input_type#ty_generics {
                 #body
             }
@@ -73,7 +75,10 @@ fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
             }
-            _ => {}
+            VariantData::Unit => {
+                let counter = type_signature_counts.entry(vec![]).or_insert(0);
+                *counter += 1;
+            }
         }
     }
 
@@ -101,7 +106,13 @@ fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
                     tokens.append(&from_impl(input, fields, body).to_string());
                 }
             }
-            _ => {}
+            VariantData::Unit => {
+                if *type_signature_counts.get(&vec![]).unwrap() == 1 {
+                    let variant_ident = &variant.ident;
+                    let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
+                    tokens.append(&from_impl(input, &vec![], body).to_string());
+                }
+            }
         }
     }
     tokens
