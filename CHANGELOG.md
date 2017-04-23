@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Deriving `From`, `Into` and `Constructor` now works for empty structs.
 
 
 ## 0.6.1 - 2017-03-08
