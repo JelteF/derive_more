@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Variant, VariantData, MacroInput};
-use utils::{number_idents, get_field_types, field_idents};
+use syn::{Body, Field, Variant, VariantData, MacroInput, Ident, TyParam, parse_ty_param_bound};
+use utils::{number_idents, numbered_vars, get_field_types, field_idents};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
@@ -15,7 +15,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     }
 }
 
-pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
+pub fn simple_from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
@@ -30,10 +30,40 @@ pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) 
     }
 }
 
+pub fn into_from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
+    let mut generics = input.generics.clone();
+    let input_type = &input.ident;
+    let original_types = &get_field_types(fields);
+    let into_names = numbered_vars(original_types.len(), "Into");
+    let extra_ty_params = into_names
+        .iter()
+        .zip(original_types)
+        .map(|(name, ty)| {
+            TyParam {
+                attrs: vec![],
+                ident: Ident::from(name.to_string()),
+                bounds: vec![parse_ty_param_bound(&quote!(::std::convert::Into<#ty>).to_string())
+                                 .unwrap()],
+                default: None,
+            }
+        });
+    generics.ty_params.append(extra_ty_params);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    quote!{
+        impl#impl_generics ::std::convert::From<(#(#into_names),*)> for #input_type#ty_generics #where_clause {
+
+            #[allow(unused_variables)]
+            fn from(original: (#(#original_types),*)) -> #input_type#ty_generics {
+                #body
+            }
+        }
+    }
+}
+
 fn tuple_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
     let body = tuple_body(input_type, fields);
-    from_impl(input, fields, body)
+    into_from_impl(input, fields, body)
 }
 
 fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
@@ -48,7 +78,7 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
 fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
     let body = struct_body(input_type, fields);
-    from_impl(input, fields, body)
+    into_from_impl(input, fields, body)
 }
 
 fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
@@ -93,7 +123,7 @@ fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
                 if *type_signature_counts.get(&original_types).unwrap() == 1 {
                     let variant_ident = &variant.ident;
                     let body = tuple_body(quote!(#input_type::#variant_ident), fields);
-                    tokens.append(&from_impl(input, fields, body).to_string());
+                    tokens.append(&simple_from_impl(input, fields, body).to_string());
                 }
             }
 
@@ -103,14 +133,14 @@ fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
                 if *type_signature_counts.get(&original_types).unwrap() == 1 {
                     let variant_ident = &variant.ident;
                     let body = struct_body(quote!(#input_type::#variant_ident), fields);
-                    tokens.append(&from_impl(input, fields, body).to_string());
+                    tokens.append(&simple_from_impl(input, fields, body).to_string());
                 }
             }
             VariantData::Unit => {
                 if *type_signature_counts.get(&vec![]).unwrap() == 1 {
                     let variant_ident = &variant.ident;
                     let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
-                    tokens.append(&from_impl(input, &vec![], body).to_string());
+                    tokens.append(&simple_from_impl(input, &vec![], body).to_string());
                 }
             }
         }
