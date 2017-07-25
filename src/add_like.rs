@@ -1,9 +1,9 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
+use syn::{Body, Field, Ident, Variant, VariantData, DeriveInput};
 use std::iter;
 use utils::{numbered_vars, add_extra_ty_param_bound, field_idents};
 
-pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
     let method_ident = Ident::from(method_name);

@@ -1,9 +1,9 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, MacroInput};
+use syn::{Body, Field, Ident, Variant, VariantData, DeriveInput};
 use std::iter;
 use utils::add_extra_ty_param_bound;
 
-pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::from(method_name);
@@ -64,7 +64,7 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
     quote!(#input_type{#(#exprs),*})
 }
 
-fn enum_output_type_and_content(input: &MacroInput,
+fn enum_output_type_and_content(input: &DeriveInput,
                                 variants: &Vec<Variant>,
                                 method_ident: &Ident)
                                 -> (Tokens, Tokens) {
