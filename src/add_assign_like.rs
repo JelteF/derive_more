@@ -1,9 +1,9 @@
 use quote::Tokens;
-use syn::{Body, Ident, VariantData, MacroInput};
+use syn::{Body, Ident, VariantData, DeriveInput};
 use add_like::{tuple_exprs, struct_exprs};
 use utils::add_extra_ty_param_bound_simple;
 
-pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let method_name = trait_name.to_string();
     let method_name = method_name.trim_right_matches("Assign");

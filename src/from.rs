@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Variant, VariantData, MacroInput};
+use syn::{Body, Field, Variant, VariantData, DeriveInput};
 use utils::{number_idents, get_field_types, field_idents};
 
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
-pub fn expand(input: &MacroInput, _: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
         Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
@@ -15,7 +15,7 @@ pub fn expand(input: &MacroInput, _: &str) -> Tokens {
     }
 }
 
-pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) -> Tokens {
+pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<Field>, body: T) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
@@ -30,7 +30,7 @@ pub fn from_impl<T: ToTokens>(input: &MacroInput, fields: &Vec<Field>, body: T) 
     }
 }
 
-fn tuple_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
+fn tuple_from(input: &DeriveInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
     let body = tuple_body(input_type, fields);
     from_impl(input, fields, body)
@@ -45,7 +45,7 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
     }
 }
 
-fn struct_from(input: &MacroInput, fields: &Vec<Field>) -> Tokens {
+fn struct_from(input: &DeriveInput, fields: &Vec<Field>) -> Tokens {
     let input_type = &input.ident;
     let body = struct_body(input_type, fields);
     from_impl(input, fields, body)
@@ -63,7 +63,7 @@ fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
 }
 
 
-fn enum_from(input: &MacroInput, variants: &Vec<Variant>) -> Tokens {
+fn enum_from(input: &DeriveInput, variants: &Vec<Variant>) -> Tokens {
     let mut type_signature_counts = HashMap::new();
     let input_type = &input.ident;
 

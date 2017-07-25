@@ -15,3 +15,6 @@
 Cargo.lock
 
 gh-pages
+
+# git files
+.swp

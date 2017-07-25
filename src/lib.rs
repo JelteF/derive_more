@@ -150,7 +150,7 @@ macro_rules! create_derive(
         #[doc(hidden)]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let s = input.to_string();
-            let ast = syn::parse_macro_input(&s).unwrap();
+            let ast = syn::parse_derive_input(&s).unwrap();
             $mod_::expand(&ast, stringify!($trait_)).parse().expect("Expanded output was no correct Rust code")
         }
     }

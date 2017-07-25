@@ -1,11 +1,11 @@
 use quote::Tokens;
-use syn::{Body, Ident, VariantData, MacroInput};
+use syn::{Body, Ident, VariantData, DeriveInput};
 use mul_like::{tuple_exprs, struct_exprs, get_mul_generics};
 use std::iter;
 use std::collections::HashSet;
 use utils::get_field_types_iter;
 
-pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let trait_path = &quote!(::std::ops::#trait_ident);
     let method_name = trait_name.to_string();

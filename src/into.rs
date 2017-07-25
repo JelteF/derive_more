@@ -1,10 +1,10 @@
 use quote::Tokens;
-use syn::{Body, Ident, Field, VariantData, MacroInput};
+use syn::{Body, Ident, Field, VariantData, DeriveInput};
 use utils::{get_field_types, field_idents, number_idents};
 
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
-pub fn expand(input: &MacroInput, _: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let input_type = &input.ident;
     let empty_field_names = vec![];
     let empty_fields = &vec![];
