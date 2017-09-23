@@ -35,7 +35,8 @@ pub fn into_from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<Field>, bod
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
     let into_names = numbered_vars(original_types.len(), "Into");
-    let extra_ty_params = into_names
+    let into_names2 = into_names.clone();
+    let mut extra_ty_params: Vec<TyParam> = into_names
         .iter()
         .zip(original_types)
         .map(|(name, ty)| {
@@ -46,14 +47,15 @@ pub fn into_from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<Field>, bod
                                  .unwrap()],
                 default: None,
             }
-        });
-    generics.ty_params.append(extra_ty_params);
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+        }).collect();
+    generics.ty_params.append(&mut extra_ty_params);
+    let (impl_generics, _, _) = generics.split_for_impl();
+    let (_, ty_generics, where_clause) = input.generics.split_for_impl();
     quote!{
         impl#impl_generics ::std::convert::From<(#(#into_names),*)> for #input_type#ty_generics #where_clause {
 
             #[allow(unused_variables)]
-            fn from(original: (#(#original_types),*)) -> #input_type#ty_generics {
+            fn from(original: (#(#into_names2),*)) -> #input_type#ty_generics {
                 #body
             }
         }
@@ -68,10 +70,10 @@ fn tuple_from(input: &DeriveInput, fields: &Vec<Field>) -> Tokens {
 
 fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
     if fields.len() == 1 {
-        quote!(#return_type(original))
+        quote!(#return_type(original.into()))
     } else {
         let field_names = &number_idents(fields.len());
-        quote!(#return_type(#(original.#field_names),*))
+        quote!(#return_type(#(original.#field_names.into()),*))
     }
 }
 
@@ -84,11 +86,11 @@ fn struct_from(input: &DeriveInput, fields: &Vec<Field>) -> Tokens {
 fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
     if fields.len() == 1 {
         let field_name = &fields[0].ident;
-        quote!(#return_type{#field_name: original})
+        quote!(#return_type{#field_name: original.into()})
     } else {
         let argument_field_names = &number_idents(fields.len());
         let field_names = &field_idents(fields);
-        quote!(#return_type{#(#field_names: original.#argument_field_names),*})
+        quote!(#return_type{#(#field_names: original.#argument_field_names.into()),*})
     }
 }
 
