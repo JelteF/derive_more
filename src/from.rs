@@ -34,28 +34,33 @@ pub fn into_from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<Field>, bod
     let mut generics = input.generics.clone();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
-    let into_names = numbered_vars(original_types.len(), "Into");
-    let into_names2 = into_names.clone();
-    let mut extra_ty_params: Vec<TyParam> = into_names
-        .iter()
-        .zip(original_types)
-        .map(|(name, ty)| {
-            TyParam {
-                attrs: vec![],
-                ident: Ident::from(name.to_string()),
-                bounds: vec![parse_ty_param_bound(&quote!(::std::convert::Into<#ty>).to_string())
-                                 .unwrap()],
-                default: None,
-            }
-        }).collect();
-    generics.ty_params.append(&mut extra_ty_params);
-    let (impl_generics, _, _) = generics.split_for_impl();
-    let (_, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let (original_impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let (impl_generics, types) = if fields.len() > 1 {
+        let into_names = &numbered_vars(original_types.len(), "Into");
+        let mut extra_ty_params: Vec<TyParam> = into_names
+            .iter()
+            .zip(original_types)
+            .map(|(name, ty)| {
+                TyParam {
+                    attrs: vec![],
+                    ident: Ident::from(name.to_string()),
+                    bounds: vec![parse_ty_param_bound(&quote!(::std::convert::Into<#ty>).to_string())
+                                     .unwrap()],
+                    default: None,
+                }
+            }).collect();
+        generics.ty_params.append(&mut extra_ty_params);
+        (generics.split_for_impl().0, quote!((#(#into_names,)*)))
+    } else {
+        (original_impl_generics, quote!((#(#original_types),*)))
+    };
     quote!{
-        impl#impl_generics ::std::convert::From<(#(#into_names),*)> for #input_type#ty_generics #where_clause {
+        impl#impl_generics ::std::convert::From<#types> for #input_type#ty_generics #where_clause {
 
             #[allow(unused_variables)]
-            fn from(original: (#(#into_names2),*)) -> #input_type#ty_generics {
+            fn from(original: #types) -> #input_type#ty_generics {
                 #body
             }
         }
