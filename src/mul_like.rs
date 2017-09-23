@@ -1,12 +1,12 @@
 use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, VariantData, MacroInput, TyParam, parse_ty_param_bound,
+use syn::{Body, Field, Ident, VariantData, DeriveInput, TyParam, parse_ty_param_bound,
           parse_where_clause, Generics};
 use std::iter;
 use std::collections::HashSet;
 use utils::{get_field_types_iter, number_idents, field_idents};
 
 
-pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
     let trait_path = &quote!(::std::ops::#trait_ident);
     let method_name = trait_name.to_lowercase();
@@ -52,7 +52,7 @@ pub fn expand(input: &MacroInput, trait_name: &str) -> Tokens {
     )
 }
 
-pub fn get_mul_generics<'a>(input: &'a MacroInput,
+pub fn get_mul_generics<'a>(input: &'a DeriveInput,
                             fields: &'a Vec<Field>,
                             scalar_ident: &Ident,
                             type_where_clauses: Tokens)
