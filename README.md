@@ -50,7 +50,7 @@ fn main() {
 ## The newly derivable traits
 
 Obviously not all traits should be derived to the same code, because they are different
-different traits after all.
+traits after all.
 However, some of the semantics of the traits overlap a lot, so they have been grouped in the
 following way:
 
