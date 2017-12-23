@@ -19,7 +19,8 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let original_types = &get_field_types(fields);
 
     quote!{
-        impl#impl_generics ::std::convert::From<#input_type#ty_generics> for (#(#original_types),*) #where_clause {
+        impl#impl_generics ::std::convert::From<#input_type#ty_generics> for
+            (#(#original_types),*) #where_clause {
 
             #[allow(unused_variables)]
             fn from(original: #input_type#ty_generics) -> (#(#original_types),*) {

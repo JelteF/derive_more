@@ -20,7 +20,8 @@ pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<Field>, body: T)
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
     quote!{
-        impl#impl_generics ::std::convert::From<(#(#original_types),*)> for #input_type#ty_generics #where_clause {
+        impl#impl_generics ::std::convert::From<(#(#original_types),*)> for
+            #input_type#ty_generics #where_clause {
 
             #[allow(unused_variables)]
             fn from(original: (#(#original_types),*)) -> #input_type#ty_generics {
