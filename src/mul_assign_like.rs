@@ -1,6 +1,6 @@
 use quote::Tokens;
-use syn::{Body, Ident, VariantData, DeriveInput};
-use mul_like::{tuple_exprs, struct_exprs, get_mul_generics};
+use syn::{Body, DeriveInput, Ident, VariantData};
+use mul_like::{get_mul_generics, struct_exprs, tuple_exprs};
 use std::iter;
 use std::collections::HashSet;
 use utils::get_field_types_iter;
@@ -14,7 +14,6 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_ident = Ident::from(method_name.to_string() + "_assign");
     let input_type = &input.ident;
 
-
     let (exprs, fields) = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => {
             (tuple_exprs(fields, &method_ident), fields)
@@ -26,7 +25,6 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };
 
-
     let scalar_ident = &Ident::from("__RhsT");
     let tys: &HashSet<_> = &get_field_types_iter(fields).collect();
     let scalar_iter = iter::repeat(scalar_ident);
@@ -36,11 +34,9 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         where #(#tys: #trait_path_iter<#scalar_iter>),*
     };
 
-
     let new_generics = get_mul_generics(input, fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
-
 
     quote!(
         impl#impl_generics #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause{

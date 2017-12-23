@@ -1,7 +1,6 @@
 use quote::Tokens;
-use syn::{Body, Ident, Field, VariantData, DeriveInput};
-use utils::{get_field_types, field_idents, number_idents};
-
+use syn::{Body, DeriveInput, Field, Ident, VariantData};
+use utils::{field_idents, get_field_types, number_idents};
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {

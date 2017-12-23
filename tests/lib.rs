@@ -90,7 +90,6 @@ enum MyIntEnum {
     Nothing,
 }
 
-
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Add, Mul)]
 struct DoubleUInt(u32, u32);
@@ -153,9 +152,10 @@ fn main() {
     assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
     assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
     assert_eq!(-SimpleSignedIntEnum::Int(6), (-6i32).into());
-    assert_eq!((SimpleEnum::LabeledInts { a: 6, b: 5 } + SimpleEnum::LabeledInts { a: 1, b: 4 })
-                   .unwrap(),
-               SimpleEnum::LabeledInts { a: 7, b: 9 });
+    assert_eq!(
+        (SimpleEnum::LabeledInts { a: 6, b: 5 } + SimpleEnum::LabeledInts { a: 1, b: 4 }).unwrap(),
+        SimpleEnum::LabeledInts { a: 7, b: 9 }
+    );
 
     let _ = (MyIntEnum::SmallInt(5) + 6.into()).unwrap();
     assert_eq!((-SimpleEnum::Int(5)).unwrap(), (-5).into());

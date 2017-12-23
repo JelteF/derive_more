@@ -1,6 +1,6 @@
 use quote::Tokens;
-use syn::{Body, Ident, VariantData, DeriveInput};
-use add_like::{tuple_exprs, struct_exprs};
+use syn::{Body, DeriveInput, Ident, VariantData};
+use add_like::{struct_exprs, tuple_exprs};
 use utils::add_extra_ty_param_bound_simple;
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
@@ -13,7 +13,6 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
 
     let generics = add_extra_ty_param_bound_simple(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
 
     let exprs = match input.body {
         Body::Struct(VariantData::Tuple(ref fields)) => tuple_exprs(fields, &method_ident),

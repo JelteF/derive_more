@@ -1,8 +1,10 @@
-use syn::{Ident, Ty, Field, Generics};
+use syn::{Field, Generics, Ident, Ty};
 use syn::parse_ty_param_bound;
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
-    (0..count).map(|i| Ident::from(format!("__{}{}", prefix, i))).collect()
+    (0..count)
+        .map(|i| Ident::from(format!("__{}{}", prefix, i)))
+        .collect()
 }
 
 pub fn number_idents(count: usize) -> Vec<Ident> {
@@ -10,8 +12,13 @@ pub fn number_idents(count: usize) -> Vec<Ident> {
 }
 
 pub fn field_idents<'a>(fields: &'a Vec<Field>) -> Vec<&'a Ident> {
-    fields.iter()
-        .map(|f| f.ident.as_ref().expect("Tried to get field names of a tuple struct"))
+    fields
+        .iter()
+        .map(|f| {
+            f.ident
+                .as_ref()
+                .expect("Tried to get field names of a tuple struct")
+        })
         .collect()
 }
 
@@ -27,21 +34,23 @@ pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, trait_ident: &'a Ide
     let mut generics = generics.clone();
     for ref mut ty_param in &mut generics.ty_params {
         let ty_ident = &ty_param.ident;
-        ty_param.bounds
-            .push(parse_ty_param_bound(&quote!(::std::ops::#trait_ident<Output=#ty_ident>)
-                    .to_string())
-                .unwrap());
+        ty_param.bounds.push(
+            parse_ty_param_bound(&quote!(::std::ops::#trait_ident<Output=#ty_ident>).to_string())
+                .unwrap(),
+        );
     }
 
     generics
 }
 
-pub fn add_extra_ty_param_bound_simple<'a>(generics: &'a Generics,
-                                           trait_ident: &'a Ident)
-                                           -> Generics {
+pub fn add_extra_ty_param_bound_simple<'a>(
+    generics: &'a Generics,
+    trait_ident: &'a Ident,
+) -> Generics {
     let mut generics = generics.clone();
     for ref mut ty_param in &mut generics.ty_params {
-        ty_param.bounds
+        ty_param
+            .bounds
             .push(parse_ty_param_bound(&quote!(::std::ops::#trait_ident).to_string()).unwrap());
     }
 

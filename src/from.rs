@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Variant, VariantData, DeriveInput};
-use utils::{number_idents, get_field_types, field_idents};
-
+use quote::{ToTokens, Tokens};
+use syn::{Body, DeriveInput, Field, Variant, VariantData};
+use utils::{field_idents, get_field_types, number_idents};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
@@ -63,15 +62,13 @@ fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
     }
 }
 
-
 fn enum_from(input: &DeriveInput, variants: &Vec<Variant>) -> Tokens {
     let mut type_signature_counts = HashMap::new();
     let input_type = &input.ident;
 
     for variant in variants {
         match variant.data {
-            VariantData::Tuple(ref fields) |
-            VariantData::Struct(ref fields) => {
+            VariantData::Tuple(ref fields) | VariantData::Struct(ref fields) => {
                 let original_types = get_field_types(fields);
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
@@ -87,7 +84,6 @@ fn enum_from(input: &DeriveInput, variants: &Vec<Variant>) -> Tokens {
 
     for variant in variants.iter() {
         match variant.data {
-
             VariantData::Tuple(ref fields) => {
                 let original_types = get_field_types(fields);
 

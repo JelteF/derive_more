@@ -1,5 +1,5 @@
-use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, DeriveInput};
+use quote::{ToTokens, Tokens};
+use syn::{Body, DeriveInput, Field, Ident, Variant, VariantData};
 use std::iter;
 use utils::add_extra_ty_param_bound;
 
@@ -13,17 +13,22 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => {
-            (quote!(#input_type#ty_generics), tuple_content(input_type, fields, method_ident))
-        }
-        Body::Struct(VariantData::Struct(ref fields)) => {
-            (quote!(#input_type#ty_generics), struct_content(input_type, fields, method_ident))
-        }
+        Body::Struct(VariantData::Tuple(ref fields)) => (
+            quote!(#input_type#ty_generics),
+            tuple_content(input_type, fields, method_ident),
+        ),
+        Body::Struct(VariantData::Struct(ref fields)) => (
+            quote!(#input_type#ty_generics),
+            struct_content(input_type, fields, method_ident),
+        ),
         Body::Enum(ref definition) => {
             enum_output_type_and_content(input, definition, &method_ident)
         }
 
-        _ => panic!(format!("Only structs and enums can use dervie({})", trait_name)),
+        _ => panic!(format!(
+            "Only structs and enums can use dervie({})",
+            trait_name
+        )),
     };
 
     quote!(
@@ -49,7 +54,6 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident:
     quote!(#input_type(#(#exprs),*))
 }
 
-
 fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
@@ -64,10 +68,11 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
     quote!(#input_type{#(#exprs),*})
 }
 
-fn enum_output_type_and_content(input: &DeriveInput,
-                                variants: &Vec<Variant>,
-                                method_ident: &Ident)
-                                -> (Tokens, Tokens) {
+fn enum_output_type_and_content(
+    input: &DeriveInput,
+    variants: &Vec<Variant>,
+    method_ident: &Ident,
+) -> (Tokens, Tokens) {
     let input_type = &input.ident;
     let (_, ty_generics, _) = input.generics.split_for_impl();
     let mut matches = vec![];

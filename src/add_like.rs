@@ -1,7 +1,7 @@
-use quote::{Tokens, ToTokens};
-use syn::{Body, Field, Ident, Variant, VariantData, DeriveInput};
+use quote::{ToTokens, Tokens};
+use syn::{Body, DeriveInput, Field, Ident, Variant, VariantData};
 use std::iter;
-use utils::{numbered_vars, add_extra_ty_param_bound, field_idents};
+use utils::{add_extra_ty_param_bound, field_idents, numbered_vars};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -13,18 +13,23 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => {
-            (quote!(#input_type#ty_generics), tuple_content(input_type, fields, &method_ident))
-        }
-        Body::Struct(VariantData::Struct(ref fields)) => {
-            (quote!(#input_type#ty_generics), struct_content(input_type, fields, &method_ident))
-        }
-        Body::Enum(ref definition) => {
-            (quote!(Result<#input_type#ty_generics, &'static str>),
-             enum_content(input_type, definition, &method_ident))
-        }
+        Body::Struct(VariantData::Tuple(ref fields)) => (
+            quote!(#input_type#ty_generics),
+            tuple_content(input_type, fields, &method_ident),
+        ),
+        Body::Struct(VariantData::Struct(ref fields)) => (
+            quote!(#input_type#ty_generics),
+            struct_content(input_type, fields, &method_ident),
+        ),
+        Body::Enum(ref definition) => (
+            quote!(Result<#input_type#ty_generics, &'static str>),
+            enum_content(input_type, definition, &method_ident),
+        ),
 
-        _ => panic!(format!("Only structs and enums can use derive({})", trait_name)),
+        _ => panic!(format!(
+            "Only structs and enums can use derive({})",
+            trait_name
+        )),
     };
 
     quote!(
@@ -52,9 +57,7 @@ pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
         exprs.push(expr);
     }
     return exprs;
-
 }
-
 
 fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
     // It's safe to unwrap because struct fields always have an identifier
@@ -76,7 +79,6 @@ pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
     }
     return exprs;
 }
-
 
 fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Ident) -> Tokens {
     let mut matches = vec![];
@@ -130,7 +132,10 @@ fn enum_content(input_type: &Ident, variants: &Vec<Variant>, method_ident: &Iden
     if variants.len() > 1 {
         // In the strange case where there's only one enum variant this is would be an unreachable
         // match.
-        let message = format!("Trying to {} mismatched enum variants", method_ident.to_string());
+        let message = format!(
+            "Trying to {} mismatched enum variants",
+            method_ident.to_string()
+        );
         matches.push(quote!(_ => Err(#message)));
     }
     quote!(
