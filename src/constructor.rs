@@ -15,6 +15,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     };
     let original_types = &get_field_types(fields);
     quote!{
+        #[allow(missing_docs)]
         impl#impl_generics #input_type#ty_generics #where_clause {
             pub fn new(#(#vars: #original_types),*) -> #input_type#ty_generics {
                 #body
