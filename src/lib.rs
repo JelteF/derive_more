@@ -143,6 +143,7 @@ mod add_like;
 mod add_assign_like;
 mod mul_like;
 mod mul_assign_like;
+mod from_str;
 
 macro_rules! create_derive(
     ($mod_:ident, $trait_:ident, $fn_name: ident) => {
@@ -188,3 +189,5 @@ create_derive!(mul_assign_like, DivAssign, div_assign_derive);
 create_derive!(mul_assign_like, RemAssign, rem_assign_derive);
 create_derive!(mul_assign_like, ShrAssign, shr_assign_derive);
 create_derive!(mul_assign_like, ShlAssign, shl_assign_derive);
+
+create_derive!(from_str, FromStr, from_str_derive);

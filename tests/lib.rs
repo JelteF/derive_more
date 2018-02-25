@@ -10,6 +10,7 @@ extern crate derive_more;
 #[derive(Neg)]
 #[derive(AddAssign)]
 #[derive(MulAssign)]
+#[derive(FromStr)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -119,6 +120,7 @@ fn main() {
     assert_eq!((), Unit.into());
     assert_eq!(Unit, Unit::new());
     assert_eq!(MyInt(5), 5.into());
+    assert_eq!(Ok(MyInt(5)), "5".parse());
     assert_eq!(5, MyInt(5).into());
     assert_eq!(MyInt(5), MyInt::new(5));
     assert_eq!(-MyInt(5), (-5).into());
