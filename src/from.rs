@@ -69,13 +69,18 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
     let input_type = &input.ident;
 
     for variant in data_enum.variants {
-        match variant.data {
-            VariantData::Tuple(ref fields) | VariantData::Struct(ref fields) => {
-                let original_types = get_field_types(fields);
+        match variant.fields {
+            Fields::Unnamed(ref fields) => {
+                let original_types = get_field_types(fields.unnamed.iter().collect());
+                let counter = type_signature_counts.entry(original_types).or_insert(0);
+                *counter += 1;
+            },
+            Fields::Named(ref fields) => {
+                let original_types = get_field_types(fields.named.iter().collect());
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
             }
-            VariantData::Unit => {
+            Fields::Unit => {
                 let counter = type_signature_counts.entry(vec![]).or_insert(0);
                 *counter += 1;
             }
@@ -85,34 +90,36 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
     let mut tokens = Tokens::new();
 
     for variant in data_enum.variants {
-        // match variant.data {
-        //     VariantData::Tuple(ref fields) => {
-        //         let original_types = get_field_types(fields);
+        match variant.fields {
+            Fields::Unnamed(ref fields) => {
+                let field_vec = fields.unnamed.iter().collect();
+                let original_types = get_field_types(field_vec);
 
-        //         if *type_signature_counts.get(&original_types).unwrap() == 1 {
-        //             let variant_ident = &variant.ident;
-        //             let body = tuple_body(quote!(#input_type::#variant_ident), fields);
-        //             tokens.append(&from_impl(input, fields, body).to_string());
-        //         }
-        //     }
+                if *type_signature_counts.get(&original_types).unwrap() == 1 {
+                    let variant_ident = &variant.ident;
+                    let body = tuple_body(quote!(#input_type::#variant_ident), field_vec);
+                    tokens.append(&from_impl(input, field_vec, body).to_string());
+                }
+            }
 
-        //     VariantData::Struct(ref fields) => {
-        //         let original_types = get_field_types(fields);
+            Fields::Named(ref fields) => {
+                let field_vec = fields.named.iter().collect();
+                let original_types = get_field_types(field_vec);
 
-        //         if *type_signature_counts.get(&original_types).unwrap() == 1 {
-        //             let variant_ident = &variant.ident;
-        //             let body = struct_body(quote!(#input_type::#variant_ident), fields);
-        //             tokens.append(&from_impl(input, fields, body).to_string());
-        //         }
-        //     }
-        //     VariantData::Unit => {
-        //         if *type_signature_counts.get(&vec![]).unwrap() == 1 {
-        //             let variant_ident = &variant.ident;
-        //             let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
-        //             tokens.append(&from_impl(input, &vec![], body).to_string());
-        //         }
-        //     }
-        // }
+                if *type_signature_counts.get(&original_types).unwrap() == 1 {
+                    let variant_ident = &variant.ident;
+                    let body = struct_body(quote!(#input_type::#variant_ident), field_vec);
+                    tokens.append(&from_impl(input, field_vec, body).to_string());
+                }
+            }
+            Fields::Unit => {
+                if *type_signature_counts.get(&vec![]).unwrap() == 1 {
+                    let variant_ident = &variant.ident;
+                    let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
+                    tokens.append(&from_impl(input, &vec![], body).to_string());
+                }
+            }
+        }
     }
     tokens
 }

@@ -1,7 +1,7 @@
 use quote::{ToTokens, Tokens};
-use syn::{Body, DeriveInput, Field, Ident, Variant, VariantData};
+use syn::{Data, DeriveInput, Field, Ident, Variant, Fields, DataEnum};
 use std::iter;
-use utils::add_extra_ty_param_bound;
+use utils::add_extra_type_param_bound;
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -9,20 +9,22 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_ident = &Ident::from(method_name);
     let input_type = &input.ident;
 
-    let generics = add_extra_ty_param_bound(&input.generics, &trait_ident);
+    let generics = add_extra_type_param_bound(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => (
+        Data::Struct(ref data_struct) => match data_struct {
+            Fields::Unnamed(ref fields) => (
             quote!(#input_type#ty_generics),
             tuple_content(input_type, fields, method_ident),
-        ),
-        Body::Struct(VariantData::Struct(ref fields)) => (
-            quote!(#input_type#ty_generics),
-            struct_content(input_type, fields, method_ident),
-        ),
-        Body::Enum(ref definition) => {
-            enum_output_type_and_content(input, definition, &method_ident)
+            ),
+            Fields::Named(ref fields) => (
+                quote!(#input_type#ty_generics),
+                struct_content(input_type, fields, method_ident),
+            ),
+        }
+        Data::Enum(ref data_enum) => {
+            enum_output_type_and_content(input, data_enum, &method_ident)
         }
 
         _ => panic!(format!(
@@ -70,7 +72,7 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
 
 fn enum_output_type_and_content(
     input: &DeriveInput,
-    variants: &Vec<Variant>,
+    data_enum: &DataEnum,
     method_ident: &Ident,
 ) -> (Tokens, Tokens) {
     let input_type = &input.ident;
@@ -78,14 +80,14 @@ fn enum_output_type_and_content(
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
     // If the enum contains unit types that means it can error.
-    let has_unit_type = variants.iter().any(|v| v.data == VariantData::Unit);
+    let has_unit_type = data_enum.variants.iter().any(|v| v.data == Fields::Unit);
 
-    for variant in variants {
+    for variant in data_enum.variants {
         let subtype = &variant.ident;
         let subtype = quote!(#input_type::#subtype);
 
-        match variant.data {
-            VariantData::Tuple(ref fields) => {
+        match variant.data.fields {
+            Fields::Unnamed(ref fields) => {
                 // The patern that is outputted should look like this:
                 // (Subtype(vars)) => Ok(TypePath(exprs))
                 let size = fields.len();
@@ -102,7 +104,7 @@ fn enum_output_type_and_content(
                 };
                 matches.push(matcher);
             }
-            VariantData::Struct(ref fields) => {
+            Fields::Named(ref fields) => {
                 // The patern that is outputted should look like this:
                 // (Subtype{a: __l_a, ...} => {
                 //     Ok(Subtype{a: __l_a.neg(__r_a), ...})
@@ -123,7 +125,7 @@ fn enum_output_type_and_content(
                 };
                 matches.push(matcher);
             }
-            VariantData::Unit => {
+            Fields::Unit => {
                 let message = format!("Cannot {}() unit variants", method_ident.to_string());
                 matches.push(quote!(#subtype => Err(#message)));
             }

@@ -1,5 +1,5 @@
 use quote::Tokens;
-use syn::{Body, DeriveInput, Field, Ident, VariantData};
+use syn::{Data, DeriveInput, Field, Ident, Fields};
 use utils::{field_idents, get_field_types, number_idents};
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
@@ -9,9 +9,11 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let empty_fields = &vec![];
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let (field_names, fields) = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => (tuple_field_names(fields), fields),
-        Body::Struct(VariantData::Struct(ref fields)) => (struct_field_names(fields), fields),
-        Body::Struct(VariantData::Unit) => (empty_field_names, empty_fields),
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Unnamed(ref fields) => (tuple_field_names(fields), fields),
+            Fields::Named(ref fields) => (struct_field_names(fields), fields),
+            Fields::Unit => (empty_field_names, empty_fields),
+        },
         _ => panic!("Only structs can derive a constructor"),
     };
 
