@@ -43,7 +43,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -56,7 +56,7 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident:
     quote!(#input_type(#(#exprs),*))
 }
 
-fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
+fn struct_content(input_type: &Ident, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for field in fields {

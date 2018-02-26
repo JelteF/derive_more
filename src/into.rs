@@ -31,10 +31,10 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     }
 }
 
-fn tuple_field_names(fields: &Vec<Field>) -> Vec<Ident> {
+fn tuple_field_names(fields: Vec<&Field>) -> Vec<Ident> {
     number_idents(fields.len())
 }
 
-fn struct_field_names(fields: &Vec<Field>) -> Vec<Ident> {
+fn struct_field_names(fields: Vec<&Field>) -> Vec<Ident> {
     field_idents(fields).iter().map(|f| (*f).clone()).collect()
 }

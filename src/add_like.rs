@@ -44,12 +44,12 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
     let exprs = tuple_exprs(fields, method_ident);
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn tuple_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -61,7 +61,7 @@ pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
     return exprs;
 }
 
-fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident) -> Tokens {
+fn struct_content(input_type: &Ident, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
     let field_names = field_idents(fields);
@@ -69,7 +69,7 @@ fn struct_content(input_type: &Ident, fields: &Vec<Field>, method_ident: &Ident)
     quote!(#input_type{#(#field_names: #exprs),*})
 }
 
-pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn struct_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     let mut exprs = vec![];
 
     for field in fields {

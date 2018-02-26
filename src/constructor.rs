@@ -26,12 +26,12 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     }
 }
 
-fn tuple_body(return_type: &Ident, fields: &Vec<Field>) -> (Tokens, Vec<Ident>) {
+fn tuple_body(return_type: &Ident, fields: Vec<&Field>) -> (Tokens, Vec<Ident>) {
     let vars = &numbered_vars(fields.len(), "");
     (quote!(#return_type(#(#vars),*)), vars.clone())
 }
 
-fn struct_body(return_type: &Ident, fields: &Vec<Field>) -> (Tokens, Vec<Ident>) {
+fn struct_body(return_type: &Ident, fields: Vec<&Field>) -> (Tokens, Vec<Ident>) {
     let field_names: &Vec<Ident> = &field_idents(fields).iter().map(|f| (*f).clone()).collect();
     let vars = field_names;
     (quote!(#return_type{#(#field_names: #vars),*}), vars.clone())

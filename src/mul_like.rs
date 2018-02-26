@@ -90,7 +90,7 @@ fn tuple_content<'a, T: ToTokens>(
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn tuple_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     number_idents(fields.len())
         .iter()
         .map(|i| quote!(self.#i.#method_ident(rhs)))
@@ -107,7 +107,7 @@ fn struct_content<'a, T: ToTokens>(
     quote!(#input_type{#(#field_names: #exprs),*})
 }
 
-pub fn struct_exprs(fields: &Vec<Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn struct_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     field_idents(fields)
         .iter()
         .map(|f| quote!(self.#f.#method_ident(rhs)))
