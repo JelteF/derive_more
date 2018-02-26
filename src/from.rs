@@ -1,20 +1,22 @@
 use std::collections::HashMap;
 
 use quote::{ToTokens, Tokens};
-use syn::{Body, DeriveInput, Field, Variant, VariantData};
+use syn::{Data, DeriveInput, Field, DataEnum, Fields};
 use utils::{field_idents, get_field_types, number_idents};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
-    match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => tuple_from(input, fields),
-        Body::Struct(VariantData::Struct(ref fields)) => struct_from(input, fields),
-        Body::Enum(ref variants) => enum_from(input, variants),
-        Body::Struct(VariantData::Unit) => struct_from(input, &vec![]),
+    match input.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Unnamed(ref fields) => tuple_from(input, fields.unnamed.iter().collect()),
+            Fields::Named(ref fields) =>struct_from(input, fields.named.iter().collect()),
+            Fields::Unit => struct_from(input, vec![]),
+        }
+        Data::Enum(ref data_enum) => enum_from(input, data_enum),
     }
 }
 
-pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<Field>, body: T) -> Tokens {
+pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: Vec<&Field>, body: T) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
@@ -30,13 +32,13 @@ pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<Field>, body: T)
     }
 }
 
-fn tuple_from(input: &DeriveInput, fields: &Vec<Field>) -> Tokens {
+fn tuple_from(input: &DeriveInput, fields: Vec<&Field>) -> Tokens {
     let input_type = &input.ident;
     let body = tuple_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
-fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
+fn tuple_body<T: ToTokens>(return_type: T, fields: Vec<&Field>) -> Tokens {
     if fields.len() == 1 {
         quote!(#return_type(original))
     } else {
@@ -45,13 +47,13 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
     }
 }
 
-fn struct_from(input: &DeriveInput, fields: &Vec<Field>) -> Tokens {
+fn struct_from(input: &DeriveInput, fields: Vec<&Field>) -> Tokens {
     let input_type = &input.ident;
     let body = struct_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
-fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
+fn struct_body<T: ToTokens>(return_type: T, fields: Vec<&Field>) -> Tokens {
     if fields.len() == 1 {
         let field_name = &fields[0].ident;
         quote!(#return_type{#field_name: original})
@@ -62,11 +64,11 @@ fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<Field>) -> Tokens {
     }
 }
 
-fn enum_from(input: &DeriveInput, variants: &Vec<Variant>) -> Tokens {
+fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
     let mut type_signature_counts = HashMap::new();
     let input_type = &input.ident;
 
-    for variant in variants {
+    for variant in data_enum.variants {
         match variant.data {
             VariantData::Tuple(ref fields) | VariantData::Struct(ref fields) => {
                 let original_types = get_field_types(fields);
@@ -82,35 +84,35 @@ fn enum_from(input: &DeriveInput, variants: &Vec<Variant>) -> Tokens {
 
     let mut tokens = Tokens::new();
 
-    for variant in variants.iter() {
-        match variant.data {
-            VariantData::Tuple(ref fields) => {
-                let original_types = get_field_types(fields);
+    for variant in data_enum.variants {
+        // match variant.data {
+        //     VariantData::Tuple(ref fields) => {
+        //         let original_types = get_field_types(fields);
 
-                if *type_signature_counts.get(&original_types).unwrap() == 1 {
-                    let variant_ident = &variant.ident;
-                    let body = tuple_body(quote!(#input_type::#variant_ident), fields);
-                    tokens.append(&from_impl(input, fields, body).to_string());
-                }
-            }
+        //         if *type_signature_counts.get(&original_types).unwrap() == 1 {
+        //             let variant_ident = &variant.ident;
+        //             let body = tuple_body(quote!(#input_type::#variant_ident), fields);
+        //             tokens.append(&from_impl(input, fields, body).to_string());
+        //         }
+        //     }
 
-            VariantData::Struct(ref fields) => {
-                let original_types = get_field_types(fields);
+        //     VariantData::Struct(ref fields) => {
+        //         let original_types = get_field_types(fields);
 
-                if *type_signature_counts.get(&original_types).unwrap() == 1 {
-                    let variant_ident = &variant.ident;
-                    let body = struct_body(quote!(#input_type::#variant_ident), fields);
-                    tokens.append(&from_impl(input, fields, body).to_string());
-                }
-            }
-            VariantData::Unit => {
-                if *type_signature_counts.get(&vec![]).unwrap() == 1 {
-                    let variant_ident = &variant.ident;
-                    let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
-                    tokens.append(&from_impl(input, &vec![], body).to_string());
-                }
-            }
-        }
+        //         if *type_signature_counts.get(&original_types).unwrap() == 1 {
+        //             let variant_ident = &variant.ident;
+        //             let body = struct_body(quote!(#input_type::#variant_ident), fields);
+        //             tokens.append(&from_impl(input, fields, body).to_string());
+        //         }
+        //     }
+        //     VariantData::Unit => {
+        //         if *type_signature_counts.get(&vec![]).unwrap() == 1 {
+        //             let variant_ident = &variant.ident;
+        //             let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
+        //             tokens.append(&from_impl(input, &vec![], body).to_string());
+        //         }
+        //     }
+        // }
     }
     tokens
 }

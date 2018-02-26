@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use quote::{ToTokens, Tokens};
-use syn::{Body, DeriveInput, Field, Variant, VariantData, Ident, Ty};
+use syn::{Body, DeriveInput, Field, Variant, VariantData, Ident, Type};
 use utils::{field_idents, get_field_types, number_idents};
 
 
@@ -32,7 +32,7 @@ fn panic_one_field(trait_name : &str) -> ! {
     panic!(format!("Only structs with one field can derive({})", trait_name))
 }
 
-fn tuple_from_str<'a>(input_type: &Ident, trait_name: &str, fields: &'a Vec<Field>) -> (Tokens, &'a Ty) {
+fn tuple_from_str<'a>(input_type: &Ident, trait_name: &str, fields: &'a Vec<Field>) -> (Tokens, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };
