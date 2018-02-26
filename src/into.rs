@@ -5,14 +5,18 @@ use utils::{field_idents, get_field_types, number_idents, unnamed_to_vec, named_
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let input_type = &input.ident;
-    let empty_field_names = vec![];
-    let empty_fields = &vec![];
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let (field_names, fields) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => (tuple_field_names(unnamed_to_vec(fields)), fields),
-            Fields::Named(ref fields) => (struct_field_names(named_to_vec(fields)), fields),
-            Fields::Unit => (empty_field_names, empty_fields),
+            Fields::Unnamed(ref fields) => {
+                let field_vec = unnamed_to_vec(fields);
+                (tuple_field_names(field_vec), field_vec)
+            },
+            Fields::Named(ref fields) => {
+                let field_vec = named_to_vec(fields);
+                (struct_field_names(field_vec), field_vec)
+            },
+            Fields::Unit => (vec![], vec![]),
         },
         _ => panic!("Only structs can derive a constructor"),
     };
