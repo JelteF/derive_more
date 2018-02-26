@@ -152,9 +152,8 @@ macro_rules! create_derive(
         #[proc_macro_derive($trait_)]
         #[doc(hidden)]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
-            let s = input.to_string();
-            let ast = syn::parse_derive_input(&s).unwrap();
-            $mod_::expand(&ast, stringify!($trait_)).parse().expect("Expanded output was no correct Rust code")
+            let ast = syn::parse(input).unwrap();
+            $mod_::expand(&ast, stringify!($trait_)).into()
         }
     }
 );

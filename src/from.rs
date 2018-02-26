@@ -98,7 +98,7 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
                 if *type_signature_counts.get(&original_types).unwrap() == 1 {
                     let variant_ident = &variant.ident;
                     let body = tuple_body(quote!(#input_type::#variant_ident), field_vec);
-                    tokens.append(&from_impl(input, field_vec, body).to_string());
+                    from_impl(input, field_vec, body).to_tokens(&mut tokens)
                 }
             }
 
@@ -109,14 +109,14 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
                 if *type_signature_counts.get(&original_types).unwrap() == 1 {
                     let variant_ident = &variant.ident;
                     let body = struct_body(quote!(#input_type::#variant_ident), field_vec);
-                    tokens.append(&from_impl(input, field_vec, body).to_string());
+                    from_impl(input, field_vec, body).to_tokens(&mut tokens)
                 }
             }
             Fields::Unit => {
                 if *type_signature_counts.get(&vec![]).unwrap() == 1 {
                     let variant_ident = &variant.ident;
-                    let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
-                    tokens.append(&from_impl(input, &vec![], body).to_string());
+                    let body = struct_body(quote!(#input_type::#variant_ident), vec![]);
+                    from_impl(input, vec![], body).to_tokens(&mut tokens)
                 }
             }
         }
