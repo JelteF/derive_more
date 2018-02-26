@@ -1,4 +1,4 @@
-use syn::{parse, Field, Generics, Ident, Type, TypeParamBound};
+use syn::{parse, Field, Generics, Ident, Type, TypeParamBound, FieldsUnnamed};
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
@@ -53,4 +53,12 @@ pub fn add_extra_ty_param_bound_simple<'a>(
 
 
     generics
+}
+
+pub fn unnamed_to_vec<'a>(fields: &'a FieldsUnnamed) -> Vec<&'a Field>{
+    fields.unnamed.iter().collect()
+}
+
+pub fn named_to_vec<'a>(fields: &'a FieldsUnnamed) -> Vec<&'a Field>{
+    fields.named.iter().collect()
 }
