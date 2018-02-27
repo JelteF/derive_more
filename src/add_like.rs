@@ -16,11 +16,11 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
             quote!(#input_type#ty_generics),
-            tuple_content(input_type, unnamed_to_vec(fields), &method_ident),
+            tuple_content(input_type, &unnamed_to_vec(fields), &method_ident),
             ),
             Fields::Named(ref fields) => (
                 quote!(#input_type#ty_generics),
-                struct_content(input_type, named_to_vec(fields), &method_ident),
+                struct_content(input_type, &named_to_vec(fields), &method_ident),
             ),
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         }
@@ -45,12 +45,12 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<&Field>, method_ident: &Ident) -> Tokens {
     let exprs = tuple_exprs(fields, method_ident);
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn tuple_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -62,7 +62,7 @@ pub fn tuple_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     return exprs;
 }
 
-fn struct_content(input_type: &Ident, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
+fn struct_content(input_type: &Ident, fields: &Vec<&Field>, method_ident: &Ident) -> Tokens {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
     let field_names = field_idents(fields);
@@ -70,7 +70,7 @@ fn struct_content(input_type: &Ident, fields: Vec<&Field>, method_ident: &Ident)
     quote!(#input_type{#(#field_names: #exprs),*})
 }
 
-pub fn struct_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn struct_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     let mut exprs = vec![];
 
     for field in fields {
@@ -114,7 +114,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 // }
                 let field_vec = named_to_vec(fields);
                 let size = field_vec.len();
-                let field_names = &field_idents(field_vec);
+                let field_names = &field_idents(&field_vec);
                 let l_vars = &numbered_vars(size, "l_");
                 let r_vars = &numbered_vars(size, "r_");
                 let method_iter = method_iter.by_ref();

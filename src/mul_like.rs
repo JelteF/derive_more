@@ -10,15 +10,16 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::from(method_name);
     let input_type = &input.ident;
+    let field_vec: &Vec<_>;
 
     let (block, fields) = match input.data {
         Data::Struct(data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => {
-                let field_vec = unnamed_to_vec(fields);
+                field_vec = &unnamed_to_vec(fields);
                 (tuple_content(input_type, field_vec, method_ident), field_vec)
             },
             Fields::Named(ref fields) => {
-                let field_vec = named_to_vec(fields);
+                field_vec = &named_to_vec(fields);
                 (struct_content(input_type, field_vec, method_ident), field_vec)
             }
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
@@ -53,7 +54,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
 
 pub fn get_mul_generics<'a>(
     input: &'a DeriveInput,
-    fields: Vec<&'a Field>,
+    fields: &'a Vec<&'a Field>,
     scalar_ident: &Ident,
     type_where_clauses: WhereClause,
 ) -> Generics {
@@ -89,14 +90,14 @@ pub fn get_mul_generics<'a>(
 
 fn tuple_content<'a, T: ToTokens>(
     input_type: &T,
-    fields: Vec<&'a Field>,
+    fields: &'a Vec<&'a Field>,
     method_ident: &Ident,
 ) -> Tokens {
     let exprs = tuple_exprs(fields, method_ident);
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn tuple_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     number_idents(fields.len())
         .iter()
         .map(|i| quote!(self.#i.#method_ident(rhs)))
@@ -105,7 +106,7 @@ pub fn tuple_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
 
 fn struct_content<'a, T: ToTokens>(
     input_type: &T,
-    fields: Vec<&'a Field>,
+    fields: &'a Vec<&'a Field>,
     method_ident: &Ident,
 ) -> Tokens {
     let exprs = struct_exprs(fields, method_ident);
@@ -113,7 +114,7 @@ fn struct_content<'a, T: ToTokens>(
     quote!(#input_type{#(#field_names: #exprs),*})
 }
 
-pub fn struct_exprs(fields: Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn struct_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     field_idents(fields)
         .iter()
         .map(|f| quote!(self.#f.#method_ident(rhs)))

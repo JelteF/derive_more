@@ -16,11 +16,11 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
             quote!(#input_type#ty_generics),
-            tuple_content(input_type, unnamed_to_vec(fields), method_ident),
+            tuple_content(input_type, &unnamed_to_vec(fields), method_ident),
             ),
             Fields::Named(ref fields) => (
                 quote!(#input_type#ty_generics),
-                struct_content(input_type, named_to_vec(fields), method_ident),
+                struct_content(input_type, &named_to_vec(fields), method_ident),
             ),
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         }
@@ -44,7 +44,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<&Field>, method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -57,7 +57,7 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: Vec<&Field>, method_ident:
     quote!(#input_type(#(#exprs),*))
 }
 
-fn struct_content(input_type: &Ident, fields: Vec<&Field>, method_ident: &Ident) -> Tokens {
+fn struct_content(input_type: &Ident, fields: &Vec<&Field>, method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for field in fields {

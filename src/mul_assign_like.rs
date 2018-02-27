@@ -13,15 +13,16 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_name = method_name.to_lowercase();
     let method_ident = Ident::from(method_name.to_string() + "_assign");
     let input_type = &input.ident;
+    let field_vec: &Vec<_>;
 
     let (exprs, fields) = match input.data {
         Data::Struct(data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => {
-                let field_vec = unnamed_to_vec(fields);
+                field_vec = &unnamed_to_vec(fields);
                 (tuple_exprs(field_vec, &method_ident), field_vec)
             },
             Fields::Named(ref fields) => {
-                let field_vec = named_to_vec(fields);
+                field_vec = &named_to_vec(fields);
                 (struct_exprs(field_vec, &method_ident), field_vec)
             },
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),

@@ -2,15 +2,15 @@ use std::collections::HashMap;
 
 use quote::{ToTokens, Tokens};
 use syn::{Data, DeriveInput, Field, DataEnum, Fields};
-use utils::{field_idents, get_field_types, number_idents};
+use utils::{field_idents, get_field_types, number_idents, unnamed_to_vec, named_to_vec};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => tuple_from(input, fields.unnamed.iter().collect()),
-            Fields::Named(ref fields) =>struct_from(input, fields.named.iter().collect()),
-            Fields::Unit => struct_from(input, vec![]),
+            Fields::Unnamed(ref fields) => tuple_from(input, &unnamed_to_vec(fields)),
+            Fields::Named(ref fields) =>struct_from(input, &named_to_vec(fields)),
+            Fields::Unit => struct_from(input, &vec![]),
         }
         Data::Enum(ref data_enum) => enum_from(input, data_enum),
         _ => panic!(format!(
@@ -20,7 +20,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     }
 }
 
-pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: Vec<&Field>, body: T) -> Tokens {
+pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<&Field>, body: T) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
@@ -36,13 +36,13 @@ pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: Vec<&Field>, body: T)
     }
 }
 
-fn tuple_from(input: &DeriveInput, fields: Vec<&Field>) -> Tokens {
+fn tuple_from(input: &DeriveInput, fields: &Vec<&Field>) -> Tokens {
     let input_type = &input.ident;
     let body = tuple_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
-fn tuple_body<T: ToTokens>(return_type: T, fields: Vec<&Field>) -> Tokens {
+fn tuple_body<T: ToTokens>(return_type: T, fields: &Vec<&Field>) -> Tokens {
     if fields.len() == 1 {
         quote!(#return_type(original))
     } else {
@@ -51,13 +51,13 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: Vec<&Field>) -> Tokens {
     }
 }
 
-fn struct_from(input: &DeriveInput, fields: Vec<&Field>) -> Tokens {
+fn struct_from(input: &DeriveInput, fields: &Vec<&Field>) -> Tokens {
     let input_type = &input.ident;
     let body = struct_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
-fn struct_body<T: ToTokens>(return_type: T, fields: Vec<&Field>) -> Tokens {
+fn struct_body<T: ToTokens>(return_type: T, fields: &Vec<&Field>) -> Tokens {
     if fields.len() == 1 {
         let field_name = &fields[0].ident;
         quote!(#return_type{#field_name: original})
@@ -75,12 +75,12 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
     for variant in data_enum.variants {
         match variant.fields {
             Fields::Unnamed(ref fields) => {
-                let original_types = get_field_types(fields.unnamed.iter().collect());
+                let original_types = get_field_types(&unnamed_to_vec(fields));
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
             },
             Fields::Named(ref fields) => {
-                let original_types = get_field_types(fields.named.iter().collect());
+                let original_types = get_field_types(&named_to_vec(fields));
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
             }
@@ -96,7 +96,7 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
     for variant in data_enum.variants {
         match variant.fields {
             Fields::Unnamed(ref fields) => {
-                let field_vec = fields.unnamed.iter().collect();
+                let field_vec = &unnamed_to_vec(fields);
                 let original_types = get_field_types(field_vec);
 
                 if *type_signature_counts.get(&original_types).unwrap() == 1 {
@@ -107,7 +107,7 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
             }
 
             Fields::Named(ref fields) => {
-                let field_vec = fields.named.iter().collect();
+                let field_vec = &named_to_vec(fields);
                 let original_types = get_field_types(field_vec);
 
                 if *type_signature_counts.get(&original_types).unwrap() == 1 {
@@ -119,8 +119,8 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
             Fields::Unit => {
                 if *type_signature_counts.get(&vec![]).unwrap() == 1 {
                     let variant_ident = &variant.ident;
-                    let body = struct_body(quote!(#input_type::#variant_ident), vec![]);
-                    from_impl(input, vec![], body).to_tokens(&mut tokens)
+                    let body = struct_body(quote!(#input_type::#variant_ident), &vec![]);
+                    from_impl(input, &vec![], body).to_tokens(&mut tokens)
                 }
             }
         }

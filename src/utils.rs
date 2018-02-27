@@ -10,7 +10,7 @@ pub fn number_idents(count: usize) -> Vec<Ident> {
     (0..count).map(|i| Ident::from(i.to_string())).collect()
 }
 
-pub fn field_idents<'a>(fields: Vec<&'a Field>) -> Vec<&'a Ident> {
+pub fn field_idents<'a>(fields: &'a Vec<&'a Field>) -> Vec<&'a Ident> {
     fields
         .iter()
         .map(|f| {
@@ -21,11 +21,11 @@ pub fn field_idents<'a>(fields: Vec<&'a Field>) -> Vec<&'a Ident> {
         .collect()
 }
 
-pub fn get_field_types_iter<'a>(fields: Vec<&'a Field>) -> Box<Iterator<Item = &'a Type> + 'a> {
+pub fn get_field_types_iter<'a>(fields: &'a Vec<&'a Field>) -> Box<Iterator<Item = &'a Type> + 'a> {
     Box::new(fields.iter().map(|f| &f.ty))
 }
 
-pub fn get_field_types<'a>(fields: Vec<&'a Field>) -> Vec<&'a Type> {
+pub fn get_field_types<'a>(fields: &'a Vec<&'a Field>) -> Vec<&'a Type> {
     get_field_types_iter(fields).collect()
 }
 
