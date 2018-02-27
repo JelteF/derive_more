@@ -1,4 +1,4 @@
-use syn::{parse, Field, Generics, Ident, Type, TypeParamBound, FieldsUnnamed, FieldsNamed};
+use syn::{parse_str, Field, Generics, Ident, Type, TypeParamBound, FieldsUnnamed, FieldsNamed};
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
@@ -33,7 +33,7 @@ pub fn add_extra_type_param_bound<'a>(generics: &'a Generics, trait_ident: &'a I
     let mut generics = generics.clone();
     for ref mut type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
-        let bound: TypeParamBound = parse(quote!(::std::ops::#trait_ident<Output=#type_ident>)).unwrap();
+        let bound: TypeParamBound = parse_str(&quote!(::std::ops::#trait_ident<Output=#type_ident>).to_string()).unwrap();
         type_param.bounds.push(bound)
     }
 
@@ -45,7 +45,7 @@ pub fn add_extra_ty_param_bound_simple<'a>(
     trait_ident: &'a Ident,
 ) -> Generics {
     let mut generics = generics.clone();
-    let bound: TypeParamBound = parse(quote!(::std::ops::#trait_ident)).unwrap();
+    let bound: TypeParamBound = parse_str(&quote!(::std::ops::#trait_ident).to_string()).unwrap();
     for ref mut type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
         type_param.bounds.push(bound)

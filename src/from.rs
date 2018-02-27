@@ -5,7 +5,7 @@ use syn::{Data, DeriveInput, Field, DataEnum, Fields};
 use utils::{field_idents, get_field_types, number_idents};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
-pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => tuple_from(input, fields.unnamed.iter().collect()),
@@ -13,6 +13,10 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
             Fields::Unit => struct_from(input, vec![]),
         }
         Data::Enum(ref data_enum) => enum_from(input, data_enum),
+        _ => panic!(format!(
+            "Only structs and enums can use dervie({})",
+            trait_name
+        )),
     }
 }
 

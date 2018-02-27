@@ -1,7 +1,7 @@
 use quote::Tokens;
-use syn::{Body, DeriveInput, Ident, VariantData};
+use syn::{Data, DeriveInput, Ident, Fields};
 use add_like::{struct_exprs, tuple_exprs};
-use utils::add_extra_ty_param_bound_simple;
+use utils::{add_extra_ty_param_bound_simple, unnamed_to_vec, named_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -14,9 +14,12 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let generics = add_extra_ty_param_bound_simple(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let exprs = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => tuple_exprs(fields, &method_ident),
-        Body::Struct(VariantData::Struct(ref fields)) => struct_exprs(fields, &method_ident),
+    let exprs = match input.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Unnamed(ref fields) => tuple_exprs(unnamed_to_vec(fields), &method_ident),
+            Fields::Named(ref fields) => struct_exprs(named_to_vec(fields), &method_ident),
+            _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
+        },
 
         _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };

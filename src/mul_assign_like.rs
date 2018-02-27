@@ -1,9 +1,9 @@
 use quote::Tokens;
-use syn::{Body, DeriveInput, Ident, VariantData};
+use syn::{parse_str, Data, DeriveInput, Ident, Fields, WhereClause};
 use mul_like::{get_mul_generics, struct_exprs, tuple_exprs};
 use std::iter;
 use std::collections::HashSet;
-use utils::get_field_types_iter;
+use utils::{get_field_types_iter, unnamed_to_vec, named_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -14,12 +14,17 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_ident = Ident::from(method_name.to_string() + "_assign");
     let input_type = &input.ident;
 
-    let (exprs, fields) = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => {
-            (tuple_exprs(fields, &method_ident), fields)
-        }
-        Body::Struct(VariantData::Struct(ref fields)) => {
-            (struct_exprs(fields, &method_ident), fields)
+    let (exprs, fields) = match input.data {
+        Data::Struct(data_struct) => match data_struct.fields {
+            Fields::Unnamed(ref fields) => {
+                let field_vec = unnamed_to_vec(fields);
+                (tuple_exprs(field_vec, &method_ident), field_vec)
+            },
+            Fields::Named(ref fields) => {
+                let field_vec = named_to_vec(fields);
+                (struct_exprs(field_vec, &method_ident), field_vec)
+            },
+            _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         }
 
         _ => panic!(format!("Only structs can use derive({})", trait_name)),
@@ -30,9 +35,9 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);
 
-    let type_where_clauses = quote!{
+    let type_where_clauses: WhereClause = parse_str(&quote!{
         where #(#tys: #trait_path_iter<#scalar_iter>),*
-    };
+    }.to_string()).unwrap();
 
     let new_generics = get_mul_generics(input, fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();

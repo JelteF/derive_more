@@ -1,7 +1,7 @@
 use quote::{ToTokens, Tokens};
-use syn::{Data, DeriveInput, Field, Ident, Variant, Fields, DataEnum};
+use syn::{Data, DeriveInput, Field, Ident, Fields, DataEnum};
 use std::iter;
-use utils::{add_extra_type_param_bound, field_idents, numbered_vars};
+use utils::{add_extra_type_param_bound, field_idents, numbered_vars, unnamed_to_vec, named_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -12,16 +12,17 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let generics = add_extra_type_param_bound(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let (output_type, block) = match input.body {
-        Data::Struct(ref data_struct) => match data_struct {
+    let (output_type, block) = match input.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
             quote!(#input_type#ty_generics),
-            tuple_content(input_type, fields, method_ident),
+            tuple_content(input_type, unnamed_to_vec(fields), &method_ident),
             ),
             Fields::Named(ref fields) => (
                 quote!(#input_type#ty_generics),
-                struct_content(input_type, fields, method_ident),
+                struct_content(input_type, named_to_vec(fields), &method_ident),
             ),
+            _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         }
         Data::Enum(ref data_enum) => (
             quote!(Result<#input_type#ty_generics, &'static str>),
@@ -90,11 +91,11 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
         let subtype = &variant.ident;
         let subtype = quote!(#input_type::#subtype);
 
-        match variant.data {
+        match variant.fields {
             Fields::Unnamed(ref fields) => {
                 // The patern that is outputted should look like this:
                 // (Subtype(left_vars), TypePath(right_vars)) => Ok(TypePath(exprs))
-                let size = fields.len();
+                let size = unnamed_to_vec(fields).len();
                 let l_vars = &numbered_vars(size, "l_");
                 let r_vars = &numbered_vars(size, "r_");
                 let method_iter = method_iter.by_ref();
@@ -111,8 +112,9 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 // (Subtype{a: __l_a, ...}, Subtype{a: __r_a, ...} => {
                 //     Ok(Subtype{a: __l_a.add(__r_a), ...})
                 // }
-                let size = fields.len();
-                let field_names = &field_idents(fields);
+                let field_vec = named_to_vec(fields);
+                let size = field_vec.len();
+                let field_names = &field_idents(field_vec);
                 let l_vars = &numbered_vars(size, "l_");
                 let r_vars = &numbered_vars(size, "r_");
                 let method_iter = method_iter.by_ref();
