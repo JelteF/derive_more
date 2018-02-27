@@ -10,17 +10,16 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::from(method_name);
     let input_type = &input.ident;
-    let field_vec: &Vec<_>;
 
     let (block, fields) = match input.data {
-        Data::Struct(data_struct) => match data_struct.fields {
+        Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => {
-                field_vec = &unnamed_to_vec(fields);
-                (tuple_content(input_type, field_vec, method_ident), field_vec)
+                let field_vec = unnamed_to_vec(fields);
+                (tuple_content(input_type, &field_vec, method_ident), field_vec)
             },
             Fields::Named(ref fields) => {
-                field_vec = &named_to_vec(fields);
-                (struct_content(input_type, field_vec, method_ident), field_vec)
+                let field_vec = named_to_vec(fields);
+                (struct_content(input_type, &field_vec, method_ident), field_vec)
             }
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
@@ -28,7 +27,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     };
 
     let scalar_ident = &Ident::from("__RhsT");
-    let tys: &HashSet<_> = &get_field_types_iter(fields).collect();
+    let tys: &HashSet<_> = &get_field_types_iter(&fields).collect();
     let tys2 = tys;
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);
@@ -37,7 +36,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
     }.to_string()).unwrap();
 
-    let new_generics = get_mul_generics(input, fields, scalar_ident, type_where_clauses);
+    let new_generics = get_mul_generics(input, &fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 
@@ -56,7 +55,7 @@ pub fn get_mul_generics<'a>(
     input: &'a DeriveInput,
     fields: &'a Vec<&'a Field>,
     scalar_ident: &Ident,
-    type_where_clauses: WhereClause,
+    mut type_where_clauses: WhereClause,
 ) -> Generics {
     //let constraints = if fields.len() > 1 {
     //    // If the struct has more than one field the rhs needs to be copied for each

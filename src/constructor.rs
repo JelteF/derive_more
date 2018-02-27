@@ -6,22 +6,21 @@ use utils::{field_idents, get_field_types, numbered_vars, named_to_vec, unnamed_
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let input_type = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-    let field_vec: &Vec<_>;
     let ((body, vars), fields) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => {
-                field_vec = &unnamed_to_vec(fields);
-                (tuple_body(input_type, field_vec), field_vec)
+                let field_vec = unnamed_to_vec(fields);
+                (tuple_body(input_type, &field_vec), field_vec)
             },
             Fields::Named(ref fields) => {
-                field_vec = &named_to_vec(fields);
-                (struct_body(input_type, field_vec), field_vec)
+                let field_vec = named_to_vec(fields);
+                (struct_body(input_type, &field_vec), field_vec)
             },
-            Fields::Unit => (struct_body(input_type, &vec![]), &vec![]),
+            Fields::Unit => (struct_body(input_type, &vec![]), vec![]),
         },
         _ => panic!("Only structs can derive a constructor"),
     };
-    let original_types = &get_field_types(fields);
+    let original_types = &get_field_types(&fields);
     quote!{
         #[allow(missing_docs)]
         impl#impl_generics #input_type#ty_generics #where_clause {
