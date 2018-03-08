@@ -1,5 +1,5 @@
 use quote::{ToTokens, Tokens};
-use syn::{Data, DeriveInput, Field, Ident, Fields, DataEnum};
+use syn::{Data, DeriveInput, Field, Ident, Fields, DataEnum, Index};
 use std::iter;
 use utils::{add_extra_type_param_bound, unnamed_to_vec, named_to_vec};
 
@@ -48,7 +48,7 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<&Field>, method_ident
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
-        let i = Ident::from(i.to_string());
+        let i = Index::from(i);
         // generates `self.0.add()`
         let expr = quote!(self.#i.#method_ident());
         exprs.push(expr);
@@ -83,7 +83,7 @@ fn enum_output_type_and_content(
     // If the enum contains unit types that means it can error.
     let has_unit_type = data_enum.variants.iter().any(|v| v.fields == Fields::Unit);
 
-    for variant in data_enum.variants {
+    for variant in &data_enum.variants {
         let subtype = &variant.ident;
         let subtype = quote!(#input_type::#subtype);
 

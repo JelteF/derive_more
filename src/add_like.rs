@@ -1,5 +1,5 @@
 use quote::{ToTokens, Tokens};
-use syn::{Data, DeriveInput, Field, Ident, Fields, DataEnum};
+use syn::{Data, DeriveInput, Field, Ident, Fields, DataEnum, Index};
 use std::iter;
 use utils::{add_extra_type_param_bound, field_idents, numbered_vars, unnamed_to_vec, named_to_vec};
 
@@ -54,7 +54,7 @@ pub fn tuple_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
-        let i = Ident::from(i.to_string());
+        let i = Index::from(i);
         // generates `self.0.add(rhs.0)`
         let expr = quote!(self.#i.#method_ident(rhs.#i));
         exprs.push(expr);
@@ -87,7 +87,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
 
-    for variant in data_enum.variants {
+    for variant in &data_enum.variants {
         let subtype = &variant.ident;
         let subtype = quote!(#input_type::#subtype);
 

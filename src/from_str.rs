@@ -8,7 +8,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let (result, field_type) = match input.data {
-        Data::Struct(data_struct) => match data_struct.fields {
+        Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => tuple_from_str(input_type, trait_name, unnamed_to_vec(fields)),
             // Fields::Named(ref fields) => struct_newtype(input, fields),
             Fields::Unit => panic_one_field(trait_name),

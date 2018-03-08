@@ -72,15 +72,15 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
     let mut type_signature_counts = HashMap::new();
     let input_type = &input.ident;
 
-    for variant in data_enum.variants {
+    for variant in &data_enum.variants {
         match variant.fields {
             Fields::Unnamed(ref fields) => {
-                let original_types = get_field_types(&unnamed_to_vec(fields));
+                let original_types = unnamed_to_vec(fields).iter().map(|f| &f.ty).collect();
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
             },
             Fields::Named(ref fields) => {
-                let original_types = get_field_types(&named_to_vec(fields));
+                let original_types = named_to_vec(fields).iter().map(|f| &f.ty).collect();
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
             }
@@ -93,7 +93,7 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
 
     let mut tokens = Tokens::new();
 
-    for variant in data_enum.variants {
+    for variant in &data_enum.variants {
         match variant.fields {
             Fields::Unnamed(ref fields) => {
                 let field_vec = &unnamed_to_vec(fields);
