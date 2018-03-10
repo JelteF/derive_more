@@ -25,7 +25,7 @@ proc-macro = true
 
 [dependencies]
 quote = "0.4.2"
-syn = { version = "0.12.13", features = ['extra-traits'] }
+syn = { version = "0.12.14", features = ['extra-traits'] }
 
 [badges]
 travis-ci = { repository = "JelteF/derive_more" }
