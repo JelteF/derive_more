@@ -30,6 +30,7 @@ struct MyUInt(u64, u64);
 #[derive(From)]
 #[derive(Into)]
 #[derive(Constructor)]
+#[derive(FromStr)]
 #[derive(Eq, PartialEq, Debug)]
 struct SimpleStruct {
     int1: u64,
@@ -129,6 +130,7 @@ fn main() {
 
     assert_eq!(SimpleStruct { int1: 5 }, 5.into());
     assert_eq!(5u64, SimpleStruct { int1: 5 }.into());
+    assert_eq!(Ok(SimpleStruct { int1: 5 }), "5".parse());
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, (5, 6).into());
     assert_eq!(SimpleStruct { int1: 5 }, SimpleStruct::new(5));
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, NormalStruct::new(5, 6));

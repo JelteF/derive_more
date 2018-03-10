@@ -8,7 +8,7 @@ struct Wrapped<T: Clone>(T);
 #[derive(From, Not, Add, AddAssign, Mul)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
 
-#[derive(From, Not, Add, AddAssign, Mul)]
+#[derive(From, Not, Add, AddAssign, Mul, FromStr)]
 struct Struct<T: Clone> {
     t: T,
 }

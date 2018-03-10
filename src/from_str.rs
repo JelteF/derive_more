@@ -1,6 +1,6 @@
 use quote::Tokens;
 use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
-use utils::{add_extra_ty_param_bound, unnamed_to_vec};
+use utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
@@ -13,9 +13,10 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
             Fields::Unnamed(ref fields) => {
                 tuple_from_str(input_type, trait_name, unnamed_to_vec(fields))
             }
-            // Fields::Named(ref fields) => struct_newtype(input, fields),
+            Fields::Named(ref fields) => {
+                struct_from_str(input_type, trait_name, named_to_vec(fields))
+            }
             Fields::Unit => panic_one_field(trait_name),
-            _ => panic!("nooo not implemeted yet"),
         },
         _ => panic_one_field(trait_name),
     };
@@ -48,4 +49,21 @@ fn tuple_from_str<'a>(
     let field = &fields[0];
     let field_type = &field.ty;
     (quote!(#input_type(#field_type::from_str(src)?)), field_type)
+}
+
+fn struct_from_str<'a>(
+    input_type: &Ident,
+    trait_name: &str,
+    fields: Vec<&'a Field>,
+) -> (Tokens, &'a Type) {
+    if fields.len() != 1 {
+        panic_one_field(trait_name)
+    };
+    let field = &fields[0];
+    let field_type = &field.ty;
+    let field_ident = &field.ident;
+    (
+        quote!(#input_type{#field_ident: #field_type::from_str(src)?}),
+        field_type,
+    )
 }
