@@ -1,5 +1,6 @@
 use syn::{parse_str, Field, FieldsNamed, FieldsUnnamed, Generics, Ident, Index, Type,
           TypeParamBound};
+use quote::Tokens;
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
@@ -30,7 +31,10 @@ pub fn get_field_types<'a>(fields: &'a Vec<&'a Field>) -> Vec<&'a Type> {
     get_field_types_iter(fields).collect()
 }
 
-pub fn add_extra_type_param_bound<'a>(generics: &'a Generics, trait_ident: &'a Ident) -> Generics {
+pub fn add_extra_type_param_bound_op_output<'a>(
+    generics: &'a Generics,
+    trait_ident: &'a Ident,
+) -> Generics {
     let mut generics = generics.clone();
     for ref mut type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
@@ -42,12 +46,13 @@ pub fn add_extra_type_param_bound<'a>(generics: &'a Generics, trait_ident: &'a I
     generics
 }
 
-pub fn add_extra_ty_param_bound_simple<'a>(
-    generics: &'a Generics,
-    trait_ident: &'a Ident,
-) -> Generics {
+pub fn add_extra_ty_param_bound_op<'a>(generics: &'a Generics, trait_ident: &'a Ident) -> Generics {
+    add_extra_ty_param_bound(generics, &quote!(::std::ops::#trait_ident))
+}
+
+pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, bound: &'a Tokens) -> Generics {
     let mut generics = generics.clone();
-    let bound: TypeParamBound = parse_str(&quote!(::std::ops::#trait_ident).to_string()).unwrap();
+    let bound: TypeParamBound = parse_str(&bound.to_string()).unwrap();
     for ref mut type_param in &mut generics.type_params_mut() {
         type_param.bounds.push(bound.clone())
     }

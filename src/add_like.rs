@@ -1,7 +1,8 @@
 use quote::{ToTokens, Tokens};
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
 use std::iter;
-use utils::{add_extra_type_param_bound, field_idents, named_to_vec, numbered_vars, unnamed_to_vec};
+use utils::{add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
+            unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -9,7 +10,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_ident = Ident::from(method_name);
     let input_type = &input.ident;
 
-    let generics = add_extra_type_param_bound(&input.generics, &trait_ident);
+    let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.data {

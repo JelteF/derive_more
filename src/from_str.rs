@@ -1,10 +1,12 @@
 use quote::Tokens;
 use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
-use utils::unnamed_to_vec;
+use utils::{add_extra_ty_param_bound, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let trait_path = &quote!(::std::str::FromStr);
+    let generics = add_extra_ty_param_bound(&input.generics, trait_path);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let input_type = &input.ident;
     let (result, field_type) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
@@ -17,7 +19,6 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         },
         _ => panic_one_field(trait_name),
     };
-    let trait_path = quote!(::std::str::FromStr);
     quote!{
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {

@@ -1,7 +1,7 @@
 use quote::Tokens;
 use syn::{Data, DeriveInput, Fields, Ident};
 use add_like::{struct_exprs, tuple_exprs};
-use utils::{add_extra_ty_param_bound_simple, named_to_vec, unnamed_to_vec};
+use utils::{add_extra_ty_param_bound_op, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -11,7 +11,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let method_ident = Ident::from(method_name.to_string() + "_assign");
     let input_type = &input.ident;
 
-    let generics = add_extra_ty_param_bound_simple(&input.generics, &trait_ident);
+    let generics = add_extra_ty_param_bound_op(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let exprs = match input.data {
