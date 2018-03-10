@@ -5,7 +5,7 @@ environment:
   global:
   # TODO This is the Rust channel that build jobs will use by default but can be
   # overridden on a case by case basis down below
-    RUST_VERSION: beta
+    RUST_VERSION: stable
 
     # TODO Update this to match the name of your project.
     CRATE_NAME: derive_more
@@ -14,11 +14,9 @@ environment:
   # don't need
   matrix:
     # MinGW
-    - TARGET: i686-pc-windows-gnu
     - TARGET: x86_64-pc-windows-gnu
 
     # MSVC
-    - TARGET: i686-pc-windows-msvc
     - TARGET: x86_64-pc-windows-msvc
 
     # Testing other channels
