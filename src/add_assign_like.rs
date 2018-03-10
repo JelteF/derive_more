@@ -1,7 +1,7 @@
 use quote::Tokens;
-use syn::{Data, DeriveInput, Ident, Fields};
+use syn::{Data, DeriveInput, Fields, Ident};
 use add_like::{struct_exprs, tuple_exprs};
-use utils::{add_extra_ty_param_bound_simple, unnamed_to_vec, named_to_vec};
+use utils::{add_extra_ty_param_bound_simple, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);

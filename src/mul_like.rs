@@ -1,8 +1,8 @@
 use quote::{ToTokens, Tokens};
-use syn::{parse_str, Data, DeriveInput, Field, Generics, Ident, Fields, GenericParam, WhereClause};
+use syn::{parse_str, Data, DeriveInput, Field, Fields, GenericParam, Generics, Ident, WhereClause};
 use std::iter;
 use std::collections::HashSet;
-use utils::{field_idents, get_field_types_iter, number_idents, unnamed_to_vec, named_to_vec};
+use utils::{field_idents, get_field_types_iter, named_to_vec, number_idents, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -15,11 +15,17 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => {
                 let field_vec = unnamed_to_vec(fields);
-                (tuple_content(input_type, &field_vec, method_ident), field_vec)
-            },
+                (
+                    tuple_content(input_type, &field_vec, method_ident),
+                    field_vec,
+                )
+            }
             Fields::Named(ref fields) => {
                 let field_vec = named_to_vec(fields);
-                (struct_content(input_type, &field_vec, method_ident), field_vec)
+                (
+                    struct_content(input_type, &field_vec, method_ident),
+                    field_vec,
+                )
             }
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
@@ -34,7 +40,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
 
     let type_where_clauses: WhereClause = parse_str(&quote!{
         where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
-    }.to_string()).unwrap();
+    }.to_string())
+        .unwrap();
 
     let new_generics = get_mul_generics(input, &fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
@@ -75,7 +82,8 @@ pub fn get_mul_generics<'a>(
         quote!(#scalar_ident: ::std::marker::Copy)
     } else {
         quote!(#scalar_ident)
-    }.to_string()).unwrap();
+    }.to_string())
+        .unwrap();
 
     let mut new_generics = input.generics.clone();
     new_generics.params.push(new_typaram);

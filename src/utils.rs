@@ -1,4 +1,5 @@
-use syn::{parse_str, Field, Generics, Ident, Type, TypeParamBound, FieldsUnnamed, FieldsNamed, Index};
+use syn::{parse_str, Field, FieldsNamed, FieldsUnnamed, Generics, Ident, Index, Type,
+          TypeParamBound};
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
@@ -33,7 +34,8 @@ pub fn add_extra_type_param_bound<'a>(generics: &'a Generics, trait_ident: &'a I
     let mut generics = generics.clone();
     for ref mut type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
-        let bound: TypeParamBound = parse_str(&quote!(::std::ops::#trait_ident<Output=#type_ident>).to_string()).unwrap();
+        let bound: TypeParamBound =
+            parse_str(&quote!(::std::ops::#trait_ident<Output=#type_ident>).to_string()).unwrap();
         type_param.bounds.push(bound)
     }
 
@@ -50,14 +52,13 @@ pub fn add_extra_ty_param_bound_simple<'a>(
         type_param.bounds.push(bound.clone())
     }
 
-
     generics
 }
 
-pub fn unnamed_to_vec<'a>(fields: &'a FieldsUnnamed) -> Vec<&'a Field>{
+pub fn unnamed_to_vec<'a>(fields: &'a FieldsUnnamed) -> Vec<&'a Field> {
     fields.unnamed.iter().collect()
 }
 
-pub fn named_to_vec<'a>(fields: &'a FieldsNamed) -> Vec<&'a Field>{
+pub fn named_to_vec<'a>(fields: &'a FieldsNamed) -> Vec<&'a Field> {
     fields.named.iter().collect()
 }

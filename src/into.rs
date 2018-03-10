@@ -1,6 +1,6 @@
 use quote::Tokens;
 use syn::{Data, DeriveInput, Field, Fields};
-use utils::{field_idents, get_field_types, number_idents, unnamed_to_vec, named_to_vec};
+use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 use quote::ToTokens;
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
@@ -13,11 +13,11 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
             Fields::Unnamed(ref fields) => {
                 field_vec = unnamed_to_vec(fields);
                 (tuple_field_names(&field_vec), field_vec)
-            },
+            }
             Fields::Named(ref fields) => {
                 field_vec = named_to_vec(fields);
                 (struct_field_names(&field_vec), field_vec)
-            },
+            }
             Fields::Unit => (vec![], vec![]),
         },
         _ => panic!("Only structs can derive a constructor"),
@@ -38,9 +38,15 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
 }
 
 fn tuple_field_names(fields: &Vec<&Field>) -> Vec<Tokens> {
-    number_idents(fields.len()).iter().map(|f| f.into_tokens()).collect()
+    number_idents(fields.len())
+        .iter()
+        .map(|f| f.into_tokens())
+        .collect()
 }
 
 fn struct_field_names(fields: &Vec<&Field>) -> Vec<Tokens> {
-    field_idents(fields).iter().map(|f| (*f).into_tokens()).collect()
+    field_idents(fields)
+        .iter()
+        .map(|f| (*f).into_tokens())
+        .collect()
 }

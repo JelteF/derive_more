@@ -1,7 +1,7 @@
 use quote::{ToTokens, Tokens};
-use syn::{Data, DeriveInput, Field, Ident, Fields, DataEnum, Index};
+use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
 use std::iter;
-use utils::{add_extra_type_param_bound, unnamed_to_vec, named_to_vec};
+use utils::{add_extra_type_param_bound, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -15,18 +15,16 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let (output_type, block) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
-            quote!(#input_type#ty_generics),
-            tuple_content(input_type, &unnamed_to_vec(fields), method_ident),
+                quote!(#input_type#ty_generics),
+                tuple_content(input_type, &unnamed_to_vec(fields), method_ident),
             ),
             Fields::Named(ref fields) => (
                 quote!(#input_type#ty_generics),
                 struct_content(input_type, &named_to_vec(fields), method_ident),
             ),
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
-        }
-        Data::Enum(ref data_enum) => {
-            enum_output_type_and_content(input, data_enum, &method_ident)
-        }
+        },
+        Data::Enum(ref data_enum) => enum_output_type_and_content(input, data_enum, &method_ident),
 
         _ => panic!(format!(
             "Only structs and enums can use dervie({})",
@@ -44,7 +42,11 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &Vec<&Field>, method_ident: &Ident) -> Tokens {
+fn tuple_content<T: ToTokens>(
+    input_type: &T,
+    fields: &Vec<&Field>,
+    method_ident: &Ident,
+) -> Tokens {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -112,8 +114,10 @@ fn enum_output_type_and_content(
                 // }
                 let field_vec = named_to_vec(fields);
                 let size = field_vec.len();
-                let field_names: &Vec<_> =
-                    &field_vec.iter().map(|f| f.ident.as_ref().unwrap()).collect();
+                let field_names: &Vec<_> = &field_vec
+                    .iter()
+                    .map(|f| f.ident.as_ref().unwrap())
+                    .collect();
                 let vars: &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype{#(#field_names: #vars.#method_iter()),*});

@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
 use quote::{ToTokens, Tokens};
-use syn::{Data, DeriveInput, Field, DataEnum, Fields};
-use utils::{field_idents, get_field_types, number_idents, unnamed_to_vec, named_to_vec};
+use syn::{Data, DataEnum, DeriveInput, Field, Fields};
+use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => tuple_from(input, &unnamed_to_vec(fields)),
-            Fields::Named(ref fields) =>struct_from(input, &named_to_vec(fields)),
+            Fields::Named(ref fields) => struct_from(input, &named_to_vec(fields)),
             Fields::Unit => struct_from(input, &vec![]),
-        }
+        },
         Data::Enum(ref data_enum) => enum_from(input, data_enum),
         _ => panic!(format!(
             "Only structs and enums can use dervie({})",
@@ -78,7 +78,7 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
                 let original_types = unnamed_to_vec(fields).iter().map(|f| &f.ty).collect();
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
                 *counter += 1;
-            },
+            }
             Fields::Named(ref fields) => {
                 let original_types = named_to_vec(fields).iter().map(|f| &f.ty).collect();
                 let counter = type_signature_counts.entry(original_types).or_insert(0);
