@@ -1,21 +1,29 @@
 use quote::Tokens;
-use syn::{Body, DeriveInput, Field, Ident, VariantData};
-use utils::{field_idents, get_field_types, number_idents};
+use syn::{Data, DeriveInput, Field, Fields};
+use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
+use quote::ToTokens;
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let input_type = &input.ident;
-    let empty_field_names = vec![];
-    let empty_fields = &vec![];
+    let field_vec: Vec<_>;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-    let (field_names, fields) = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => (tuple_field_names(fields), fields),
-        Body::Struct(VariantData::Struct(ref fields)) => (struct_field_names(fields), fields),
-        Body::Struct(VariantData::Unit) => (empty_field_names, empty_fields),
+    let (field_names, fields) = match input.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Unnamed(ref fields) => {
+                field_vec = unnamed_to_vec(fields);
+                (tuple_field_names(&field_vec), field_vec)
+            }
+            Fields::Named(ref fields) => {
+                field_vec = named_to_vec(fields);
+                (struct_field_names(&field_vec), field_vec)
+            }
+            Fields::Unit => (vec![], vec![]),
+        },
         _ => panic!("Only structs can derive a constructor"),
     };
 
-    let original_types = &get_field_types(fields);
+    let original_types = &get_field_types(&fields);
 
     quote!{
         impl#impl_generics ::std::convert::From<#input_type#ty_generics> for
@@ -29,10 +37,16 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     }
 }
 
-fn tuple_field_names(fields: &Vec<Field>) -> Vec<Ident> {
+fn tuple_field_names(fields: &Vec<&Field>) -> Vec<Tokens> {
     number_idents(fields.len())
+        .iter()
+        .map(|f| f.into_tokens())
+        .collect()
 }
 
-fn struct_field_names(fields: &Vec<Field>) -> Vec<Ident> {
-    field_idents(fields).iter().map(|f| (*f).clone()).collect()
+fn struct_field_names(fields: &Vec<&Field>) -> Vec<Tokens> {
+    field_idents(fields)
+        .iter()
+        .map(|f| (*f).into_tokens())
+        .collect()
 }

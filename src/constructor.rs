@@ -1,19 +1,26 @@
 use quote::Tokens;
-use syn::{Body, DeriveInput, Field, Ident, VariantData};
-use utils::{field_idents, get_field_types, numbered_vars};
+use syn::{Data, DeriveInput, Field, Fields, Ident};
+use utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let input_type = &input.ident;
-    let empty_fields = &vec![];
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-    let ((body, vars), fields) = match input.body {
-        Body::Struct(VariantData::Tuple(ref fields)) => (tuple_body(input_type, fields), fields),
-        Body::Struct(VariantData::Struct(ref fields)) => (struct_body(input_type, fields), fields),
-        Body::Struct(VariantData::Unit) => (struct_body(input_type, empty_fields), empty_fields),
+    let ((body, vars), fields) = match input.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Unnamed(ref fields) => {
+                let field_vec = unnamed_to_vec(fields);
+                (tuple_body(input_type, &field_vec), field_vec)
+            }
+            Fields::Named(ref fields) => {
+                let field_vec = named_to_vec(fields);
+                (struct_body(input_type, &field_vec), field_vec)
+            }
+            Fields::Unit => (struct_body(input_type, &vec![]), vec![]),
+        },
         _ => panic!("Only structs can derive a constructor"),
     };
-    let original_types = &get_field_types(fields);
+    let original_types = &get_field_types(&fields);
     quote!{
         #[allow(missing_docs)]
         impl#impl_generics #input_type#ty_generics #where_clause {
@@ -24,12 +31,12 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     }
 }
 
-fn tuple_body(return_type: &Ident, fields: &Vec<Field>) -> (Tokens, Vec<Ident>) {
+fn tuple_body(return_type: &Ident, fields: &Vec<&Field>) -> (Tokens, Vec<Ident>) {
     let vars = &numbered_vars(fields.len(), "");
     (quote!(#return_type(#(#vars),*)), vars.clone())
 }
 
-fn struct_body(return_type: &Ident, fields: &Vec<Field>) -> (Tokens, Vec<Ident>) {
+fn struct_body(return_type: &Ident, fields: &Vec<&Field>) -> (Tokens, Vec<Ident>) {
     let field_names: &Vec<Ident> = &field_idents(fields).iter().map(|f| (*f).clone()).collect();
     let vars = field_names;
     (quote!(#return_type{#(#field_names: #vars),*}), vars.clone())
