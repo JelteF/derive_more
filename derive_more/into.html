@@ -58,87 +58,78 @@
 <li><a href="#enums">3 Enums</a><ul></ul></li></ul></nav><p>This derive creates the the exact oposite of <a href="from.html"><code>#[derive(From)]</code></a>.
 Instead of allowing you to create a new instance of the struct from the values
 it should contain, it allows you to extract the values from the struct.
-One thing to note is that this derive doesn&#39;t actually generate an
+One thing to note is that this derive doesn't actually generate an
 implementation for the <code>Into</code> trait.
 Instead it derives <code>From</code> for the values contained in the struct and thus has an
 indirect implementation of <code>Into</code> as recommended by the
 <a href="https://doc.rust-lang.org/core/convert/trait.Into.html">docs</a>.</p>
-
-<h1 id='tuple-structs' class='section-header'><a href='#tuple-structs'>1 Tuple structs</a></h1>
+<h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">1 Tuple structs</a></h1>
 <p>When deriving <code>Into</code> for a tuple struct with a single field (i.e. a newtype) like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Into</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>MyInt</span>(<span class='ident'>i32</span>)</pre>
-
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Into</span>)]</span>
+<span class="kw">struct</span> <span class="ident">MyInt</span>(<span class="ident">i32</span>)</pre>
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span><span class='ident'>MyInt</span><span class='op'>&gt;</span> <span class='kw'>for</span> (<span class='ident'>i32</span>) {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: <span class='ident'>MyInt</span>) <span class='op'>-&gt;</span> (<span class='ident'>i32</span>) {
-        (<span class='ident'>original</span>.<span class='number'>0</span>)
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span><span class="ident">MyInt</span><span class="op">&gt;</span> <span class="kw">for</span> (<span class="ident">i32</span>) {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: <span class="ident">MyInt</span>) <span class="op">-&gt;</span> (<span class="ident">i32</span>) {
+        (<span class="ident">original</span>.<span class="number">0</span>)
     }
 }</pre>
-
 <p>The behaviour is a bit different when deriving for a struct with multiple
 fields, since it returns a tuple. For instance when deriving for a tuple struct
 with two fields like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Into</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>MyInts</span>(<span class='ident'>i32</span>, <span class='ident'>i32</span>)</pre>
-
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Into</span>)]</span>
+<span class="kw">struct</span> <span class="ident">MyInts</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)</pre>
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span><span class='ident'>MyInts</span><span class='op'>&gt;</span> <span class='kw'>for</span> (<span class='ident'>i32</span>, <span class='ident'>i32</span>) {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: <span class='ident'>MyInts</span>) <span class='op'>-&gt;</span> (<span class='ident'>i32</span>, <span class='ident'>i32</span>) {
-        (<span class='ident'>original</span>.<span class='number'>0</span>, <span class='ident'>original</span>.<span class='number'>1</span>)
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span><span class="ident">MyInts</span><span class="op">&gt;</span> <span class="kw">for</span> (<span class="ident">i32</span>, <span class="ident">i32</span>) {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: <span class="ident">MyInts</span>) <span class="op">-&gt;</span> (<span class="ident">i32</span>, <span class="ident">i32</span>) {
+        (<span class="ident">original</span>.<span class="number">0</span>, <span class="ident">original</span>.<span class="number">1</span>)
     }
 }</pre>
-
-<h1 id='regular-structs' class='section-header'><a href='#regular-structs'>2 Regular structs</a></h1>
+<h1 id="regular-structs" class="section-header"><a href="#regular-structs">2 Regular structs</a></h1>
 <p>For regular structs almost the same code is generated as for tuple structs
 except in the way the field values are assigned to the new struct.
 When deriving for a regular struct with a single field like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Into</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>Point1D</span> {
-    <span class='ident'>x</span>: <span class='ident'>i32</span>,
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Into</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Point1D</span> {
+    <span class="ident">x</span>: <span class="ident">i32</span>,
 }</pre>
-
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span><span class='ident'>Point1D</span><span class='op'>&gt;</span> <span class='kw'>for</span> (<span class='ident'>i32</span>) {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: <span class='ident'>Point1D</span>) <span class='op'>-&gt;</span> (<span class='ident'>i32</span>) {
-        (<span class='ident'>original</span>.<span class='ident'>x</span>)
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span><span class="ident">Point1D</span><span class="op">&gt;</span> <span class="kw">for</span> (<span class="ident">i32</span>) {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: <span class="ident">Point1D</span>) <span class="op">-&gt;</span> (<span class="ident">i32</span>) {
+        (<span class="ident">original</span>.<span class="ident">x</span>)
     }
 }</pre>
-
 <p>The behaviour is again a bit different when deriving for a struct with multiple
 fields, because this also returns a tuple. For instance when deriving for a
 tuple struct with two fields like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Into</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>Point2D</span> {
-    <span class='ident'>x</span>: <span class='ident'>i32</span>,
-    <span class='ident'>y</span>: <span class='ident'>i32</span>,
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Into</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Point2D</span> {
+    <span class="ident">x</span>: <span class="ident">i32</span>,
+    <span class="ident">y</span>: <span class="ident">i32</span>,
 }
 </pre>
-
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span><span class='ident'>Point2D</span><span class='op'>&gt;</span> <span class='kw'>for</span> (<span class='ident'>i32</span>, <span class='ident'>i32</span>) {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: <span class='ident'>Point2D</span>) <span class='op'>-&gt;</span> (<span class='ident'>i32</span>, <span class='ident'>i32</span>) {
-        (<span class='ident'>original</span>.<span class='ident'>x</span>, <span class='ident'>original</span>.<span class='ident'>y</span>)
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span><span class="ident">Point2D</span><span class="op">&gt;</span> <span class="kw">for</span> (<span class="ident">i32</span>, <span class="ident">i32</span>) {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: <span class="ident">Point2D</span>) <span class="op">-&gt;</span> (<span class="ident">i32</span>, <span class="ident">i32</span>) {
+        (<span class="ident">original</span>.<span class="ident">x</span>, <span class="ident">original</span>.<span class="ident">y</span>)
     }
 }</pre>
-
-<h1 id='enums' class='section-header'><a href='#enums'>3 Enums</a></h1>
+<h1 id="enums" class="section-header"><a href="#enums">3 Enums</a></h1>
 <p>Deriving <code>Into</code> for enums is not supported as it would not always be successful.
 This is what the currently unstable
 <a href="https://doc.rust-lang.org/core/convert/trait.TryInto.html"><code>TryInto</code></a> should be

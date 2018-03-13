@@ -64,134 +64,123 @@ For structs with a single field you can call <code>.into()</code> on the desired
 itself after deriving <code>From</code>.
 For structs that have multiple fields <code>.into()</code> needs to be called on a tuple
 containing the desired content for each field.
-For enums <code>.into()</code> works for each variant as if they were structs. 
+For enums <code>.into()</code> works for each variant as if they were structs.
 This way the variant can not only be initialized, but also be chosen based on
 the type that <code>.into()</code> is called on.</p>
-
-<h1 id='tuple-structs' class='section-header'><a href='#tuple-structs'>1 Tuple structs</a></h1>
+<h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">1 Tuple structs</a></h1>
 <p>When deriving for a tuple struct with a single field (i.e. a newtype) like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>From</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>MyInt</span>(<span class='ident'>i32</span>)</pre>
-
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">From</span>)]</span>
+<span class="kw">struct</span> <span class="ident">MyInt</span>(<span class="ident">i32</span>)</pre>
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i32</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInt</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i32</span>)) <span class='op'>-&gt;</span> <span class='ident'>MyInt</span> {
-        <span class='ident'>MyInt</span>(<span class='ident'>original</span>)
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInt</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>)) <span class="op">-&gt;</span> <span class="ident">MyInt</span> {
+        <span class="ident">MyInt</span>(<span class="ident">original</span>)
     }
 }</pre>
-
 <p>The behaviour is a bit different when deriving for a struct with multiple
 fields. For instance when deriving for a tuple struct with two fields like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>From</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>MyInts</span>(<span class='ident'>i32</span>, <span class='ident'>i32</span>)</pre>
-
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">From</span>)]</span>
+<span class="kw">struct</span> <span class="ident">MyInts</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)</pre>
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i32</span>, <span class='ident'>i32</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInts</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i32</span>, <span class='ident'>i32</span>)) <span class='op'>-&gt;</span> <span class='ident'>MyInts</span> {
-        <span class='ident'>MyInts</span>(<span class='ident'>original</span>.<span class='number'>0</span>, <span class='ident'>original</span>.<span class='number'>1</span>)
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>, <span class="ident">i32</span>)) <span class="op">-&gt;</span> <span class="ident">MyInts</span> {
+        <span class="ident">MyInts</span>(<span class="ident">original</span>.<span class="number">0</span>, <span class="ident">original</span>.<span class="number">1</span>)
     }
 }</pre>
-
-<h1 id='regular-structs' class='section-header'><a href='#regular-structs'>2 Regular structs</a></h1>
+<h1 id="regular-structs" class="section-header"><a href="#regular-structs">2 Regular structs</a></h1>
 <p>For regular structs almost the same code is generated as for tuple structs
 except in the way the field values are assigned to the new struct.
 When deriving for a regular struct with a single field like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>From</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>Point1D</span> {
-    <span class='ident'>x</span>: <span class='ident'>i32</span>,
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">From</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Point1D</span> {
+    <span class="ident">x</span>: <span class="ident">i32</span>,
 }</pre>
-
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i32</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point1D</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i32</span>)) <span class='op'>-&gt;</span> <span class='ident'>Point1D</span> {
-        <span class='ident'>Point1D</span> { <span class='ident'>x</span>: <span class='ident'>original</span> }
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point1D</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>)) <span class="op">-&gt;</span> <span class="ident">Point1D</span> {
+        <span class="ident">Point1D</span> { <span class="ident">x</span>: <span class="ident">original</span> }
     }
 }</pre>
-
 <p>The behaviour is a bit different when deriving for a struct with multiple
 fields. For instance when deriving for a tuple struct with two fields like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>From</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>Point2D</span> {
-    <span class='ident'>x</span>: <span class='ident'>i32</span>,
-    <span class='ident'>y</span>: <span class='ident'>i32</span>,
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">From</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Point2D</span> {
+    <span class="ident">x</span>: <span class="ident">i32</span>,
+    <span class="ident">y</span>: <span class="ident">i32</span>,
 }
 </pre>
-
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i32</span>, <span class='ident'>i32</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point2D</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i32</span>, <span class='ident'>i32</span>)) <span class='op'>-&gt;</span> <span class='ident'>Point2D</span> {
-        <span class='ident'>Point2D</span> {
-            <span class='ident'>x</span>: <span class='ident'>original</span>.<span class='number'>0</span>,
-            <span class='ident'>y</span>: <span class='ident'>original</span>.<span class='number'>1</span>,
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>, <span class="ident">i32</span>)) <span class="op">-&gt;</span> <span class="ident">Point2D</span> {
+        <span class="ident">Point2D</span> {
+            <span class="ident">x</span>: <span class="ident">original</span>.<span class="number">0</span>,
+            <span class="ident">y</span>: <span class="ident">original</span>.<span class="number">1</span>,
         }
     }
 }</pre>
-
-<h1 id='enums' class='section-header'><a href='#enums'>3 Enums</a></h1>
+<h1 id="enums" class="section-header"><a href="#enums">3 Enums</a></h1>
 <p>When deriving <code>From</code> for enums a new <code>impl</code> will be generated for each of its
 variants.
-There&#39;s one exception, if multiple variants have the same type signature no <code>From</code>
+There's one exception, if multiple variants have the same type signature no <code>From</code>
 implementation will be derived for any of those variants.
 For instance when deriving <code>From</code> for the following enum:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>From</span>)]</span>
-<span class='kw'>enum</span> <span class='ident'>MixedInts</span> {
-    <span class='ident'>SmallInt</span>(<span class='ident'>i32</span>),
-    <span class='ident'>NamedBigInt</span> { <span class='ident'>int</span>: <span class='ident'>i64</span> },
-    <span class='ident'>TwoSmallInts</span>(<span class='ident'>i32</span>, <span class='ident'>i32</span>),
-    <span class='ident'>NamedBigInts</span> { <span class='ident'>x</span>: <span class='ident'>i64</span>, <span class='ident'>y</span>: <span class='ident'>i64</span> },
-    <span class='ident'>Unsigned</span>(<span class='ident'>u32</span>),
-    <span class='ident'>NamedUnsigned</span> { <span class='ident'>x</span>: <span class='ident'>u32</span> },
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">From</span>)]</span>
+<span class="kw">enum</span> <span class="ident">MixedInts</span> {
+    <span class="ident">SmallInt</span>(<span class="ident">i32</span>),
+    <span class="ident">NamedBigInt</span> { <span class="ident">int</span>: <span class="ident">i64</span> },
+    <span class="ident">TwoSmallInts</span>(<span class="ident">i32</span>, <span class="ident">i32</span>),
+    <span class="ident">NamedBigInts</span> { <span class="ident">x</span>: <span class="ident">i64</span>, <span class="ident">y</span>: <span class="ident">i64</span> },
+    <span class="ident">Unsigned</span>(<span class="ident">u32</span>),
+    <span class="ident">NamedUnsigned</span> { <span class="ident">x</span>: <span class="ident">u32</span> },
 }
 </pre>
-
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i32</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MixedInts</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i32</span>)) <span class='op'>-&gt;</span> <span class='ident'>MixedInts</span> {
-        <span class='ident'>MixedInts</span>::<span class='ident'>SmallInt</span>(<span class='ident'>original</span>)
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>)) <span class="op">-&gt;</span> <span class="ident">MixedInts</span> {
+        <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">original</span>)
     }
 }
 
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i64</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MixedInts</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i64</span>)) <span class='op'>-&gt;</span> <span class='ident'>MixedInts</span> {
-        <span class='ident'>MixedInts</span>::<span class='ident'>NamedBigInt</span> { <span class='ident'>int</span>: <span class='ident'>original</span> }
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i64</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i64</span>)) <span class="op">-&gt;</span> <span class="ident">MixedInts</span> {
+        <span class="ident">MixedInts</span>::<span class="ident">NamedBigInt</span> { <span class="ident">int</span>: <span class="ident">original</span> }
     }
 }
 
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i32</span>, <span class='ident'>i32</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MixedInts</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i32</span>, <span class='ident'>i32</span>)) <span class='op'>-&gt;</span> <span class='ident'>MixedInts</span> {
-        <span class='ident'>MixedInts</span>::<span class='ident'>TwoSmallInts</span>(<span class='ident'>original</span>.<span class='number'>0</span>, <span class='ident'>original</span>.<span class='number'>1</span>)
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>, <span class="ident">i32</span>)) <span class="op">-&gt;</span> <span class="ident">MixedInts</span> {
+        <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">original</span>.<span class="number">0</span>, <span class="ident">original</span>.<span class="number">1</span>)
     }
 }
 
-<span class='kw'>impl</span> ::<span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>From</span><span class='op'>&lt;</span>(<span class='ident'>i64</span>, <span class='ident'>i64</span>)<span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MixedInts</span> {
-    <span class='kw'>fn</span> <span class='ident'>from</span>(<span class='ident'>original</span>: (<span class='ident'>i64</span>, <span class='ident'>i64</span>)) <span class='op'>-&gt;</span> <span class='ident'>MixedInts</span> {
-        <span class='ident'>MixedInts</span>::<span class='ident'>NamedBigInts</span> {
-            <span class='ident'>x</span>: <span class='ident'>original</span>.<span class='number'>0</span>,
-            <span class='ident'>y</span>: <span class='ident'>original</span>.<span class='number'>1</span>,
+<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i64</span>, <span class="ident">i64</span>)) <span class="op">-&gt;</span> <span class="ident">MixedInts</span> {
+        <span class="ident">MixedInts</span>::<span class="ident">NamedBigInts</span> {
+            <span class="ident">x</span>: <span class="ident">original</span>.<span class="number">0</span>,
+            <span class="ident">y</span>: <span class="ident">original</span>.<span class="number">1</span>,
         }
     }
 }</pre>
-
 <p>Notice that for <code>Unsigned</code> and <code>NamedUnsigned</code> no <code>impl</code> is generated.
 The reason for this is that it would be impossible for the compiler to know
 which implementation to choose, since they would both implement <code>From&lt;u32&gt;</code>.</p>

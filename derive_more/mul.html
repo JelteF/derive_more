@@ -60,105 +60,94 @@ multiply two structs together. Instead it will normally multipy a struct, which
 can have multiple fields, with a single primitive type (e.g. a <code>u64</code>). A new
 struct is then created with all the fields from the previous struct multiplied
 by this other value.</p>
-
 <p>A simple way of explaining the reasoning behind this difference between <code>Add</code>
 and <code>Mul</code> deriving, is looking at arithmetic on meters.
 One meter can be added to one meter, to get two meters. Also, one meter times
 two would be two meters, but one meter times one meter would be one square meter.
 As this second case clearly requires more knowledge about the meaning of the
 type in question deriving for this is not implemented.</p>
-
-<h1 id='tuple-structs' class='section-header'><a href='#tuple-structs'>1 Tuple structs</a></h1>
+<h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">1 Tuple structs</a></h1>
 <p>When deriving for a tuple struct with a single field (i.e. a newtype) like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Mul</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>MyInt</span>(<span class='ident'>i32</span>)</pre>
-
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Mul</span>)]</span>
+<span class="kw">struct</span> <span class="ident">MyInt</span>(<span class="ident">i32</span>)</pre>
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInt</span>
-    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInt</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>MyInt</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>MyInt</span> {
-        <span class='ident'>MyInt</span>(<span class='self'>self</span>.<span class='number'>0</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>))
+    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MyInt</span>;
+    <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-&gt;</span> <span class="ident">MyInt</span> {
+        <span class="ident">MyInt</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">mul</span>(<span class="ident">rhs</span>))
     }
 }</pre>
-
 <p>The behaviour is slightly different for multiple fields, since the right hand
 side of the multiplication now needs the <code>Copy</code> trait.
 For instance when deriving for a tuple struct with two fields like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Mul</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>MyInts</span>(<span class='ident'>i32</span>, <span class='ident'>i32</span>)</pre>
-
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Mul</span>)]</span>
+<span class="kw">struct</span> <span class="ident">MyInts</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)</pre>
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>: ::<span class='ident'>std</span>::<span class='ident'>marker</span>::<span class='ident'>Copy</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>MyInts</span>
-    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: ::<span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">Copy</span><span class="op">&gt;</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>MyInts</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>MyInts</span> {
-        <span class='ident'>MyInts</span>(<span class='self'>self</span>.<span class='number'>0</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>), <span class='self'>self</span>.<span class='number'>1</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>))
+    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MyInts</span>;
+    <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-&gt;</span> <span class="ident">MyInts</span> {
+        <span class="ident">MyInts</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">mul</span>(<span class="ident">rhs</span>), <span class="self">self</span>.<span class="number">1</span>.<span class="ident">mul</span>(<span class="ident">rhs</span>))
     }
 }</pre>
-
 <p>The behaviour is similar with more or less fields.</p>
-
-<h1 id='regular-structs' class='section-header'><a href='#regular-structs'>2 Regular structs</a></h1>
+<h1 id="regular-structs" class="section-header"><a href="#regular-structs">2 Regular structs</a></h1>
 <p>When deriving <code>Mul</code> for a regular struct with a single field like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Mul</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>Point1D</span> {
-    <span class='ident'>x</span>: <span class='ident'>i32</span>,
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Mul</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Point1D</span> {
+    <span class="ident">x</span>: <span class="ident">i32</span>,
 }</pre>
-
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point1D</span>
-    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point1D</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Point1D</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>Point1D</span> {
-        <span class='ident'>Point1D</span> { <span class='ident'>x</span>: <span class='self'>self</span>.<span class='ident'>x</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>) }
+    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">Point1D</span>;
+    <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-&gt;</span> <span class="ident">Point1D</span> {
+        <span class="ident">Point1D</span> { <span class="ident">x</span>: <span class="self">self</span>.<span class="ident">x</span>.<span class="ident">mul</span>(<span class="ident">rhs</span>) }
     }
 }</pre>
-
 <p>The behaviour is again slightly different when deriving for a struct with multiple
 fields, because it still needs the <code>Copy</code> as well.
 For instance when deriving for a tuple struct with two fields like this:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Mul</span>)]</span>
-<span class='kw'>struct</span> <span class='ident'>Point2D</span> {
-    <span class='ident'>x</span>: <span class='ident'>i32</span>,
-    <span class='ident'>y</span>: <span class='ident'>i32</span>,
+<pre class="rust rust-example-rendered">
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Mul</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Point2D</span> {
+    <span class="ident">x</span>: <span class="ident">i32</span>,
+    <span class="ident">y</span>: <span class="ident">i32</span>,
 }</pre>
-
 <p>Code like this will be generated:</p>
 
-<pre class='rust rust-example-rendered'>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>: ::<span class='ident'>std</span>::<span class='ident'>marker</span>::<span class='ident'>Copy</span><span class='op'>&gt;</span> ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Point2D</span>
-    <span class='kw'>where</span> <span class='ident'>i32</span>: ::<span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>__RhsT</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>i32</span><span class='op'>&gt;</span>
+<pre class="rust rust-example-rendered">
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: ::<span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">Copy</span><span class="op">&gt;</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Point2D</span>;
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>__RhsT</span>) <span class='op'>-&gt;</span> <span class='ident'>Point2D</span> {
-        <span class='ident'>Point2D</span> {
-            <span class='ident'>x</span>: <span class='self'>self</span>.<span class='ident'>x</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>),
-            <span class='ident'>y</span>: <span class='self'>self</span>.<span class='ident'>y</span>.<span class='ident'>mul</span>(<span class='ident'>rhs</span>),
+    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">Point2D</span>;
+    <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-&gt;</span> <span class="ident">Point2D</span> {
+        <span class="ident">Point2D</span> {
+            <span class="ident">x</span>: <span class="self">self</span>.<span class="ident">x</span>.<span class="ident">mul</span>(<span class="ident">rhs</span>),
+            <span class="ident">y</span>: <span class="self">self</span>.<span class="ident">y</span>.<span class="ident">mul</span>(<span class="ident">rhs</span>),
         }
     }
 }</pre>
-
-<h1 id='enums' class='section-header'><a href='#enums'>3 Enums</a></h1>
+<h1 id="enums" class="section-header"><a href="#enums">3 Enums</a></h1>
 <p>Deriving <code>Mul</code> for enums is not (yet) supported.
-Although it shouldn&#39;t be impossible no effort has been put into this yet.</p>
+Although it shouldn't be impossible no effort has been put into this yet.</p>
 
     </section>
 <section id='search' class="content hidden"></section>
