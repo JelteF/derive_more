@@ -58,12 +58,13 @@ following way:
 2. `Into`, only contains [`Into`].
 3. `Constructor`, this doesn't derive a trait, but it derives a `new` method that can be
    used as a constructor.
-4. `Not`-like, contains [`Not`] and [`Neg`].
-5. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
-6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+4. Newtype derives (and structs with one field), contains [`FromStr`].
+5. `Not`-like, contains [`Not`] and [`Neg`].
+6. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
+7. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
    and [`BitXorAssign`].
-7. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
-8. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
+8. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
+9. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
 
 
 ## Generated code
@@ -76,6 +77,7 @@ before.
 1. [`#[derive(From)]`](https://jeltef.github.io/derive_more/derive_more/from.html)
 2. [`#[derive(Into)]`](https://jeltef.github.io/derive_more/derive_more/into.html)
 3. [`#[derive(Constructor)]`](https://jeltef.github.io/derive_more/derive_more/constructor.html)
+3. [`#[derive(FromStr)]`](https://jeltef.github.io/derive_more/derive_more/from_str.html)
 4. [`#[derive(Not)]`](https://jeltef.github.io/derive_more/derive_more/not.html)
 5. [`#[derive(Add)]`](https://jeltef.github.io/derive_more/derive_more/add.html)
 6. [`#[derive(AddAssign)]`](https://jeltef.github.io/derive_more/derive_more/add_assign.html)
@@ -106,6 +108,7 @@ extern crate derive_more;
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html
 [`Into`]: https://doc.rust-lang.org/core/convert/trait.Into.html
+[`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
 [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
 [`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html
 [`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html
