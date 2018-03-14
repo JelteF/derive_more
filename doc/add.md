@@ -15,7 +15,6 @@ When deriving `Add` for a tuple struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Add)]
 struct MyInts(i32, i32);
 ```
@@ -24,7 +23,6 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-
 impl ::std::ops::Add for MyInts {
     type Output = MyInts;
     fn add(self, rhs: MyInts) -> MyInts {
@@ -44,7 +42,6 @@ When deriving `Add` for a regular struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Add)]
 struct Point2D {
     x: i32,
@@ -85,7 +82,6 @@ done. For instance when deriving `Add` for an enum like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Add)]
 enum MixedInts {
     SmallInt(i32),
@@ -110,7 +106,6 @@ Code like this will be generated:
 #     UnsignedTwo(u32),
 #     Unit,
 # }
-
 impl ::std::ops::Add for MixedInts {
     type Output = Result<MixedInts, &'static str>;
     fn add(self, rhs: MixedInts) -> Result<MixedInts, &'static str> {

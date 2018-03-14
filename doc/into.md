@@ -16,7 +16,6 @@ When deriving `Into` for a tuple struct with a single field (i.e. a newtype) lik
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Into)]
 struct MyInt(i32);
 ```
@@ -39,7 +38,6 @@ with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Into)]
 struct MyInts(i32, i32);
 ```
@@ -66,7 +64,6 @@ When deriving for a regular struct with a single field like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Into)]
 struct Point1D {
     x: i32,
@@ -93,7 +90,6 @@ tuple struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Into)]
 struct Point2D {
     x: i32,

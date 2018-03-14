@@ -11,7 +11,6 @@ When deriving for a tuple struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(AddAssign)]
 struct MyInts(i32, i32);
 ```
@@ -20,7 +19,6 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-
 impl ::std::ops::AddAssign for MyInts {
     fn add_assign(&mut self, rhs: MyInts) {
         self.0.add_assign(rhs.0);
@@ -40,7 +38,6 @@ When deriving for a tuple struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(AddAssign)]
 struct Point2D {
     x: i32,
@@ -55,7 +52,6 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-
 impl ::std::ops::AddAssign for Point2D {
     fn add_assign(&mut self, rhs: Point2D) {
         self.x.add_assign(rhs.x);

@@ -19,18 +19,16 @@ When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
 # #[macro_use] extern crate derive_more;
-
+# fn main(){}
 #[derive(From)]
 struct MyInt(i32);
 
-# fn main(){}
 ```
 
 Code like this will be generated:
 
 ```rust
 # struct MyInt(i32);
-
 impl ::std::convert::From<(i32)> for MyInt {
     fn from(original: (i32)) -> MyInt {
         MyInt(original)
@@ -43,11 +41,9 @@ fields. For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
 # #[macro_use] extern crate derive_more;
-
+# fn main(){}
 #[derive(From)]
 struct MyInts(i32, i32);
-
-# fn main(){}
 ```
 
 Code like this will be generated:
@@ -134,7 +130,6 @@ For instance when deriving `From` for the following enum:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(From)]
 enum MixedInts {
     SmallInt(i32),
