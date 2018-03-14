@@ -6,6 +6,6 @@ extern crate derive_more;
 struct MyInt(i32);
 
 #[derive(FromStr)]
-struct MyIntStruct {
-    int: i32,
+struct Point1D {
+    x: i32,
 }
