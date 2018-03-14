@@ -59,7 +59,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/derive_more/lib.rs.html#1-192' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/derive_more/lib.rs.html#1-195' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><h1 id="derive_more" class="section-header"><a href="#derive_more">derive_more</a></h1>
 <p>Rust has lots of builtin traits that are implemented for its basic types, such as <a href="https://doc.rust-lang.org/std/ops/trait.Add.html"><code>Add</code></a>,
 <a href="https://doc.rust-lang.org/std/ops/trait.Not.html"><code>Not</code></a> or <a href="https://doc.rust-lang.org/core/convert/trait.From.html"><code>From</code></a>.
@@ -108,6 +108,7 @@ following way:</p>
 <li><code>Into</code>, only contains <a href="https://doc.rust-lang.org/core/convert/trait.Into.html"><code>Into</code></a>.</li>
 <li><code>Constructor</code>, this doesn't derive a trait, but it derives a <code>new</code> method that can be
 used as a constructor.</li>
+<li>Newtype derives (and structs with one field), contains <a href="https://doc.rust-lang.org/std/str/trait.FromStr.html"><code>FromStr</code></a>.</li>
 <li><code>Not</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Not.html"><code>Not</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.Neg.html"><code>Neg</code></a>.</li>
 <li><code>Add</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Add.html"><code>Add</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Sub.html"><code>Sub</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitAnd.html"><code>BitAnd</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitOr.html"><code>BitOr</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.BitXor.html"><code>BitXor</code></a>.</li>
 <li><code>AddAssign</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.AddAssign.html"><code>AddAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.SubAssign.html"><code>SubAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html"><code>BitAndAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html"><code>BitOrAssign</code></a>
@@ -124,6 +125,7 @@ before.</p>
 <li><a href="from.html"><code>#[derive(From)]</code></a></li>
 <li><a href="into.html"><code>#[derive(Into)]</code></a></li>
 <li><a href="constructor.html"><code>#[derive(Constructor)]</code></a></li>
+<li><a href="from_str.html"><code>#[derive(FromStr)]</code></a></li>
 <li><a href="not.html"><code>#[derive(Not)]</code></a></li>
 <li><a href="add.html"><code>#[derive(Add)]</code></a></li>
 <li><a href="add_assign.html"><code>#[derive(AddAssign)]</code></a></li>
