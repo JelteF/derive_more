@@ -54,12 +54,13 @@
 //! 2. `Into`, only contains [`Into`].
 //! 3. `Constructor`, this doesn't derive a trait, but it derives a `new` method that can be
 //!    used as a constructor.
-//! 4. `Not`-like, contains [`Not`] and [`Neg`].
-//! 5. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
-//! 6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//! 4. Newtype derives (and structs with one field), contains [`FromStr`].
+//! 5. `Not`-like, contains [`Not`] and [`Neg`].
+//! 6. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
+//! 7. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
 //!    and [`BitXorAssign`].
-//! 7. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
-//! 8. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
+//! 8. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
+//! 9. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
 //!
 //!
 //! ## Generated code
@@ -72,11 +73,12 @@
 //! 1. [`#[derive(From)]`](from.html)
 //! 2. [`#[derive(Into)]`](into.html)
 //! 3. [`#[derive(Constructor)]`](constructor.html)
-//! 4. [`#[derive(Not)]`](not.html)
-//! 5. [`#[derive(Add)]`](add.html)
-//! 6. [`#[derive(AddAssign)]`](add_assign.html)
-//! 7. [`#[derive(Mul)]`](mul.html)
-//! 8. [`#[derive(MulAssign)]`](mul_assign.html)
+//! 4. [`#[derive(FromStr)]`](fromstr.html)
+//! 5. [`#[derive(Not)]`](not.html)
+//! 6. [`#[derive(Add)]`](add.html)
+//! 7. [`#[derive(AddAssign)]`](add_assign.html)
+//! 8. [`#[derive(Mul)]`](mul.html)
+//! 9. [`#[derive(MulAssign)]`](mul_assign.html)
 //!
 //! If you want to be sure what code is generated for your specific type I recommend using the
 //! [`cargo-expand`] utility.
@@ -103,6 +105,7 @@
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 //! [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html
 //! [`Into`]: https://doc.rust-lang.org/core/convert/trait.Into.html
+//! [`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
 //! [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
 //! [`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html
 //! [`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html
