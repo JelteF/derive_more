@@ -73,7 +73,7 @@
 //! 1. [`#[derive(From)]`](from.html)
 //! 2. [`#[derive(Into)]`](into.html)
 //! 3. [`#[derive(Constructor)]`](constructor.html)
-//! 4. [`#[derive(FromStr)]`](fromstr.html)
+//! 4. [`#[derive(FromStr)]`](from_str.html)
 //! 5. [`#[derive(Not)]`](not.html)
 //! 6. [`#[derive(Add)]`](add.html)
 //! 7. [`#[derive(AddAssign)]`](add_assign.html)
