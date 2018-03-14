@@ -14,13 +14,17 @@ indirect implementation of `Into` as recommended by the
 When deriving `Into` for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Into)]
-struct MyInt(i32)
+struct MyInt(i32);
 ```
 
 Code like this will be generated:
 
 ```rust
+# struct MyInt(i32);
 impl ::std::convert::From<MyInt> for (i32) {
     fn from(original: MyInt) -> (i32) {
         (original.0)
@@ -33,13 +37,17 @@ fields, since it returns a tuple. For instance when deriving for a tuple struct
 with two fields like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Into)]
-struct MyInts(i32, i32)
+struct MyInts(i32, i32);
 ```
 
 Code like this will be generated:
 
 ```rust
+# struct MyInts(i32, i32);
 impl ::std::convert::From<MyInts> for (i32, i32) {
     fn from(original: MyInts) -> (i32, i32) {
         (original.0, original.1)
@@ -56,6 +64,9 @@ except in the way the field values are assigned to the new struct.
 When deriving for a regular struct with a single field like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Into)]
 struct Point1D {
     x: i32,
@@ -65,6 +76,9 @@ struct Point1D {
 Code like this will be generated:
 
 ```rust
+# struct Point1D {
+#     x: i32,
+# }
 impl ::std::convert::From<Point1D> for (i32) {
     fn from(original: Point1D) -> (i32) {
         (original.x)
@@ -77,6 +91,9 @@ fields, because this also returns a tuple. For instance when deriving for a
 tuple struct with two fields like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Into)]
 struct Point2D {
     x: i32,
@@ -88,6 +105,10 @@ struct Point2D {
 Code like this will be generated:
 
 ```rust
+# struct Point2D {
+#     x: i32,
+#     y: i32,
+# }
 impl ::std::convert::From<Point2D> for (i32, i32) {
     fn from(original: Point2D) -> (i32, i32) {
         (original.x, original.y)

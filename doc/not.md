@@ -10,13 +10,18 @@ instance of the same variant with these negated fields is returned.
 When deriving for a tuple struct with two fields like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Not)]
-struct MyInts(i32, i32)
+struct MyInts(i32, i32);
 ```
 
 Code like this will be generated:
 
 ```rust
+# struct MyInts(i32, i32);
+
 impl ::std::ops::Not for MyInts {
     type Output = MyInts;
     fn not(self) -> MyInts {
@@ -33,6 +38,9 @@ The behaviour is similar with more or less fields.
 When deriving for a regular struct with two fields like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Not)]
 struct Point2D {
     x: i32,
@@ -43,6 +51,11 @@ struct Point2D {
 Code like this will be generated:
 
 ```rust
+# struct Point2D {
+#     x: i32,
+#     y: i32,
+# }
+
 impl ::std::ops::Not for Point2D {
     type Output = Point2D;
     fn not(self) -> Point2D {
@@ -64,6 +77,9 @@ if it would be its own type.
 For instance when deriving `Not` for an enum like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Not)]
 enum MixedInts {
     SmallInt(i32),
@@ -78,6 +94,15 @@ enum MixedInts {
 Code like this will be generated:
 
 ```rust
+# enum MixedInts {
+#     SmallInt(i32),
+#     BigInt(i64),
+#     TwoSmallInts(i32, i32),
+#     NamedSmallInts { x: i32, y: i32 },
+#     UnsignedOne(u32),
+#     UnsignedTwo(u32),
+# }
+
 impl ::std::ops::Not for MixedInts {
     type Output = MixedInts;
     fn not(self) -> MixedInts {
@@ -105,6 +130,9 @@ This is because Unit cannot have `Not` implemented.
 So, when deriving `Not` for an enum like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Not)]
 enum EnumWithUnit {
     SmallInt(i32),
@@ -115,6 +143,11 @@ enum EnumWithUnit {
 Code like this will be generated:
 
 ```rust
+enum EnumWithUnit {
+    SmallInt(i32),
+    Unit,
+}
+
 impl ::std::ops::Not for EnumWithUnit {
     type Output = Result<EnumWithUnit, &'static str>;
     fn not(self) -> Result<EnumWithUnit, &'static str> {

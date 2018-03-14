@@ -18,13 +18,18 @@ type in question deriving for this is not implemented.
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Mul)]
-struct MyInt(i32)
+struct MyInt(i32);
 ```
 
 Code like this will be generated:
 
 ```rust
+# struct MyInt(i32);
+
 impl<__RhsT> ::std::ops::Mul<__RhsT> for MyInt
     where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
@@ -40,13 +45,18 @@ side of the multiplication now needs the `Copy` trait.
 For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Mul)]
-struct MyInts(i32, i32)
+struct MyInts(i32, i32);
 ```
 
 Code like this will be generated:
 
 ```rust
+# struct MyInts(i32, i32);
+
 impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for MyInts
     where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
@@ -66,6 +76,9 @@ The behaviour is similar with more or less fields.
 When deriving `Mul` for a regular struct with a single field like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Mul)]
 struct Point1D {
     x: i32,
@@ -75,6 +88,9 @@ struct Point1D {
 Code like this will be generated:
 
 ```rust
+# struct Point1D {
+#     x: i32,
+# }
 impl<__RhsT> ::std::ops::Mul<__RhsT> for Point1D
     where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
@@ -90,6 +106,9 @@ fields, because it still needs the `Copy` as well.
 For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+
 #[derive(Mul)]
 struct Point2D {
     x: i32,
@@ -100,6 +119,10 @@ struct Point2D {
 Code like this will be generated:
 
 ```rust
+# struct Point2D {
+#     x: i32,
+#     y: i32,
+# }
 impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for Point2D
     where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
