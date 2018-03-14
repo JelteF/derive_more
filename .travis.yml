@@ -23,7 +23,7 @@ matrix:
   # don't need
   include:
     # Linux
-    - env: TARGET=x86_64-unknown-linux-gnu  DOCS=true # this is the default job
+    - env: TARGET=x86_64-unknown-linux-gnu DOCS=true # this is the default job
     - env: TARGET=x86_64-unknown-linux-musl
 
     # OSX
