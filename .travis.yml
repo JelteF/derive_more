@@ -44,11 +44,11 @@ before_install: set -e
 install:
   - sh ci/install.sh
   - source ~/.cargo/env || true
-  - [ -z "$DOCS" ] || cargo install --git cargo-external-doc
+  - '[ -z "$DOCS" ] || cargo install --git cargo-external-doc'
 
 
 script:
-  - if [ -n "$DOCS" ]; then cargo build && cargo external-doc; fi
+  - 'if [ -n "$DOCS" ]; then cargo build && cargo external-doc; fi'
   - bash ci/script.sh
 
 after_script: set +e
