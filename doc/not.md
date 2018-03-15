@@ -12,7 +12,6 @@ When deriving for a tuple struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Not)]
 struct MyInts(i32, i32);
 ```
@@ -21,7 +20,6 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-
 impl ::std::ops::Not for MyInts {
     type Output = MyInts;
     fn not(self) -> MyInts {
@@ -40,7 +38,6 @@ When deriving for a regular struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Not)]
 struct Point2D {
     x: i32,
@@ -55,7 +52,6 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-
 impl ::std::ops::Not for Point2D {
     type Output = Point2D;
     fn not(self) -> Point2D {
@@ -79,7 +75,6 @@ For instance when deriving `Not` for an enum like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Not)]
 enum MixedInts {
     SmallInt(i32),
@@ -102,7 +97,6 @@ Code like this will be generated:
 #     UnsignedOne(u32),
 #     UnsignedTwo(u32),
 # }
-
 impl ::std::ops::Not for MixedInts {
     type Output = MixedInts;
     fn not(self) -> MixedInts {
@@ -132,7 +126,6 @@ So, when deriving `Not` for an enum like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Not)]
 enum EnumWithUnit {
     SmallInt(i32),
@@ -143,11 +136,10 @@ enum EnumWithUnit {
 Code like this will be generated:
 
 ```rust
-enum EnumWithUnit {
-    SmallInt(i32),
-    Unit,
-}
-
+# enum EnumWithUnit {
+#     SmallInt(i32),
+#     Unit,
+# }
 impl ::std::ops::Not for EnumWithUnit {
     type Output = Result<EnumWithUnit, &'static str>;
     fn not(self) -> Result<EnumWithUnit, &'static str> {

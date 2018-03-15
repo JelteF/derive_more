@@ -15,7 +15,6 @@ When deriving `Constructor` for a tuple struct with a two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Constructor)]
 struct MyInts(i32, i32);
 ```
@@ -24,7 +23,6 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-
 impl MyInts {
     pub fn new(__0: i32, __1: i32) -> MyInts {
         MyInts(__0, __1)
@@ -43,7 +41,6 @@ except that it assigns the fields differently.
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Constructor)]
 struct Point2D {
     x: i32,
@@ -58,7 +55,6 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-
 impl Point2D {
     pub fn new(x: i32, y: i32) -> Point2D {
         Point2D { x: x, y: y }

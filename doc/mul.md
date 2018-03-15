@@ -20,7 +20,6 @@ When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Mul)]
 struct MyInt(i32);
 ```
@@ -29,7 +28,6 @@ Code like this will be generated:
 
 ```rust
 # struct MyInt(i32);
-
 impl<__RhsT> ::std::ops::Mul<__RhsT> for MyInt
     where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
@@ -47,7 +45,6 @@ For instance when deriving for a tuple struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Mul)]
 struct MyInts(i32, i32);
 ```
@@ -56,7 +53,6 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-
 impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for MyInts
     where i32: ::std::ops::Mul<__RhsT, Output = i32>
 {
@@ -78,7 +74,6 @@ When deriving `Mul` for a regular struct with a single field like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Mul)]
 struct Point1D {
     x: i32,
@@ -108,7 +103,6 @@ For instance when deriving for a tuple struct with two fields like this:
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
-
 #[derive(Mul)]
 struct Point2D {
     x: i32,

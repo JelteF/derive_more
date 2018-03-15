@@ -10,19 +10,15 @@ When deriving `MulAssign` for a tuple struct with two fields like this:
 
 ```rust
 # #[macro_use] extern crate derive_more;
-
+# fn main(){}
 #[derive(MulAssign)]
 struct MyInts(i32, i32);
-
-# fn main(){}
 ```
 
 Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-# fn main(){}
-
 impl<__RhsT: ::std::marker::Copy> ::std::ops::MulAssign<__RhsT> for MyInts
     where i32: ::std::ops::MulAssign<__RhsT>
 {
@@ -45,13 +41,12 @@ When deriving `MulAssign` for a regular struct with two fields like this:
 
 ```rust
 # #[macro_use] extern crate derive_more;
-
+# fn main(){}
 #[derive(MulAssign)]
 struct Point2D {
     x: i32,
     y: i32,
 }
-# fn main(){}
 ```
 
 Code like this will be generated:
@@ -61,7 +56,6 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-
 impl<__RhsT: ::std::marker::Copy> ::std::ops::MulAssign<__RhsT> for Point2D
     where i32: ::std::ops::MulAssign<__RhsT>
 {
