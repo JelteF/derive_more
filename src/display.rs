@@ -1,5 +1,5 @@
 use quote::Tokens;
-use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
+use syn::{Data, DeriveInput, Field, Fields};
 use utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
