@@ -11,6 +11,7 @@ extern crate derive_more;
 #[derive(AddAssign)]
 #[derive(MulAssign)]
 #[derive(FromStr)]
+#[derive(Display)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -32,6 +33,7 @@ struct MyUInt(u64, u64);
 #[derive(Constructor)]
 #[derive(FromStr)]
 #[derive(Eq, PartialEq, Debug)]
+#[derive(Display)]
 struct SimpleStruct {
     int1: u64,
 }
@@ -125,12 +127,14 @@ fn main() {
     assert_eq!(5, MyInt(5).into());
     assert_eq!(MyInt(5), MyInt::new(5));
     assert_eq!(-MyInt(5), (-5).into());
+    assert_eq!("5", format!("{}", MyInt(5)));
     assert_eq!(!MyBool(true), false.into());
     assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 
     assert_eq!(SimpleStruct { int1: 5 }, 5.into());
     assert_eq!(5u64, SimpleStruct { int1: 5 }.into());
     assert_eq!(Ok(SimpleStruct { int1: 5 }), "5".parse());
+    assert_eq!("5", format!("{}", SimpleStruct { int1: 5 }));
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, (5, 6).into());
     assert_eq!(SimpleStruct { int1: 5 }, SimpleStruct::new(5));
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, NormalStruct::new(5, 6));
