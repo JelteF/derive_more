@@ -10,7 +10,7 @@ contained in the type implements `FromStr`.
 ```rust
 # #[macro_use] extern crate derive_more;
 #[derive(FromStr, Debug, Eq, PartialEq)]
-struct MyInt(i32);
+struct MyInt(i32)
 
 #[derive(FromStr, Debug, Eq, PartialEq)]
 struct Point1D{
