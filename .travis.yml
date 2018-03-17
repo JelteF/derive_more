@@ -23,7 +23,7 @@ matrix:
   # don't need
   include:
     # Linux
-    - env: TARGET=x86_64-unknown-linux-gnu  # this is the default job
+    - env: TARGET=x86_64-unknown-linux-gnu DOCS=true # this is the default job
     - env: TARGET=x86_64-unknown-linux-musl
 
     # OSX
@@ -44,8 +44,11 @@ before_install: set -e
 install:
   - sh ci/install.sh
   - source ~/.cargo/env || true
+  - [ -z "$DOCS" ] || cargo install --git cargo-external-doc
+
 
 script:
+  - if [ -n "$DOCS" ]; then cargo build && cargo external-doc; fi
   - bash ci/script.sh
 
 after_script: set +e
