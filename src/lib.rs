@@ -194,4 +194,12 @@ create_derive!(mul_assign_like, ShrAssign, shr_assign_derive);
 create_derive!(mul_assign_like, ShlAssign, shl_assign_derive);
 
 create_derive!(from_str, FromStr, from_str_derive);
+
 create_derive!(display, Display, display_derive);
+create_derive!(display, Binary, binary_derive);
+create_derive!(display, Octal, octal_derive);
+create_derive!(display, LowerHex, lower_hex_derive);
+create_derive!(display, UpperHex, upper_hex_derive);
+create_derive!(display, LowerExp, lower_exp_derive);
+create_derive!(display, UpperExp, upper_exp_derive);
+create_derive!(display, Pointer, pointer_derive);
