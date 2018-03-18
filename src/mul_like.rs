@@ -1,8 +1,8 @@
 use quote::{ToTokens, Tokens};
-use syn::{parse_str, Data, DeriveInput, Field, Fields, GenericParam, Generics, Ident, WhereClause};
+use syn::{parse_str, Data, DeriveInput, Field, Fields, GenericParam, Generics, Ident};
 use std::iter;
 use std::collections::HashSet;
-use utils::{field_idents, get_field_types_iter, named_to_vec, number_idents, unnamed_to_vec};
+use utils::{field_idents, get_field_types_iter, named_to_vec, number_idents, unnamed_to_vec, add_extra_where_clauses};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -38,14 +38,12 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);
 
-    let type_where_clauses: WhereClause = parse_str(&quote!{
+    let type_where_clauses = quote!{
         where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
-    }.to_string())
-        .unwrap();
+    };
 
     let new_generics = get_mul_generics(input, &fields, scalar_ident, type_where_clauses);
-    let (impl_generics, _, where_clause) = new_generics.split_for_impl();
-    let (_, ty_generics, _) = input.generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = new_generics.split_for_impl();
 
     quote!(
         impl#impl_generics  #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause {
@@ -63,7 +61,7 @@ pub fn get_mul_generics<'a>(
     input: &'a DeriveInput,
     fields: &[&'a Field],
     scalar_ident: &Ident,
-    mut type_where_clauses: WhereClause,
+    type_where_clauses: Tokens,
 ) -> Generics {
     //let constraints = if fields.len() > 1 {
     //    // If the struct has more than one field the rhs needs to be copied for each
@@ -86,12 +84,8 @@ pub fn get_mul_generics<'a>(
     }.to_string())
         .unwrap();
 
-    let mut new_generics = input.generics.clone();
+    let mut new_generics = add_extra_where_clauses(&input.generics, type_where_clauses);
     new_generics.params.push(new_typaram);
-    if let Some(old_where) = new_generics.where_clause {
-        type_where_clauses.predicates.extend(old_where.predicates)
-    }
-    new_generics.where_clause = Some(type_where_clauses);
 
     new_generics
 }

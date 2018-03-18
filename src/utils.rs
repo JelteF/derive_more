@@ -1,5 +1,5 @@
 use syn::{parse_str, Field, FieldsNamed, FieldsUnnamed, Generics, Ident, Index, Type,
-          TypeParamBound};
+          TypeParamBound, WhereClause};
 use quote::Tokens;
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
@@ -58,6 +58,17 @@ pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, bound: &'a Tokens) -
     }
 
     generics
+}
+
+pub fn add_extra_where_clauses(generics: &Generics, type_where_clauses: Tokens) -> Generics {
+    let mut type_where_clauses: WhereClause = parse_str(&type_where_clauses.to_string()).unwrap();
+    let mut new_generics = generics.clone();
+    if let Some(old_where) = new_generics.where_clause {
+        type_where_clauses.predicates.extend(old_where.predicates)
+    }
+    new_generics.where_clause = Some(type_where_clauses);
+
+    new_generics
 }
 
 pub fn unnamed_to_vec(fields: &FieldsUnnamed) -> Vec<&Field> {

@@ -35,10 +35,9 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);
 
-    let type_where_clauses: WhereClause = parse_str(&quote!{
+    let type_where_clauses = quote!{
         where #(#tys: #trait_path_iter<#scalar_iter>),*
-    }.to_string())
-        .unwrap();
+    };
 
     let new_generics = get_mul_generics(input, &fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
