@@ -60,24 +60,24 @@
 //!
 //! 1. [`From`]
 //! 2. [`Into`]
+//! 3. [`FromStr`]
 //!
-//! ### Single field forwarding traits
-//! These traits can only be derived for structs that have a single field, usually these are
-//! newtypes such as `MyInt(32)`.
+//! ### Formatting traits
+//! These traits are used for converting a struct to a string in different ways.
 //!
-//! 1. [`FromStr`]
-//! 2. `Display`-like, contains [`Display`], [`Binary`], [`Octal`], [`LowerHex`], [`UpperHex`],
+//! 1. `Display`-like, contains [`Display`], [`Binary`], [`Octal`], [`LowerHex`], [`UpperHex`],
 //!    [`LowerExp`], [`UpperExp`], [`Pointer`]
 //!
 //! ### Operators
 //! These are traits that can be used for operator overloading.
 //!
-//! 1. `Not`-like, contains [`Not`] and [`Neg`]
-//! 2. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
-//! 3. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//! 1. [`Index`]
+//! 2. `Not`-like, contains [`Not`] and [`Neg`]
+//! 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
 //!    and [`BitXorAssign`]
 //! 4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
-//! 5. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
+//! 5. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//! 6. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
 //!    [`ShlAssign`]
 //!
 //! ### Static methods
@@ -98,10 +98,11 @@
 //! 2. [`#[derive(Into)]`](into.html)
 //! 3. [`#[derive(FromStr)]`](from_str.html)
 //! 4. [`#[derive(Display)]`](display.html)
+//! 7. [`#[derive(Index)]`](index.html)
 //! 5. [`#[derive(Not)]`](not.html)
 //! 6. [`#[derive(Add)]`](add.html)
-//! 7. [`#[derive(AddAssign)]`](add_assign.html)
-//! 8. [`#[derive(Mul)]`](mul.html)
+//! 7. [`#[derive(Mul)]`](mul.html)
+//! 8. [`#[derive(AddAssign)]`](add_assign.html)
 //! 9. [`#[derive(MulAssign)]`](mul_assign.html)
 //! 10. [`#[derive(Constructor)]`](constructor.html)
 //!
@@ -140,6 +141,7 @@
 //! [`LowerExp`]: https://doc.rust-lang.org/std/fmt/trait.LowerExp.html
 //! [`UpperExp`]: https://doc.rust-lang.org/std/fmt/trait.UpperExp.html
 //! [`Pointer`]: https://doc.rust-lang.org/std/fmt/trait.Pointer.html
+//! [`Index`]: https://doc.rust-lang.org/std/ops/trait.Index.html
 //! [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
 //! [`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html
 //! [`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html
@@ -147,16 +149,16 @@
 //! [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 //! [`BitOr`]: https://doc.rust-lang.org/std/ops/trait.BitOr.html
 //! [`BitXor`]: https://doc.rust-lang.org/std/ops/trait.BitXor.html
-//! [`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html
-//! [`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html
-//! [`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html
-//! [`BitOrAssign`]: https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html
-//! [`BitXorAssign`]: https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html
 //! [`Mul`]: https://doc.rust-lang.org/std/ops/trait.Mul.html
 //! [`Div`]: https://doc.rust-lang.org/std/ops/trait.Div.html
 //! [`Rem`]: https://doc.rust-lang.org/std/ops/trait.Rem.html
 //! [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html
 //! [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html
+//! [`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html
+//! [`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html
+//! [`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html
+//! [`BitOrAssign`]: https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html
+//! [`BitXorAssign`]: https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html
 //! [`MulAssign`]: https://doc.rust-lang.org/std/ops/trait.MulAssign.html
 //! [`DivAssign`]: https://doc.rust-lang.org/std/ops/trait.DivAssign.html
 //! [`RemAssign`]: https://doc.rust-lang.org/std/ops/trait.RemAssign.html
