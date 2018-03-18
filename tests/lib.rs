@@ -181,9 +181,9 @@ fn main() {
     assert_eq!(DoubleUInt(5, 6) * 10, DoubleUInt(50, 60));
     // assert_eq!(DoubleUIntStruct{x:5, y:6} * 10, DoubleUIntStruct{x:50, y:60});
 
-    let myvec = MyVec(vec![5, 8]);
+    let mut myvec = MyVec(vec![5, 8]);
     assert_eq!(5, myvec[0]);
     assert_eq!(8, myvec[1]);
-    myvec[0] = 20
+    myvec[0] = 20;
     assert_eq!(20, myvec[0]);
 }
