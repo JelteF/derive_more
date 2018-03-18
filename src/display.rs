@@ -20,6 +20,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     quote!{
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
+            #[inline]
             fn fmt(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 <#field_type as #trait_path>::fmt(&#member, formatter)
             }

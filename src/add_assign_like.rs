@@ -26,6 +26,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
 
     quote!(
         impl#impl_generics ::std::ops::#trait_ident for #input_type#ty_generics #where_clause {
+            #[inline]
             fn #method_ident(&mut self, rhs: #input_type#ty_generics) {
                 #(#exprs;
                   )*

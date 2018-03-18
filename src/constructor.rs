@@ -24,6 +24,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     quote!{
         #[allow(missing_docs)]
         impl#impl_generics #input_type#ty_generics #where_clause {
+            #[inline]
             pub fn new(#(#vars: #original_types),*) -> #input_type#ty_generics {
                 #body
             }

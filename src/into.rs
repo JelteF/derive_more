@@ -30,6 +30,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
             (#(#original_types),*) #where_clause {
 
             #[allow(unused_variables)]
+            #[inline]
             fn from(original: #input_type#ty_generics) -> (#(#original_types),*) {
                 (#(original.#field_names),*)
             }

@@ -24,6 +24,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
             type Err = <#field_type as #trait_path>::Err;
+            #[inline]
             fn from_str(src: &str) -> Result<Self, Self::Err> {
                 return Ok(#result)
             }

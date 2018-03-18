@@ -50,6 +50,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     quote!(
         impl#impl_generics  #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause {
             type Output = #input_type#ty_generics;
+            #[inline]
             fn #method_ident(self, rhs: #scalar_ident) -> #input_type#ty_generics {
                 #block
             }
