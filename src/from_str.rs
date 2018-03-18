@@ -11,10 +11,10 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let (result, field_type) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => {
-                tuple_from_str(input_type, trait_name, unnamed_to_vec(fields))
+                tuple_from_str(input_type, trait_name, &unnamed_to_vec(fields))
             }
             Fields::Named(ref fields) => {
-                struct_from_str(input_type, trait_name, named_to_vec(fields))
+                struct_from_str(input_type, trait_name, &named_to_vec(fields))
             }
             Fields::Unit => panic_one_field(trait_name),
         },
@@ -42,7 +42,7 @@ fn panic_one_field(trait_name: &str) -> ! {
 fn tuple_from_str<'a>(
     input_type: &Ident,
     trait_name: &str,
-    fields: Vec<&'a Field>,
+    fields: &[&'a Field],
 ) -> (Tokens, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
@@ -55,7 +55,7 @@ fn tuple_from_str<'a>(
 fn struct_from_str<'a>(
     input_type: &Ident,
     trait_name: &str,
-    fields: Vec<&'a Field>,
+    fields: &[&'a Field],
 ) -> (Tokens, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)

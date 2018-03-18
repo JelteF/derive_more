@@ -61,7 +61,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
 
 pub fn get_mul_generics<'a>(
     input: &'a DeriveInput,
-    fields: &'a Vec<&'a Field>,
+    fields: &[&'a Field],
     scalar_ident: &Ident,
     mut type_where_clauses: WhereClause,
 ) -> Generics {
@@ -98,14 +98,14 @@ pub fn get_mul_generics<'a>(
 
 fn tuple_content<'a, T: ToTokens>(
     input_type: &T,
-    fields: &'a Vec<&'a Field>,
+    fields: &[&'a Field],
     method_ident: &Ident,
 ) -> Tokens {
     let exprs = tuple_exprs(fields, method_ident);
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn tuple_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<Tokens> {
     number_idents(fields.len())
         .iter()
         .map(|i| quote!(self.#i.#method_ident(rhs)))
@@ -114,7 +114,7 @@ pub fn tuple_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
 
 fn struct_content<'a, T: ToTokens>(
     input_type: &T,
-    fields: &'a Vec<&'a Field>,
+    fields: &[&'a Field],
     method_ident: &Ident,
 ) -> Tokens {
     let exprs = struct_exprs(fields, method_ident);
@@ -122,7 +122,7 @@ fn struct_content<'a, T: ToTokens>(
     quote!(#input_type{#(#field_names: #exprs),*})
 }
 
-pub fn struct_exprs(fields: &Vec<&Field>, method_ident: &Ident) -> Vec<Tokens> {
+pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<Tokens> {
     field_idents(fields)
         .iter()
         .map(|f| quote!(self.#f.#method_ident(rhs)))

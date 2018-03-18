@@ -24,7 +24,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
             ),
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
-        Data::Enum(ref data_enum) => enum_output_type_and_content(input, data_enum, &method_ident),
+        Data::Enum(ref data_enum) => enum_output_type_and_content(input, data_enum, method_ident),
 
         _ => panic!(format!(
             "Only structs and enums can use dervie({})",
@@ -44,7 +44,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
 
 fn tuple_content<T: ToTokens>(
     input_type: &T,
-    fields: &Vec<&Field>,
+    fields: &[&Field],
     method_ident: &Ident,
 ) -> Tokens {
     let mut exprs = vec![];
@@ -59,7 +59,7 @@ fn tuple_content<T: ToTokens>(
     quote!(#input_type(#(#exprs),*))
 }
 
-fn struct_content(input_type: &Ident, fields: &Vec<&Field>, method_ident: &Ident) -> Tokens {
+fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for field in fields {

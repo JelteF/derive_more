@@ -1,4 +1,4 @@
-//! # derive_more
+//! # `derive_more`
 //! Rust has lots of builtin traits that are implemented for its basic types, such as [`Add`],
 //! [`Not`] or [`From`].
 //! However, when wrapping these types inside your own structs or enums you lose the

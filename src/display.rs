@@ -11,8 +11,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let input_type = &input.ident;
     let (member, field_type) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => tuple_from_str(trait_name, unnamed_to_vec(fields)),
-            Fields::Named(ref fields) => struct_from_str(trait_name, named_to_vec(fields)),
+            Fields::Unnamed(ref fields) => tuple_from_str(trait_name, &unnamed_to_vec(fields)),
+            Fields::Named(ref fields) => struct_from_str(trait_name, &named_to_vec(fields)),
             Fields::Unit => panic_one_field(trait_name),
         },
         _ => panic_one_field(trait_name),
@@ -35,7 +35,7 @@ fn panic_one_field(trait_name: &str) -> ! {
     ))
 }
 
-fn tuple_from_str<'a>(trait_name: &str, fields: Vec<&'a Field>) -> (Tokens, &'a Type) {
+fn tuple_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (Tokens, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };
@@ -44,7 +44,7 @@ fn tuple_from_str<'a>(trait_name: &str, fields: Vec<&'a Field>) -> (Tokens, &'a 
     (quote!(self.0), field_type)
 }
 
-fn struct_from_str<'a>(trait_name: &str, fields: Vec<&'a Field>) -> (Tokens, &'a Type) {
+fn struct_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (Tokens, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };

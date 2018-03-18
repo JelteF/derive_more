@@ -38,14 +38,14 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     }
 }
 
-fn tuple_field_names(fields: &Vec<&Field>) -> Vec<Tokens> {
+fn tuple_field_names(fields: &[&Field]) -> Vec<Tokens> {
     number_idents(fields.len())
         .iter()
         .map(|f| f.into_tokens())
         .collect()
 }
 
-fn struct_field_names(fields: &Vec<&Field>) -> Vec<Tokens> {
+fn struct_field_names(fields: &[&Field]) -> Vec<Tokens> {
     field_idents(fields)
         .iter()
         .map(|f| (*f).into_tokens())
