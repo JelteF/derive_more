@@ -76,8 +76,9 @@
 //! 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
 //!    and [`BitXorAssign`]
 //! 4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
-//! 5. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
-//! 6. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
+//! 5. [`IndexMut`]
+//! 6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//! 7. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
 //!    [`ShlAssign`]
 //!
 //! ### Static methods
@@ -102,6 +103,7 @@
 //! 5. [`#[derive(Not)]`](not.html)
 //! 6. [`#[derive(Add)]`](add.html)
 //! 7. [`#[derive(Mul)]`](mul.html)
+//! 7. [`#[derive(IndexMut)]`](index_mut.html)
 //! 8. [`#[derive(AddAssign)]`](add_assign.html)
 //! 9. [`#[derive(MulAssign)]`](mul_assign.html)
 //! 10. [`#[derive(Constructor)]`](constructor.html)
@@ -154,6 +156,7 @@
 //! [`Rem`]: https://doc.rust-lang.org/std/ops/trait.Rem.html
 //! [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html
 //! [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html
+//! [`IndexMut`]: https://doc.rust-lang.org/std/ops/trait.IndexMut.html
 //! [`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html
 //! [`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html
 //! [`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html
