@@ -12,6 +12,8 @@ extern crate derive_more;
 #[derive(MulAssign)]
 #[derive(FromStr)]
 #[derive(Display)]
+#[derive(Octal)]
+#[derive(Binary)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -127,7 +129,9 @@ fn main() {
     assert_eq!(5, MyInt(5).into());
     assert_eq!(MyInt(5), MyInt::new(5));
     assert_eq!(-MyInt(5), (-5).into());
-    assert_eq!("5", format!("{}", MyInt(5)));
+    assert_eq!("30", format!("{}", MyInt(30)));
+    assert_eq!("36", format!("{:o}", MyInt(30)));
+    assert_eq!("100", format!("{:b}", MyInt(4)));
     assert_eq!(!MyBool(true), false.into());
     assert_eq!(MyIntEnum::SmallInt(5), 5.into());
 

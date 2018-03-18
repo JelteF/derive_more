@@ -43,24 +43,48 @@
 //! }
 //! ```
 //!
-//! ## The newly derivable traits
+//! ## The derivable traits
 //!
-//! Obviously not all traits should be derived to the same code, because they are different
-//! traits after all.
-//! However, some of the semantics of the traits overlap a lot, so they have been grouped in the
-//! following way:
+//! Below are all the traits that you can derive using this library.
+//! Some trait derivations are so similar that the furter documentation will only show a single one
+//! of them.
+//! You can recognize these by the "-like" suffix in their name. 
+//! The trait name before that will be the only one that is used throughout the further
+//! documentation.
 //!
-//! 1. `From`, only contains [`From`].
-//! 2. `Into`, only contains [`Into`].
-//! 3. `Constructor`, this doesn't derive a trait, but it derives a `new` method that can be
-//!    used as a constructor.
-//! 4. Newtype derives (and structs with one field), contains [`FromStr`].
-//! 5. `Not`-like, contains [`Not`] and [`Neg`].
-//! 6. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`].
-//! 7. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
-//!    and [`BitXorAssign`].
-//! 8. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`].
-//! 9. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and [`ShlAssign`].
+//! **NOTE**: You still have to derive each trait separately. So `#[derive(Mul)]` doesn't
+//! automatically derive `Div` as well. To derive both you should do `#[derive(Mul, Div)]`
+//!
+//! ### Conversion traits
+//! These are traits that are used to convert automatically between types.
+//!
+//! 1. [`From`]
+//! 2. [`Into`]
+//!
+//! ### Single field forwarding traits
+//! These traits can only be derived for structs that have a single field, usually these are
+//! newtypes such as `MyInt(32)`.
+//!
+//! 1. [`FromStr`]
+//! 2. `Display`-like, contains [`Display`], [`Binary`], [`Octal`], [`LowerHex`], [`UpperHex`],
+//!    [`LowerExp`], [`UpperExp`], [`Pointer`]
+//!
+//! ### Operators
+//! These are traits that can be used for operator overloading.
+//!
+//! 1. `Not`-like, contains [`Not`] and [`Neg`]
+//! 2. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
+//! 3. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//!    and [`BitXorAssign`]
+//! 4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
+//! 5. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
+//!    [`ShlAssign`]
+//!
+//! ### Static methods
+//! These don't derive traits, but derive static methods instead.
+//!
+//! 1. `Constructor`, this derives a `new` method that can be used as a constructor. This is very
+//!    basic if you need more customization for your constructor, check out the [`derive-new`] crate.
 //!
 //!
 //! ## Generated code
@@ -72,13 +96,14 @@
 //!
 //! 1. [`#[derive(From)]`](from.html)
 //! 2. [`#[derive(Into)]`](into.html)
-//! 3. [`#[derive(Constructor)]`](constructor.html)
-//! 4. [`#[derive(FromStr)]`](from_str.html)
+//! 3. [`#[derive(FromStr)]`](from_str.html)
+//! 4. [`#[derive(Display)]`](display.html)
 //! 5. [`#[derive(Not)]`](not.html)
 //! 6. [`#[derive(Add)]`](add.html)
 //! 7. [`#[derive(AddAssign)]`](add_assign.html)
 //! 8. [`#[derive(Mul)]`](mul.html)
 //! 9. [`#[derive(MulAssign)]`](mul_assign.html)
+//! 10. [`#[derive(Constructor)]`](constructor.html)
 //!
 //! If you want to be sure what code is generated for your specific type I recommend using the
 //! [`cargo-expand`] utility.
@@ -103,9 +128,18 @@
 //! ```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
+//! [`derive-new`]: https://github.com/nrc/derive-new
 //! [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html
 //! [`Into`]: https://doc.rust-lang.org/core/convert/trait.Into.html
 //! [`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
+//! [`Display`]: https://doc.rust-lang.org/std/fmt/trait.Display.html
+//! [`Binary`]: https://doc.rust-lang.org/std/fmt/trait.Binary.html
+//! [`Octal`]: https://doc.rust-lang.org/std/fmt/trait.Octal.html
+//! [`LowerHex`]: https://doc.rust-lang.org/std/fmt/trait.LowerHex.html
+//! [`UpperHex`]: https://doc.rust-lang.org/std/fmt/trait.UpperHex.html
+//! [`LowerExp`]: https://doc.rust-lang.org/std/fmt/trait.LowerExp.html
+//! [`UpperExp`]: https://doc.rust-lang.org/std/fmt/trait.UpperExp.html
+//! [`Pointer`]: https://doc.rust-lang.org/std/fmt/trait.Pointer.html
 //! [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
 //! [`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html
 //! [`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html
@@ -194,4 +228,12 @@ create_derive!(mul_assign_like, ShrAssign, shr_assign_derive);
 create_derive!(mul_assign_like, ShlAssign, shl_assign_derive);
 
 create_derive!(from_str, FromStr, from_str_derive);
+
 create_derive!(display, Display, display_derive);
+create_derive!(display, Binary, binary_derive);
+create_derive!(display, Octal, octal_derive);
+create_derive!(display, LowerHex, lower_hex_derive);
+create_derive!(display, UpperHex, upper_hex_derive);
+create_derive!(display, LowerExp, lower_exp_derive);
+create_derive!(display, UpperExp, upper_exp_derive);
+create_derive!(display, Pointer, pointer_derive);
