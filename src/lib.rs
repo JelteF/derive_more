@@ -185,6 +185,7 @@ mod mul_assign_like;
 mod from_str;
 mod display;
 mod index;
+mod index_mut;
 
 macro_rules! create_derive(
     ($mod_:ident, $trait_:ident, $fn_name: ident) => {
@@ -242,3 +243,4 @@ create_derive!(display, UpperExp, upper_exp_derive);
 create_derive!(display, Pointer, pointer_derive);
 
 create_derive!(index, Index, index_derive);
+create_derive!(index_mut, IndexMut, index_mut_derive);

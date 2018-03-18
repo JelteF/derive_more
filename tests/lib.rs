@@ -17,7 +17,7 @@ extern crate derive_more;
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
-#[derive(Index)]
+#[derive(Index, IndexMut)]
 struct MyVec(Vec<i32>);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -184,4 +184,6 @@ fn main() {
     let myvec = MyVec(vec![5, 8]);
     assert_eq!(5, myvec[0]);
     assert_eq!(8, myvec[1]);
+    myvec[0] = 20
+    assert_eq!(20, myvec[0]);
 }
