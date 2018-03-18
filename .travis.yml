@@ -44,7 +44,7 @@ before_install: set -e
 install:
   - sh ci/install.sh
   - source ~/.cargo/env || true
-  - '[ -z "$DOCS" ] || cargo install --git https://github.com/JelteF/cargo-external-doc'
+  - '[ -z "$DOCS" ] || cargo install --git https://github.com/JelteF/cargo-external-doc --force'
 
 
 script:
