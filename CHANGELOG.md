@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - Allow cross crate inlining of derived methods
 
+### Internal changes
+- Fix most `clippy` warnings
+
 ## 0.8.0 - 2018-03-10
 
 ### Added
