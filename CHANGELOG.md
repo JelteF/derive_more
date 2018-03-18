@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Allow deriving of `Display`, `Binary`, `Octal`, `LowerHex`, `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
 
+### Fixed
+- Allow cross crate inlining of derived methods
+
 ## 0.8.0 - 2018-03-10
 
 ### Added

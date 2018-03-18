@@ -46,6 +46,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
 
     quote!(
         impl#impl_generics #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause{
+            #[inline]
             fn #method_ident(&mut self, rhs: #scalar_ident#ty_generics) {
                 #(#exprs;
                   )*

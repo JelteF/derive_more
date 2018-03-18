@@ -29,6 +29,7 @@ pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &Vec<&Field>, body: T
             #input_type#ty_generics #where_clause {
 
             #[allow(unused_variables)]
+            #[inline]
             fn from(original: (#(#original_types),*)) -> #input_type#ty_generics {
                 #body
             }
