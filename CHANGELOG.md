@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Allow deriving of `Display`, `Binary`, `Octal`, `LowerHex`, `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
+
+## 0.8.0 - 2018-03-10
+
+### Added
+- Allow deriving of `FromStr`
+
+### Changed
+- Updated to latest version of `syn` and `quote`
+
+## 0.7.1 - 2018-01-25
+
+### Fixed
+- Add `#[allow(missing_docs)]` to the Constructor definition
+
+### Internal changes
+- Run `rustfmt` on the code
+
+
+## 0.7.0 - 2017-07-25
+
+### Changed
+- Changed code to work with newer version of the `syn` library.
+
 ## 0.6.2 - 2017-04-23
 
 ### Changed
