@@ -10,7 +10,8 @@
     <title>add_like.rs.html -- source</title>
 
     <link rel="stylesheet" type="text/css" href="../../normalize.css">
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css"
+          id="mainThemeStyle">
     
     <link rel="stylesheet" type="text/css" href="../../dark.css">
     <link rel="stylesheet" type="text/css" href="../../main.css" id="themeStyle">
@@ -209,6 +210,7 @@
 <span id="153">153</span>
 <span id="154">154</span>
 <span id="155">155</span>
+<span id="156">156</span>
 </pre><pre class="rust ">
 <span class="kw">use</span> <span class="ident">quote</span>::{<span class="ident">ToTokens</span>, <span class="ident">Tokens</span>};
 <span class="kw">use</span> <span class="ident">syn</span>::{<span class="ident">Data</span>, <span class="ident">DataEnum</span>, <span class="ident">DeriveInput</span>, <span class="ident">Field</span>, <span class="ident">Fields</span>, <span class="ident">Ident</span>, <span class="ident">Index</span>};
@@ -251,6 +253,7 @@
     <span class="macro">quote</span><span class="macro">!</span>(
         <span class="kw">impl</span>#<span class="ident">impl_generics</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::#<span class="ident">trait_ident</span> <span class="kw">for</span> #<span class="ident">input_type</span>#<span class="ident">ty_generics</span> #<span class="ident">where_clause</span> {
             <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> #<span class="ident">output_type</span>;
+            <span class="attribute">#[<span class="ident">inline</span>]</span>
             <span class="kw">fn</span> #<span class="ident">method_ident</span>(<span class="self">self</span>, <span class="ident">rhs</span>: #<span class="ident">input_type</span>#<span class="ident">ty_generics</span>) <span class="op">-&gt;</span> #<span class="ident">output_type</span> {
                 #<span class="ident">block</span>
             }
@@ -260,14 +263,14 @@
 
 <span class="kw">fn</span> <span class="ident">tuple_content</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">ToTokens</span><span class="op">&gt;</span>(
     <span class="ident">input_type</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>,
-    <span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>,
+    <span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>],
     <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>,
 ) <span class="op">-&gt;</span> <span class="ident">Tokens</span> {
     <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">tuple_exprs</span>(<span class="ident">fields</span>, <span class="ident">method_ident</span>);
     <span class="macro">quote</span><span class="macro">!</span>(#<span class="ident">input_type</span>(#(#<span class="ident">exprs</span>),<span class="kw-2">*</span>))
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tuple_exprs</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>, <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tuple_exprs</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>], <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[];
 
     <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">fields</span>.<span class="ident">len</span>() {
@@ -276,10 +279,10 @@
         <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="macro">quote</span><span class="macro">!</span>(<span class="self">self</span>.#<span class="ident">i</span>.#<span class="ident">method_ident</span>(<span class="ident">rhs</span>.#<span class="ident">i</span>));
         <span class="ident">exprs</span>.<span class="ident">push</span>(<span class="ident">expr</span>);
     }
-    <span class="kw">return</span> <span class="ident">exprs</span>;
+    <span class="ident">exprs</span>
 }
 
-<span class="kw">fn</span> <span class="ident">struct_content</span>(<span class="ident">input_type</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>, <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>) <span class="op">-&gt;</span> <span class="ident">Tokens</span> {
+<span class="kw">fn</span> <span class="ident">struct_content</span>(<span class="ident">input_type</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>], <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>) <span class="op">-&gt;</span> <span class="ident">Tokens</span> {
     <span class="comment">// It&#39;s safe to unwrap because struct fields always have an identifier</span>
     <span class="kw">let</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="ident">struct_exprs</span>(<span class="ident">fields</span>, <span class="ident">method_ident</span>);
     <span class="kw">let</span> <span class="ident">field_names</span> <span class="op">=</span> <span class="ident">field_idents</span>(<span class="ident">fields</span>);
@@ -287,7 +290,7 @@
     <span class="macro">quote</span><span class="macro">!</span>(#<span class="ident">input_type</span>{#(#<span class="ident">field_names</span>: #<span class="ident">exprs</span>),<span class="kw-2">*</span>})
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">struct_exprs</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>, <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">struct_exprs</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>], <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">exprs</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[];
 
     <span class="kw">for</span> <span class="ident">field</span> <span class="kw">in</span> <span class="ident">fields</span> {
@@ -297,7 +300,7 @@
         <span class="kw">let</span> <span class="ident">expr</span> <span class="op">=</span> <span class="macro">quote</span><span class="macro">!</span>(<span class="self">self</span>.#<span class="ident">field_id</span>.#<span class="ident">method_ident</span>(<span class="ident">rhs</span>.#<span class="ident">field_id</span>));
         <span class="ident">exprs</span>.<span class="ident">push</span>(<span class="ident">expr</span>)
     }
-    <span class="kw">return</span> <span class="ident">exprs</span>;
+    <span class="ident">exprs</span>
 }
 
 <span class="kw">fn</span> <span class="ident">enum_content</span>(<span class="ident">input_type</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>, <span class="ident">data_enum</span>: <span class="kw-2">&amp;</span><span class="ident">DataEnum</span>, <span class="ident">method_ident</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>) <span class="op">-&gt;</span> <span class="ident">Tokens</span> {

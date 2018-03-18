@@ -10,7 +10,8 @@
     <title>into.rs.html -- source</title>
 
     <link rel="stylesheet" type="text/css" href="../../normalize.css">
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css"
+          id="mainThemeStyle">
     
     <link rel="stylesheet" type="text/css" href="../../dark.css">
     <link rel="stylesheet" type="text/css" href="../../main.css" id="themeStyle">
@@ -106,6 +107,7 @@
 <span id="50">50</span>
 <span id="51">51</span>
 <span id="52">52</span>
+<span id="53">53</span>
 </pre><pre class="rust ">
 <span class="kw">use</span> <span class="ident">quote</span>::<span class="ident">Tokens</span>;
 <span class="kw">use</span> <span class="ident">syn</span>::{<span class="ident">Data</span>, <span class="ident">DeriveInput</span>, <span class="ident">Field</span>, <span class="ident">Fields</span>};
@@ -139,6 +141,7 @@
             (#(#<span class="ident">original_types</span>),<span class="kw-2">*</span>) #<span class="ident">where_clause</span> {
 
             <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
+            <span class="attribute">#[<span class="ident">inline</span>]</span>
             <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: #<span class="ident">input_type</span>#<span class="ident">ty_generics</span>) <span class="op">-&gt;</span> (#(#<span class="ident">original_types</span>),<span class="kw-2">*</span>) {
                 (#(<span class="ident">original</span>.#<span class="ident">field_names</span>),<span class="kw-2">*</span>)
             }
@@ -146,14 +149,14 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">tuple_field_names</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">tuple_field_names</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>]) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
     <span class="ident">number_idents</span>(<span class="ident">fields</span>.<span class="ident">len</span>())
         .<span class="ident">iter</span>()
         .<span class="ident">map</span>(<span class="op">|</span><span class="ident">f</span><span class="op">|</span> <span class="ident">f</span>.<span class="ident">into_tokens</span>())
         .<span class="ident">collect</span>()
 }
 
-<span class="kw">fn</span> <span class="ident">struct_field_names</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">struct_field_names</span>(<span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>]) <span class="op">-&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Tokens</span><span class="op">&gt;</span> {
     <span class="ident">field_idents</span>(<span class="ident">fields</span>)
         .<span class="ident">iter</span>()
         .<span class="ident">map</span>(<span class="op">|</span><span class="ident">f</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">f</span>).<span class="ident">into_tokens</span>())

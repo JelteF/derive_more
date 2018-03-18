@@ -10,7 +10,8 @@
     <title>constructor.rs.html -- source</title>
 
     <link rel="stylesheet" type="text/css" href="../../normalize.css">
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css"
+          id="mainThemeStyle">
     
     <link rel="stylesheet" type="text/css" href="../../dark.css">
     <link rel="stylesheet" type="text/css" href="../../main.css" id="themeStyle">
@@ -97,6 +98,7 @@
 <span id="41">41</span>
 <span id="42">42</span>
 <span id="43">43</span>
+<span id="44">44</span>
 </pre><pre class="rust ">
 <span class="kw">use</span> <span class="ident">quote</span>::<span class="ident">Tokens</span>;
 <span class="kw">use</span> <span class="ident">syn</span>::{<span class="ident">Data</span>, <span class="ident">DeriveInput</span>, <span class="ident">Field</span>, <span class="ident">Fields</span>, <span class="ident">Ident</span>};
@@ -116,7 +118,7 @@
                 <span class="kw">let</span> <span class="ident">field_vec</span> <span class="op">=</span> <span class="ident">named_to_vec</span>(<span class="ident">fields</span>);
                 (<span class="ident">struct_body</span>(<span class="ident">input_type</span>, <span class="kw-2">&amp;</span><span class="ident">field_vec</span>), <span class="ident">field_vec</span>)
             }
-            <span class="ident">Fields</span>::<span class="ident">Unit</span> <span class="op">=&gt;</span> (<span class="ident">struct_body</span>(<span class="ident">input_type</span>, <span class="kw-2">&amp;</span><span class="macro">vec</span><span class="macro">!</span>[]), <span class="macro">vec</span><span class="macro">!</span>[]),
+            <span class="ident">Fields</span>::<span class="ident">Unit</span> <span class="op">=&gt;</span> (<span class="ident">struct_body</span>(<span class="ident">input_type</span>, <span class="kw-2">&amp;</span>[]), <span class="macro">vec</span><span class="macro">!</span>[]),
         },
         _ <span class="op">=&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;Only structs can derive a constructor&quot;</span>),
     };
@@ -124,6 +126,7 @@
     <span class="macro">quote</span><span class="macro">!</span>{
         <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">missing_docs</span>)]</span>
         <span class="kw">impl</span>#<span class="ident">impl_generics</span> #<span class="ident">input_type</span>#<span class="ident">ty_generics</span> #<span class="ident">where_clause</span> {
+            <span class="attribute">#[<span class="ident">inline</span>]</span>
             <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(#(#<span class="ident">vars</span>: #<span class="ident">original_types</span>),<span class="kw-2">*</span>) <span class="op">-&gt;</span> #<span class="ident">input_type</span>#<span class="ident">ty_generics</span> {
                 #<span class="ident">body</span>
             }
@@ -131,13 +134,13 @@
     }
 }
 
-<span class="kw">fn</span> <span class="ident">tuple_body</span>(<span class="ident">return_type</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> (<span class="ident">Tokens</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span>) {
+<span class="kw">fn</span> <span class="ident">tuple_body</span>(<span class="ident">return_type</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>]) <span class="op">-&gt;</span> (<span class="ident">Tokens</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span>) {
     <span class="kw">let</span> <span class="ident">vars</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">numbered_vars</span>(<span class="ident">fields</span>.<span class="ident">len</span>(), <span class="string">&quot;&quot;</span>);
     (<span class="macro">quote</span><span class="macro">!</span>(#<span class="ident">return_type</span>(#(#<span class="ident">vars</span>),<span class="kw-2">*</span>)), <span class="ident">vars</span>.<span class="ident">clone</span>())
 }
 
-<span class="kw">fn</span> <span class="ident">struct_body</span>(<span class="ident">return_type</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Field</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> (<span class="ident">Tokens</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span>) {
-    <span class="kw">let</span> <span class="ident">field_names</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">field_idents</span>(<span class="ident">fields</span>).<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">f</span><span class="op">|</span> (<span class="kw-2">*</span><span class="ident">f</span>).<span class="ident">clone</span>()).<span class="ident">collect</span>();
+<span class="kw">fn</span> <span class="ident">struct_body</span>(<span class="ident">return_type</span>: <span class="kw-2">&amp;</span><span class="ident">Ident</span>, <span class="ident">fields</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">Field</span>]) <span class="op">-&gt;</span> (<span class="ident">Tokens</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span>) {
+    <span class="kw">let</span> <span class="ident">field_names</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">field_idents</span>(<span class="ident">fields</span>).<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">f</span><span class="op">|</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">f</span>).<span class="ident">collect</span>();
     <span class="kw">let</span> <span class="ident">vars</span> <span class="op">=</span> <span class="ident">field_names</span>;
     (<span class="macro">quote</span><span class="macro">!</span>(#<span class="ident">return_type</span>{#(#<span class="ident">field_names</span>: #<span class="ident">vars</span>),<span class="kw-2">*</span>}), <span class="ident">vars</span>.<span class="ident">clone</span>())
 }

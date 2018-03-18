@@ -10,7 +10,8 @@
     <title>derive_more - Rust</title>
 
     <link rel="stylesheet" type="text/css" href="../normalize.css">
-    <link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css"
+          id="mainThemeStyle">
     
     <link rel="stylesheet" type="text/css" href="../dark.css">
     <link rel="stylesheet" type="text/css" href="../main.css" id="themeStyle">
@@ -59,8 +60,8 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/derive_more/lib.rs.html#1-195' title='goto source code'>[src]</a></span></h1>
-<div class='docblock'><h1 id="derive_more" class="section-header"><a href="#derive_more">derive_more</a></h1>
+               </span><a class='srclink' href='../src/derive_more/lib.rs.html#1-249' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><h1 id="derive_more" class="section-header"><a href="#derive_more"><code>derive_more</code></a></h1>
 <p>Rust has lots of builtin traits that are implemented for its basic types, such as <a href="https://doc.rust-lang.org/std/ops/trait.Add.html"><code>Add</code></a>,
 <a href="https://doc.rust-lang.org/std/ops/trait.Not.html"><code>Not</code></a> or <a href="https://doc.rust-lang.org/core/convert/trait.From.html"><code>From</code></a>.
 However, when wrapping these types inside your own structs or enums you lose the
@@ -98,23 +99,46 @@ It does this by allowing you to derive lots of commonly used traits for both str
     <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">Point2D</span> { <span class="ident">x</span>: <span class="number">5</span>, <span class="ident">y</span>: <span class="number">6</span> }, <span class="ident">Point2D</span>::<span class="ident">new</span>(<span class="number">5</span>, <span class="number">6</span>));
     <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">MyEnum</span>::<span class="ident">Int</span>(<span class="number">15</span>), (<span class="ident">MyEnum</span>::<span class="ident">Int</span>(<span class="number">8</span>) <span class="op">+</span> <span class="number">7</span>.<span class="ident">into</span>()).<span class="ident">unwrap</span>())
 }</pre>
-<h2 id="the-newly-derivable-traits" class="section-header"><a href="#the-newly-derivable-traits">The newly derivable traits</a></h2>
-<p>Obviously not all traits should be derived to the same code, because they are different
-traits after all.
-However, some of the semantics of the traits overlap a lot, so they have been grouped in the
-following way:</p>
+<h2 id="the-derivable-traits" class="section-header"><a href="#the-derivable-traits">The derivable traits</a></h2>
+<p>Below are all the traits that you can derive using this library.
+Some trait derivations are so similar that the furter documentation will only show a single one
+of them.
+You can recognize these by the &quot;-like&quot; suffix in their name.
+The trait name before that will be the only one that is used throughout the further
+documentation.</p>
+<p><strong>NOTE</strong>: You still have to derive each trait separately. So <code>#[derive(Mul)]</code> doesn't
+automatically derive <code>Div</code> as well. To derive both you should do <code>#[derive(Mul, Div)]</code></p>
+<h3 id="conversion-traits" class="section-header"><a href="#conversion-traits">Conversion traits</a></h3>
+<p>These are traits that are used to convert automatically between types.</p>
 <ol>
-<li><code>From</code>, only contains <a href="https://doc.rust-lang.org/core/convert/trait.From.html"><code>From</code></a>.</li>
-<li><code>Into</code>, only contains <a href="https://doc.rust-lang.org/core/convert/trait.Into.html"><code>Into</code></a>.</li>
-<li><code>Constructor</code>, this doesn't derive a trait, but it derives a <code>new</code> method that can be
-used as a constructor.</li>
-<li>Newtype derives (and structs with one field), contains <a href="https://doc.rust-lang.org/std/str/trait.FromStr.html"><code>FromStr</code></a>.</li>
-<li><code>Not</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Not.html"><code>Not</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.Neg.html"><code>Neg</code></a>.</li>
-<li><code>Add</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Add.html"><code>Add</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Sub.html"><code>Sub</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitAnd.html"><code>BitAnd</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitOr.html"><code>BitOr</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.BitXor.html"><code>BitXor</code></a>.</li>
-<li><code>AddAssign</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.AddAssign.html"><code>AddAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.SubAssign.html"><code>SubAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html"><code>BitAndAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html"><code>BitOrAssign</code></a>
-and <a href="https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html"><code>BitXorAssign</code></a>.</li>
-<li><code>Mul</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Mul.html"><code>Mul</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Div.html"><code>Div</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Rem.html"><code>Rem</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Shr.html"><code>Shr</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.Shl.html"><code>Shl</code></a>.</li>
-<li><code>MulAssign</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.MulAssign.html"><code>MulAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.DivAssign.html"><code>DivAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.RemAssign.html"><code>RemAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.ShrAssign.html"><code>ShrAssign</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.ShlAssign.html"><code>ShlAssign</code></a>.</li>
+<li><a href="https://doc.rust-lang.org/core/convert/trait.From.html"><code>From</code></a></li>
+<li><a href="https://doc.rust-lang.org/core/convert/trait.Into.html"><code>Into</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/str/trait.FromStr.html"><code>FromStr</code></a></li>
+</ol>
+<h3 id="formatting-traits" class="section-header"><a href="#formatting-traits">Formatting traits</a></h3>
+<p>These traits are used for converting a struct to a string in different ways.</p>
+<ol>
+<li><code>Display</code>-like, contains <a href="https://doc.rust-lang.org/std/fmt/trait.Display.html"><code>Display</code></a>, <a href="https://doc.rust-lang.org/std/fmt/trait.Binary.html"><code>Binary</code></a>, <a href="https://doc.rust-lang.org/std/fmt/trait.Octal.html"><code>Octal</code></a>, <a href="https://doc.rust-lang.org/std/fmt/trait.LowerHex.html"><code>LowerHex</code></a>, <a href="https://doc.rust-lang.org/std/fmt/trait.UpperHex.html"><code>UpperHex</code></a>,
+<a href="https://doc.rust-lang.org/std/fmt/trait.LowerExp.html"><code>LowerExp</code></a>, <a href="https://doc.rust-lang.org/std/fmt/trait.UpperExp.html"><code>UpperExp</code></a>, <a href="https://doc.rust-lang.org/std/fmt/trait.Pointer.html"><code>Pointer</code></a></li>
+</ol>
+<h3 id="operators" class="section-header"><a href="#operators">Operators</a></h3>
+<p>These are traits that can be used for operator overloading.</p>
+<ol>
+<li><a href="https://doc.rust-lang.org/std/ops/trait.Index.html"><code>Index</code></a></li>
+<li><code>Not</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Not.html"><code>Not</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.Neg.html"><code>Neg</code></a></li>
+<li><code>Add</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Add.html"><code>Add</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Sub.html"><code>Sub</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitAnd.html"><code>BitAnd</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitOr.html"><code>BitOr</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.BitXor.html"><code>BitXor</code></a>
+and <a href="https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html"><code>BitXorAssign</code></a></li>
+<li><code>Mul</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.Mul.html"><code>Mul</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Div.html"><code>Div</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Rem.html"><code>Rem</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.Shr.html"><code>Shr</code></a> and <a href="https://doc.rust-lang.org/std/ops/trait.Shl.html"><code>Shl</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/ops/trait.IndexMut.html"><code>IndexMut</code></a></li>
+<li><code>AddAssign</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.AddAssign.html"><code>AddAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.SubAssign.html"><code>SubAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html"><code>BitAndAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html"><code>BitOrAssign</code></a></li>
+<li><code>MulAssign</code>-like, contains <a href="https://doc.rust-lang.org/std/ops/trait.MulAssign.html"><code>MulAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.DivAssign.html"><code>DivAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.RemAssign.html"><code>RemAssign</code></a>, <a href="https://doc.rust-lang.org/std/ops/trait.ShrAssign.html"><code>ShrAssign</code></a> and
+<a href="https://doc.rust-lang.org/std/ops/trait.ShlAssign.html"><code>ShlAssign</code></a></li>
+</ol>
+<h3 id="static-methods" class="section-header"><a href="#static-methods">Static methods</a></h3>
+<p>These don't derive traits, but derive static methods instead.</p>
+<ol>
+<li><code>Constructor</code>, this derives a <code>new</code> method that can be used as a constructor. This is very
+basic if you need more customization for your constructor, check out the <a href="https://github.com/nrc/derive-new"><code>derive-new</code></a> crate.</li>
 </ol>
 <h2 id="generated-code" class="section-header"><a href="#generated-code">Generated code</a></h2>
 <p>It is important to understand what code gets generated when using one of the derives from this
@@ -124,13 +148,16 @@ before.</p>
 <ol>
 <li><a href="from.html"><code>#[derive(From)]</code></a></li>
 <li><a href="into.html"><code>#[derive(Into)]</code></a></li>
-<li><a href="constructor.html"><code>#[derive(Constructor)]</code></a></li>
 <li><a href="from_str.html"><code>#[derive(FromStr)]</code></a></li>
+<li><a href="display.html"><code>#[derive(Display)]</code></a></li>
+<li><a href="index_op.html"><code>#[derive(Index)]</code></a></li>
 <li><a href="not.html"><code>#[derive(Not)]</code></a></li>
 <li><a href="add.html"><code>#[derive(Add)]</code></a></li>
-<li><a href="add_assign.html"><code>#[derive(AddAssign)]</code></a></li>
 <li><a href="mul.html"><code>#[derive(Mul)]</code></a></li>
+<li><a href="index_mut.html"><code>#[derive(IndexMut)]</code></a></li>
+<li><a href="add_assign.html"><code>#[derive(AddAssign)]</code></a></li>
 <li><a href="mul_assign.html"><code>#[derive(MulAssign)]</code></a></li>
+<li><a href="constructor.html"><code>#[derive(Constructor)]</code></a></li>
 </ol>
 <p>If you want to be sure what code is generated for your specific type I recommend using the
 <a href="https://github.com/dtolnay/cargo-expand"><code>cargo-expand</code></a> utility.
@@ -139,7 +166,7 @@ This will show you your code with all macros and derives expanded.</p>
 <p>This library requires Rust 1.15 or higher, so this needs to be installed.
 Then add the following to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dependencies]
-derive_more = &quot;0.6.0&quot;
+derive_more = &quot;0.9.0&quot;
 </code></pre>
 <p>And this to the top of your Rust file:</p>
 

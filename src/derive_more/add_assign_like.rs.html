@@ -10,7 +10,8 @@
     <title>add_assign_like.rs.html -- source</title>
 
     <link rel="stylesheet" type="text/css" href="../../normalize.css">
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css"
+          id="mainThemeStyle">
     
     <link rel="stylesheet" type="text/css" href="../../dark.css">
     <link rel="stylesheet" type="text/css" href="../../main.css" id="themeStyle">
@@ -89,6 +90,7 @@
 <span id="33">33</span>
 <span id="34">34</span>
 <span id="35">35</span>
+<span id="36">36</span>
 </pre><pre class="rust ">
 <span class="kw">use</span> <span class="ident">quote</span>::<span class="ident">Tokens</span>;
 <span class="kw">use</span> <span class="ident">syn</span>::{<span class="ident">Data</span>, <span class="ident">DeriveInput</span>, <span class="ident">Fields</span>, <span class="ident">Ident</span>};
@@ -118,6 +120,7 @@
 
     <span class="macro">quote</span><span class="macro">!</span>(
         <span class="kw">impl</span>#<span class="ident">impl_generics</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::#<span class="ident">trait_ident</span> <span class="kw">for</span> #<span class="ident">input_type</span>#<span class="ident">ty_generics</span> #<span class="ident">where_clause</span> {
+            <span class="attribute">#[<span class="ident">inline</span>]</span>
             <span class="kw">fn</span> #<span class="ident">method_ident</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: #<span class="ident">input_type</span>#<span class="ident">ty_generics</span>) {
                 #(#<span class="ident">exprs</span>;
                   )<span class="op">*</span>
