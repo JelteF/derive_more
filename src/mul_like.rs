@@ -1,8 +1,8 @@
 use quote::{ToTokens, Tokens};
-use syn::{parse_str, Data, DeriveInput, Field, Fields, GenericParam, Generics, Ident};
+use syn::{Data, DeriveInput, Field, Fields, Ident};
 use std::iter;
 use std::collections::HashSet;
-use utils::{field_idents, get_field_types_iter, named_to_vec, number_idents, unnamed_to_vec, add_extra_where_clauses};
+use utils::{field_idents, get_field_types_iter, named_to_vec, number_idents, unnamed_to_vec, add_where_clauses_for_new_ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -42,8 +42,9 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
     };
 
-    let new_generics = get_mul_generics(input, &fields, scalar_ident, type_where_clauses);
-    let (impl_generics, ty_generics, where_clause) = new_generics.split_for_impl();
+    let new_generics = add_where_clauses_for_new_ident(&input.generics, &fields, scalar_ident, type_where_clauses);
+    let (impl_generics, _, where_clause) = new_generics.split_for_impl();
+    let (_, ty_generics, _) = input.generics.split_for_impl();
 
     quote!(
         impl#impl_generics  #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause {
@@ -55,39 +56,6 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         }
 
     )
-}
-
-pub fn get_mul_generics<'a>(
-    input: &'a DeriveInput,
-    fields: &[&'a Field],
-    scalar_ident: &Ident,
-    type_where_clauses: Tokens,
-) -> Generics {
-    //let constraints = if fields.len() > 1 {
-    //    // If the struct has more than one field the rhs needs to be copied for each
-    //    // field
-    //    vec![syn::parse_str("::std::marker::Copy").unwrap()]
-    //} else {
-    //    vec![]
-    //};
-
-    //let new_typaram = TypeParam {
-    //    attrs: vec![],
-    //    ident: scalar_ident.clone(),
-    //    bounds: constraints,
-    //    default: None,
-    //};
-    let new_typaram: GenericParam = parse_str(&if fields.len() > 1 {
-        quote!(#scalar_ident: ::std::marker::Copy)
-    } else {
-        quote!(#scalar_ident)
-    }.to_string())
-        .unwrap();
-
-    let mut new_generics = add_extra_where_clauses(&input.generics, type_where_clauses);
-    new_generics.params.push(new_typaram);
-
-    new_generics
 }
 
 fn tuple_content<'a, T: ToTokens>(

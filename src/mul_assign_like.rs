@@ -1,9 +1,9 @@
 use quote::Tokens;
-use syn::{parse_str, Data, DeriveInput, Fields, Ident, WhereClause};
-use mul_like::{get_mul_generics, struct_exprs, tuple_exprs};
+use syn::{Data, DeriveInput, Fields, Ident};
+use mul_like::{struct_exprs, tuple_exprs};
 use std::iter;
 use std::collections::HashSet;
-use utils::{get_field_types_iter, named_to_vec, unnamed_to_vec};
+use utils::{get_field_types_iter, named_to_vec, unnamed_to_vec, add_where_clauses_for_new_ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     let trait_ident = Ident::from(trait_name);
@@ -39,7 +39,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         where #(#tys: #trait_path_iter<#scalar_iter>),*
     };
 
-    let new_generics = get_mul_generics(input, &fields, scalar_ident, type_where_clauses);
+    let new_generics = add_where_clauses_for_new_ident(&input.generics, &fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 

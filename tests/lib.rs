@@ -17,6 +17,10 @@ extern crate derive_more;
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
+#[derive(Index)]
+struct MyVec(Vec<i32>);
+
+#[derive(Eq, PartialEq, Debug)]
 #[derive(Not)]
 #[derive(From)]
 struct MyBool(bool);
@@ -121,6 +125,7 @@ fn main() {
     let _: MyIntEnum = (5i64, 8i64).into();
     let _: MyIntEnum = ().into();
 
+
     let _: Unit = ().into();
     assert_eq!((), Unit.into());
     assert_eq!(Unit, Unit::new());
@@ -175,4 +180,8 @@ fn main() {
     assert_eq!(MyInt(50), MyInt(5) * 10);
     assert_eq!(DoubleUInt(5, 6) * 10, DoubleUInt(50, 60));
     // assert_eq!(DoubleUIntStruct{x:5, y:6} * 10, DoubleUIntStruct{x:50, y:60});
+
+    let myvec = MyVec(vec![5, 8]);
+    assert_eq!(5, myvec[0]);
+    assert_eq!(8, myvec[1]);
 }
