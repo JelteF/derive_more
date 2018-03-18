@@ -2,18 +2,18 @@
 #[macro_use]
 extern crate derive_more;
 
-#[derive(From, Not, Add, AddAssign, Mul, FromStr, Display, Index)]
+#[derive(From, FromStr, Display, Index, Not, Add, Mul, IndexMut, AddAssign, Constructor)]
 struct Wrapped<T: Clone>(T);
 
-#[derive(From, Not, Add, AddAssign, Mul)]
+#[derive(From, Not, Add, Mul, AddAssign, Constructor)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
 
-#[derive(From, Not, Add, AddAssign, Mul, FromStr, Display, Index)]
+#[derive(From, FromStr, Display, Index, Not, Add, Mul, IndexMut, AddAssign, Constructor)]
 struct Struct<T: Clone> {
     t: T,
 }
 
-#[derive(From, Not, Add, AddAssign, Mul)]
+#[derive(From, Not, Add, Mul, AddAssign, Constructor)]
 struct DoubleStruct<T: Clone, U: Clone> {
     t: T,
     u: U,
