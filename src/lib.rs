@@ -99,14 +99,14 @@
 //! 2. [`#[derive(Into)]`](into.html)
 //! 3. [`#[derive(FromStr)]`](from_str.html)
 //! 4. [`#[derive(Display)]`](display.html)
-//! 7. [`#[derive(Index)]`](index_op.html)
-//! 5. [`#[derive(Not)]`](not.html)
-//! 6. [`#[derive(Add)]`](add.html)
-//! 7. [`#[derive(Mul)]`](mul.html)
-//! 7. [`#[derive(IndexMut)]`](index_mut.html)
-//! 8. [`#[derive(AddAssign)]`](add_assign.html)
-//! 9. [`#[derive(MulAssign)]`](mul_assign.html)
-//! 10. [`#[derive(Constructor)]`](constructor.html)
+//! 5. [`#[derive(Index)]`](index_op.html)
+//! 6. [`#[derive(Not)]`](not.html)
+//! 7. [`#[derive(Add)]`](add.html)
+//! 8. [`#[derive(Mul)]`](mul.html)
+//! 9. [`#[derive(IndexMut)]`](index_mut.html)
+//! 10. [`#[derive(AddAssign)]`](add_assign.html)
+//! 11. [`#[derive(MulAssign)]`](mul_assign.html)
+//! 12. [`#[derive(Constructor)]`](constructor.html)
 //!
 //! If you want to be sure what code is generated for your specific type I recommend using the
 //! [`cargo-expand`] utility.
