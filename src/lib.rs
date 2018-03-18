@@ -98,7 +98,7 @@
 //! 2. [`#[derive(Into)]`](into.html)
 //! 3. [`#[derive(FromStr)]`](from_str.html)
 //! 4. [`#[derive(Display)]`](display.html)
-//! 7. [`#[derive(Index)]`](index.html)
+//! 7. [`#[derive(Index)]`](index_op.html)
 //! 5. [`#[derive(Not)]`](not.html)
 //! 6. [`#[derive(Add)]`](add.html)
 //! 7. [`#[derive(Mul)]`](mul.html)
