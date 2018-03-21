@@ -8,7 +8,7 @@ repository = "https://github.com/JelteF/derive_more"
 documentation = "https://jeltef.github.io/derive_more/derive_more/"
 
 readme = "README.md"
-keywords = ["derive", "Add", "From", "Constructor", "implementaion"]
+keywords = ["derive", "Add", "From", "Constructor", "implementation"]
 categories = ["development-tools", "development-tools::procedural-macro-helpers"]
 
 include = [

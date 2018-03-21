@@ -14,7 +14,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         },
         Data::Enum(ref data_enum) => enum_from(input, data_enum),
         _ => panic!(format!(
-            "Only structs and enums can use dervie({})",
+            "Only structs and enums can use derive({})",
             trait_name
         )),
     }

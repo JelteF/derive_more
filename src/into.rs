@@ -3,7 +3,7 @@ use syn::{Data, DeriveInput, Field, Fields};
 use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 use quote::ToTokens;
 
-/// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
+/// Provides the hook to expand `#[derive(Into)]` into an implementation of `Into`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     let input_type = &input.ident;
     let field_vec: Vec<_>;
@@ -20,7 +20,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
             }
             Fields::Unit => (vec![], vec![]),
         },
-        _ => panic!("Only structs can derive a constructor"),
+        _ => panic!("Only structs can derive Into"),
     };
 
     let original_types = &get_field_types(&fields);
