@@ -27,6 +27,12 @@ proc-macro = true
 quote = "0.4.2"
 syn = { version = "0.12.14", features = ['extra-traits'] }
 
+[build-dependencies]
+rustc_version = "0.1"
+
 [badges]
 travis-ci = { repository = "JelteF/derive_more" }
 appveyor = { repository = "JelteF/derive_more" }
+
+[features]
+nightly = []
