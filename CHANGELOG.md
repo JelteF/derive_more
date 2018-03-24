@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Allow deriving of `TryInto`
+
 ## 0.9.0 - 2018-03-18
 
 ### Added
