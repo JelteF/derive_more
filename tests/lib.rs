@@ -125,7 +125,6 @@ fn main() {
     let _: MyIntEnum = (5i64, 8i64).into();
     let _: MyIntEnum = ().into();
 
-
     let _: Unit = ().into();
     assert_eq!((), Unit.into());
     assert_eq!(Unit, Unit::new());

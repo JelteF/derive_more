@@ -42,11 +42,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(
-    input_type: &T,
-    fields: &[&Field],
-    method_ident: &Ident,
-) -> Tokens {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &[&Field], method_ident: &Ident) -> Tokens {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {

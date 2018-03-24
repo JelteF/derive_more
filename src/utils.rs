@@ -1,5 +1,5 @@
-use syn::{parse_str, Field, FieldsNamed, FieldsUnnamed, Generics, Ident, Index, Type,
-          TypeParamBound, WhereClause, GenericParam};
+use syn::{parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, Index,
+          Type, TypeParamBound, WhereClause};
 use quote::Tokens;
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
@@ -12,7 +12,7 @@ pub fn number_idents(count: usize) -> Vec<Index> {
     (0..count).map(Index::from).collect()
 }
 
-pub fn field_idents<'a>(fields: &'a[&'a Field]) -> Vec<&'a Ident> {
+pub fn field_idents<'a>(fields: &'a [&'a Field]) -> Vec<&'a Ident> {
     fields
         .iter()
         .map(|f| {
@@ -23,11 +23,11 @@ pub fn field_idents<'a>(fields: &'a[&'a Field]) -> Vec<&'a Ident> {
         .collect()
 }
 
-pub fn get_field_types_iter<'a>(fields: &'a[&'a Field]) -> Box<Iterator<Item = &'a Type> + 'a> {
+pub fn get_field_types_iter<'a>(fields: &'a [&'a Field]) -> Box<Iterator<Item = &'a Type> + 'a> {
     Box::new(fields.iter().map(|f| &f.ty))
 }
 
-pub fn get_field_types<'a>(fields: &'a[&'a Field]) -> Vec<&'a Type> {
+pub fn get_field_types<'a>(fields: &'a [&'a Field]) -> Vec<&'a Type> {
     get_field_types_iter(fields).collect()
 }
 
@@ -68,7 +68,6 @@ pub fn add_extra_generic_param(generics: &Generics, generic_param: Tokens) -> Ge
     generics
 }
 
-
 pub fn add_extra_where_clauses(generics: &Generics, type_where_clauses: Tokens) -> Generics {
     let mut type_where_clauses: WhereClause = parse_str(&type_where_clauses.to_string()).unwrap();
     let mut new_generics = generics.clone();
@@ -97,7 +96,6 @@ pub fn add_where_clauses_for_new_ident<'a>(
 
     generics
 }
-
 
 pub fn unnamed_to_vec(fields: &FieldsUnnamed) -> Vec<&Field> {
     fields.unnamed.iter().collect()

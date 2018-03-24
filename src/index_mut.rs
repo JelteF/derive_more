@@ -1,6 +1,6 @@
 use quote::Tokens;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
-use utils::{named_to_vec, unnamed_to_vec, add_where_clauses_for_new_ident};
+use utils::{add_where_clauses_for_new_ident, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(IndexMut)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
@@ -28,7 +28,12 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         where #field_type: #trait_path
     };
 
-    let new_generics = add_where_clauses_for_new_ident(&input.generics, &field_vec, index_type, type_where_clauses);
+    let new_generics = add_where_clauses_for_new_ident(
+        &input.generics,
+        &field_vec,
+        index_type,
+        type_where_clauses,
+    );
 
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();

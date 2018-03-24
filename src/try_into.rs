@@ -19,17 +19,14 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
 
     for variant in &data_enum.variants {
         let original_types = match variant.fields {
-            Fields::Unnamed(ref fields) => {
-                unnamed_to_vec(fields).iter().map(|f| &f.ty).collect()
-            }
-            Fields::Named(ref fields) => {
-                named_to_vec(fields).iter().map(|f| &f.ty).collect()
-            }
-            Fields::Unit => {
-                vec![]
-            }
+            Fields::Unnamed(ref fields) => unnamed_to_vec(fields).iter().map(|f| &f.ty).collect(),
+            Fields::Named(ref fields) => named_to_vec(fields).iter().map(|f| &f.ty).collect(),
+            Fields::Unit => vec![],
         };
-        variants_per_types.entry(original_types).or_insert(vec![]).push(variant);
+        variants_per_types
+            .entry(original_types)
+            .or_insert(vec![])
+            .push(variant);
     }
 
     let mut tokens = Tokens::new();
@@ -41,17 +38,13 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
             let subtype = &variant.ident;
             let subtype = quote!(#input_type::#subtype);
             matchers.push(match variant.fields {
-                Fields::Unnamed(_) => {
-                    quote!(#subtype(#(#vars),*))
-                }
+                Fields::Unnamed(_) => quote!(#subtype(#(#vars),*)),
                 Fields::Named(ref fields) => {
                     let field_vec = &named_to_vec(fields);
                     let field_names = &field_idents(&field_vec);
                     quote!(#subtype{#(#field_names: #vars),*})
                 }
-                Fields::Unit => {
-                    quote!(#subtype)
-                }
+                Fields::Unit => quote!(#subtype),
             });
         }
 
