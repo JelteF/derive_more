@@ -48,7 +48,7 @@
 //! Below are all the traits that you can derive using this library.
 //! Some trait derivations are so similar that the furter documentation will only show a single one
 //! of them.
-//! You can recognize these by the "-like" suffix in their name. 
+//! You can recognize these by the "-like" suffix in their name.
 //! The trait name before that will be the only one that is used throughout the further
 //! documentation.
 //!
@@ -74,10 +74,10 @@
 //! 1. [`Index`]
 //! 2. `Not`-like, contains [`Not`] and [`Neg`]
 //! 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
-//!    and [`BitXorAssign`]
 //! 4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
 //! 5. [`IndexMut`]
 //! 6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//!    and [`BitXorAssign`]
 //! 7. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
 //!    [`ShlAssign`]
 //!

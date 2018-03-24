@@ -78,10 +78,10 @@ These are traits that can be used for operator overloading.
 1. [`Index`]
 2. `Not`-like, contains [`Not`] and [`Neg`]
 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
-   and [`BitXorAssign`]
 4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
 5. [`IndexMut`]
 6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+   and [`BitXorAssign`]
 7. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
    [`ShlAssign`]
 
