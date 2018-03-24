@@ -46,7 +46,7 @@
 //! ## The derivable traits
 //!
 //! Below are all the traits that you can derive using this library.
-//! Some trait derivations are so similar that the furter documentation will only show a single one
+//! Some trait derivations are so similar that the further documentation will only show a single one
 //! of them.
 //! You can recognize these by the "-like" suffix in their name.
 //! The trait name before that will be the only one that is used throughout the further
