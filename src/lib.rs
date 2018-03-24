@@ -15,7 +15,8 @@
 //!
 //!
 //! ```rust
-//! # #[macro_use] extern crate derive_more;
+//! #[macro_use]
+//! extern crate derive_more;
 //!
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! struct MyInt(i32);
