@@ -61,6 +61,7 @@
 //! 1. [`From`]
 //! 2. [`Into`]
 //! 3. [`FromStr`]
+//! 4. [`TryInto`] (nightly-only as of writing)
 //!
 //! ### Formatting traits
 //! These traits are used for converting a struct to a string in different ways.
@@ -98,15 +99,16 @@
 //! 1. [`#[derive(From)]`](from.html)
 //! 2. [`#[derive(Into)]`](into.html)
 //! 3. [`#[derive(FromStr)]`](from_str.html)
-//! 4. [`#[derive(Display)]`](display.html)
-//! 5. [`#[derive(Index)]`](index_op.html)
-//! 6. [`#[derive(Not)]`](not.html)
-//! 7. [`#[derive(Add)]`](add.html)
-//! 8. [`#[derive(Mul)]`](mul.html)
-//! 9. [`#[derive(IndexMut)]`](index_mut.html)
-//! 10. [`#[derive(AddAssign)]`](add_assign.html)
-//! 11. [`#[derive(MulAssign)]`](mul_assign.html)
-//! 12. [`#[derive(Constructor)]`](constructor.html)
+//! 4. [`#[derive(TryInto)]`](try_into.html)
+//! 5. [`#[derive(Display)]`](display.html)
+//! 6. [`#[derive(Index)]`](index_op.html)
+//! 7. [`#[derive(Not)]`](not.html)
+//! 8. [`#[derive(Add)]`](add.html)
+//! 9. [`#[derive(Mul)]`](mul.html)
+//! 10. [`#[derive(IndexMut)]`](index_mut.html)
+//! 11. [`#[derive(AddAssign)]`](add_assign.html)
+//! 12. [`#[derive(MulAssign)]`](mul_assign.html)
+//! 13. [`#[derive(Constructor)]`](constructor.html)
 //!
 //! If you want to be sure what code is generated for your specific type I recommend using the
 //! [`cargo-expand`] utility.
@@ -135,6 +137,7 @@
 //! [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html
 //! [`Into`]: https://doc.rust-lang.org/core/convert/trait.Into.html
 //! [`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
+//! [`TryInto`]: https://doc.rust-lang.org/core/convert/trait.TryInto.html
 //! [`Display`]: https://doc.rust-lang.org/std/fmt/trait.Display.html
 //! [`Binary`]: https://doc.rust-lang.org/std/fmt/trait.Binary.html
 //! [`Octal`]: https://doc.rust-lang.org/std/fmt/trait.Octal.html
@@ -189,6 +192,7 @@ mod from_str;
 mod display;
 mod index;
 mod index_mut;
+mod try_into;
 
 macro_rules! create_derive(
     ($mod_:ident, $trait_:ident, $fn_name: ident) => {
@@ -247,3 +251,5 @@ create_derive!(display, Pointer, pointer_derive);
 
 create_derive!(index, Index, index_derive);
 create_derive!(index_mut, IndexMut, index_mut_derive);
+
+create_derive!(try_into, TryInto, try_into_derive);

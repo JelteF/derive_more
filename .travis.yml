@@ -23,7 +23,7 @@ matrix:
   # don't need
   include:
     # Linux
-    - env: DOCS=true # this is the default job
+    - env: TARGET=x86_64-unknown-linux-gnu # this is the default job
     - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true
 
     # OSX
@@ -31,7 +31,7 @@ matrix:
       os: osx
 
     # Testing other channels
-    - env: TARGET=x86_64-unknown-linux-gnu
+    - env: TARGET=x86_64-unknown-linux-gnu DOCS=true
       rust: nightly
     - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true
       rust: nightly
