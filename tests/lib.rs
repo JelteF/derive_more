@@ -20,7 +20,8 @@ struct MyInt(i32);
 #[derive(Index, IndexMut)]
 struct MyVec(Vec<i32>);
 
-#[derive(Deref)]
+#[derive(Eq, PartialEq, Debug)]
+#[derive(Deref, DerefMut)]
 struct MyBoxedInt(Box<i32>);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -189,6 +190,8 @@ fn main() {
     myvec[0] = 20;
     assert_eq!(20, myvec[0]);
 
-    let boxed = MyBoxedInt(Box::new(5));
+    let mut boxed = MyBoxedInt(Box::new(5));
     assert_eq!(5, *boxed);
+    *boxed = 7;
+    assert_eq!(MyBoxedInt(Box::new(7)), boxed)
 }
