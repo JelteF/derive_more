@@ -180,18 +180,18 @@ use proc_macro::TokenStream;
 
 mod utils;
 
-mod from;
-mod into;
-mod constructor;
-mod not_like;
-mod add_like;
 mod add_assign_like;
-mod mul_like;
-mod mul_assign_like;
-mod from_str;
+mod add_like;
+mod constructor;
 mod display;
+mod from;
+mod from_str;
 mod index;
 mod index_mut;
+mod into;
+mod mul_assign_like;
+mod mul_like;
+mod not_like;
 mod try_into;
 
 macro_rules! create_derive(

@@ -1,6 +1,6 @@
 use quote::{ToTokens, Tokens};
-use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
 use std::iter;
+use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
 use utils::{add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
             unnamed_to_vec};
 

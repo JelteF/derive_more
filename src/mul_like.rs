@@ -1,7 +1,7 @@
 use quote::{ToTokens, Tokens};
-use syn::{Data, DeriveInput, Field, Fields, Ident};
-use std::iter;
 use std::collections::HashSet;
+use std::iter;
+use syn::{Data, DeriveInput, Field, Fields, Ident};
 use utils::{add_where_clauses_for_new_ident, field_idents, get_field_types_iter, named_to_vec,
             number_idents, unnamed_to_vec};
 

@@ -1,6 +1,6 @@
+use add_like::{struct_exprs, tuple_exprs};
 use quote::Tokens;
 use syn::{Data, DeriveInput, Fields, Ident};
-use add_like::{struct_exprs, tuple_exprs};
 use utils::{add_extra_ty_param_bound_op, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {

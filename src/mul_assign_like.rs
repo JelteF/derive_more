@@ -1,8 +1,8 @@
-use quote::Tokens;
-use syn::{Data, DeriveInput, Fields, Ident};
 use mul_like::{struct_exprs, tuple_exprs};
-use std::iter;
+use quote::Tokens;
 use std::collections::HashSet;
+use std::iter;
+use syn::{Data, DeriveInput, Fields, Ident};
 use utils::{add_where_clauses_for_new_ident, get_field_types_iter, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {

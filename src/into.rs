@@ -1,7 +1,7 @@
+use quote::ToTokens;
 use quote::Tokens;
 use syn::{Data, DeriveInput, Field, Fields};
 use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
-use quote::ToTokens;
 
 /// Provides the hook to expand `#[derive(Into)]` into an implementation of `Into`
 pub fn expand(input: &DeriveInput, _: &str) -> Tokens {

@@ -1,6 +1,6 @@
+use quote::Tokens;
 use syn::{parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, Index,
           Type, TypeParamBound, WhereClause};
-use quote::Tokens;
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
