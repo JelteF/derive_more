@@ -16,15 +16,19 @@ As of writing the `TryInto` and `TryFrom` traits are nightly only.
 #![feature(try_from)]
 # #[macro_use] extern crate derive_more;
 use std::convert::TryFrom;
-#[derive(TryInto)]
+use std::convert::TryInto;
+#[derive(TryInto, Clone)]
 enum MixedData {
     Int(u32),
     String(String),
 }
 
 fn main() {
-    let s = MixedData::String("foo".into());
-    assert_eq!("FOO", String::try_from(s).unwrap().to_uppercase());
+    let string = MixedData::String("foo".to_string());
+    let int = MixedData::Int(123);
+    assert_eq!(123u32, int.try_into().unwrap());
+    assert_eq!("foo".to_string(), String::try_from(string.clone()).unwrap());
+    assert!(u32::try_from(string).is_err());
 }
 ```
 
