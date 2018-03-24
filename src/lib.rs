@@ -184,6 +184,7 @@ mod utils;
 mod add_assign_like;
 mod add_like;
 mod constructor;
+mod deref;
 mod display;
 mod from;
 mod from_str;
@@ -254,3 +255,5 @@ create_derive!(index, Index, index_derive);
 create_derive!(index_mut, IndexMut, index_mut_derive);
 
 create_derive!(try_into, TryInto, try_into_derive);
+
+create_derive!(deref, Deref, deref_derive);
