@@ -74,13 +74,15 @@
 //! These are traits that can be used for operator overloading.
 //!
 //! 1. [`Index`]
-//! 2. `Not`-like, contains [`Not`] and [`Neg`]
-//! 3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
-//! 4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
-//! 5. [`IndexMut`]
-//! 6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+//! 2. [`Deref`]
+//! 3. `Not`-like, contains [`Not`] and [`Neg`]
+//! 4. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
+//! 5. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
+//! 6. [`IndexMut`]
+//! 7. [`DerefMut`]
+//! 8. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
 //!    and [`BitXorAssign`]
-//! 7. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
+//! 9. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
 //!    [`ShlAssign`]
 //!
 //! ### Static methods
@@ -103,13 +105,15 @@
 //! 4. [`#[derive(TryInto)]`](try_into.html)
 //! 5. [`#[derive(Display)]`](display.html)
 //! 6. [`#[derive(Index)]`](index_op.html)
-//! 7. [`#[derive(Not)]`](not.html)
-//! 8. [`#[derive(Add)]`](add.html)
-//! 9. [`#[derive(Mul)]`](mul.html)
-//! 10. [`#[derive(IndexMut)]`](index_mut.html)
-//! 11. [`#[derive(AddAssign)]`](add_assign.html)
-//! 12. [`#[derive(MulAssign)]`](mul_assign.html)
-//! 13. [`#[derive(Constructor)]`](constructor.html)
+//! 7. [`#[derive(Deref)]`](deref.html)
+//! 8. [`#[derive(Not)]`](not.html)
+//! 9. [`#[derive(Add)]`](add.html)
+//! 10. [`#[derive(Mul)]`](mul.html)
+//! 11. [`#[derive(IndexMut)]`](index_mut.html)
+//! 12. [`#[derive(DerefMut)]`](deref_mut.html)
+//! 13. [`#[derive(AddAssign)]`](add_assign.html)
+//! 14. [`#[derive(MulAssign)]`](mul_assign.html)
+//! 15. [`#[derive(Constructor)]`](constructor.html)
 //!
 //! If you want to be sure what code is generated for your specific type I recommend using the
 //! [`cargo-expand`] utility.
@@ -148,6 +152,7 @@
 //! [`UpperExp`]: https://doc.rust-lang.org/std/fmt/trait.UpperExp.html
 //! [`Pointer`]: https://doc.rust-lang.org/std/fmt/trait.Pointer.html
 //! [`Index`]: https://doc.rust-lang.org/std/ops/trait.Index.html
+//! [`Deref`]: https://doc.rust-lang.org/std/ops/trait.Deref.html
 //! [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
 //! [`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html
 //! [`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html
@@ -161,6 +166,7 @@
 //! [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html
 //! [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html
 //! [`IndexMut`]: https://doc.rust-lang.org/std/ops/trait.IndexMut.html
+//! [`DerefMut`]: https://doc.rust-lang.org/std/ops/trait.DerefMut.html
 //! [`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html
 //! [`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html
 //! [`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html

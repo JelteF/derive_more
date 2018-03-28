@@ -5,7 +5,7 @@ extern crate derive_more;
 #[derive(Deref, DerefMut)]
 struct MyBoxedInt(Box<i32>);
 
-#[derive(Deref)]
-struct NamedBoxedNumber {
-    numbers: Box<i32>,
+#[derive(Deref, DerefMut)]
+struct NumRef<'a> {
+    num: &'a mut i32,
 }
