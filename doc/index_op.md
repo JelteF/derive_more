@@ -53,7 +53,7 @@ where
 # Regular structs
 
 
-When deriving `Index` for a tuple struct with one field:
+When deriving `Index` for a regular struct with one field:
 
 ```rust
 # #[macro_use] extern crate derive_more;

@@ -33,7 +33,7 @@ The behaviour is similar with more or less fields.
 
 # Regular structs
 
-When deriving for a tuple struct with two fields like this:
+When deriving for a regular struct with two fields like this:
 
 ```rust
 # #[macro_use] extern crate derive_more;

@@ -49,7 +49,7 @@ impl ::std::fmt::Display for MyInt {
 # Regular structs
 
 
-When deriving `Display` for a tuple struct with one field:
+When deriving `Display` for a regular struct with one field:
 
 ```rust
 # #[macro_use] extern crate derive_more;
