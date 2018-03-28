@@ -149,7 +149,7 @@ done. For instance when deriving <code>Add</code> for an enum like this:</p>
                 <span class="prelude-val">Ok</span>(<span class="ident">MixedInts</span>::<span class="ident">UnsignedTwo</span>(<span class="ident">__l_0</span>.<span class="ident">add</span>(<span class="ident">__r_0</span>)))
             }
             (<span class="ident">MixedInts</span>::<span class="ident">Unit</span>, <span class="ident">MixedInts</span>::<span class="ident">Unit</span>) <span class="op">=&gt;</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Cannot add() unit variants&quot;</span>),
-            _ <span class="op">=&gt;</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Trying to add mismatched enum variants&quot;</span>),
+            <span class="kw">_</span> <span class="op">=&gt;</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Trying to add mismatched enum variants&quot;</span>),
         }
     }
 }</pre>
