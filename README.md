@@ -21,6 +21,9 @@ By using this library the following code just works:
 
 
 ```rust
+#[macro_use]
+extern crate derive_more;
+
 #[derive(Debug, Eq, PartialEq, From, Add)]
 struct MyInt(i32);
 
@@ -65,6 +68,7 @@ These are traits that are used to convert automatically between types.
 1. [`From`]
 2. [`Into`]
 3. [`FromStr`]
+4. [`TryInto`] (nightly-only as of writing)
 
 ### Formatting traits
 These traits are used for converting a struct to a string in different ways.
@@ -76,13 +80,15 @@ These traits are used for converting a struct to a string in different ways.
 These are traits that can be used for operator overloading.
 
 1. [`Index`]
-2. `Not`-like, contains [`Not`] and [`Neg`]
-3. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
-4. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
-5. [`IndexMut`]
-6. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
+2. [`Deref`]
+3. `Not`-like, contains [`Not`] and [`Neg`]
+4. `Add`-like, contains [`Add`], [`Sub`], [`BitAnd`], [`BitOr`] and [`BitXor`]
+5. `Mul`-like, contains [`Mul`], [`Div`], [`Rem`], [`Shr`] and [`Shl`]
+6. [`IndexMut`]
+7. [`DerefMut`]
+8. `AddAssign`-like, contains [`AddAssign`], [`SubAssign`], [`BitAndAssign`], [`BitOrAssign`]
    and [`BitXorAssign`]
-7. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
+9. `MulAssign`-like, contains [`MulAssign`], [`DivAssign`], [`RemAssign`], [`ShrAssign`] and
    [`ShlAssign`]
 
 ### Static methods
@@ -99,18 +105,21 @@ crate.
 That is why the links below explain what code gets generated for a trait for each group from
 before.
 
-1. [`#[derive(From)]`](https://jeltef.github.io/derive_more/derive_more/from.html)
-2. [`#[derive(Into)]`](https://jeltef.github.io/derive_more/derive_more/into.html)
-3. [`#[derive(FromStr)]`](https://jeltef.github.io/derive_more/derive_more/from_str.html)
-4. [`#[derive(Display)]`](https://jeltef.github.io/derive_more/derive_more/display.html)
-5. [`#[derive(Index)]`](https://jeltef.github.io/derive_more/derive_more/index_op.html)
-6. [`#[derive(Not)]`](https://jeltef.github.io/derive_more/derive_more/not.html)
-7. [`#[derive(Add)]`](https://jeltef.github.io/derive_more/derive_more/add.html)
-8. [`#[derive(Mul)]`](https://jeltef.github.io/derive_more/derive_more/mul.html)
-9. [`#[derive(IndexMut)]`](https://jeltef.github.io/derive_more/derive_more/index_mut.html)
-10. [`#[derive(AddAssign)]`](https://jeltef.github.io/derive_more/derive_more/add_assign.html)
-11. [`#[derive(MulAssign)]`](https://jeltef.github.io/derive_more/derive_more/mul_assign.html)
-12. [`#[derive(Constructor)]`](https://jeltef.github.io/derive_more/derive_more/constructor.html)
+1. [`#[derive(From)]`](from.html)
+2. [`#[derive(Into)]`](into.html)
+3. [`#[derive(FromStr)]`](from_str.html)
+4. [`#[derive(TryInto)]`](try_into.html)
+5. [`#[derive(Display)]`](display.html)
+6. [`#[derive(Index)]`](index_op.html)
+7. [`#[derive(Deref)]`](deref.html)
+8. [`#[derive(Not)]`](not.html)
+9. [`#[derive(Add)]`](add.html)
+10. [`#[derive(Mul)]`](mul.html)
+11. [`#[derive(IndexMut)]`](index_mut.html)
+12. [`#[derive(DerefMut)]`](deref_mut.html)
+13. [`#[derive(AddAssign)]`](add_assign.html)
+14. [`#[derive(MulAssign)]`](mul_assign.html)
+15. [`#[derive(Constructor)]`](constructor.html)
 
 If you want to be sure what code is generated for your specific type I recommend using the
 [`cargo-expand`] utility.
@@ -138,6 +147,7 @@ extern crate derive_more;
 [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html
 [`Into`]: https://doc.rust-lang.org/core/convert/trait.Into.html
 [`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
+[`TryInto`]: https://doc.rust-lang.org/core/convert/trait.TryInto.html
 [`Display`]: https://doc.rust-lang.org/std/fmt/trait.Display.html
 [`Binary`]: https://doc.rust-lang.org/std/fmt/trait.Binary.html
 [`Octal`]: https://doc.rust-lang.org/std/fmt/trait.Octal.html
@@ -147,6 +157,7 @@ extern crate derive_more;
 [`UpperExp`]: https://doc.rust-lang.org/std/fmt/trait.UpperExp.html
 [`Pointer`]: https://doc.rust-lang.org/std/fmt/trait.Pointer.html
 [`Index`]: https://doc.rust-lang.org/std/ops/trait.Index.html
+[`Deref`]: https://doc.rust-lang.org/std/ops/trait.Deref.html
 [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
 [`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html
 [`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html
@@ -160,6 +171,7 @@ extern crate derive_more;
 [`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html
 [`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html
 [`IndexMut`]: https://doc.rust-lang.org/std/ops/trait.IndexMut.html
+[`DerefMut`]: https://doc.rust-lang.org/std/ops/trait.DerefMut.html
 [`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html
 [`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html
 [`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html
