@@ -126,7 +126,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! derive_more = "0.9.0"
+//! derive_more = "0.10.0"
 //! ```
 //!
 //! And this to the top of your Rust file:
