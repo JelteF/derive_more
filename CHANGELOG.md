@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## 0.10.0 - 2018-03-29
+
 ### Added
 - Allow deriving of `TryInto`
+- Allow deriving of `Deref`
+- Allow deriving of `DerefMut`
 
 ## 0.9.0 - 2018-03-18
 
