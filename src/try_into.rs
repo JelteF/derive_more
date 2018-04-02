@@ -25,7 +25,7 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
         };
         variants_per_types
             .entry(original_types)
-            .or_insert(vec![])
+            .or_insert_with(Vec::new)
             .push(variant);
     }
 
