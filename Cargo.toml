@@ -25,10 +25,10 @@ proc-macro = true
 
 [dependencies]
 quote = "0.5.1"
-syn = { version = "0.13.0", features = ['extra-traits'] }
+syn = { version = "0.13.1", features = ['extra-traits'] }
 
 [build-dependencies]
-rustc_version = "0.2"
+rustc_version = "0.2.2"
 
 [badges]
 travis-ci = { repository = "JelteF/derive_more" }

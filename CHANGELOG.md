@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Updated to latest version of `syn` and `quote`
+
 ## 0.10.0 - 2018-03-29
 
 ### Added
