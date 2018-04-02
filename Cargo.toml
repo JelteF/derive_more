@@ -24,11 +24,11 @@ name = "derive_more"
 proc-macro = true
 
 [dependencies]
-quote = "0.4.2"
-syn = { version = "0.12.14", features = ['extra-traits'] }
+quote = "0.5.1"
+syn = { version = "0.13.0", features = ['extra-traits'] }
 
 [build-dependencies]
-rustc_version = "0.1"
+rustc_version = "0.2"
 
 [badges]
 travis-ci = { repository = "JelteF/derive_more" }
