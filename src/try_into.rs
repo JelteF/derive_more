@@ -41,7 +41,7 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
                 Fields::Unnamed(_) => quote!(#subtype(#(#vars),*)),
                 Fields::Named(ref fields) => {
                     let field_vec = &named_to_vec(fields);
-                    let field_names = &field_idents(&field_vec);
+                    let field_names = &field_idents(field_vec);
                     quote!(#subtype{#(#field_names: #vars),*})
                 }
                 Fields::Unit => quote!(#subtype),

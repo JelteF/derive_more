@@ -92,9 +92,7 @@ pub fn add_where_clauses_for_new_ident<'a>(
     };
 
     let generics = add_extra_where_clauses(generics, type_where_clauses);
-    let generics = add_extra_generic_param(&generics, generic_param);
-
-    generics
+    add_extra_generic_param(&generics, generic_param)
 }
 
 pub fn unnamed_to_vec(fields: &FieldsUnnamed) -> Vec<&Field> {
