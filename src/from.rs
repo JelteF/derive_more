@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Index;
 
 use quote::{ToTokens, Tokens};
 use syn::{Data, DataEnum, DeriveInput, Field, Fields};
@@ -100,7 +101,7 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
                 let field_vec = &unnamed_to_vec(fields);
                 let original_types = get_field_types(field_vec);
 
-                if *type_signature_counts.get(&original_types).unwrap() == 1 {
+                if *type_signature_counts.index(&original_types) == 1 {
                     let variant_ident = &variant.ident;
                     let body = tuple_body(quote!(#input_type::#variant_ident), field_vec);
                     from_impl(input, field_vec, body).to_tokens(&mut tokens)
@@ -111,14 +112,14 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
                 let field_vec = &named_to_vec(fields);
                 let original_types = get_field_types(field_vec);
 
-                if *type_signature_counts.get(&original_types).unwrap() == 1 {
+                if *type_signature_counts.index(&original_types) == 1 {
                     let variant_ident = &variant.ident;
                     let body = struct_body(quote!(#input_type::#variant_ident), field_vec);
                     from_impl(input, field_vec, body).to_tokens(&mut tokens)
                 }
             }
             Fields::Unit => {
-                if *type_signature_counts.get(&vec![]).unwrap() == 1 {
+                if *type_signature_counts.index(&vec![]) == 1 {
                     let variant_ident = &variant.ident;
                     let body = struct_body(quote!(#input_type::#variant_ident), &[]);
                     from_impl(input, &[], body).to_tokens(&mut tokens)
