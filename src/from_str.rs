@@ -25,8 +25,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         {
             type Err = <#field_type as #trait_path>::Err;
             #[inline]
-            fn from_str(src: &str) -> Result<Self, Self::Err> {
-                return Ok(#result)
+            fn from_str(src: &str) -> ::std::result::Result<Self, Self::Err> {
+                return ::std::result::Result::Ok(#result)
             }
         }
     }

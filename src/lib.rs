@@ -178,6 +178,7 @@
 //! [`ShrAssign`]: https://doc.rust-lang.org/std/ops/trait.ShrAssign.html
 //! [`ShlAssign`]: https://doc.rust-lang.org/std/ops/trait.ShlAssign.html
 
+#![recursion_limit = "128"]
 extern crate proc_macro;
 #[macro_use]
 extern crate quote;

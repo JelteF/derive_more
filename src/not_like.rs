@@ -94,7 +94,7 @@ fn enum_output_type_and_content(
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype(#(#vars.#method_iter()),*));
                 if has_unit_type {
-                    body = quote!(Ok(#body))
+                    body = quote!(::std::result::Result::Ok(#body))
                 }
                 let matcher = quote!{
                     #subtype(#(#vars),*) => {
@@ -118,7 +118,7 @@ fn enum_output_type_and_content(
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
                 if has_unit_type {
-                    body = quote!(Ok(#body))
+                    body = quote!(::std::result::Result::Ok(#body))
                 }
                 let matcher = quote!{
                     #subtype{#(#field_names: #vars),*} => {
@@ -129,7 +129,7 @@ fn enum_output_type_and_content(
             }
             Fields::Unit => {
                 let message = format!("Cannot {}() unit variants", method_ident.to_string());
-                matches.push(quote!(#subtype => Err(#message)));
+                matches.push(quote!(#subtype => ::std::result::Result::Err(#message)));
             }
         }
     }
@@ -141,7 +141,7 @@ fn enum_output_type_and_content(
     );
 
     let output_type = if has_unit_type {
-        quote!(Result<#input_type#ty_generics, &'static str>)
+        quote!(::std::result::Result<#input_type#ty_generics, &'static str>)
     } else {
         quote!(#input_type#ty_generics)
     };

@@ -26,7 +26,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
         Data::Enum(ref data_enum) => (
-            quote!(Result<#input_type#ty_generics, &'static str>),
+            quote!(::std::result::Result<#input_type#ty_generics, &'static str>),
             enum_content(input_type, data_enum, &method_ident),
         ),
 
@@ -104,7 +104,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 let matcher = quote!{
                     (#subtype(#(#l_vars),*),
                      #subtype(#(#r_vars),*)) => {
-                        Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
+                        ::std::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
                     }
                 };
                 matches.push(matcher);
@@ -123,14 +123,14 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 let matcher = quote!{
                     (#subtype{#(#field_names: #l_vars),*},
                      #subtype{#(#field_names: #r_vars),*}) => {
-                        Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
+                        ::std::result::Result::Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
                     }
                 };
                 matches.push(matcher);
             }
             Fields::Unit => {
                 let message = format!("Cannot {}() unit variants", method_ident.to_string());
-                matches.push(quote!((#subtype, #subtype) => Err(#message)));
+                matches.push(quote!((#subtype, #subtype) => ::std::result::Result::Err(#message)));
             }
         }
     }
@@ -142,7 +142,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
             "Trying to {} mismatched enum variants",
             method_ident.to_string()
         );
-        matches.push(quote!(_ => Err(#message)));
+        matches.push(quote!(_ => ::std::result::Result::Err(#message)));
     }
     quote!(
         match (self, rhs) {

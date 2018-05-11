@@ -79,8 +79,8 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
                 #[inline]
                 fn try_from(value: #input_type#ty_generics) -> Result<Self, Self::Error> {
                     match value {
-                        #(#matchers)|* => Ok(#vars),
-                        _ => Err(#message),
+                        #(#matchers)|* => ::std::result::Result::Ok(#vars),
+                        _ => ::std::result::Result::Err(#message),
                     }
                 }
             }
