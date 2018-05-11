@@ -99,21 +99,21 @@
 //! That is why the links below explain what code gets generated for a trait for each group from
 //! before.
 //!
-//! 1. [`#[derive(From)]`](from.html)
-//! 2. [`#[derive(Into)]`](into.html)
-//! 3. [`#[derive(FromStr)]`](from_str.html)
-//! 4. [`#[derive(TryInto)]`](try_into.html)
-//! 5. [`#[derive(Display)]`](display.html)
-//! 6. [`#[derive(Index)]`](index_op.html)
-//! 7. [`#[derive(Deref)]`](deref.html)
-//! 8. [`#[derive(Not)]`](not.html)
-//! 9. [`#[derive(Add)]`](add.html)
-//! 10. [`#[derive(Mul)]`](mul.html)
-//! 11. [`#[derive(IndexMut)]`](index_mut.html)
-//! 12. [`#[derive(DerefMut)]`](deref_mut.html)
-//! 13. [`#[derive(AddAssign)]`](add_assign.html)
-//! 14. [`#[derive(MulAssign)]`](mul_assign.html)
-//! 15. [`#[derive(Constructor)]`](constructor.html)
+//! 1. [`#[derive(From)]`](https://jeltef.github.io/derive_more/derive_more/from.html)
+//! 2. [`#[derive(Into)]`](https://jeltef.github.io/derive_more/derive_more/into.html)
+//! 3. [`#[derive(FromStr)]`](https://jeltef.github.io/derive_more/derive_more/from_str.html)
+//! 4. [`#[derive(TryInto)]`](https://jeltef.github.io/derive_more/derive_more/try_into.html)
+//! 5. [`#[derive(Display)]`](https://jeltef.github.io/derive_more/derive_more/display.html)
+//! 6. [`#[derive(Index)]`](https://jeltef.github.io/derive_more/derive_more/index_op.html)
+//! 7. [`#[derive(Deref)]`](https://jeltef.github.io/derive_more/derive_more/deref.html)
+//! 8. [`#[derive(Not)]`](https://jeltef.github.io/derive_more/derive_more/not.html)
+//! 9. [`#[derive(Add)]`](https://jeltef.github.io/derive_more/derive_more/add.html)
+//! 10. [`#[derive(Mul)]`](https://jeltef.github.io/derive_more/derive_more/mul.html)
+//! 11. [`#[derive(IndexMut)]`](https://jeltef.github.io/derive_more/derive_more/index_mut.html)
+//! 12. [`#[derive(DerefMut)]`](https://jeltef.github.io/derive_more/derive_more/deref_mut.html)
+//! 13. [`#[derive(AddAssign)]`](https://jeltef.github.io/derive_more/derive_more/add_assign.html)
+//! 14. [`#[derive(MulAssign)]`](https://jeltef.github.io/derive_more/derive_more/mul_assign.html)
+//! 15. [`#[derive(Constructor)]`](https://jeltef.github.io/derive_more/derive_more/constructor.html)
 //!
 //! If you want to be sure what code is generated for your specific type I recommend using the
 //! [`cargo-expand`] utility.
