@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## 0.11.0 - 2018-05-12
+
 ### Changed
 - Updated to latest version of `syn` and `quote`
+
+### Fixed
+- Changed some URLs in the docs so they were correct on crates.io and docs.rs
+- The `Result` type is now referenced in the derives using its absolute path
+  (`::std::result::Result`) to make sure that the derives don't accidentally use
+  another `Result` type that is in scope.
 
 ## 0.10.0 - 2018-03-29
 
