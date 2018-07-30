@@ -1,11 +1,11 @@
-use quote::Tokens;
+use proc_macro2::{Span, TokenStream};
 use syn::{Data, DeriveInput, Field, Fields, Ident};
 use utils::{add_where_clauses_for_new_ident, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(IndexMut)]` into an implementation of `From`
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
-    let trait_ident = Ident::from(trait_name);
-    let index_type = &Ident::from("__IdxT");
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_ident = Ident::new(trait_name, Span::call_site());
+    let index_type = &Ident::new("__IdxT", Span::call_site());
     let trait_path = &quote!(::std::ops::#trait_ident<#index_type>);
     let input_type = &input.ident;
     let field_vec: Vec<&Field>;
@@ -57,14 +57,14 @@ fn panic_one_field(trait_name: &str) -> ! {
     ))
 }
 
-fn tuple_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (Tokens) {
+fn tuple_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (TokenStream) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };
     quote!(self.0)
 }
 
-fn struct_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> Tokens {
+fn struct_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> TokenStream {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };

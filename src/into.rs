@@ -1,10 +1,10 @@
 use quote::ToTokens;
-use quote::Tokens;
+use proc_macro2::TokenStream;
 use syn::{Data, DeriveInput, Field, Fields};
 use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Into)]` into an implementation of `Into`
-pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     let input_type = &input.ident;
     let field_vec: Vec<_>;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -38,16 +38,16 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     }
 }
 
-fn tuple_field_names(fields: &[&Field]) -> Vec<Tokens> {
+fn tuple_field_names(fields: &[&Field]) -> Vec<TokenStream> {
     number_idents(fields.len())
         .iter()
-        .map(|f| f.into_tokens())
+        .map(|f| f.into_token_stream())
         .collect()
 }
 
-fn struct_field_names(fields: &[&Field]) -> Vec<Tokens> {
+fn struct_field_names(fields: &[&Field]) -> Vec<TokenStream> {
     field_idents(fields)
         .iter()
-        .map(|f| (*f).into_tokens())
+        .map(|f| (*f).into_token_stream())
         .collect()
 }

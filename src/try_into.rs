@@ -1,18 +1,18 @@
 use quote::ToTokens;
-use quote::Tokens;
+use proc_macro2::TokenStream;
 use std::collections::HashMap;
 use syn::{Data, DataEnum, DeriveInput, Fields};
 use utils::{field_idents, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
-pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     match input.data {
         Data::Enum(ref data_enum) => enum_try_into(input, data_enum),
         _ => panic!("Only enums can derive TryInto"),
     }
 }
 
-fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
+fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
     let mut variants_per_types = HashMap::new();
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
@@ -29,7 +29,7 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
             .push(variant);
     }
 
-    let mut tokens = Tokens::new();
+    let mut tokens = TokenStream::new();
 
     for (ref original_types, ref variants) in variants_per_types {
         let mut matchers = vec![];

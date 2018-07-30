@@ -1,12 +1,13 @@
-use quote::{ToTokens, Tokens};
+use quote::ToTokens;
+use proc_macro2::{Span, TokenStream};
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
 use utils::{add_extra_type_param_bound_op_output, named_to_vec, unnamed_to_vec};
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
-    let trait_ident = Ident::from(trait_name);
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_lowercase();
-    let method_ident = &Ident::from(method_name);
+    let method_ident = &Ident::new(&method_name, Span::call_site());
     let input_type = &input.ident;
 
     let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);
@@ -42,7 +43,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &[&Field], method_ident: &Ident) -> Tokens {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &[&Field], method_ident: &Ident) -> TokenStream {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -55,7 +56,7 @@ fn tuple_content<T: ToTokens>(input_type: &T, fields: &[&Field], method_ident: &
     quote!(#input_type(#(#exprs),*))
 }
 
-fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> Tokens {
+fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> TokenStream {
     let mut exprs = vec![];
 
     for field in fields {
@@ -73,7 +74,7 @@ fn enum_output_type_and_content(
     input: &DeriveInput,
     data_enum: &DataEnum,
     method_ident: &Ident,
-) -> (Tokens, Tokens) {
+) -> (TokenStream, TokenStream) {
     let input_type = &input.ident;
     let (_, ty_generics, _) = input.generics.split_for_impl();
     let mut matches = vec![];
@@ -90,7 +91,7 @@ fn enum_output_type_and_content(
                 // The patern that is outputted should look like this:
                 // (Subtype(vars)) => Ok(TypePath(exprs))
                 let size = unnamed_to_vec(fields).len();
-                let vars: &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
+                let vars: &Vec<_> = &(0..size).map(|i| Ident::new(&format!("__{}", i), Span::call_site())).collect();
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype(#(#vars.#method_iter()),*));
                 if has_unit_type {
@@ -114,7 +115,7 @@ fn enum_output_type_and_content(
                     .iter()
                     .map(|f| f.ident.as_ref().unwrap())
                     .collect();
-                let vars: &Vec<_> = &(0..size).map(|i| Ident::from(format!("__{}", i))).collect();
+                let vars: &Vec<_> = &(0..size).map(|i| Ident::new(&format!("__{}", i), Span::call_site())).collect();
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
                 if has_unit_type {
