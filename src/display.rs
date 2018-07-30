@@ -1,10 +1,10 @@
-use quote::Tokens;
+use proc_macro2::{Span, TokenStream};
 use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
 use utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
-    let trait_ident = Ident::from(trait_name);
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_ident = Ident::new(trait_name, Span::call_site());
     let trait_path = &quote!(::std::fmt::#trait_ident);
     let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -35,7 +35,7 @@ fn panic_one_field(trait_name: &str) -> ! {
     ))
 }
 
-fn tuple_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (Tokens, &'a Type) {
+fn tuple_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (TokenStream, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };
@@ -44,7 +44,7 @@ fn tuple_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (Tokens, &'a Ty
     (quote!(self.0), field_type)
 }
 
-fn struct_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (Tokens, &'a Type) {
+fn struct_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (TokenStream, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };

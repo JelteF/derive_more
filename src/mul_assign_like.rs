@@ -1,17 +1,17 @@
 use mul_like::{struct_exprs, tuple_exprs};
-use quote::Tokens;
+use proc_macro2::{Span, TokenStream};
 use std::collections::HashSet;
 use std::iter;
 use syn::{Data, DeriveInput, Fields, Ident};
 use utils::{add_where_clauses_for_new_ident, get_field_types_iter, named_to_vec, unnamed_to_vec};
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
-    let trait_ident = Ident::from(trait_name);
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_ident = Ident::new(trait_name, Span::call_site());
     let trait_path = &quote!(::std::ops::#trait_ident);
     let method_name = trait_name.to_string();
     let method_name = method_name.trim_right_matches("Assign");
     let method_name = method_name.to_lowercase();
-    let method_ident = Ident::from(method_name.to_string() + "_assign");
+    let method_ident = Ident::new(&(method_name.to_string() + "_assign"), Span::call_site());
     let input_type = &input.ident;
 
     let (exprs, fields) = match input.data {
@@ -30,7 +30,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
         _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };
 
-    let scalar_ident = &Ident::from("__RhsT");
+    let scalar_ident = &Ident::new("__RhsT", Span::call_site());
     let tys: &HashSet<_> = &get_field_types_iter(&fields).collect();
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);

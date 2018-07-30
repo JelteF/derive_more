@@ -1,9 +1,9 @@
-use quote::Tokens;
+use proc_macro2::TokenStream;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
 use utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
-pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     let input_type = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ((body, vars), fields) = match input.data {
@@ -32,13 +32,14 @@ pub fn expand(input: &DeriveInput, _: &str) -> Tokens {
     }
 }
 
-fn tuple_body(return_type: &Ident, fields: &[&Field]) -> (Tokens, Vec<Ident>) {
+fn tuple_body(return_type: &Ident, fields: &[&Field]) -> (TokenStream, Vec<Ident>) {
     let vars = &numbered_vars(fields.len(), "");
     (quote!(#return_type(#(#vars),*)), vars.clone())
 }
 
-fn struct_body(return_type: &Ident, fields: &[&Field]) -> (Tokens, Vec<Ident>) {
-    let field_names: &Vec<Ident> = &field_idents(fields).iter().map(|f| **f).collect();
+fn struct_body(return_type: &Ident, fields: &[&Field]) -> (TokenStream, Vec<Ident>) {
+    let field_names: &Vec<Ident> = &field_idents(fields).iter().map(|f| (**f).clone()).collect();
     let vars = field_names;
-    (quote!(#return_type{#(#field_names: #vars),*}), vars.clone())
+    let ret_vars = field_names.clone();
+    (quote!(#return_type{#(#field_names: #vars),*}), ret_vars)
 }

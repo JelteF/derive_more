@@ -1,9 +1,9 @@
-use quote::Tokens;
+use proc_macro2::TokenStream;
 use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
 use utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `From`
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_path = &quote!(::std::str::FromStr);
     let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -43,7 +43,7 @@ fn tuple_from_str<'a>(
     input_type: &Ident,
     trait_name: &str,
     fields: &[&'a Field],
-) -> (Tokens, &'a Type) {
+) -> (TokenStream, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };
@@ -56,7 +56,7 @@ fn struct_from_str<'a>(
     input_type: &Ident,
     trait_name: &str,
     fields: &[&'a Field],
-) -> (Tokens, &'a Type) {
+) -> (TokenStream, &'a Type) {
     if fields.len() != 1 {
         panic_one_field(trait_name)
     };

@@ -1,14 +1,14 @@
 use add_like::{struct_exprs, tuple_exprs};
-use quote::Tokens;
+use proc_macro2::{Span, TokenStream};
 use syn::{Data, DeriveInput, Fields, Ident};
 use utils::{add_extra_ty_param_bound_op, named_to_vec, unnamed_to_vec};
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
-    let trait_ident = Ident::from(trait_name);
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_string();
     let method_name = method_name.trim_right_matches("Assign");
     let method_name = method_name.to_lowercase();
-    let method_ident = Ident::from(method_name.to_string() + "_assign");
+    let method_ident = Ident::new(&(method_name.to_string() + "_assign"), Span::call_site());
     let input_type = &input.ident;
 
     let generics = add_extra_ty_param_bound_op(&input.generics, &trait_ident);

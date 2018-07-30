@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
-use quote::{ToTokens, Tokens};
+use quote::ToTokens;
+use proc_macro2::TokenStream;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields};
 use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => tuple_from(input, &unnamed_to_vec(fields)),
@@ -21,7 +22,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     }
 }
 
-pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &[&Field], body: T) -> Tokens {
+pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &[&Field], body: T) -> TokenStream {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
@@ -38,13 +39,13 @@ pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &[&Field], body: T) -
     }
 }
 
-fn tuple_from(input: &DeriveInput, fields: &[&Field]) -> Tokens {
+fn tuple_from(input: &DeriveInput, fields: &[&Field]) -> TokenStream {
     let input_type = &input.ident;
     let body = tuple_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
-fn tuple_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> Tokens {
+fn tuple_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
     if fields.len() == 1 {
         quote!(#return_type(original))
     } else {
@@ -53,13 +54,13 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> Tokens {
     }
 }
 
-fn struct_from(input: &DeriveInput, fields: &[&Field]) -> Tokens {
+fn struct_from(input: &DeriveInput, fields: &[&Field]) -> TokenStream {
     let input_type = &input.ident;
     let body = struct_body(input_type, fields);
     from_impl(input, fields, body)
 }
 
-fn struct_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> Tokens {
+fn struct_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
     if fields.len() == 1 {
         let field_name = &fields[0].ident;
         quote!(#return_type{#field_name: original})
@@ -70,7 +71,7 @@ fn struct_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> Tokens {
     }
 }
 
-fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
+fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
     let mut type_signature_counts = HashMap::new();
     let input_type = &input.ident;
 
@@ -93,7 +94,7 @@ fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> Tokens {
         }
     }
 
-    let mut tokens = Tokens::new();
+    let mut tokens = TokenStream::new();
 
     for variant in &data_enum.variants {
         match variant.fields {

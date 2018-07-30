@@ -1,13 +1,14 @@
-use quote::{ToTokens, Tokens};
+use quote::ToTokens;
+use proc_macro2::{Span, TokenStream};
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
 use utils::{add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
             unnamed_to_vec};
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
-    let trait_ident = Ident::from(trait_name);
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_lowercase();
-    let method_ident = Ident::from(method_name);
+    let method_ident = Ident::new(&method_name, Span::call_site());
     let input_type = &input.ident;
 
     let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);
@@ -47,12 +48,12 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Tokens {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &[&Field], method_ident: &Ident) -> Tokens {
+fn tuple_content<T: ToTokens>(input_type: &T, fields: &[&Field], method_ident: &Ident) -> TokenStream {
     let exprs = tuple_exprs(fields, method_ident);
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<Tokens> {
+pub fn tuple_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
     let mut exprs = vec![];
 
     for i in 0..fields.len() {
@@ -64,7 +65,7 @@ pub fn tuple_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<Tokens> {
     exprs
 }
 
-fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> Tokens {
+fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> TokenStream {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
     let field_names = field_idents(fields);
@@ -72,7 +73,7 @@ fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -
     quote!(#input_type{#(#field_names: #exprs),*})
 }
 
-pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<Tokens> {
+pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
     let mut exprs = vec![];
 
     for field in fields {
@@ -85,7 +86,7 @@ pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<Tokens> {
     exprs
 }
 
-fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) -> Tokens {
+fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) -> TokenStream {
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
 
