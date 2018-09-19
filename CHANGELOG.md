@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## 0.12.0 - 2018-09-19
+
 ### Changed
-- Updated to latest version of `syn` and `quote`
+- Updated to `syn` v0.14, `quote` v0.6 and `proc-macro2` v0.4
 
 ## 0.11.0 - 2018-05-12
 
