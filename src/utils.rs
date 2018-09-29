@@ -1,6 +1,8 @@
 use proc_macro2::{Span, TokenStream};
-use syn::{parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, Index,
-          Type, TypeParamBound, WhereClause};
+use syn::{
+    parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam,
+    Generics, Ident, Index, Type, TypeParamBound, WhereClause,
+};
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
@@ -19,8 +21,7 @@ pub fn field_idents<'a>(fields: &'a [&'a Field]) -> Vec<&'a Ident> {
             f.ident
                 .as_ref()
                 .expect("Tried to get field names of a tuple struct")
-        })
-        .collect()
+        }).collect()
 }
 
 pub fn get_field_types_iter<'a>(fields: &'a [&'a Field]) -> Box<Iterator<Item = &'a Type> + 'a> {

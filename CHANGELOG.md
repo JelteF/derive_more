@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+- Updated to `syn` v0.15
+- Extended Display-like derives to support custom formats
 
 ## 0.12.0 - 2018-09-19
 

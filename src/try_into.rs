@@ -1,5 +1,5 @@
-use quote::ToTokens;
 use proc_macro2::TokenStream;
+use quote::ToTokens;
 use std::collections::HashMap;
 use syn::{Data, DataEnum, DeriveInput, Fields};
 use utils::{field_idents, named_to_vec, numbered_vars, unnamed_to_vec};

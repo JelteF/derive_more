@@ -1,9 +1,10 @@
-use quote::ToTokens;
 use proc_macro2::{Span, TokenStream};
+use quote::ToTokens;
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
-use utils::{add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
-            unnamed_to_vec};
+use utils::{
+    add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars, unnamed_to_vec,
+};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
@@ -48,7 +49,11 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     )
 }
 
-fn tuple_content<T: ToTokens>(input_type: &T, fields: &[&Field], method_ident: &Ident) -> TokenStream {
+fn tuple_content<T: ToTokens>(
+    input_type: &T,
+    fields: &[&Field],
+    method_ident: &Ident,
+) -> TokenStream {
     let exprs = tuple_exprs(fields, method_ident);
     quote!(#input_type(#(#exprs),*))
 }
