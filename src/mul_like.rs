@@ -1,10 +1,12 @@
-use quote::ToTokens;
 use proc_macro2::{Span, TokenStream};
+use quote::ToTokens;
 use std::collections::HashSet;
 use std::iter;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
-use utils::{add_where_clauses_for_new_ident, field_idents, get_field_types_iter, named_to_vec,
-            number_idents, unnamed_to_vec};
+use utils::{
+    add_where_clauses_for_new_ident, field_idents, get_field_types_iter, named_to_vec,
+    number_idents, unnamed_to_vec,
+};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());

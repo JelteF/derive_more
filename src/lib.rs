@@ -186,6 +186,7 @@ extern crate quote;
 extern crate syn;
 
 use proc_macro::TokenStream;
+use syn::parse::Error as ParseError;
 
 mod utils;
 
@@ -205,13 +206,32 @@ mod mul_like;
 mod not_like;
 mod try_into;
 
+trait Output {
+    fn process(self) -> TokenStream;
+}
+
+impl Output for proc_macro2::TokenStream {
+    fn process(self) -> TokenStream {
+        self.into()
+    }
+}
+
+impl Output for Result<proc_macro2::TokenStream, ParseError> {
+    fn process(self) -> TokenStream {
+        match self {
+            Ok(ts) => ts.into(),
+            Err(e) => e.to_compile_error().into(),
+        }
+    }
+}
+
 macro_rules! create_derive(
-    ($mod_:ident, $trait_:ident, $fn_name: ident) => {
-        #[proc_macro_derive($trait_)]
+    ($mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)*) => {
+        #[proc_macro_derive($trait_, attributes($($attribute),*))]
         #[doc(hidden)]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let ast = syn::parse(input).unwrap();
-            $mod_::expand(&ast, stringify!($trait_)).into()
+            Output::process($mod_::expand(&ast, stringify!($trait_)))
         }
     }
 );
@@ -251,14 +271,14 @@ create_derive!(mul_assign_like, ShlAssign, shl_assign_derive);
 
 create_derive!(from_str, FromStr, from_str_derive);
 
-create_derive!(display, Display, display_derive);
-create_derive!(display, Binary, binary_derive);
-create_derive!(display, Octal, octal_derive);
-create_derive!(display, LowerHex, lower_hex_derive);
-create_derive!(display, UpperHex, upper_hex_derive);
-create_derive!(display, LowerExp, lower_exp_derive);
-create_derive!(display, UpperExp, upper_exp_derive);
-create_derive!(display, Pointer, pointer_derive);
+create_derive!(display, Display, display_derive, display);
+create_derive!(display, Binary, binary_derive, binary);
+create_derive!(display, Octal, octal_derive, octal);
+create_derive!(display, LowerHex, lower_hex_derive, lower_hex);
+create_derive!(display, UpperHex, upper_hex_derive, upper_hex);
+create_derive!(display, LowerExp, lower_exp_derive, lower_exp);
+create_derive!(display, UpperExp, upper_exp_derive, upper_exp);
+create_derive!(display, Pointer, pointer_derive, pointer);
 
 create_derive!(index, Index, index_derive);
 create_derive!(index_mut, IndexMut, index_mut_derive);

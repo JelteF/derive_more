@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
-use quote::ToTokens;
 use proc_macro2::TokenStream;
+use quote::ToTokens;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields};
 use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 
