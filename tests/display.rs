@@ -10,3 +10,9 @@ struct MyInt(i32);
 struct Point1D {
     x: i32,
 }
+
+#[derive(Display)]
+enum MyEnum {
+    Foo,
+    Bar
+}

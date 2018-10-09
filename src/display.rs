@@ -9,22 +9,36 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let input_type = &input.ident;
-    let (member, field_type) = match input.data {
-        Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => tuple_from_str(trait_name, &unnamed_to_vec(fields)),
-            Fields::Named(ref fields) => struct_from_str(trait_name, &named_to_vec(fields)),
-            Fields::Unit => panic_one_field(trait_name),
-        },
-        _ => panic_one_field(trait_name),
-    };
-    quote!{
-        impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
-        {
-            #[inline]
-            fn fmt(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                <#field_type as #trait_path>::fmt(&#member, formatter)
+
+    match input.data {
+        Data::Struct(ref data_struct) => {
+            let (member, field_type) = match data_struct.fields {
+                Fields::Unnamed(ref fields) => tuple_from_str(trait_name, &unnamed_to_vec(fields)),
+                Fields::Named(ref fields) => struct_from_str(trait_name, &named_to_vec(fields)),
+                Fields::Unit => panic_one_field(trait_name),
+            };
+
+            quote!{
+                impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
+                {
+                    #[inline]
+                    fn fmt(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                        <#field_type as #trait_path>::fmt(&#member, formatter)
+                    }
+                }
             }
-        }
+        },
+
+        Data::Enum(ref data_enum) => impl_display(trait_name,
+                                                  impl_generics,
+                                                  trait_path,
+                                                  input_type,
+                                                  ty_generics,
+                                                  where_clause,
+                                                  input_type,
+                                                  data_enum),
+
+        _ => panic_one_field(trait_name),
     }
 }
 
@@ -52,4 +66,83 @@ fn struct_from_str<'a>(trait_name: &str, fields: &[&'a Field]) -> (TokenStream, 
     let field_ident = &field.ident;
     let field_type = &field.ty;
     (quote!(self.#field_ident), field_type)
+}
+
+fn impl_display<'a>(trait_name: &str,
+                    impl_generics: ::syn::ImplGenerics,
+                    trait_path: &TokenStream,
+                    input_type: &Ident,
+                    ty_generics: ::syn::TypeGenerics,
+                    where_clause: Option<&::syn::WhereClause>,
+                    name: &::syn::Ident,
+                    data_enum: &'a ::syn::DataEnum)
+    -> TokenStream
+{
+    let variants = data_enum.variants.iter()
+        .map(|variant| {
+            impl_display_for_variant(trait_name,
+                                     impl_generics.clone(),
+                                     trait_path,
+                                     input_type,
+                                     ty_generics.clone(),
+                                     where_clause,
+                                     name,
+                                     variant)
+        });
+
+    quote! {
+        impl Display for #name {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+                match *self {
+                    #(#variants)*
+                }
+            }
+        }
+    }
+}
+
+fn impl_display_for_variant(trait_name: &str,
+                            impl_generics: ::syn::ImplGenerics,
+                            trait_path: &TokenStream,
+                            input_type: &Ident,
+                            ty_generics: ::syn::TypeGenerics,
+                            where_clause: Option<&::syn::WhereClause>,
+                            name: &::syn::Ident,
+                            variant: &::syn::Variant) -> TokenStream {
+    let id = &variant.ident;
+    match variant.fields {
+        ::syn::Fields::Unit => {
+            quote! {
+                #name::#id => {
+                    f.write_str(stringify!(#id))
+                }
+            }
+        },
+        ::syn::Fields::Named(ref fields_named) => {
+            let (member, field_type) = struct_from_str(trait_name, &named_to_vec(fields_named));
+
+            quote!{
+                impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
+                {
+                    #[inline]
+                    fn fmt(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                        <#field_type as #trait_path>::fmt(&#member, formatter)
+                    }
+                }
+            }
+        },
+        ::syn::Fields::Unnamed(ref fields_unnamed) => {
+            let (member, field_type) = struct_from_str(trait_name, &unnamed_to_vec(fields_unnamed));
+
+            quote!{
+                impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
+                {
+                    #[inline]
+                    fn fmt(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                        <#field_type as #trait_path>::fmt(&#member, formatter)
+                    }
+                }
+            }
+        },
+    }
 }
