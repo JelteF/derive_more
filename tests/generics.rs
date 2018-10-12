@@ -2,6 +2,8 @@
 #[macro_use]
 extern crate derive_more;
 
+use std::fmt::Display;
+
 #[derive(
     From,
     FromStr,
@@ -14,7 +16,7 @@ extern crate derive_more;
     AddAssign,
     Constructor
 )]
-struct Wrapped<T: Clone>(T);
+struct Wrapped<T: Clone + Display>(T);
 
 #[derive(From, Not, Add, Mul, AddAssign, Constructor)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
@@ -31,7 +33,7 @@ struct WrappedDouble<T: Clone, U: Clone>(T, U);
     AddAssign,
     Constructor
 )]
-struct Struct<T: Clone> {
+struct Struct<T: Clone + Display> {
     t: T,
 }
 
