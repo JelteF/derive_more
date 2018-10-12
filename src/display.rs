@@ -29,7 +29,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         trait_path,
         trait_attr,
         input,
-    }.get_match_arms()?;
+    }
+    .get_match_arms()?;
 
     Ok(quote! {
         impl #impl_generics #trait_path for #name #ty_generics #where_clause
@@ -65,7 +66,8 @@ impl<'a, 'b> State<'a, 'b> {
                     .map(|n| {
                         let i = Ident::new(&format!("_{}", n), Span::call_site());
                         quote!(#i,)
-                    }).collect();
+                    })
+                    .collect();
                 quote!((#fields))
             }
             Fields::Named(fields) => {
@@ -75,7 +77,8 @@ impl<'a, 'b> State<'a, 'b> {
                     .map(|f| {
                         let i = f.ident.as_ref().unwrap();
                         quote!(#i,)
-                    }).collect();
+                    })
+                    .collect();
                 quote!({#fields})
             }
         }
@@ -133,18 +136,23 @@ impl<'a, 'b> State<'a, 'b> {
 
         Ok(quote_spanned!(meta.span()=> write!(_derive_more_Display_formatter, #fmt, #args)))
     }
-    fn infer_fmt(&self, span: Span, fields: &Fields) -> Result<TokenStream> {
+    fn infer_fmt(&self, fields: &Fields, name: &Ident) -> Result<TokenStream> {
         let fields = match fields {
             Fields::Unit => {
-                return Err(Error::new(
-                    span,
-                    "Can not automatically infer format from unit type",
-                ))
+                return Ok(quote!(write!(
+                    _derive_more_Display_formatter,
+                    stringify!(#name)
+                )));
             }
             Fields::Named(fields) => &fields.named,
             Fields::Unnamed(fields) => &fields.unnamed,
         };
-        if fields.len() != 1 {
+        if fields.len() == 0 {
+            return Ok(quote!(write!(
+                _derive_more_Display_formatter,
+                stringify!(#name)
+            )));
+        } else if fields.len() > 1 {
             return Err(Error::new(
                 fields.span(),
                 "Can not automatically infer format for types with more than 1 field",
@@ -178,9 +186,9 @@ impl<'a, 'b> State<'a, 'b> {
                     e.variants.iter().try_fold(TokenStream::new(), |arms, v| {
                         let matcher = self.get_matcher(&v.fields);
                         let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
-	                        self.get_meta_fmt(meta)?
+                            self.get_meta_fmt(meta)?
                         } else {
-	                        self.infer_fmt(v.span(), &v.fields)?
+                            self.infer_fmt(&v.fields, &v.ident)?
                         };
                         let name = &self.input.ident;
                         let v_name = &v.ident;
@@ -193,7 +201,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let fmt = if let Some(meta) = self.find_meta(&self.input.attrs)? {
                     self.get_meta_fmt(meta)?
                 } else {
-                    self.infer_fmt(self.input.span(), &s.fields)?
+                    self.infer_fmt(&s.fields, &self.input.ident)?
                 };
                 let name = &self.input.ident;
                 Ok(quote_spanned!(self.input.span()=> #name #matcher => #fmt,))
