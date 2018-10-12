@@ -5,7 +5,6 @@ use syn::{
     spanned::Spanned,
     Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta,
 };
-use utils::add_extra_ty_param_bound;
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
@@ -23,8 +22,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         _ => unimplemented!(),
     };
 
-    let generics = add_extra_ty_param_bound(&input.generics, trait_path);
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let name = &input.ident;
 
     let arms = State {
