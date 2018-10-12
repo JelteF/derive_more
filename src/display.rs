@@ -39,6 +39,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
             fn fmt(&self, _derive_more_Display_formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 match self {
                     #arms
+                    _ => Ok(()) // This is needed for empty enums
                 }
             }
         }
