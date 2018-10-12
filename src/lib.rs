@@ -206,6 +206,10 @@ mod mul_like;
 mod not_like;
 mod try_into;
 
+// This trait describes the possible return types of
+// the derives. A derive can generally be infallible and
+// return a TokenStream, or it can be fallible and return
+// a Result<TokenStream, syn::parse::Error>.
 trait Output {
     fn process(self) -> TokenStream;
 }
