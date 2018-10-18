@@ -41,10 +41,6 @@ extern crate derive_more;
 
 use std::path::PathBuf;
 
-// Here just to make sure that this doesn't conflict with
-// the derives in some way
-use std::fmt::Binary;
-
 #[derive(Display)]
 struct MyInt(i32);
 
