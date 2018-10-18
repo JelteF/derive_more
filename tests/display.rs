@@ -8,7 +8,7 @@ use std::path::PathBuf;
 // the derives in some way
 use std::fmt::Binary;
 
-#[derive(Display)]
+#[derive(Display, Octal, Binary)]
 struct MyInt(i32);
 
 #[derive(Display)]
@@ -67,6 +67,8 @@ struct Generic<T>(T);
 #[test]
 fn check_display() {
     assert_eq!(MyInt(-2).to_string(), "-2");
+    assert_eq!(format!("{:b}", MyInt(9)), "1001");
+    assert_eq!(format!("{:o}", MyInt(9)), "11");
     assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
     assert_eq!(E::Uint(2).to_string(), "2");
     assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
