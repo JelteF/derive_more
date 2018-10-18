@@ -36,8 +36,7 @@ E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
 # Example usage
 
 ```rust
-#[macro_use]
-extern crate derive_more;
+# #[macro_use] extern crate derive_more;
 
 use std::path::PathBuf;
 
@@ -90,8 +89,7 @@ struct Unit;
 #[derive(Display)]
 struct UnitStruct {}
 
-#[test]
-fn check_display() {
+fn main() {
     assert_eq!(MyInt(-2).to_string(), "-2");
     assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
     assert_eq!(E::Uint(2).to_string(), "2");
