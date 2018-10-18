@@ -60,6 +60,10 @@ struct UnitStruct {}
 #[derive(Display)]
 enum EmptyEnum {}
 
+#[derive(Display)]
+#[display(fmt = "Generic")]
+struct Generic<T>(T);
+
 #[test]
 fn check_display() {
     assert_eq!(MyInt(-2).to_string(), "-2");
@@ -75,4 +79,5 @@ fn check_display() {
     assert_eq!(format!("{:X}", UH), "UpperHex");
     assert_eq!(Unit.to_string(), "Unit");
     assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
+    assert_eq!(Generic(()).to_string(), "Generic");
 }
