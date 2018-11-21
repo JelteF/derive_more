@@ -6,13 +6,18 @@ use utils::{
     add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars, unnamed_to_vec,
 };
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+pub fn expand(
+    input: &DeriveInput,
+    trait_name: &str,
+    import_root: proc_macro2::TokenStream,
+) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_lowercase();
     let method_ident = Ident::new(&method_name, Span::call_site());
     let input_type = &input.ident;
 
-    let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);
+    let generics =
+        add_extra_type_param_bound_op_output(&input.generics, &trait_ident, import_root.clone());
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let (output_type, block) = match input.data {
@@ -28,8 +33,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
         Data::Enum(ref data_enum) => (
-            quote!(::std::result::Result<#input_type#ty_generics, &'static str>),
-            enum_content(input_type, data_enum, &method_ident),
+            quote!(#import_root::result::Result<#input_type#ty_generics, &'static str>),
+            enum_content(input_type, data_enum, &method_ident, import_root.clone()),
         ),
 
         _ => panic!(format!(
@@ -39,7 +44,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     quote!(
-        impl#impl_generics ::std::ops::#trait_ident for #input_type#ty_generics #where_clause {
+        impl#impl_generics #import_root::ops::#trait_ident for #input_type#ty_generics #where_clause {
             type Output = #output_type;
             #[inline]
             fn #method_ident(self, rhs: #input_type#ty_generics) -> #output_type {
@@ -91,7 +96,12 @@ pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream>
     exprs
 }
 
-fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) -> TokenStream {
+fn enum_content(
+    input_type: &Ident,
+    data_enum: &DataEnum,
+    method_ident: &Ident,
+    import_root: proc_macro2::TokenStream,
+) -> TokenStream {
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
 
@@ -110,7 +120,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 let matcher = quote!{
                     (#subtype(#(#l_vars),*),
                      #subtype(#(#r_vars),*)) => {
-                        ::std::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
+                        #import_root::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
                     }
                 };
                 matches.push(matcher);
@@ -129,14 +139,16 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 let matcher = quote!{
                     (#subtype{#(#field_names: #l_vars),*},
                      #subtype{#(#field_names: #r_vars),*}) => {
-                        ::std::result::Result::Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
+                        #import_root::result::Result::Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
                     }
                 };
                 matches.push(matcher);
             }
             Fields::Unit => {
                 let message = format!("Cannot {}() unit variants", method_ident.to_string());
-                matches.push(quote!((#subtype, #subtype) => ::std::result::Result::Err(#message)));
+                matches.push(
+                    quote!((#subtype, #subtype) => #import_root::result::Result::Err(#message)),
+                );
             }
         }
     }
@@ -148,7 +160,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
             "Trying to {} mismatched enum variants",
             method_ident.to_string()
         );
-        matches.push(quote!(_ => ::std::result::Result::Err(#message)));
+        matches.push(quote!(_ => #import_root::result::Result::Err(#message)));
     }
     quote!(
         match (self, rhs) {
