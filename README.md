@@ -15,6 +15,16 @@ commonly advised newtype pattern (e.g. `MyInt(i32)`).
 This library tries to remove these annoyances and the corresponding boilerplate code.
 It does this by allowing you to derive lots of commonly used traits for both structs and enums.
 
+## `#![no_std]` support
+
+This crate support `no_std` through the `no_std` feature.
+
+```toml
+# Example Cargo.toml
+[dependencies]
+derive_more = {version = "0.13.0", default-features = false, features=["no_std"]}
+```
+
 ## Example code
 
 By using this library the following code just works:
