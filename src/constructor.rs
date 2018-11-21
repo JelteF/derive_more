@@ -3,7 +3,7 @@ use syn::{Data, DeriveInput, Field, Fields, Ident};
 use utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
-pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
+pub fn expand(input: &DeriveInput, _: &str, _: proc_macro2::TokenStream) -> TokenStream {
     let input_type = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ((body, vars), fields) = match input.data {
