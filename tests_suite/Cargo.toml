@@ -1,0 +1,9 @@
+[package]
+name = "derive_more_tests_no_std"
+version = "0.0.0"
+publish = false
+
+[dependencies]
+derive_more = {path = "../", default-features = false, features=["no_std"]}
+
+[workspace]
