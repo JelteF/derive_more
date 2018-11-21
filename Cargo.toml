@@ -9,7 +9,7 @@ documentation = "https://jeltef.github.io/derive_more/derive_more/"
 
 readme = "README.md"
 keywords = ["derive", "Add", "From", "Constructor", "implementation"]
-categories = ["development-tools", "development-tools::procedural-macro-helpers"]
+categories = ["development-tools", "development-tools::procedural-macro-helpers", "no-std"]
 
 include = [
     "src/**/*.rs",
@@ -37,3 +37,4 @@ appveyor = { repository = "JelteF/derive_more" }
 
 [features]
 nightly = []
+no_std = []
