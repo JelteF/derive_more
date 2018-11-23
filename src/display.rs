@@ -35,6 +35,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
     Ok(quote! {
         impl #impl_generics #trait_path for #name #ty_generics #where_clause
         {
+            #[allow(unused_variables)]
             #[inline]
             fn fmt(&self, _derive_more_Display_formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 match self {
