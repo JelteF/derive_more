@@ -149,7 +149,7 @@ impl<'a, 'b> State<'a, 'b> {
             Fields::Named(fields) => &fields.named,
             Fields::Unnamed(fields) => &fields.unnamed,
         };
-        if fields.len() == 0 {
+        if fields.is_empty() {
             return Ok(quote!(write!(
                 _derive_more_Display_formatter,
                 stringify!(#name)
@@ -209,10 +209,12 @@ impl<'a, 'b> State<'a, 'b> {
                 Ok(quote_spanned!(self.input.span()=> #name #matcher => #fmt,))
             }
             Data::Union(_) => {
-                let meta = self.find_meta(&self.input.attrs)?.ok_or(Error::new(
-                    self.input.span(),
-                    "Can not automatically infer format for unions",
-                ))?;
+                let meta = self.find_meta(&self.input.attrs)?.ok_or_else(|| {
+                    Error::new(
+                        self.input.span(),
+                        "Can not automatically infer format for unions",
+                    )
+                })?;
                 let fmt = self.get_meta_fmt(meta)?;
                 Ok(quote_spanned!(self.input.span()=> _ => #fmt,))
             }
