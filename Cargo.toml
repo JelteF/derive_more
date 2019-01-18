@@ -29,7 +29,7 @@ syn = { version = "0.15", features = ['extra-traits'] }
 proc-macro2 = "0.4.19"
 
 [build-dependencies]
-rustc_version = "0.2.2"
+rustc_version = "0.2"
 
 [badges]
 travis-ci = { repository = "JelteF/derive_more" }
