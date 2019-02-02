@@ -137,6 +137,15 @@
 //! # fn main () {}
 //! ```
 //!
+//!This crate support `no_std` through the `no_std` feature. So use the following
+//!instead if you want to use it in a `no_std` environment.
+//!
+//!```toml
+//!# Example Cargo.toml
+//![dependencies]
+//!derive_more = {version = "0.13.0", default-features = false, features=["no_std"]}
+//!```
+//!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 //! [`derive-new`]: https://github.com/nrc/derive-new
 //! [`From`]: https://doc.rust-lang.org/core/convert/trait.From.html

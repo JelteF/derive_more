@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+- Added `no_std` support
+
 ## 0.13.0 - 2018-10-19
 - Updated to `syn` v0.15
 - Extended Display-like derives to support custom formats
