@@ -45,11 +45,6 @@ matrix:
     - env: TARGET=x86_64-apple-darwin
       os: osx
       rust: nightly
-    # No std tests
-    - rust : stable
-      script : 
-        - cd "${TRAVIS_BUILD_DIR}/tests_suite"
-        - cargo test
 
 before_install: set -e
 
