@@ -8,13 +8,9 @@ use utils::{
     number_idents, unnamed_to_vec,
 };
 
-pub fn expand(
-    input: &DeriveInput,
-    trait_name: &str,
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(#import_root::ops::#trait_ident);
+    let trait_path = &quote!(::std::ops::#trait_ident);
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::new(&method_name, Span::call_site());
     let input_type = &input.ident;
@@ -50,13 +46,8 @@ pub fn expand(
         where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
     };
 
-    let new_generics = add_where_clauses_for_new_ident(
-        &input.generics,
-        &fields,
-        scalar_ident,
-        type_where_clauses,
-        import_root,
-    );
+    let new_generics =
+        add_where_clauses_for_new_ident(&input.generics, &fields, scalar_ident, type_where_clauses);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 

@@ -7,13 +7,9 @@ use syn::{
 };
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
-pub fn expand(
-    input: &DeriveInput,
-    trait_name: &str,
-    import_root: proc_macro2::TokenStream,
-) -> Result<TokenStream> {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(#import_root::fmt::#trait_ident);
+    let trait_path = &quote!(::std::fmt::#trait_ident);
     let trait_attr = match trait_name {
         "Display" => "display",
         "Binary" => "binary",
@@ -39,8 +35,9 @@ pub fn expand(
     Ok(quote! {
         impl #impl_generics #trait_path for #name #ty_generics #where_clause
         {
+            #[allow(unused_variables)]
             #[inline]
-            fn fmt(&self, _derive_more_Display_formatter: &mut #import_root::fmt::Formatter) -> #import_root::fmt::Result {
+            fn fmt(&self, _derive_more_Display_formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 match self {
                     #arms
                     _ => Ok(()) // This is needed for empty enums
@@ -112,7 +109,11 @@ impl<'a, 'b> State<'a, 'b> {
                 ident,
                 lit: Lit::Str(s),
                 ..
-            })) if ident == "fmt" => s,
+            }))
+                if ident == "fmt" =>
+            {
+                s
+            }
             _ => return Err(Error::new(list.nested[0].span(), self.get_proper_syntax())),
         };
 
@@ -148,7 +149,7 @@ impl<'a, 'b> State<'a, 'b> {
             Fields::Named(fields) => &fields.named,
             Fields::Unnamed(fields) => &fields.unnamed,
         };
-        if fields.len() == 0 {
+        if fields.is_empty() {
             return Ok(quote!(write!(
                 _derive_more_Display_formatter,
                 stringify!(#name)
@@ -208,10 +209,12 @@ impl<'a, 'b> State<'a, 'b> {
                 Ok(quote_spanned!(self.input.span()=> #name #matcher => #fmt,))
             }
             Data::Union(_) => {
-                let meta = self.find_meta(&self.input.attrs)?.ok_or(Error::new(
-                    self.input.span(),
-                    "Can not automatically infer format for unions",
-                ))?;
+                let meta = self.find_meta(&self.input.attrs)?.ok_or_else(|| {
+                    Error::new(
+                        self.input.span(),
+                        "Can not automatically infer format for unions",
+                    )
+                })?;
                 let fmt = self.get_meta_fmt(meta)?;
                 Ok(quote_spanned!(self.input.span()=> _ => #fmt,))
             }

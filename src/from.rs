@@ -7,18 +7,14 @@ use syn::{Data, DataEnum, DeriveInput, Field, Fields};
 use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
-pub fn expand(
-    input: &DeriveInput,
-    trait_name: &str,
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => tuple_from(input, &unnamed_to_vec(fields), import_root),
-            Fields::Named(ref fields) => struct_from(input, &named_to_vec(fields), import_root),
-            Fields::Unit => struct_from(input, &[], import_root),
+            Fields::Unnamed(ref fields) => tuple_from(input, &unnamed_to_vec(fields)),
+            Fields::Named(ref fields) => struct_from(input, &named_to_vec(fields)),
+            Fields::Unit => struct_from(input, &[]),
         },
-        Data::Enum(ref data_enum) => enum_from(input, data_enum, import_root),
+        Data::Enum(ref data_enum) => enum_from(input, data_enum),
         _ => panic!(format!(
             "Only structs and enums can use derive({})",
             trait_name
@@ -26,17 +22,12 @@ pub fn expand(
     }
 }
 
-pub fn from_impl<T: ToTokens>(
-    input: &DeriveInput,
-    fields: &[&Field],
-    body: T,
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &[&Field], body: T) -> TokenStream {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
     quote!{
-        impl#impl_generics #import_root::convert::From<(#(#original_types),*)> for
+        impl#impl_generics ::std::convert::From<(#(#original_types),*)> for
             #input_type#ty_generics #where_clause {
 
             #[allow(unused_variables)]
@@ -48,14 +39,10 @@ pub fn from_impl<T: ToTokens>(
     }
 }
 
-fn tuple_from(
-    input: &DeriveInput,
-    fields: &[&Field],
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+fn tuple_from(input: &DeriveInput, fields: &[&Field]) -> TokenStream {
     let input_type = &input.ident;
     let body = tuple_body(input_type, fields);
-    from_impl(input, fields, body, import_root)
+    from_impl(input, fields, body)
 }
 
 fn tuple_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
@@ -67,14 +54,10 @@ fn tuple_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
     }
 }
 
-fn struct_from(
-    input: &DeriveInput,
-    fields: &[&Field],
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+fn struct_from(input: &DeriveInput, fields: &[&Field]) -> TokenStream {
     let input_type = &input.ident;
     let body = struct_body(input_type, fields);
-    from_impl(input, fields, body, import_root)
+    from_impl(input, fields, body)
 }
 
 fn struct_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
@@ -88,11 +71,7 @@ fn struct_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
     }
 }
 
-fn enum_from(
-    input: &DeriveInput,
-    data_enum: &DataEnum,
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+fn enum_from(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
     let mut type_signature_counts = HashMap::new();
     let input_type = &input.ident;
 
@@ -126,7 +105,7 @@ fn enum_from(
                 if *type_signature_counts.index(&original_types) == 1 {
                     let variant_ident = &variant.ident;
                     let body = tuple_body(quote!(#input_type::#variant_ident), field_vec);
-                    from_impl(input, field_vec, body, import_root.clone()).to_tokens(&mut tokens)
+                    from_impl(input, field_vec, body).to_tokens(&mut tokens)
                 }
             }
 
@@ -137,14 +116,14 @@ fn enum_from(
                 if *type_signature_counts.index(&original_types) == 1 {
                     let variant_ident = &variant.ident;
                     let body = struct_body(quote!(#input_type::#variant_ident), field_vec);
-                    from_impl(input, field_vec, body, import_root.clone()).to_tokens(&mut tokens)
+                    from_impl(input, field_vec, body).to_tokens(&mut tokens)
                 }
             }
             Fields::Unit => {
                 if *type_signature_counts.index(&vec![]) == 1 {
                     let variant_ident = &variant.ident;
                     let body = struct_body(quote!(#input_type::#variant_ident), &[]);
-                    from_impl(input, &[], body, import_root.clone()).to_tokens(&mut tokens)
+                    from_impl(input, &[], body).to_tokens(&mut tokens)
                 }
             }
         }
