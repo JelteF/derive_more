@@ -18,6 +18,7 @@ include = [
     "README.md",
     "CHANGELOG.md",
 ]
+autotests = true
 
 [lib]
 name = "derive_more"
@@ -38,3 +39,8 @@ appveyor = { repository = "JelteF/derive_more" }
 [features]
 nightly = []
 no_std = []
+
+[[test]]
+name = "no_std"
+path = "tests/no_std.rs"
+required-features = ["no_std"]

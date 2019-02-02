@@ -4,7 +4,9 @@ use std::ops::Index;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields};
-use utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
+use utils::{
+    field_idents, get_field_types, get_import_root, named_to_vec, number_idents, unnamed_to_vec,
+};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
@@ -26,8 +28,9 @@ pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &[&Field], body: T) -
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
     let original_types = &get_field_types(fields);
-    quote!{
-        impl#impl_generics ::std::convert::From<(#(#original_types),*)> for
+    let import_root = get_import_root();
+    quote! {
+        impl#impl_generics #import_root::convert::From<(#(#original_types),*)> for
             #input_type#ty_generics #where_clause {
 
             #[allow(unused_variables)]
