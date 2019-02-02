@@ -235,11 +235,7 @@ macro_rules! create_derive(
         #[doc(hidden)]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let ast = syn::parse(input).unwrap();
-            #[cfg(not(feature="no_std"))]
-            let import_root = quote!(::std);
-            #[cfg(feature="no_std")]
-            let import_root = quote!(::core);
-            Output::process($mod_::expand(&ast, stringify!($trait_),import_root))
+            Output::process($mod_::expand(&ast, stringify!($trait_)))
         }
     }
 );

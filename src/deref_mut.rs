@@ -3,13 +3,9 @@ use syn::{Data, DeriveInput, Field, Fields, Ident};
 use utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
-pub fn expand(
-    input: &DeriveInput,
-    trait_name: &str,
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(#import_root::ops::#trait_ident);
+    let trait_path = &quote!(::std::ops::#trait_ident);
     let input_type = &input.ident;
     let field_vec: Vec<&Field>;
     let member = match input.data {

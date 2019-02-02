@@ -3,14 +3,10 @@ use syn::{Data, DeriveInput, Field, Fields, Ident};
 use utils::{add_where_clauses_for_new_ident, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(IndexMut)]` into an implementation of `From`
-pub fn expand(
-    input: &DeriveInput,
-    trait_name: &str,
-    import_root: proc_macro2::TokenStream,
-) -> TokenStream {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let index_type = &Ident::new("__IdxT", Span::call_site());
-    let trait_path = &quote!(#import_root::ops::#trait_ident<#index_type>);
+    let trait_path = &quote!(::std::ops::#trait_ident<#index_type>);
     let input_type = &input.ident;
     let field_vec: Vec<&Field>;
     let member = match input.data {
@@ -37,7 +33,6 @@ pub fn expand(
         &field_vec,
         index_type,
         type_where_clauses,
-        import_root,
     );
 
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
