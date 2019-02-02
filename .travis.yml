@@ -22,6 +22,13 @@ matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
   # don't need
   include:
+    # Style checks
+    - env: TARGET=x86_64-unknown-linux-gnu # this is the default job
+      before_script:
+        - rustup component add clippy
+      script:
+         - cargo clippy --all -- -D clippy::all
+
     # Linux
     - env: TARGET=x86_64-unknown-linux-gnu # this is the default job
     - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true

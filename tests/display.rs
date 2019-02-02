@@ -1,4 +1,4 @@
-#![allow(dead_code, unused_imports, unused_variables)]
+#![allow(dead_code, unused_imports)]
 #[macro_use]
 extern crate derive_more;
 
@@ -16,6 +16,22 @@ struct MyInt(i32);
 struct Point2D {
     x: i32,
     y: i32,
+}
+
+#[derive(Display)]
+#[display(fmt = "{}", message)]
+struct Error {
+    message: &'static str,
+    backtrace: (),
+}
+
+impl Error {
+    fn new(message: &'static str) -> Self {
+        Self {
+            message,
+            backtrace: (),
+        }
+    }
 }
 
 #[derive(Display)]
@@ -70,6 +86,7 @@ fn check_display() {
     assert_eq!(format!("{:b}", MyInt(9)), "1001");
     assert_eq!(format!("{:o}", MyInt(9)), "11");
     assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
+    assert_eq!(Error::new("Error").to_string(), "Error");
     assert_eq!(E::Uint(2).to_string(), "2");
     assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
     #[cfg(feature = "nightly")]
