@@ -4,13 +4,14 @@ use std::collections::HashSet;
 use std::iter;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
 use utils::{
-    add_where_clauses_for_new_ident, field_idents, get_field_types_iter, named_to_vec,
-    number_idents, unnamed_to_vec,
+    add_where_clauses_for_new_ident, field_idents, get_field_types_iter, get_import_root,
+    named_to_vec, number_idents, unnamed_to_vec,
 };
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let import_root = get_import_root();
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(::std::ops::#trait_ident);
+    let trait_path = &quote!(#import_root::ops::#trait_ident);
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::new(&method_name, Span::call_site());
     let input_type = &input.ident;
@@ -42,7 +43,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);
 
-    let type_where_clauses = quote!{
+    let type_where_clauses = quote! {
         where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
     };
 

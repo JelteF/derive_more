@@ -5,11 +5,13 @@ use syn::{
     spanned::Spanned,
     Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta,
 };
+use utils::get_import_root;
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
+    let import_root = get_import_root();
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(::std::fmt::#trait_ident);
+    let trait_path = &quote!(#import_root::fmt::#trait_ident);
     let trait_attr = match trait_name {
         "Display" => "display",
         "Binary" => "binary",
@@ -37,7 +39,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         {
             #[allow(unused_variables)]
             #[inline]
-            fn fmt(&self, _derive_more_Display_formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+            fn fmt(&self, _derive_more_Display_formatter: &mut #import_root::fmt::Formatter) -> #import_root::fmt::Result {
                 match self {
                     #arms
                     _ => Ok(()) // This is needed for empty enums
@@ -109,11 +111,7 @@ impl<'a, 'b> State<'a, 'b> {
                 ident,
                 lit: Lit::Str(s),
                 ..
-            }))
-                if ident == "fmt" =>
-            {
-                s
-            }
+            })) if ident == "fmt" => s,
             _ => return Err(Error::new(list.nested[0].span(), self.get_proper_syntax())),
         };
 
@@ -125,7 +123,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let arg = match arg {
                     NestedMeta::Literal(Lit::Str(s)) => s,
                     NestedMeta::Meta(Meta::Word(i)) => {
-                        return Ok(quote_spanned!(list.span()=> #args #i,))
+                        return Ok(quote_spanned!(list.span()=> #args #i,));
                     }
                     _ => return Err(Error::new(arg.span(), self.get_proper_syntax())),
                 };
