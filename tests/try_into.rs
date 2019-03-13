@@ -7,6 +7,10 @@ extern crate derive_more;
 
 use std::convert::{TryFrom, TryInto};
 
+// Ensure that the TryFrom macro is hygenic and doesn't break when `Result` has
+// been redefined.
+type Result = ();
+
 #[derive(Clone, Copy, TryInto)]
 enum MixedInts {
     SmallInt(i32),
