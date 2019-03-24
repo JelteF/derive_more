@@ -3,7 +3,7 @@ use std::fmt::Display;
 use syn::{
     parse::{Error, Result},
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta,
+    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Type,
 };
 use utils::{add_extra_where_clauses, get_import_root};
 
@@ -235,6 +235,60 @@ impl<'a, 'b> State<'a, 'b> {
                     None, //quote!(where), // TODO
                 ))
             }
+        }
+    }
+    fn find_used_type_params_in_meta(self, fields: &Fields, meta: &Meta) -> Vec<Type> {
+        if let Fields::Unit = fields {
+            return vec![];
+        }
+
+        let type_params = self.input.generics.type_params().map(|t| t.ident).collect();
+        if type_params.is_empty() {
+            return vec![];
+        }
+
+        let list = match meta {
+            Meta::List(list) => list,
+            _ => return vec![],
+        };
+        let used_args = list
+            .nested
+            .iter()
+            .skip(1) // skip fmt = "..."
+            .filter_map(|arg| {
+                if let NestedMeta::Meta(Meta::Word(i)) = arg {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if used_args.is_empty() {
+            return vec![];
+        }
+
+        match fields {
+            Fields::Unnamed(fields) => (0..fields.unnamed.len())
+                .filter(|n| {
+                    let i = Ident::new(&format!("_{}", n), Span::call_site());
+                    used_args.contains(&i)
+                })
+                .map(|n| fields.unnamed[n])
+                .filter(|f| {
+                    // TODO: check is type parameter
+                })
+                .map(|f| f.ty)
+                .collect(),
+            Fields::Named(fields) => fields
+                .named
+                .iter()
+                .filter(|f| used_args.contains(&f.ident))
+                .filter(|f| {
+                    // TODO: check is type parameter
+                })
+                .map(|f| f.ty)
+                .collect(),
+            _ => unreachable!(),
         }
     }
 }
