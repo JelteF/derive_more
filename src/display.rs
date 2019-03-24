@@ -5,7 +5,7 @@ use syn::{
     spanned::Spanned,
     Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta,
 };
-use utils::get_import_root;
+use utils::{add_extra_where_clauses, get_import_root};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
@@ -24,15 +24,19 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         _ => unimplemented!(),
     };
 
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-    let name = &input.ident;
-
-    let arms = State {
+    let (arms, extra_where_clauses) = State {
         trait_path,
         trait_attr,
         input,
     }
-    .get_match_arms()?;
+    .get_match_arms_and_extra_where_clauses()?;
+
+    let mut generics = input.generics.clone();
+    if let Some(clauses) = extra_where_clauses {
+        generics = add_extra_where_clauses(&input.generics, clauses);
+    }
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let name = &input.ident;
 
     Ok(quote! {
         impl #impl_generics #trait_path for #name #ty_generics #where_clause
@@ -166,7 +170,7 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(quote!(#trait_path::fmt(_0, _derive_more_Display_formatter)))
         }
     }
-    fn get_match_arms(&self) -> Result<TokenStream> {
+    fn get_match_arms_and_extra_where_clauses(&self) -> Result<(TokenStream, Option<TokenStream>)> {
         match &self.input.data {
             Data::Enum(e) => {
                 if let Some(meta) = self.find_meta(&self.input.attrs)? {
@@ -181,19 +185,28 @@ impl<'a, 'b> State<'a, 'b> {
                             Ok(())
                         }
                     })?;
-                    Ok(quote_spanned!(self.input.span()=> _ => #fmt,))
+                    Ok((
+                        quote_spanned!(self.input.span()=> _ => #fmt,),
+                        None, //quote!(where), // TODO
+                    ))
                 } else {
-                    e.variants.iter().try_fold(TokenStream::new(), |arms, v| {
-                        let matcher = self.get_matcher(&v.fields);
-                        let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
-                            self.get_meta_fmt(meta)?
-                        } else {
-                            self.infer_fmt(&v.fields, &v.ident)?
-                        };
-                        let name = &self.input.ident;
-                        let v_name = &v.ident;
-                        Ok(quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,))
-                    })
+                    e.variants.iter().try_fold(
+                        (TokenStream::new(), None),
+                        |(arms, _), v| {
+                            let matcher = self.get_matcher(&v.fields);
+                            let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
+                                self.get_meta_fmt(meta)?
+                            } else {
+                                self.infer_fmt(&v.fields, &v.ident)?
+                            };
+                            let name = &self.input.ident;
+                            let v_name = &v.ident;
+                            Ok((
+                                quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,),
+                                None, //quote!(where), // TODO
+                            ))
+                        },
+                    )
                 }
             }
             Data::Struct(s) => {
@@ -204,7 +217,10 @@ impl<'a, 'b> State<'a, 'b> {
                     self.infer_fmt(&s.fields, &self.input.ident)?
                 };
                 let name = &self.input.ident;
-                Ok(quote_spanned!(self.input.span()=> #name #matcher => #fmt,))
+                Ok((
+                    quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
+                    None, //quote!(where), // TODO
+                ))
             }
             Data::Union(_) => {
                 let meta = self.find_meta(&self.input.attrs)?.ok_or_else(|| {
@@ -214,7 +230,10 @@ impl<'a, 'b> State<'a, 'b> {
                     )
                 })?;
                 let fmt = self.get_meta_fmt(meta)?;
-                Ok(quote_spanned!(self.input.span()=> _ => #fmt,))
+                Ok((
+                    quote_spanned!(self.input.span()=> _ => #fmt,),
+                    None, //quote!(where), // TODO
+                ))
             }
         }
     }
