@@ -8,8 +8,6 @@ Instead it derives `TryFrom` for each variant in the enum and thus has an
 indirect implementation of `TryInto` as recommended by the
 [docs](https://doc.rust-lang.org/core/convert/trait.TryInto.html).
 
-As of writing the `TryInto` and `TryFrom` traits are nightly only.
-
 # Example usage
 
 ```rust

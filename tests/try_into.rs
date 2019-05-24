@@ -1,5 +1,3 @@
-#![cfg(feature = "nightly")]
-#![feature(try_from)]
 #![allow(dead_code)]
 
 #[macro_use]
