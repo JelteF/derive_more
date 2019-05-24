@@ -1,7 +1,9 @@
+use std::{collections::HashSet, fmt::Display};
+
 use proc_macro2::{Ident, Span, TokenStream};
-use std::fmt::Display;
 use syn::{
     parse::{Error, Result},
+    punctuated::Pair,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Type,
 };
@@ -24,16 +26,18 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         _ => unimplemented!(),
     };
 
-    let (arms, extra_where_clauses) = State {
+    let (arms, bound_type_params) = State {
         trait_path,
         trait_attr,
         input,
     }
-    .get_match_arms_and_extra_where_clauses()?;
+    .get_match_arms_and_boud_type_params()?;
 
     let mut generics = input.generics.clone();
-    if let Some(clauses) = extra_where_clauses {
-        generics = add_extra_where_clauses(&input.generics, clauses);
+    if !bound_type_params.is_empty() {
+        let trait_path = vec![trait_path; bound_type_params.len()];
+        let where_clause = quote_spanned!(input.span()=> where #(#bound_type_params: #trait_path),*);
+        generics = add_extra_where_clauses(&input.generics, where_clause);
     }
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let name = &input.ident;
@@ -104,8 +108,8 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(meta)
         }
     }
-    fn get_meta_fmt(&self, meta: Meta) -> Result<TokenStream> {
-        let list = match &meta {
+    fn get_meta_fmt(&self, meta: &Meta) -> Result<TokenStream> {
+        let list = match meta {
             Meta::List(list) => list,
             _ => return Err(Error::new(meta.span(), self.get_proper_syntax())),
         };
@@ -170,11 +174,11 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(quote!(#trait_path::fmt(_0, _derive_more_Display_formatter)))
         }
     }
-    fn get_match_arms_and_extra_where_clauses(&self) -> Result<(TokenStream, Option<TokenStream>)> {
+    fn get_match_arms_and_boud_type_params(&self) -> Result<(TokenStream, HashSet<Type>)> {
         match &self.input.data {
             Data::Enum(e) => {
                 if let Some(meta) = self.find_meta(&self.input.attrs)? {
-                    let fmt = self.get_meta_fmt(meta)?;
+                    let fmt = self.get_meta_fmt(&meta)?;
                     e.variants.iter().try_for_each(|v| {
                         if let Some(meta) = self.find_meta(&v.attrs)? {
                             Err(Error::new(
@@ -187,15 +191,15 @@ impl<'a, 'b> State<'a, 'b> {
                     })?;
                     Ok((
                         quote_spanned!(self.input.span()=> _ => #fmt,),
-                        None, //quote!(where), // TODO
+                        HashSet::new(), // TODO
                     ))
                 } else {
                     e.variants.iter().try_fold(
-                        (TokenStream::new(), None),
-                        |(arms, _), v| {
+                        (TokenStream::new(), HashSet::new()),
+                        |(arms, bound_type_params), v| {
                             let matcher = self.get_matcher(&v.fields);
                             let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
-                                self.get_meta_fmt(meta)?
+                                self.get_meta_fmt(&meta)?
                             } else {
                                 self.infer_fmt(&v.fields, &v.ident)?
                             };
@@ -203,7 +207,7 @@ impl<'a, 'b> State<'a, 'b> {
                             let v_name = &v.ident;
                             Ok((
                                 quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,),
-                                None, //quote!(where), // TODO
+                                bound_type_params, // TODO
                             ))
                         },
                     )
@@ -211,15 +215,17 @@ impl<'a, 'b> State<'a, 'b> {
             }
             Data::Struct(s) => {
                 let matcher = self.get_matcher(&s.fields);
-                let fmt = if let Some(meta) = self.find_meta(&self.input.attrs)? {
-                    self.get_meta_fmt(meta)?
-                } else {
-                    self.infer_fmt(&s.fields, &self.input.ident)?
-                };
                 let name = &self.input.ident;
+
+                let (fmt, bound_type_params) = if let Some(meta) = self.find_meta(&self.input.attrs)? {
+                    (self.get_meta_fmt(&meta)?, self.find_used_type_params_in_meta(&s.fields, &meta))
+                } else {
+                    (self.infer_fmt(&s.fields, name)?,  HashSet::new()) // TODO
+                };
+
                 Ok((
                     quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
-                    None, //quote!(where), // TODO
+                    bound_type_params,
                 ))
             }
             Data::Union(_) => {
@@ -229,42 +235,42 @@ impl<'a, 'b> State<'a, 'b> {
                         "Can not automatically infer format for unions",
                     )
                 })?;
-                let fmt = self.get_meta_fmt(meta)?;
+                let fmt = self.get_meta_fmt(&meta)?;
                 Ok((
                     quote_spanned!(self.input.span()=> _ => #fmt,),
-                    None, //quote!(where), // TODO
+                    HashSet::new(), // TODO
                 ))
             }
         }
     }
-    fn find_used_type_params_in_meta(self, fields: &Fields, meta: &Meta) -> Vec<Type> {
+    fn find_used_type_params_in_meta(&self, fields: &Fields, meta: &Meta) -> HashSet<Type> {
         if let Fields::Unit = fields {
-            return vec![];
+            return HashSet::new();
         }
 
-        let type_params = self.input.generics.type_params().map(|t| t.ident).collect();
+        let type_params: HashSet<Ident> = self.input.generics.type_params().map(|t| t.ident.clone()).collect();
         if type_params.is_empty() {
-            return vec![];
+            return HashSet::new();
         }
 
         let list = match meta {
             Meta::List(list) => list,
-            _ => return vec![],
+            _ => return HashSet::new(),
         };
-        let used_args = list
+        let used_args: HashSet<Ident> = list
             .nested
             .iter()
             .skip(1) // skip fmt = "..."
             .filter_map(|arg| {
-                if let NestedMeta::Meta(Meta::Word(i)) = arg {
-                    Some(i)
+                if let NestedMeta::Meta(Meta::Word(ref i)) = arg {
+                    Some(i.clone())
                 } else {
                     None
                 }
             })
             .collect();
         if used_args.is_empty() {
-            return vec![];
+            return HashSet::new();
         }
 
         match fields {
@@ -273,20 +279,33 @@ impl<'a, 'b> State<'a, 'b> {
                     let i = Ident::new(&format!("_{}", n), Span::call_site());
                     used_args.contains(&i)
                 })
-                .map(|n| fields.unnamed[n])
-                .filter(|f| {
+                .map(|n| &fields.unnamed[n])
+                //.filter(|f| {
+                //    f.ty
                     // TODO: check is type parameter
-                })
-                .map(|f| f.ty)
+                //})
+                .map(|f| f.ty.clone())
                 .collect(),
             Fields::Named(fields) => fields
                 .named
                 .iter()
-                .filter(|f| used_args.contains(&f.ident))
-                .filter(|f| {
-                    // TODO: check is type parameter
+                .filter(|f| f.ident.is_some() && used_args.contains(f.ident.as_ref().unwrap()))
+                .filter_map(|f| {
+                    if let Type::Path(ref ty) = f.ty {
+                        //panic!("ty.path.segments.first(): {:?}", ty.path.segments);
+                        if let Some(t) = match ty.path.segments.first() {
+                            Some(Pair::Punctuated(ref t, _)) => Some(t),
+                            Some(Pair::End(ref t)) => Some(t),
+                            _ => None,
+                        } {
+                            if type_params.contains(&t.ident) {
+                                return Some(f.ty.clone());
+                            }
+                        }
+                    }
+                    None
                 })
-                .map(|f| f.ty)
+                //.map(|f| f.ty)
                 .collect(),
             _ => unreachable!(),
         }
