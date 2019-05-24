@@ -90,7 +90,7 @@ impl<'a, 'b> State<'a, 'b> {
     fn find_meta(&self, attrs: &[Attribute]) -> Result<Option<Meta>> {
         let mut it = attrs
             .iter()
-            .filter_map(|a| a.interpret_meta())
+            .filter_map(Attribute::interpret_meta)
             .filter(|m| m.name() == self.trait_attr);
 
         let meta = it.next();
