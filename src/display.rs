@@ -25,13 +25,19 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         "Pointer" => "pointer",
         _ => unimplemented!(),
     };
+    let type_params = input
+        .generics
+        .type_params()
+        .map(|t| t.ident.clone())
+        .collect();
 
     let (arms, bound_type_params) = State {
         trait_path,
         trait_attr,
         input,
+        type_params,
     }
-    .get_match_arms_and_boud_type_params()?;
+    .get_match_arms_and_bound_type_params()?;
 
     let mut generics = input.generics.clone();
     if !bound_type_params.is_empty() {
@@ -62,6 +68,7 @@ struct State<'a, 'b> {
     trait_path: &'b TokenStream,
     trait_attr: &'static str,
     input: &'a DeriveInput,
+    type_params: HashSet<Ident>,
 }
 
 impl<'a, 'b> State<'a, 'b> {
@@ -136,10 +143,7 @@ impl<'a, 'b> State<'a, 'b> {
                     }
                     _ => return Err(Error::new(arg.span(), self.get_proper_syntax())),
                 };
-                let arg: TokenStream = match arg.parse() {
-                    Ok(arg) => arg,
-                    Err(e) => return Err(Error::new(arg.span(), e)),
-                };
+                let arg: TokenStream = arg.parse().map_err(|e| Error::new(arg.span(), e))?;
                 Ok(quote_spanned!(list.span()=> #args #arg,))
             })?;
 
@@ -175,11 +179,12 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(quote!(#trait_path::fmt(_0, _derive_more_Display_formatter)))
         }
     }
-    fn get_match_arms_and_boud_type_params(&self) -> Result<(TokenStream, HashSet<Type>)> {
+    fn get_match_arms_and_bound_type_params(&self) -> Result<(TokenStream, HashSet<Type>)> {
         match &self.input.data {
             Data::Enum(e) => {
                 if let Some(meta) = self.find_meta(&self.input.attrs)? {
                     let fmt = self.get_meta_fmt(&meta)?;
+
                     e.variants.iter().try_for_each(|v| {
                         if let Some(meta) = self.find_meta(&v.attrs)? {
                             Err(Error::new(
@@ -190,9 +195,10 @@ impl<'a, 'b> State<'a, 'b> {
                             Ok(())
                         }
                     })?;
+
                     Ok((
                         quote_spanned!(self.input.span()=> _ => #fmt,),
-                        HashSet::new(), // TODO
+                        HashSet::new(),
                     ))
                 } else {
                     e.variants.iter().try_fold(
@@ -201,11 +207,17 @@ impl<'a, 'b> State<'a, 'b> {
                             let matcher = self.get_matcher(&v.fields);
                             let name = &self.input.ident;
                             let v_name = &v.ident;
+                            let fmt: TokenStream;
+                            let mut bound_type_params = HashSet::new();
 
-                            let (fmt, bound_type_params) = if let Some(meta) = self.find_meta(&v.attrs)? {
-                                (self.get_meta_fmt(&meta)?, self.find_used_type_params_in_meta(&v.fields, &meta))
+                            if let Some(meta) = self.find_meta(&v.attrs)? {
+                                fmt = self.get_meta_fmt(&meta)?;
+                                if !self.type_params.is_empty() {
+                                    bound_type_params = self.find_used_type_params_in_meta(&v.fields, &meta);
+                                }
                             } else {
-                                (self.infer_fmt(&v.fields, v_name)?, HashSet::new()) // TODO
+                                fmt = self.infer_fmt(&v.fields, v_name)?;
+                                // TODO: bound_type_params?
                             };
                             all_bound_type_params.extend(bound_type_params);
 
@@ -220,16 +232,18 @@ impl<'a, 'b> State<'a, 'b> {
             Data::Struct(s) => {
                 let matcher = self.get_matcher(&s.fields);
                 let name = &self.input.ident;
+                let fmt: TokenStream;
+                let mut bound_type_params = HashSet::new();
 
-                let (fmt, bound_type_params) =
-                    if let Some(meta) = self.find_meta(&self.input.attrs)? {
-                        (
-                            self.get_meta_fmt(&meta)?,
-                            self.find_used_type_params_in_meta(&s.fields, &meta),
-                        )
-                    } else {
-                        (self.infer_fmt(&s.fields, name)?, HashSet::new()) // TODO
-                    };
+                if let Some(meta) = self.find_meta(&self.input.attrs)? {
+                    fmt = self.get_meta_fmt(&meta)?;
+                    if !self.type_params.is_empty() {
+                        bound_type_params = self.find_used_type_params_in_meta(&s.fields, &meta);
+                    }
+                } else {
+                    fmt = self.infer_fmt(&s.fields, name)?;
+                    // TODO: bound_type_params?
+                }
 
                 Ok((
                     quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
@@ -244,25 +258,16 @@ impl<'a, 'b> State<'a, 'b> {
                     )
                 })?;
                 let fmt = self.get_meta_fmt(&meta)?;
+
                 Ok((
                     quote_spanned!(self.input.span()=> _ => #fmt,),
-                    HashSet::new(), // TODO
+                    HashSet::new(),
                 ))
             }
         }
     }
     fn find_used_type_params_in_meta(&self, fields: &Fields, meta: &Meta) -> HashSet<Type> {
         if let Fields::Unit = fields {
-            return HashSet::new();
-        }
-
-        let type_params: HashSet<Ident> = self
-            .input
-            .generics
-            .type_params()
-            .map(|t| t.ident.clone())
-            .collect();
-        if type_params.is_empty() {
             return HashSet::new();
         }
 
@@ -282,10 +287,12 @@ impl<'a, 'b> State<'a, 'b> {
                 _ => None,
             })
             .collect();
+        // TODO: filter used_args by real use in the fmt string (trait dependent)
         if used_args.is_empty() {
             return HashSet::new();
         }
 
+        // TODO: correctly work with non-trivial args usages like "_0.display()"
         let used_fields: HashSet<&syn::Field> = match fields {
             Fields::Unnamed(fields) => (0..fields.unnamed.len())
                 .filter(|n| {
@@ -306,11 +313,12 @@ impl<'a, 'b> State<'a, 'b> {
             .filter_map(|f| {
                 if let Type::Path(ref ty) = f.ty {
                     if let Some(t) = match ty.path.segments.first() {
+                        // TODO: test Punctuated variant
                         Some(Pair::Punctuated(ref t, _)) => Some(t),
                         Some(Pair::End(ref t)) => Some(t),
                         _ => None,
                     } {
-                        if type_params.contains(&t.ident) {
+                        if self.type_params.contains(&t.ident) {
                             return Some(f.ty.clone());
                         }
                     }
