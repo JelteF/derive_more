@@ -36,7 +36,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let mut generics = input.generics.clone();
     if !bound_type_params.is_empty() {
         let trait_path = vec![trait_path; bound_type_params.len()];
-        let where_clause = quote_spanned!(input.span()=> where #(#bound_type_params: #trait_path),*);
+        let where_clause =
+            quote_spanned!(input.span()=> where #(#bound_type_params: #trait_path),*);
         generics = add_extra_where_clauses(&input.generics, where_clause);
     }
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -196,18 +197,21 @@ impl<'a, 'b> State<'a, 'b> {
                 } else {
                     e.variants.iter().try_fold(
                         (TokenStream::new(), HashSet::new()),
-                        |(arms, bound_type_params), v| {
+                        |(arms, mut all_bound_type_params), v| {
                             let matcher = self.get_matcher(&v.fields);
-                            let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
-                                self.get_meta_fmt(&meta)?
-                            } else {
-                                self.infer_fmt(&v.fields, &v.ident)?
-                            };
                             let name = &self.input.ident;
                             let v_name = &v.ident;
+
+                            let (fmt, bound_type_params) = if let Some(meta) = self.find_meta(&v.attrs)? {
+                                (self.get_meta_fmt(&meta)?, self.find_used_type_params_in_meta(&v.fields, &meta))
+                            } else {
+                                (self.infer_fmt(&v.fields, v_name)?, HashSet::new()) // TODO
+                            };
+                            all_bound_type_params.extend(bound_type_params);
+
                             Ok((
                                 quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,),
-                                bound_type_params, // TODO
+                                all_bound_type_params,
                             ))
                         },
                     )
@@ -217,11 +221,15 @@ impl<'a, 'b> State<'a, 'b> {
                 let matcher = self.get_matcher(&s.fields);
                 let name = &self.input.ident;
 
-                let (fmt, bound_type_params) = if let Some(meta) = self.find_meta(&self.input.attrs)? {
-                    (self.get_meta_fmt(&meta)?, self.find_used_type_params_in_meta(&s.fields, &meta))
-                } else {
-                    (self.infer_fmt(&s.fields, name)?,  HashSet::new()) // TODO
-                };
+                let (fmt, bound_type_params) =
+                    if let Some(meta) = self.find_meta(&self.input.attrs)? {
+                        (
+                            self.get_meta_fmt(&meta)?,
+                            self.find_used_type_params_in_meta(&s.fields, &meta),
+                        )
+                    } else {
+                        (self.infer_fmt(&s.fields, name)?, HashSet::new()) // TODO
+                    };
 
                 Ok((
                     quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
@@ -248,7 +256,12 @@ impl<'a, 'b> State<'a, 'b> {
             return HashSet::new();
         }
 
-        let type_params: HashSet<Ident> = self.input.generics.type_params().map(|t| t.ident.clone()).collect();
+        let type_params: HashSet<Ident> = self
+            .input
+            .generics
+            .type_params()
+            .map(|t| t.ident.clone())
+            .collect();
         if type_params.is_empty() {
             return HashSet::new();
         }
@@ -261,53 +274,49 @@ impl<'a, 'b> State<'a, 'b> {
             .nested
             .iter()
             .skip(1) // skip fmt = "..."
-            .filter_map(|arg| {
-                if let NestedMeta::Meta(Meta::Word(ref i)) = arg {
-                    Some(i.clone())
-                } else {
-                    None
+            .filter_map(|arg| match arg {
+                NestedMeta::Literal(Lit::Str(ref s)) => {
+                    Some(Ident::new(&s.value(), Span::call_site()))
                 }
+                NestedMeta::Meta(Meta::Word(ref i)) => Some(i.clone()),
+                _ => None,
             })
             .collect();
         if used_args.is_empty() {
             return HashSet::new();
         }
 
-        match fields {
+        let used_fields: HashSet<&syn::Field> = match fields {
             Fields::Unnamed(fields) => (0..fields.unnamed.len())
                 .filter(|n| {
                     let i = Ident::new(&format!("_{}", n), Span::call_site());
                     used_args.contains(&i)
                 })
                 .map(|n| &fields.unnamed[n])
-                //.filter(|f| {
-                //    f.ty
-                    // TODO: check is type parameter
-                //})
-                .map(|f| f.ty.clone())
                 .collect(),
             Fields::Named(fields) => fields
                 .named
                 .iter()
                 .filter(|f| f.ident.is_some() && used_args.contains(f.ident.as_ref().unwrap()))
-                .filter_map(|f| {
-                    if let Type::Path(ref ty) = f.ty {
-                        //panic!("ty.path.segments.first(): {:?}", ty.path.segments);
-                        if let Some(t) = match ty.path.segments.first() {
-                            Some(Pair::Punctuated(ref t, _)) => Some(t),
-                            Some(Pair::End(ref t)) => Some(t),
-                            _ => None,
-                        } {
-                            if type_params.contains(&t.ident) {
-                                return Some(f.ty.clone());
-                            }
-                        }
-                    }
-                    None
-                })
-                //.map(|f| f.ty)
                 .collect(),
             _ => unreachable!(),
-        }
+        };
+        used_fields
+            .into_iter()
+            .filter_map(|f| {
+                if let Type::Path(ref ty) = f.ty {
+                    if let Some(t) = match ty.path.segments.first() {
+                        Some(Pair::Punctuated(ref t, _)) => Some(t),
+                        Some(Pair::End(ref t)) => Some(t),
+                        _ => None,
+                    } {
+                        if type_params.contains(&t.ident) {
+                            return Some(f.ty.clone());
+                        }
+                    }
+                }
+                None
+            })
+            .collect()
     }
 }

@@ -100,3 +100,36 @@ fn check_display() {
     assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
     assert_eq!(Generic(()).to_string(), "Generic");
 }
+
+mod generic {
+    #[derive(Display)]
+    #[display(fmt = "Generic {}", field)]
+    struct NamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn named_generic_struct() {
+        assert_eq!(NamedGenericStruct{ field: 1 }.to_string(), "Generic 1");
+    }
+
+    #[derive(Display)]
+    #[display(fmt = "Generic {}", "_0")]
+    struct UnnamedGenericStruct<T>(T);
+    #[test]
+    fn unnamed_generic_struct() {
+        assert_eq!(UnnamedGenericStruct(2).to_string(), "Generic 2");
+    }
+
+    #[derive(Display)]
+    enum GenericEnum<A, B> {
+        #[display(fmt = "Generic::A {}", field)]
+        A { field: A },
+        #[display(fmt = "Generic::B {}", "_0")]
+        B(B),
+    }
+    #[test]
+    fn generic_enum() {
+        assert_eq!(GenericEnum::A::<_, u8> { field: 1 }.to_string(), "Generic::A 1");
+        assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Generic::B 2");
+    }
+}
