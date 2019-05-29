@@ -62,7 +62,7 @@
 //! 1. [`From`]
 //! 2. [`Into`]
 //! 3. [`FromStr`]
-//! 4. [`TryInto`] (nightly-only as of writing)
+//! 4. [`TryInto`]
 //!
 //! ### Formatting traits
 //! These traits are used for converting a struct to a string in different ways.
