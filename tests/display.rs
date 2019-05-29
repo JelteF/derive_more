@@ -113,11 +113,27 @@ mod generic {
     }
 
     #[derive(Display)]
+    struct AutoNamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn auto_named_generic_struct() {
+        assert_eq!(AutoNamedGenericStruct { field: 1 }.to_string(), "1");
+    }
+
+    #[derive(Display)]
     #[display(fmt = "Generic {}", "_0")]
     struct UnnamedGenericStruct<T>(T);
     #[test]
     fn unnamed_generic_struct() {
         assert_eq!(UnnamedGenericStruct(2).to_string(), "Generic 2");
+    }
+
+    #[derive(Display)]
+    struct AutoUnnamedGenericStruct<T>(T);
+    #[test]
+    fn auto_unnamed_generic_struct() {
+        assert_eq!(AutoUnnamedGenericStruct(2).to_string(), "2");
     }
 
     #[derive(Display)]
@@ -131,6 +147,17 @@ mod generic {
     fn generic_enum() {
         assert_eq!(GenericEnum::A::<_, u8> { field: 1 }.to_string(), "Gen::A 1");
         assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Gen::B 2");
+    }
+
+    #[derive(Display)]
+    enum AutoGenericEnum<A, B> {
+        A { field: A },
+        B(B),
+    }
+    #[test]
+    fn auto_generic_enum() {
+        assert_eq!(AutoGenericEnum::A::<_, u8> { field: 1 }.to_string(), "1");
+        assert_eq!(AutoGenericEnum::B::<u8, _>(2).to_string(), "2");
     }
 
     #[derive(Display)]

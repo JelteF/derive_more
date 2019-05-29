@@ -226,14 +226,14 @@ impl<'a, 'b> State<'a, 'b> {
                             let name = &self.input.ident;
                             let v_name = &v.ident;
                             let fmt: TokenStream;
-                            let mut bounds = HashMap::new();
+                            let bounds: HashMap<_, _>;
 
                             if let Some(meta) = self.find_meta(&v.attrs)? {
                                 fmt = self.get_meta_fmt(&meta)?;
                                 bounds = self.get_used_type_params_bounds(&v.fields, &meta);
                             } else {
                                 fmt = self.infer_fmt(&v.fields, v_name)?;
-                                // TODO: bounds?
+                                bounds = self.infer_type_params_bounds(&v.fields);
                             };
                             all_bounds = bounds.into_iter()
                                 .fold(all_bounds, |mut bounds, (ty, trait_names)| {
@@ -253,14 +253,14 @@ impl<'a, 'b> State<'a, 'b> {
                 let matcher = self.get_matcher(&s.fields);
                 let name = &self.input.ident;
                 let fmt: TokenStream;
-                let mut bounds = HashMap::new();
+                let bounds: HashMap<_, _>;
 
                 if let Some(meta) = self.find_meta(&self.input.attrs)? {
                     fmt = self.get_meta_fmt(&meta)?;
                     bounds = self.get_used_type_params_bounds(&s.fields, &meta);
                 } else {
                     fmt = self.infer_fmt(&s.fields, name)?;
-                    // TODO: bounds?
+                    bounds = self.infer_type_params_bounds(&s.fields);
                 }
 
                 Ok((
@@ -297,22 +297,14 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .enumerate()
             .filter_map(|(i, field)| {
-                if let Type::Path(ref ty) = field.ty {
-                    if let Some(t) = match ty.path.segments.first() {
-                        // TODO: test Punctuated variant
-                        Some(Pair::Punctuated(ref t, _)) => Some(t),
-                        Some(Pair::End(ref t)) => Some(t),
-                        _ => None,
-                    } {
-                        if self.type_params.contains(&t.ident) {
-                            let ident = field.ident.clone().unwrap_or_else(|| {
-                                Ident::new(&format!("_{}", i), Span::call_site())
-                            });
-                            return Some((ident, field.ty.clone()));
-                        }
-                    }
+                if !self.has_type_param_in(field) {
+                    return None;
                 }
-                None
+                let ident = field
+                    .ident
+                    .clone()
+                    .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()));
+                Some((ident, field.ty.clone()))
             })
             .collect();
         if fields_type_params.is_empty() {
@@ -324,7 +316,6 @@ impl<'a, 'b> State<'a, 'b> {
             // This one has been checked already in get_meta_fmt() method.
             _ => unreachable!(),
         };
-        // TODO: correctly work with non-trivial args usages like "_0.display()"
         let fmt_args: Vec<Ident> = list
             .nested
             .iter()
@@ -364,6 +355,51 @@ impl<'a, 'b> State<'a, 'b> {
                 bounds
             },
         )
+    }
+    fn infer_type_params_bounds(&self, fields: &Fields) -> HashMap<Type, HashSet<&'static str>> {
+        if self.type_params.is_empty() {
+            return HashMap::new();
+        }
+        if let Fields::Unit = fields {
+            return HashMap::new();
+        }
+        // infer_fmt() uses only first field.
+        fields
+            .iter()
+            .take(1)
+            .filter_map(|field| {
+                if !self.has_type_param_in(field) {
+                    return None;
+                }
+                Some((
+                    field.ty.clone(),
+                    [match self.trait_attr {
+                        "display" => "Display",
+                        "binary" => "Binary",
+                        "octal" => "Octal",
+                        "lower_hex" => "LowerHex",
+                        "upper_hex" => "UpperHex",
+                        "lower_exp" => "LowerExp",
+                        "upper_exp" => "UpperExp",
+                        "pointer" => "Pointer",
+                        _ => unreachable!(),
+                    }]
+                    .iter()
+                    .cloned()
+                    .collect(),
+                ))
+            })
+            .collect()
+    }
+    fn has_type_param_in(&self, field: &syn::Field) -> bool {
+        if let Type::Path(ref ty) = field.ty {
+            return match ty.path.segments.first() {
+                Some(Pair::Punctuated(ref t, _)) => self.type_params.contains(&t.ident),
+                Some(Pair::End(ref t)) => self.type_params.contains(&t.ident),
+                _ => false,
+            };
+        }
+        false
     }
 }
 
