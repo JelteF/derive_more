@@ -43,8 +43,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
     }
     .get_match_arms_and_extra_bounds()?;
 
-    let mut generics = input.generics.clone();
-    if !bounds.is_empty() {
+    let generics = if !bounds.is_empty() {
         let bounds: Vec<_> = bounds
             .into_iter()
             .map(|(ty, trait_names)| {
@@ -60,8 +59,10 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
             })
             .collect();
         let where_clause = quote_spanned!(input.span()=> where #(#bounds),*);
-        generics = add_extra_where_clauses(&input.generics, where_clause);
-    }
+        add_extra_where_clauses(&input.generics, where_clause)
+    } else {
+        input.generics.clone()
+    };
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let name = &input.ident;
 
