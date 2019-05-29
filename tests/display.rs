@@ -109,7 +109,7 @@ mod generic {
     }
     #[test]
     fn named_generic_struct() {
-        assert_eq!(NamedGenericStruct{ field: 1 }.to_string(), "Generic 1");
+        assert_eq!(NamedGenericStruct { field: 1 }.to_string(), "Generic 1");
     }
 
     #[derive(Display)]
@@ -122,14 +122,35 @@ mod generic {
 
     #[derive(Display)]
     enum GenericEnum<A, B> {
-        #[display(fmt = "Generic::A {}", field)]
+        #[display(fmt = "Gen::A {}", field)]
         A { field: A },
-        #[display(fmt = "Generic::B {}", "_0")]
+        #[display(fmt = "Gen::B {}", "_0")]
         B(B),
     }
     #[test]
     fn generic_enum() {
-        assert_eq!(GenericEnum::A::<_, u8> { field: 1 }.to_string(), "Generic::A 1");
-        assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Generic::B 2");
+        assert_eq!(GenericEnum::A::<_, u8> { field: 1 }.to_string(), "Gen::A 1");
+        assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Gen::B 2");
+    }
+
+    #[derive(Display)]
+    #[display(fmt = "{} {} <-> {0:o} {1:#x} <-> {0:?} {1:X?}", a, b)]
+    struct MultiTraitNamedGenericStruct<A, B> {
+        a: A,
+        b: B,
+    }
+    #[test]
+    fn multi_trait_named_generic_struct() {
+        let s = MultiTraitNamedGenericStruct { a: 8u8, b: 255 };
+        assert_eq!(s.to_string(), "8 255 <-> 10 0xff <-> 8 FF");
+    }
+
+    #[derive(Display)]
+    #[display(fmt = "{} {} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", "_0", "_1")]
+    struct MultiTraitUnnamedGenericStruct<A, B>(A, B);
+    #[test]
+    fn multi_trait_unnamed_generic_struct() {
+        let s = MultiTraitUnnamedGenericStruct(8u8, 255);
+        assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
     }
 }
