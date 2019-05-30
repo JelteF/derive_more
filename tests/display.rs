@@ -180,4 +180,13 @@ mod generic {
         let s = MultiTraitUnnamedGenericStruct(8u8, 255);
         assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
     }
+
+    #[derive(Display)]
+    #[display(fmt = "{}", "3 * 4")]
+    struct UnusedGenericStruct<T>(T);
+    #[test]
+    fn unused_generic_struct() {
+        let s = UnusedGenericStruct(());
+        assert_eq!(s.to_string(), "12");
+    }
 }

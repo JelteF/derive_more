@@ -317,15 +317,16 @@ impl<'a, 'b> State<'a, 'b> {
             // This one has been checked already in get_meta_fmt() method.
             _ => unreachable!(),
         };
-        let fmt_args: Vec<Ident> = list
+        let fmt_args: HashMap<_, _> = list
             .nested
             .iter()
             .skip(1) // skip fmt = "..."
-            .filter_map(|arg| match arg {
+            .enumerate()
+            .filter_map(|(i, arg)| match arg {
                 NestedMeta::Literal(Lit::Str(ref s)) => {
-                    Some(Ident::new(&s.value(), Span::call_site()))
+                    syn::parse_str(&s.value()).ok().map(|id| (i, id))
                 }
-                NestedMeta::Meta(Meta::Word(ref i)) => Some(i.clone()),
+                NestedMeta::Meta(Meta::Word(ref id)) => Some((i, id.clone())),
                 // This one has been checked already in get_meta_fmt() method.
                 _ => unreachable!(),
             })
@@ -346,12 +347,13 @@ impl<'a, 'b> State<'a, 'b> {
         Placeholder::parse_fmt_string(&fmt_string).into_iter().fold(
             HashMap::new(),
             |mut bounds, pl| {
-                let arg = &fmt_args[pl.position];
-                if fields_type_params.contains_key(arg) {
-                    bounds
-                        .entry(fields_type_params[arg].clone())
-                        .or_insert_with(HashSet::new)
-                        .insert(pl.trait_name);
+                if let Some(arg) = fmt_args.get(&pl.position) {
+                    if fields_type_params.contains_key(arg) {
+                        bounds
+                            .entry(fields_type_params[arg].clone())
+                            .or_insert_with(HashSet::new)
+                            .insert(pl.trait_name);
+                    }
                 }
                 bounds
             },
