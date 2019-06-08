@@ -32,7 +32,9 @@ pub fn field_idents<'a>(fields: &'a [&'a Field]) -> Vec<&'a Ident> {
         .collect()
 }
 
-pub fn get_field_types_iter<'a>(fields: &'a [&'a Field]) -> Box<Iterator<Item = &'a Type> + 'a> {
+pub fn get_field_types_iter<'a>(
+    fields: &'a [&'a Field],
+) -> Box<dyn Iterator<Item = &'a Type> + 'a> {
     Box::new(fields.iter().map(|f| &f.ty))
 }
 
