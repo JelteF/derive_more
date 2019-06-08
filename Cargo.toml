@@ -25,9 +25,11 @@ name = "derive_more"
 proc-macro = true
 
 [dependencies]
+lazy_static = "1.3"
+proc-macro2 = "0.4"
 quote = "0.6"
-syn = { version = "0.15", features = ['extra-traits'] }
-proc-macro2 = "0.4.19"
+regex = "1"
+syn = { version = "0.15", features = ["extra-traits"] }
 
 [build-dependencies]
 rustc_version = "0.2"
