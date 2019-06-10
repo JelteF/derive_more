@@ -21,7 +21,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
         _ => panic!("Only structs can derive a constructor"),
     };
     let original_types = &get_field_types(&fields);
-    quote!{
+    quote! {
         #[allow(missing_docs)]
         impl#impl_generics #input_type#ty_generics #where_clause {
             #[inline]

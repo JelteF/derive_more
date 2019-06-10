@@ -25,7 +25,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         _ => panic_one_field(trait_name),
     };
     let field_type = &field_vec[0].ty;
-    let type_where_clauses = quote!{
+    let type_where_clauses = quote! {
         where #field_type: #trait_path
     };
 
@@ -40,7 +40,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let (_, ty_generics, _) = input.generics.split_for_impl();
     // let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let casted_trait = &quote!(<#field_type as #trait_path>);
-    quote!{
+    quote! {
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
             #[inline]
