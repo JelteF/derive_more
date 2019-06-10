@@ -72,6 +72,24 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
             #[allow(unused_variables)]
             #[inline]
             fn fmt(&self, _derive_more_Display_formatter: &mut #import_root::fmt::Formatter) -> #import_root::fmt::Result {
+                use std::fmt::{Display, Formatter, Result};
+                struct _derive_more_DisplayAs<F>(F)
+                where
+                    F: Fn(&mut Formatter) -> Result;
+
+                const _derive_more_DisplayAs_impl: () = {
+                    use std::fmt::{Display, Formatter, Result};
+
+                    impl <F> Display for _derive_more_DisplayAs<F>
+                    where
+                        F: Fn(&mut Formatter) -> Result
+                    {
+                        fn fmt(&self, f: &mut Formatter) -> Result {
+                            (self.0)(f)
+                        }
+                    }
+                };
+
                 match self {
                     #arms
                     _ => Ok(()) // This is needed for empty enums
@@ -88,13 +106,26 @@ struct State<'a, 'b> {
     type_params: HashSet<Ident>,
 }
 
+enum Format {
+    Fmt(TokenStream),
+    Affix(TokenStream),
+}
+
 impl<'a, 'b> State<'a, 'b> {
-    fn get_proper_syntax(&self) -> impl Display {
+    fn get_proper_fmt_syntax(&self) -> impl Display {
         format!(
             r#"Proper syntax: #[{}(fmt = "My format", "arg1", "arg2")]"#,
             self.trait_attr
         )
     }
+
+    fn get_proper_affix_syntax(&self) -> impl Display {
+        format!(
+            r#"Proper syntax: #[{}(affix = "My enum prefix for {{}} and then a suffix")]"#,
+            self.trait_attr
+        )
+    }
+
     fn get_matcher(&self, fields: &Fields) -> TokenStream {
         match fields {
             Fields::Unit => TokenStream::new(),
@@ -133,38 +164,77 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(meta)
         }
     }
-    fn get_meta_fmt(&self, meta: &Meta) -> Result<TokenStream> {
+    fn get_meta_fmt(&self, meta: &Meta) -> Result<Format> {
         let list = match meta {
             Meta::List(list) => list,
-            _ => return Err(Error::new(meta.span(), self.get_proper_syntax())),
+            _ => {
+                return Err(Error::new(
+                    meta.span(),
+                    // TODO: Fix this help to include `affix` is this is an `enum`
+                    self.get_proper_fmt_syntax(),
+                ));
+            }
         };
 
-        let fmt = match &list.nested[0] {
+        match &list.nested[0] {
             NestedMeta::Meta(Meta::NameValue(MetaNameValue {
                 ident,
-                lit: Lit::Str(s),
+                lit: Lit::Str(fmt),
                 ..
-            })) if ident == "fmt" => s,
-            _ => return Err(Error::new(list.nested[0].span(), self.get_proper_syntax())),
-        };
+            })) => match ident {
+                op if op == "fmt" => {
+                    let args = list
+                        .nested
+                        .iter()
+                        .skip(1) // skip fmt = "..."
+                        .try_fold(TokenStream::new(), |args, arg| {
+                            let arg = match arg {
+                                NestedMeta::Literal(Lit::Str(s)) => s,
+                                NestedMeta::Meta(Meta::Word(i)) => {
+                                    return Ok(quote_spanned!(list.span()=> #args #i,));
+                                }
+                                _ => {
+                                    return Err(Error::new(
+                                        arg.span(),
+                                        self.get_proper_fmt_syntax(),
+                                    ))
+                                }
+                            };
+                            let arg: TokenStream =
+                                arg.parse().map_err(|e| Error::new(arg.span(), e))?;
+                            Ok(quote_spanned!(list.span()=> #args #arg,))
+                        })?;
 
-        let args = list
-            .nested
-            .iter()
-            .skip(1) // skip fmt = "..."
-            .try_fold(TokenStream::new(), |args, arg| {
-                let arg = match arg {
-                    NestedMeta::Literal(Lit::Str(s)) => s,
-                    NestedMeta::Meta(Meta::Word(i)) => {
-                        return Ok(quote_spanned!(list.span()=> #args #i,));
+                    Ok(Format::Fmt(
+                        quote_spanned!(meta.span()=> _derive_more_DisplayAs(|f| write!(f, #fmt, #args))),
+                    ))
+                }
+                op if op == "affix" => {
+                    if list.nested.iter().skip(1).count() != 0 {
+                        return Err(Error::new(
+                            list.nested[1].span(),
+                            "`affix` formatting requires a single `fmt` argument",
+                        ));
                     }
-                    _ => return Err(Error::new(arg.span(), self.get_proper_syntax())),
-                };
-                let arg: TokenStream = arg.parse().map_err(|e| Error::new(arg.span(), e))?;
-                Ok(quote_spanned!(list.span()=> #args #arg,))
-            })?;
-
-        Ok(quote_spanned!(meta.span()=> write!(_derive_more_Display_formatter, #fmt, #args)))
+                    // TODO: Check for a single `Display` group?
+                    Ok(Format::Affix(quote_spanned!(fmt.span()=> #fmt)))
+                }
+                // TODO: Fix this help to include `affix` is this is an `enum`
+                _ => {
+                    return Err(Error::new(
+                        list.nested[0].span(),
+                        self.get_proper_fmt_syntax(),
+                    ))
+                }
+            },
+            // TODO: Fix this help to include `affix` is this is an `enum`
+            _ => {
+                return Err(Error::new(
+                    list.nested[0].span(),
+                    self.get_proper_fmt_syntax(),
+                ))
+            }
+        }
     }
     fn infer_fmt(&self, fields: &Fields, name: &Ident) -> Result<TokenStream> {
         let fields = match fields {
@@ -183,9 +253,9 @@ impl<'a, 'b> State<'a, 'b> {
 
         let trait_path = self.trait_path;
         if let Some(ident) = &fields.iter().next().as_ref().unwrap().ident {
-            Ok(quote!(#trait_path::fmt(#ident, _derive_more_Display_formatter)))
+            Ok(quote!(_derive_more_DisplayAs(|f| #trait_path::fmt(#ident, f))))
         } else {
-            Ok(quote!(#trait_path::fmt(_0, _derive_more_Display_formatter)))
+            Ok(quote!(_derive_more_DisplayAs(|f| #trait_path::fmt(_0, f))))
         }
     }
     fn get_match_arms_and_extra_bounds(
@@ -193,53 +263,83 @@ impl<'a, 'b> State<'a, 'b> {
     ) -> Result<(TokenStream, HashMap<Type, HashSet<&'static str>>)> {
         match &self.input.data {
             Data::Enum(e) => {
-                if let Some(meta) = self.find_meta(&self.input.attrs)? {
-                    let fmt = self.get_meta_fmt(&meta)?;
+                match self
+                    .find_meta(&self.input.attrs)
+                    .and_then(|m| m.map(|m| self.get_meta_fmt(&m)).transpose())?
+                {
+                    Some(Format::Fmt(fmt)) => {
+                        e.variants.iter().try_for_each(|v| {
+                            if let Some(meta) = self.find_meta(&v.attrs)? {
+                                Err(Error::new(
+                                    meta.span(),
+                                    "`fmt` cannot be used on variant when the whole enum has one. Did you mean to use `affix`?",
+                                ))
+                            } else {
+                                Ok(())
+                            }
+                        })?;
 
-                    e.variants.iter().try_for_each(|v| {
-                        if let Some(meta) = self.find_meta(&v.attrs)? {
-                            Err(Error::new(
-                                meta.span(),
-                                "Can not have a format on the variant when the whole enum has one",
-                            ))
-                        } else {
-                            Ok(())
-                        }
-                    })?;
-
-                    Ok((
-                        quote_spanned!(self.input.span()=> _ => #fmt,),
-                        HashMap::new(),
-                    ))
-                } else {
-                    e.variants.iter().try_fold(
-                        (TokenStream::new(), HashMap::new()),
-                        |(arms, mut all_bounds), v| {
+                        Ok((
+                            quote_spanned!(self.input.span()=> _ => write!(_derive_more_Display_formatter, "{}", #fmt),),
+                            HashMap::new(),
+                        ))
+                    }
+                    Some(Format::Affix(outer_fmt)) => {
+                        let fmt = e.variants.iter().try_fold(TokenStream::new(), |arms, v| {
                             let matcher = self.get_matcher(&v.fields);
+                            let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
+                                let span = meta.span();
+                                match self.get_meta_fmt(&meta)? {
+                                    Format::Fmt(fmt) => fmt,
+                                    Format::Affix(_) => return Err(Error::new(
+                                        span,
+                                        "cannot use an `affix` on an enum variant"
+                                    )),
+                                }
+                            } else {
+                                self.infer_fmt(&v.fields, &v.ident)?
+                            };
                             let name = &self.input.ident;
                             let v_name = &v.ident;
-                            let fmt: TokenStream;
-                            let bounds: HashMap<_, _>;
+                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(_derive_more_Display_formatter, #outer_fmt, #fmt),))
+                        })?;
+                        Ok((
+                            quote_spanned!(self.input.span()=> #fmt),
+                            HashMap::new(),
+                        ))
+                    }
+                    None => e.variants.iter().try_fold((TokenStream::new(), HashMap::new()), |(arms, mut all_bounds), v| {
+                        let matcher = self.get_matcher(&v.fields);
+                        let name = &self.input.ident;
+                        let v_name = &v.ident;
+                        let fmt: TokenStream;
+                        let bounds: HashMap<_, _>;
 
-                            if let Some(meta) = self.find_meta(&v.attrs)? {
-                                fmt = self.get_meta_fmt(&meta)?;
-                                bounds = self.get_used_type_params_bounds(&v.fields, &meta);
-                            } else {
-                                fmt = self.infer_fmt(&v.fields, v_name)?;
-                                bounds = self.infer_type_params_bounds(&v.fields);
+                        if let Some(meta) = self.find_meta(&v.attrs)? {
+                            let span = meta.span();
+                            fmt = match self.get_meta_fmt(&meta)? {
+                                Format::Fmt(fmt) => fmt,
+                                Format::Affix(_) => return Err(Error::new(
+                                    span,
+                                    "cannot use an `affix` on an enum variant",
+                                )),
                             };
-                            all_bounds = bounds.into_iter()
-                                .fold(all_bounds, |mut bounds, (ty, trait_names)| {
-                                    bounds.entry(ty).or_insert_with(HashSet::new).extend(trait_names);
-                                    bounds
-                                });
+                            bounds = self.get_used_type_params_bounds(&v.fields, &meta);
+                        } else {
+                            fmt = self.infer_fmt(&v.fields, v_name)?;
+                            bounds = self.infer_type_params_bounds(&v.fields);
+                        };
+                        all_bounds = bounds.into_iter()
+                            .fold(all_bounds, |mut bounds, (ty, trait_names)| {
+                                bounds.entry(ty).or_insert_with(HashSet::new).extend(trait_names);
+                                bounds
+                            });
 
-                            Ok((
-                                quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,),
-                                all_bounds,
-                            ))
-                        },
-                    )
+                        Ok((
+                            quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => write!(_derive_more_Display_formatter, "{}", #fmt),),
+                            all_bounds,
+                        ))
+                    }),
                 }
             }
             Data::Struct(s) => {
@@ -249,7 +349,13 @@ impl<'a, 'b> State<'a, 'b> {
                 let bounds: HashMap<_, _>;
 
                 if let Some(meta) = self.find_meta(&self.input.attrs)? {
-                    fmt = self.get_meta_fmt(&meta)?;
+                    let span = meta.span();
+                    fmt = match self.get_meta_fmt(&meta)? {
+                        Format::Fmt(fmt) => fmt,
+                        Format::Affix(_) => {
+                            return Err(Error::new(span, "cannot use an `affix` on a struct"))
+                        }
+                    };
                     bounds = self.get_used_type_params_bounds(&s.fields, &meta);
                 } else {
                     fmt = self.infer_fmt(&s.fields, name)?;
@@ -257,7 +363,7 @@ impl<'a, 'b> State<'a, 'b> {
                 }
 
                 Ok((
-                    quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
+                    quote_spanned!(self.input.span()=> #name #matcher => write!(_derive_more_Display_formatter, "{}", #fmt),),
                     bounds,
                 ))
             }
@@ -268,10 +374,16 @@ impl<'a, 'b> State<'a, 'b> {
                         "Can not automatically infer format for unions",
                     )
                 })?;
-                let fmt = self.get_meta_fmt(&meta)?;
+                let span = meta.span();
+                let fmt = match self.get_meta_fmt(&meta)? {
+                    Format::Fmt(fmt) => fmt,
+                    Format::Affix(_) => {
+                        return Err(Error::new(span, "cannot use an `affix` on a struct"))
+                    }
+                };
 
                 Ok((
-                    quote_spanned!(self.input.span()=> _ => #fmt,),
+                    quote_spanned!(self.input.span()=> _ => write!(_derive_more_Display_formatter, "{}", #fmt),),
                     HashMap::new(),
                 ))
             }

@@ -80,6 +80,17 @@ enum EmptyEnum {}
 #[display(fmt = "Generic")]
 struct Generic<T>(T);
 
+#[derive(Display)]
+#[display(affix = "Here's a prefix for {} and a suffix")]
+enum Affix {
+    A(u32),
+    #[display(fmt = "{} -- {}", wat, stuff)]
+    B {
+        wat: String,
+        stuff: bool,
+    },
+}
+
 #[test]
 fn check_display() {
     assert_eq!(MyInt(-2).to_string(), "-2");
@@ -99,6 +110,18 @@ fn check_display() {
     assert_eq!(Unit.to_string(), "Unit");
     assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
     assert_eq!(Generic(()).to_string(), "Generic");
+    assert_eq!(
+        Affix::A(2).to_string(),
+        "Here's a prefix for 2 and a suffix"
+    );
+    assert_eq!(
+        Affix::B {
+            wat: "things".to_owned(),
+            stuff: false,
+        }
+        .to_string(),
+        "Here's a prefix for things -- false and a suffix"
+    );
 }
 
 mod generic {
