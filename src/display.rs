@@ -168,20 +168,12 @@ impl<'a, 'b> State<'a, 'b> {
     }
     fn infer_fmt(&self, fields: &Fields, name: &Ident) -> Result<TokenStream> {
         let fields = match fields {
-            Fields::Unit => {
-                return Ok(quote!(write!(
-                    _derive_more_Display_formatter,
-                    stringify!(#name)
-                )));
-            }
+            Fields::Unit => return Ok(quote!(stringify!(#name))),
             Fields::Named(fields) => &fields.named,
             Fields::Unnamed(fields) => &fields.unnamed,
         };
         if fields.is_empty() {
-            return Ok(quote!(write!(
-                _derive_more_Display_formatter,
-                stringify!(#name)
-            )));
+            return Ok(quote!(stringify!(#name)));
         } else if fields.len() > 1 {
             return Err(Error::new(
                 fields.span(),
