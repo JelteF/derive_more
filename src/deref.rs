@@ -27,14 +27,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     // let generics = add_extra_ty_param_bound(&input.generics, trait_path);
-    let casted_trait = &quote!(<#field_type as #trait_path>);
     quote!{
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
-            type Target = #casted_trait::Target;
+            type Target = #field_type;
             #[inline]
             fn deref(&self) -> &Self::Target {
-                #casted_trait::deref(&#member)
+                &#member
             }
         }
     }

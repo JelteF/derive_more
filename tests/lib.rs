@@ -14,10 +14,12 @@ extern crate derive_more;
 #[derive(Display)]
 #[derive(Octal)]
 #[derive(Binary)]
+#[derive(Deref, DerefMut)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
+#[derive(Deref, DerefMut)]
 struct MyVec(Vec<i32>);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -190,8 +192,19 @@ fn main() {
     myvec[0] = 20;
     assert_eq!(20, myvec[0]);
 
+    let mut myint = MyInt(5);
+    assert_eq!(5, *myint);
+    *myint = 7;
+    assert_eq!(MyInt(7), myint);
+
+    let mut myvec = MyVec(vec![5, 8]);
+    assert_eq!(5, myvec[0]);
+    assert_eq!(8, myvec[1]);
+    myvec.push(20);
+    assert_eq!(20, myvec[2]);
+
     let mut boxed = MyBoxedInt(Box::new(5));
-    assert_eq!(5, *boxed);
-    *boxed = 7;
+    assert_eq!(Box::new(5), *boxed);
+    **boxed = 7;
     assert_eq!(MyBoxedInt(Box::new(7)), boxed)
 }
