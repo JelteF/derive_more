@@ -1,3 +1,5 @@
+#![cfg(feature = "try_into")]
+
 #![allow(dead_code)]
 
 #[macro_use]

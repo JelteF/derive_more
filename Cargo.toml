@@ -25,7 +25,7 @@ name = "derive_more"
 proc-macro = true
 
 [dependencies]
-lazy_static = "1.3"
+lazy_static = {version = "1.3", optional = true}
 proc-macro2 = "0.4"
 quote = "0.6"
 regex = "1"
@@ -41,6 +41,40 @@ appveyor = { repository = "JelteF/derive_more" }
 [features]
 nightly = []
 no_std = []
+
+add_assign_like = []
+add_like = []
+constructor = []
+deref = []
+deref_mut = []
+display = ["lazy_static"]
+from = []
+from_str = []
+index = []
+index_mut = []
+into = []
+mul_assign_like = []
+mul_like = []
+not_like = []
+try_into = []
+
+default = [
+    "add_assign_like",
+    "add_like",
+    "constructor",
+    "deref",
+    "deref_mut",
+    "display",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "mul_assign_like",
+    "mul_like",
+    "not_like",
+    "try_into",
+]
 
 [[test]]
 name = "no_std"

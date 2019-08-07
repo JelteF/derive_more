@@ -1,3 +1,5 @@
+#![cfg(feature = "add_assign_like")]
+
 #![allow(dead_code)]
 #[macro_use]
 extern crate derive_more;

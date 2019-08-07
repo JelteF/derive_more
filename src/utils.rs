@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use proc_macro2::{Span, TokenStream};
 use syn::{
     parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, Index, Type,

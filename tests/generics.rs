@@ -1,3 +1,4 @@
+#![cfg(all( feature = "add_assign_like", feature = "add_like", feature = "constructor", feature = "deref", feature = "deref_mut", feature = "display", feature = "from", feature = "from_str", feature = "index", feature = "index_mut", feature = "into", feature = "mul_assign_like", feature = "mul_like", feature = "not_like", feature = "try_into"))]
 #![allow(dead_code, non_camel_case_types)]
 #[macro_use]
 extern crate derive_more;

@@ -1,3 +1,5 @@
+#![cfg(feature = "mul_like")]
+
 #![allow(dead_code)]
 #[macro_use]
 extern crate derive_more;
