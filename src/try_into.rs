@@ -70,7 +70,7 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
             .join(", ");
         let message = format!("Only {} can be converted to {}", variants, output_type);
 
-        let try_from = quote!{
+        let try_from = quote! {
             impl#impl_generics ::std::convert::TryFrom<#input_type#ty_generics> for
                 (#(#original_types),*) #where_clause {
                 type Error = &'static str;

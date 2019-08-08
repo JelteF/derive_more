@@ -189,13 +189,10 @@
 
 #![recursion_limit = "128"]
 
-#[macro_use]
-extern crate lazy_static;
 extern crate proc_macro;
 extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
-extern crate regex;
 extern crate syn;
 
 use proc_macro::TokenStream;
@@ -217,6 +214,7 @@ mod into;
 mod mul_assign_like;
 mod mul_like;
 mod not_like;
+mod parsing;
 mod try_into;
 
 // This trait describes the possible return types of

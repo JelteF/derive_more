@@ -1,0 +1,37 @@
+discard_doubles -> Option<&'input str>
+    = ("{" "{" / "}" "}") { None }
+
+placeholder_inner -> Option<&'input str>
+    = n:($([{] (![{}].)* [}])) { Some(n) }
+
+discard_any -> Option<&'input str>
+    = . { None }
+
+arg -> usize
+    = n:$([0-9]+) { n.parse().unwrap() }
+
+ty -> &'input str
+    = n:$(("x?" / "X?") / ("o" / "x" / "X" / "p" / "b" / "e" / "E" / "?")) { n }
+
+format_spec -> Option<&'input str>
+    = ":" ((![<^>] .)? [<^>])? ("+" / "-")? "#"? (( [A-Za-z0-9_]+ "$") / [0-9]+)? "0"? ("." (([A-Za-z0-9_]+ "$") / [0-9]+ / "*"))? n:ty? { n }
+
+/// PEG for parsing formatting placeholders from a string.
+///
+/// Reproduces `maybe-format` expression of [formatting syntax][1].
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+pub all_placeholders -> Vec<&'input str>
+    = x:(discard_doubles / placeholder_inner / discard_any)* { x.into_iter().flat_map(|x| x).collect() }
+
+/// PEG for parsing inner type of formatting placeholder.
+///
+/// Reproduces `format` expression of [formatting syntax][1], but is simplified
+/// in the following way (as we need to parse `type` only):
+/// - `argument` is replaced just with `\d+` (instead of [`identifier`][2]);
+/// - `character` is allowed to be any symbol.
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [2]: https://doc.rust-lang.org/reference/identifiers.html#identifiers
+pub format -> (Option<usize>, Option<&'input str>)
+    = "{" n:arg? o:format_spec? "}" { (n, o.and_then(|x| x)) }
