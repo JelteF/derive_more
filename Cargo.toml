@@ -39,10 +39,10 @@ travis-ci = { repository = "JelteF/derive_more" }
 appveyor = { repository = "JelteF/derive_more" }
 
 [features]
+default = ["std"]
 nightly = []
-no_std = []
+std = []
 
 [[test]]
 name = "no_std"
 path = "tests/no_std.rs"
-required-features = ["no_std"]

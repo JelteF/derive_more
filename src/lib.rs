@@ -137,13 +137,13 @@
 //! # fn main () {}
 //! ```
 //!
-//!This crate support `no_std` through the `no_std` feature. So use the following
-//!instead if you want to use it in a `no_std` environment.
+//! This crate support `no_std` through the `std` feature. Deactivate the default
+//! features if you want to use it in a `no_std` environment.
 //!
 //!```toml
 //!# Example Cargo.toml
 //![dependencies]
-//!derive_more = {version = "0.13.0", default-features = false, features=["no_std"]}
+//!derive_more = { version = "0.13.0", default-features = false }
 //!```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand

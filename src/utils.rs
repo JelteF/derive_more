@@ -5,9 +5,9 @@ use syn::{
 };
 
 pub fn get_import_root() -> TokenStream {
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     return quote!(::std);
-    #[cfg(feature = "no_std")]
+    #[cfg(not(feature = "std"))]
     return quote!(::core);
 }
 
