@@ -7,9 +7,8 @@ use proc_macro2::{Ident, Span, TokenStream};
 use regex::Regex;
 use syn::{
     parse::{Error, Result},
-    punctuated::Pair,
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Type,
+    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Path, Type,
 };
 use utils::{add_extra_where_clauses, get_import_root};
 
@@ -123,8 +122,14 @@ impl<'a, 'b> State<'a, 'b> {
     fn find_meta(&self, attrs: &[Attribute]) -> Result<Option<Meta>> {
         let mut it = attrs
             .iter()
-            .filter_map(Attribute::interpret_meta)
-            .filter(|m| m.name() == self.trait_attr);
+            .filter_map(|m| m.parse_meta().ok())
+            .filter(|m| {
+                if let Some(ident) = m.path().segments.first().map(|p| &p.ident) {
+                    ident == self.trait_attr
+                } else {
+                    false
+                }
+            });
 
         let meta = it.next();
         if it.next().is_some() {
@@ -141,10 +146,10 @@ impl<'a, 'b> State<'a, 'b> {
 
         let fmt = match &list.nested[0] {
             NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                ident,
+                path,
                 lit: Lit::Str(s),
                 ..
-            })) if ident == "fmt" => s,
+            })) if path.segments.first().expect("path shouldn't be empty").ident == "fmt" => s,
             _ => return Err(Error::new(list.nested[0].span(), self.get_proper_syntax())),
         };
 
@@ -154,8 +159,8 @@ impl<'a, 'b> State<'a, 'b> {
             .skip(1) // skip fmt = "..."
             .try_fold(TokenStream::new(), |args, arg| {
                 let arg = match arg {
-                    NestedMeta::Literal(Lit::Str(s)) => s,
-                    NestedMeta::Meta(Meta::Word(i)) => {
+                    NestedMeta::Lit(Lit::Str(s)) => s,
+                    NestedMeta::Meta(Meta::Path(i)) => {
                         return Ok(quote_spanned!(list.span()=> #args #i,));
                     }
                     _ => return Err(Error::new(arg.span(), self.get_proper_syntax())),
@@ -301,11 +306,12 @@ impl<'a, 'b> State<'a, 'b> {
                 if !self.has_type_param_in(field) {
                     return None;
                 }
-                let ident = field
+                let path: Path = field
                     .ident
                     .clone()
-                    .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()));
-                Some((ident, field.ty.clone()))
+                    .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()))
+                    .into();
+                Some((path, field.ty.clone()))
             })
             .collect();
         if fields_type_params.is_empty() {
@@ -323,10 +329,10 @@ impl<'a, 'b> State<'a, 'b> {
             .skip(1) // skip fmt = "..."
             .enumerate()
             .filter_map(|(i, arg)| match arg {
-                NestedMeta::Literal(Lit::Str(ref s)) => {
+                NestedMeta::Lit(Lit::Str(ref s)) => {
                     syn::parse_str(&s.value()).ok().map(|id| (i, id))
                 }
-                NestedMeta::Meta(Meta::Word(ref id)) => Some((i, id.clone())),
+                NestedMeta::Meta(Meta::Path(ref id)) => Some((i, id.clone())),
                 // This one has been checked already in get_meta_fmt() method.
                 _ => unreachable!(),
             })
@@ -336,10 +342,10 @@ impl<'a, 'b> State<'a, 'b> {
         }
         let fmt_string = match &list.nested[0] {
             NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                ident,
+                path,
                 lit: Lit::Str(s),
                 ..
-            })) if ident == "fmt" => s.value(),
+            })) if path.segments.first().expect("path shouldn't be empty").ident == "fmt" => s.value(),
             // This one has been checked already in get_meta_fmt() method.
             _ => unreachable!(),
         };
@@ -397,8 +403,7 @@ impl<'a, 'b> State<'a, 'b> {
     fn has_type_param_in(&self, field: &syn::Field) -> bool {
         if let Type::Path(ref ty) = field.ty {
             return match ty.path.segments.first() {
-                Some(Pair::Punctuated(ref t, _)) => self.type_params.contains(&t.ident),
-                Some(Pair::End(ref t)) => self.type_params.contains(&t.ident),
+                Some(t) => self.type_params.contains(&t.ident),
                 _ => false,
             };
         }
