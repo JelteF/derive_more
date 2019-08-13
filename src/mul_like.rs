@@ -38,13 +38,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     let scalar_ident = &Ident::new("__RhsT", Span::call_site());
-    let tys: &HashSet<_> = &get_field_types_iter(&fields).collect();
-    let tys2 = tys;
+    let tys = get_field_types_iter(&fields).collect::<HashSet<_>>();
+    let tys = tys.iter();
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);
 
     let type_where_clauses = quote! {
-        where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys2>),*
+        where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys>),*
     };
 
     let new_generics =
