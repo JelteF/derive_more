@@ -31,6 +31,7 @@ syn = { version = "0.15", features = ["extra-traits"] }
 
 [build-dependencies]
 rustc_version = "0.2"
+peg = { version = "0.5", optional = true }
 
 [badges]
 travis-ci = { repository = "JelteF/derive_more" }
@@ -39,6 +40,7 @@ appveyor = { repository = "JelteF/derive_more" }
 [features]
 nightly = []
 no_std = []
+generate-parsing-rs = ["peg"]
 
 [[test]]
 name = "no_std"
