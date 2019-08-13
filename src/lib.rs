@@ -214,6 +214,7 @@ mod into;
 mod mul_assign_like;
 mod mul_like;
 mod not_like;
+#[allow(ellipsis_inclusive_range_patterns)]
 #[allow(clippy::all)]
 mod parsing;
 mod try_into;
