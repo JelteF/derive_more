@@ -36,7 +36,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     let scalar_ident = &Ident::new("__RhsT", Span::call_site());
-    let tys: &HashSet<_> = &get_field_types_iter(&fields).collect();
+    let tys = get_field_types_iter(&fields).collect::<HashSet<_>>();
+    let tys = tys.iter();
     let scalar_iter = iter::repeat(scalar_ident);
     let trait_path_iter = iter::repeat(trait_path);
 

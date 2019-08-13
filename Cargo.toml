@@ -26,10 +26,10 @@ proc-macro = true
 
 [dependencies]
 lazy_static = "1.3"
-proc-macro2 = "0.4"
-quote = "0.6"
+proc-macro2 = "1"
+quote = "1"
 regex = "1"
-syn = { version = "0.15", features = ["extra-traits"] }
+syn = { version = "1", features = ["extra-traits"] }
 
 [build-dependencies]
 rustc_version = "0.2"
