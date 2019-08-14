@@ -1,6 +1,7 @@
-use proc_macro2::TokenStream;
-use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
 use crate::utils::{add_extra_ty_param_bound, get_import_root, named_to_vec, unnamed_to_vec};
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
 
 /// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {

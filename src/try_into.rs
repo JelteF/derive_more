@@ -1,8 +1,8 @@
+use crate::utils::{field_idents, named_to_vec, numbered_vars, unnamed_to_vec};
 use proc_macro2::TokenStream;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use std::collections::HashMap;
 use syn::{Data, DataEnum, DeriveInput, Fields};
-use crate::utils::{field_idents, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
 pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {

@@ -3,13 +3,14 @@ use std::{
     fmt::Display,
 };
 
+use crate::utils::{add_extra_where_clauses, get_import_root};
 use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, quote_spanned};
 use syn::{
     parse::{Error, Result},
     spanned::Spanned,
     Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Path, Type,
 };
-use crate::utils::{add_extra_where_clauses, get_import_root};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
@@ -148,7 +149,15 @@ impl<'a, 'b> State<'a, 'b> {
                 path,
                 lit: Lit::Str(s),
                 ..
-            })) if path.segments.first().expect("path shouldn't be empty").ident == "fmt" => s,
+            })) if path
+                .segments
+                .first()
+                .expect("path shouldn't be empty")
+                .ident
+                == "fmt" =>
+            {
+                s
+            }
             _ => return Err(Error::new(list.nested[0].span(), self.get_proper_syntax())),
         };
 
@@ -344,7 +353,15 @@ impl<'a, 'b> State<'a, 'b> {
                 path,
                 lit: Lit::Str(s),
                 ..
-            })) if path.segments.first().expect("path shouldn't be empty").ident == "fmt" => s.value(),
+            })) if path
+                .segments
+                .first()
+                .expect("path shouldn't be empty")
+                .ident
+                == "fmt" =>
+            {
+                s.value()
+            }
             // This one has been checked already in get_meta_fmt() method.
             _ => unreachable!(),
         };

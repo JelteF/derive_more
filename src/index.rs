@@ -1,6 +1,9 @@
+use crate::utils::{
+    add_where_clauses_for_new_ident, get_import_root, named_to_vec, unnamed_to_vec,
+};
 use proc_macro2::{Span, TokenStream};
+use quote::quote;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
-use crate::utils::{add_where_clauses_for_new_ident, get_import_root, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {

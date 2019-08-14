@@ -1,4 +1,5 @@
 use proc_macro2::{Span, TokenStream};
+use quote::quote;
 use syn::{
     parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, Index, Type,
     TypeParamBound, WhereClause,

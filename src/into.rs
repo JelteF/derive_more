@@ -1,9 +1,9 @@
-use proc_macro2::TokenStream;
-use quote::ToTokens;
-use syn::{Data, DeriveInput, Field, Fields};
 use crate::utils::{
     field_idents, get_field_types, get_import_root, named_to_vec, number_idents, unnamed_to_vec,
 };
+use proc_macro2::TokenStream;
+use quote::{quote, ToTokens};
+use syn::{Data, DeriveInput, Field, Fields};
 
 /// Provides the hook to expand `#[derive(Into)]` into an implementation of `Into`
 pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {

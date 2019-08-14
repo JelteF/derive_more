@@ -1,12 +1,12 @@
-use proc_macro2::{Span, TokenStream};
-use quote::ToTokens;
-use std::collections::HashSet;
-use std::iter;
-use syn::{Data, DeriveInput, Field, Fields, Ident};
 use crate::utils::{
     add_where_clauses_for_new_ident, field_idents, get_field_types_iter, get_import_root,
     named_to_vec, number_idents, unnamed_to_vec,
 };
+use proc_macro2::{Span, TokenStream};
+use quote::{quote, ToTokens};
+use std::collections::HashSet;
+use std::iter;
+use syn::{Data, DeriveInput, Field, Fields, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let import_root = get_import_root();
