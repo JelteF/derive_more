@@ -1,6 +1,4 @@
-use crate::utils::{
-    field_idents, get_field_types, get_import_root, named_to_vec, number_idents, unnamed_to_vec,
-};
+use crate::utils::{field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Data, DeriveInput, Field, Fields};
@@ -27,9 +25,8 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
 
     let original_types = &get_field_types(&fields);
 
-    let import_root = get_import_root();
     quote! {
-        impl#impl_generics #import_root::convert::From<#input_type#ty_generics> for
+        impl#impl_generics ::core::convert::From<#input_type#ty_generics> for
             (#(#original_types),*) #where_clause {
 
             #[allow(unused_variables)]

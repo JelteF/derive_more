@@ -40,10 +40,4 @@ appveyor = { repository = "JelteF/derive_more" }
 
 [features]
 nightly = []
-no_std = []
 generate-parsing-rs = ["peg"]
-
-[[test]]
-name = "no_std"
-path = "tests/no_std.rs"
-required-features = ["no_std"]

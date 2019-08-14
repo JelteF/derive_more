@@ -1,6 +1,4 @@
-use crate::utils::{
-    add_where_clauses_for_new_ident, get_import_root, named_to_vec, unnamed_to_vec,
-};
+use crate::utils::{add_where_clauses_for_new_ident, named_to_vec, unnamed_to_vec};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
@@ -9,8 +7,7 @@ use syn::{Data, DeriveInput, Field, Fields, Ident};
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let index_type = &Ident::new("__IdxT", Span::call_site());
-    let import_root = get_import_root();
-    let trait_path = &quote!(#import_root::ops::#trait_ident<#index_type>);
+    let trait_path = &quote!(::core::ops::#trait_ident<#index_type>);
     let input_type = &input.ident;
     let field_vec: Vec<&Field>;
     let member = match input.data {

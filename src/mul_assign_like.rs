@@ -1,7 +1,6 @@
 use crate::mul_like::{struct_exprs, tuple_exprs};
 use crate::utils::{
-    add_where_clauses_for_new_ident, get_field_types_iter, get_import_root, named_to_vec,
-    unnamed_to_vec,
+    add_where_clauses_for_new_ident, get_field_types_iter, named_to_vec, unnamed_to_vec,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
@@ -10,9 +9,8 @@ use std::iter;
 use syn::{Data, DeriveInput, Fields, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
-    let import_root = get_import_root();
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(#import_root::ops::#trait_ident);
+    let trait_path = &quote!(::core::ops::#trait_ident);
     let method_name = trait_name.to_string();
     #[allow(deprecated)]
     let method_name = method_name.trim_right_matches("Assign");

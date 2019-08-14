@@ -1,6 +1,5 @@
 use crate::utils::{
-    add_extra_type_param_bound_op_output, field_idents, get_import_root, named_to_vec,
-    numbered_vars, unnamed_to_vec,
+    add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars, unnamed_to_vec,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -8,7 +7,6 @@ use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
-    let import_root = get_import_root();
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_lowercase();
     let method_ident = Ident::new(&method_name, Span::call_site());
@@ -30,7 +28,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
         Data::Enum(ref data_enum) => (
-            quote!(#import_root::result::Result<#input_type#ty_generics, &'static str>),
+            quote!(::core::result::Result<#input_type#ty_generics, &'static str>),
             enum_content(input_type, data_enum, &method_ident),
         ),
 
@@ -41,7 +39,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     quote!(
-        impl#impl_generics #import_root::ops::#trait_ident for #input_type#ty_generics #where_clause {
+        impl#impl_generics ::core::ops::#trait_ident for #input_type#ty_generics #where_clause {
             type Output = #output_type;
             #[inline]
             fn #method_ident(self, rhs: #input_type#ty_generics) -> #output_type {
@@ -95,7 +93,6 @@ pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream>
 
 #[allow(clippy::cognitive_complexity)]
 fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) -> TokenStream {
-    let import_root = get_import_root();
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
 
@@ -114,7 +111,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 let matcher = quote! {
                     (#subtype(#(#l_vars),*),
                      #subtype(#(#r_vars),*)) => {
-                        #import_root::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
+                        ::core::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
                     }
                 };
                 matches.push(matcher);

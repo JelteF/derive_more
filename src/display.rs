@@ -3,7 +3,7 @@ use std::{
     fmt::Display,
 };
 
-use crate::utils::{add_extra_where_clauses, get_import_root};
+use crate::utils::add_extra_where_clauses;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
@@ -14,9 +14,8 @@ use syn::{
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
-    let import_root = get_import_root();
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(#import_root::fmt::#trait_ident);
+    let trait_path = &quote!(::core::fmt::#trait_ident);
     let trait_attr = match trait_name {
         "Display" => "display",
         "Binary" => "binary",
@@ -49,9 +48,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
                 let bounds: Vec<_> = trait_names
                     .into_iter()
                     .map(|trait_name| {
-                        let import_root = get_import_root();
                         let trait_ident = Ident::new(trait_name, Span::call_site());
-                        quote!(#import_root::fmt::#trait_ident)
+                        quote!(::core::fmt::#trait_ident)
                     })
                     .collect();
                 quote!(#ty: #(#bounds)+*)
@@ -70,7 +68,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         {
             #[allow(unused_variables)]
             #[inline]
-            fn fmt(&self, _derive_more_Display_formatter: &mut #import_root::fmt::Formatter) -> #import_root::fmt::Result {
+            fn fmt(&self, _derive_more_Display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 match self {
                     #arms
                     _ => Ok(()) // This is needed for empty enums
