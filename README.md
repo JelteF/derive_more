@@ -140,16 +140,11 @@ And this to the top of your Rust file:
 ```rust
 #[macro_use]
 extern crate derive_more;
+# Only needed when using the Rust 2015, for 2018 you can skip this line
+extern crate core;
 ```
 
-This crate support `no_std` through the `no_std` feature. So use the following
-instead if you want to use it in a `no_std` environment.
-
-```toml
-# Example Cargo.toml
-[dependencies]
-derive_more = {version = "0.13.0", default-features = false, features=["no_std"]}
-```
+This crate supports `no_std` out of the box.
 
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`derive-new`]: https://github.com/nrc/derive-new
