@@ -1,7 +1,8 @@
 use crate::add_like::{struct_exprs, tuple_exprs};
-use proc_macro2::{Span, TokenStream};
-use syn::{Data, DeriveInput, Fields, Ident};
 use crate::utils::{add_extra_ty_param_bound_op, get_import_root, named_to_vec, unnamed_to_vec};
+use proc_macro2::{Span, TokenStream};
+use quote::quote;
+use syn::{Data, DeriveInput, Fields, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
