@@ -1,4 +1,4 @@
-use crate::add_like::{struct_exprs, tuple_exprs};
+use crate::add_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{add_extra_ty_param_bound_op, named_to_vec, unnamed_to_vec};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;

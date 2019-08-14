@@ -1,10 +1,11 @@
+use crate::add_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{
     add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars, unnamed_to_vec,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::iter;
-use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
+use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
@@ -58,37 +59,12 @@ fn tuple_content<T: ToTokens>(
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
-    let mut exprs = vec![];
-
-    for i in 0..fields.len() {
-        let i = Index::from(i);
-        // generates `self.0.add(rhs.0)`
-        let expr = quote!(self.#i.#method_ident(rhs.#i));
-        exprs.push(expr);
-    }
-    exprs
-}
-
 fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> TokenStream {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
     let field_names = field_idents(fields);
 
     quote!(#input_type{#(#field_names: #exprs),*})
-}
-
-pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
-    let mut exprs = vec![];
-
-    for field in fields {
-        // It's safe to unwrap because struct fields always have an identifier
-        let field_id = field.ident.as_ref().unwrap();
-        // generates `x: self.x.add(rhs.x)`
-        let expr = quote!(self.#field_id.#method_ident(rhs.#field_id));
-        exprs.push(expr)
-    }
-    exprs
 }
 
 #[allow(clippy::cognitive_complexity)]

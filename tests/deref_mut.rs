@@ -1,5 +1,3 @@
-#![cfg(all(feature = "deref", feature = "deref_mut"))]
-
 #![allow(dead_code, unused_imports)]
 #[macro_use]
 extern crate derive_more;
