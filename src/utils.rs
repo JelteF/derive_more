@@ -1,17 +1,11 @@
 #![allow(dead_code)]
 
 use proc_macro2::{Span, TokenStream};
+use quote::quote;
 use syn::{
     parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, Index, Type,
     TypeParamBound, WhereClause,
 };
-
-pub fn get_import_root() -> TokenStream {
-    #[cfg(not(feature = "no_std"))]
-    return quote!(::std);
-    #[cfg(feature = "no_std")]
-    return quote!(::core);
-}
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)

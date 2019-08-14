@@ -3,21 +3,19 @@ use std::{
     fmt::Display,
 };
 
+use crate::utils::add_extra_where_clauses;
 use proc_macro2::{Ident, Span, TokenStream};
-use regex::Regex;
+use quote::{quote, quote_spanned};
 use syn::{
     parse::{Error, Result},
-    punctuated::Pair,
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Type,
+    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Path, Type,
 };
-use utils::{add_extra_where_clauses, get_import_root};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
-    let import_root = get_import_root();
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(#import_root::fmt::#trait_ident);
+    let trait_path = &quote!(::core::fmt::#trait_ident);
     let trait_attr = match trait_name {
         "Display" => "display",
         "Binary" => "binary",
@@ -50,9 +48,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
                 let bounds: Vec<_> = trait_names
                     .into_iter()
                     .map(|trait_name| {
-                        let import_root = get_import_root();
                         let trait_ident = Ident::new(trait_name, Span::call_site());
-                        quote!(#import_root::fmt::#trait_ident)
+                        quote!(::core::fmt::#trait_ident)
                     })
                     .collect();
                 quote!(#ty: #(#bounds)+*)
@@ -71,7 +68,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         {
             #[allow(unused_variables)]
             #[inline]
-            fn fmt(&self, _derive_more_Display_formatter: &mut #import_root::fmt::Formatter) -> #import_root::fmt::Result {
+            fn fmt(&self, _derive_more_Display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 match self {
                     #arms
                     _ => Ok(()) // This is needed for empty enums
@@ -123,8 +120,14 @@ impl<'a, 'b> State<'a, 'b> {
     fn find_meta(&self, attrs: &[Attribute]) -> Result<Option<Meta>> {
         let mut it = attrs
             .iter()
-            .filter_map(Attribute::interpret_meta)
-            .filter(|m| m.name() == self.trait_attr);
+            .filter_map(|m| m.parse_meta().ok())
+            .filter(|m| {
+                if let Some(ident) = m.path().segments.first().map(|p| &p.ident) {
+                    ident == self.trait_attr
+                } else {
+                    false
+                }
+            });
 
         let meta = it.next();
         if it.next().is_some() {
@@ -141,10 +144,18 @@ impl<'a, 'b> State<'a, 'b> {
 
         let fmt = match &list.nested[0] {
             NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                ident,
+                path,
                 lit: Lit::Str(s),
                 ..
-            })) if ident == "fmt" => s,
+            })) if path
+                .segments
+                .first()
+                .expect("path shouldn't be empty")
+                .ident
+                == "fmt" =>
+            {
+                s
+            }
             _ => return Err(Error::new(list.nested[0].span(), self.get_proper_syntax())),
         };
 
@@ -154,8 +165,8 @@ impl<'a, 'b> State<'a, 'b> {
             .skip(1) // skip fmt = "..."
             .try_fold(TokenStream::new(), |args, arg| {
                 let arg = match arg {
-                    NestedMeta::Literal(Lit::Str(s)) => s,
-                    NestedMeta::Meta(Meta::Word(i)) => {
+                    NestedMeta::Lit(Lit::Str(s)) => s,
+                    NestedMeta::Meta(Meta::Path(i)) => {
                         return Ok(quote_spanned!(list.span()=> #args #i,));
                     }
                     _ => return Err(Error::new(arg.span(), self.get_proper_syntax())),
@@ -301,11 +312,12 @@ impl<'a, 'b> State<'a, 'b> {
                 if !self.has_type_param_in(field) {
                     return None;
                 }
-                let ident = field
+                let path: Path = field
                     .ident
                     .clone()
-                    .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()));
-                Some((ident, field.ty.clone()))
+                    .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()))
+                    .into();
+                Some((path, field.ty.clone()))
             })
             .collect();
         if fields_type_params.is_empty() {
@@ -323,10 +335,10 @@ impl<'a, 'b> State<'a, 'b> {
             .skip(1) // skip fmt = "..."
             .enumerate()
             .filter_map(|(i, arg)| match arg {
-                NestedMeta::Literal(Lit::Str(ref s)) => {
+                NestedMeta::Lit(Lit::Str(ref s)) => {
                     syn::parse_str(&s.value()).ok().map(|id| (i, id))
                 }
-                NestedMeta::Meta(Meta::Word(ref id)) => Some((i, id.clone())),
+                NestedMeta::Meta(Meta::Path(ref id)) => Some((i, id.clone())),
                 // This one has been checked already in get_meta_fmt() method.
                 _ => unreachable!(),
             })
@@ -336,10 +348,18 @@ impl<'a, 'b> State<'a, 'b> {
         }
         let fmt_string = match &list.nested[0] {
             NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                ident,
+                path,
                 lit: Lit::Str(s),
                 ..
-            })) if ident == "fmt" => s.value(),
+            })) if path
+                .segments
+                .first()
+                .expect("path shouldn't be empty")
+                .ident
+                == "fmt" =>
+            {
+                s.value()
+            }
             // This one has been checked already in get_meta_fmt() method.
             _ => unreachable!(),
         };
@@ -397,37 +417,12 @@ impl<'a, 'b> State<'a, 'b> {
     fn has_type_param_in(&self, field: &syn::Field) -> bool {
         if let Type::Path(ref ty) = field.ty {
             return match ty.path.segments.first() {
-                Some(Pair::Punctuated(ref t, _)) => self.type_params.contains(&t.ident),
-                Some(Pair::End(ref t)) => self.type_params.contains(&t.ident),
+                Some(t) => self.type_params.contains(&t.ident),
                 _ => false,
             };
         }
         false
     }
-}
-
-lazy_static! {
-    /// Regular expression for parsing formatting placeholders from a string.
-    ///
-    /// Reproduces `maybe-format` expression of [formatting syntax][1].
-    ///
-    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
-    static ref MAYBE_PLACEHOLDER: Regex = Regex::new(
-        r"(\{\{|}}|(?P<placeholder>\{[^{}]*}))",
-    ).unwrap();
-
-    /// Regular expression for parsing inner type of formatting placeholder.
-    ///
-    /// Reproduces `format` expression of [formatting syntax][1], but is simplified
-    /// in the following way (as we need to parse `type` only):
-    /// - `argument` is replaced just with `\d+` (instead of [`identifier`][2]);
-    /// - `character` is allowed to be any symbol.
-    ///
-    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
-    /// [2]: https://doc.rust-lang.org/reference/identifiers.html#identifiers
-    static ref PLACEHOLDER_FORMAT: Regex = Regex::new(
-        r"^\{(?P<arg>\d+)?(:(.?[<^>])?[+-]?#?0?(\w+\$|\d+)?(\.(\w+\$|\d+|\*))?(?P<type>([oxXpbeE?]|[xX]\?)?)?)?}$",
-    ).unwrap();
 }
 
 /// Representation of formatting placeholder.
@@ -443,24 +438,18 @@ impl Placeholder {
     /// Parses [`Placeholder`]s from a given formatting string.
     fn parse_fmt_string(s: &str) -> Vec<Placeholder> {
         let mut n = 0;
-        MAYBE_PLACEHOLDER
-            .captures_iter(s)
-            .filter_map(|cap| cap.name("placeholder"))
+        crate::parsing::all_placeholders(s)
+            .into_iter()
+            .flat_map(|x| x)
             .map(|m| {
-                let captured = PLACEHOLDER_FORMAT.captures(m.as_str()).unwrap();
-                let position = captured
-                    .name("arg")
-                    .map(|s| s.as_str().parse().unwrap())
-                    .unwrap_or_else(|| {
-                        // Assign "the next argument".
-                        // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
-                        n += 1;
-                        n - 1
-                    });
-                let typ = captured
-                    .name("type")
-                    .map(|s| s.as_str())
-                    .unwrap_or_default();
+                let (maybe_arg, maybe_typ) = crate::parsing::format(m).unwrap();
+                let position = maybe_arg.unwrap_or_else(|| {
+                    // Assign "the next argument".
+                    // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
+                    n += 1;
+                    n - 1
+                });
+                let typ = maybe_typ.unwrap_or_default();
                 let trait_name = match typ {
                     "" => "Display",
                     "?" | "x?" | "X?" => "Debug",
@@ -484,15 +473,13 @@ impl Placeholder {
 
 #[cfg(test)]
 mod regex_maybe_placeholder_spec {
-    use super::*;
 
     #[test]
     fn parses_placeholders_and_omits_escaped() {
         let fmt_string = "{}, {:?}, {{}}, {{{1:0$}}}";
-        let placeholders: Vec<_> = MAYBE_PLACEHOLDER
-            .captures_iter(&fmt_string)
-            .filter_map(|cap| cap.name("placeholder"))
-            .map(|m| m.as_str())
+        let placeholders: Vec<_> = crate::parsing::all_placeholders(&fmt_string)
+            .into_iter()
+            .flat_map(|x| x)
             .collect();
         assert_eq!(placeholders, vec!["{}", "{:?}", "{1:0$}"]);
     }
@@ -500,7 +487,6 @@ mod regex_maybe_placeholder_spec {
 
 #[cfg(test)]
 mod regex_placeholder_format_spec {
-    use super::*;
 
     #[test]
     fn detects_type() {
@@ -524,12 +510,7 @@ mod regex_placeholder_format_spec {
             ("{9:>8.*}", ""),
             ("{2:.1$x}", "x"),
         ] {
-            let typ = PLACEHOLDER_FORMAT
-                .captures(p)
-                .unwrap()
-                .name("type")
-                .map(|s| s.as_str())
-                .unwrap_or_default();
+            let typ = crate::parsing::format(p).unwrap().1.unwrap_or_default();
             assert_eq!(typ, expected);
         }
     }
@@ -551,13 +532,12 @@ mod regex_placeholder_format_spec {
             ("{9:>8.*}", "9"),
             ("{2:.1$x}", "2"),
         ] {
-            let arg = PLACEHOLDER_FORMAT
-                .captures(p)
+            let arg = crate::parsing::format(p)
                 .unwrap()
-                .name("arg")
-                .map(|s| s.as_str())
+                .0
+                .map(|s| s.to_string())
                 .unwrap_or_default();
-            assert_eq!(arg, expected);
+            assert_eq!(arg, String::from(expected));
         }
     }
 }

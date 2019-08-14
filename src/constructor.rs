@@ -1,6 +1,7 @@
+use crate::utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
 use proc_macro2::TokenStream;
+use quote::quote;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
-use utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
 pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
@@ -21,7 +22,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
         _ => panic!("Only structs can derive a constructor"),
     };
     let original_types = &get_field_types(&fields);
-    quote!{
+    quote! {
         #[allow(missing_docs)]
         impl#impl_generics #input_type#ty_generics #where_clause {
             #[inline]

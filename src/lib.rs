@@ -189,36 +189,49 @@
 
 #![recursion_limit = "128"]
 
-#[cfg(feature = "display")]
-#[macro_use]
-extern crate lazy_static;
 extern crate proc_macro;
-extern crate proc_macro2;
-#[macro_use]
-extern crate quote;
-extern crate regex;
-extern crate syn;
+use proc_macro2;
+use syn;
 
 use proc_macro::TokenStream;
 use syn::parse::Error as ParseError;
 
 mod utils;
 
-#[cfg(feature = "add_assign_like")] mod add_assign_like;
-#[cfg(feature = "add_like")] mod add_like;
-#[cfg(feature = "constructor")] mod constructor;
-#[cfg(feature = "deref")] mod deref;
-#[cfg(feature = "deref_mut")] mod deref_mut;
-#[cfg(feature = "display")] mod display;
-#[cfg(feature = "from")] mod from;
-#[cfg(feature = "from_str")] mod from_str;
-#[cfg(feature = "index")] mod index;
-#[cfg(feature = "index_mut")] mod index_mut;
-#[cfg(feature = "into")] mod into;
-#[cfg(feature = "mul_assign_like")] mod mul_assign_like;
-#[cfg(feature = "mul_like")] mod mul_like;
-#[cfg(feature = "not_like")] mod not_like;
-#[cfg(feature = "try_into")] mod try_into;
+#[cfg(feature = "add_assign_like")]
+mod add_assign_like;
+#[cfg(feature = "add_like")]
+mod add_like;
+#[cfg(feature = "constructor")]
+mod constructor;
+#[cfg(feature = "deref")]
+mod deref;
+#[cfg(feature = "deref_mut")]
+mod deref_mut;
+#[cfg(feature = "display")]
+mod display;
+#[cfg(feature = "from")]
+mod from;
+#[cfg(feature = "from_str")]
+mod from_str;
+#[cfg(feature = "index")]
+mod index;
+#[cfg(feature = "index_mut")]
+mod index_mut;
+#[cfg(feature = "into")]
+mod into;
+#[cfg(feature = "mul_assign_like")]
+mod mul_assign_like;
+#[cfg(feature = "mul_like")]
+mod mul_like;
+#[cfg(feature = "not_like")]
+mod not_like;
+#[cfg(feature = "display")]
+#[allow(ellipsis_inclusive_range_patterns)]
+#[allow(clippy::all)]
+mod parsing;
+#[cfg(feature = "try_into")]
+mod try_into;
 
 // This trait describes the possible return types of
 // the derives. A derive can generally be infallible and
@@ -276,17 +289,67 @@ create_derive!("mul_like", mul_like, Rem, rem_derive);
 create_derive!("mul_like", mul_like, Shr, shr_derive);
 create_derive!("mul_like", mul_like, Shl, shl_derive);
 
-create_derive!("add_assign_like", add_assign_like, AddAssign, add_assign_derive);
-create_derive!("add_assign_like", add_assign_like, SubAssign, sub_assign_derive);
-create_derive!("add_assign_like", add_assign_like, BitAndAssign, bit_and_assign_derive);
-create_derive!("add_assign_like", add_assign_like, BitOrAssign, bit_or_assign_derive);
-create_derive!("add_assign_like", add_assign_like, BitXorAssign, bit_xor_assign_derive);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    AddAssign,
+    add_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    SubAssign,
+    sub_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    BitAndAssign,
+    bit_and_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    BitOrAssign,
+    bit_or_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    BitXorAssign,
+    bit_xor_assign_derive
+);
 
-create_derive!("mul_assign_like", mul_assign_like, MulAssign, mul_assign_derive);
-create_derive!("mul_assign_like", mul_assign_like, DivAssign, div_assign_derive);
-create_derive!("mul_assign_like", mul_assign_like, RemAssign, rem_assign_derive);
-create_derive!("mul_assign_like", mul_assign_like, ShrAssign, shr_assign_derive);
-create_derive!("mul_assign_like", mul_assign_like, ShlAssign, shl_assign_derive);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    MulAssign,
+    mul_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    DivAssign,
+    div_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    RemAssign,
+    rem_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    ShrAssign,
+    shr_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    ShlAssign,
+    shl_assign_derive
+);
 
 create_derive!("from_str", from_str, FromStr, from_str_derive);
 
