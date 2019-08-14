@@ -12,6 +12,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
     let mut variants_per_types = HashMap::new();
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
