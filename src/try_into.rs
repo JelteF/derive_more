@@ -12,6 +12,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
     let mut variants_per_types = HashMap::new();
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -70,7 +71,7 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
             .join(", ");
         let message = format!("Only {} can be converted to {}", variants, output_type);
 
-        let try_from = quote!{
+        let try_from = quote! {
             impl#impl_generics ::std::convert::TryFrom<#input_type#ty_generics> for
                 (#(#original_types),*) #where_clause {
                 type Error = &'static str;

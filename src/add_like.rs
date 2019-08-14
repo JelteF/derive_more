@@ -93,6 +93,7 @@ pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream>
     exprs
 }
 
+#[allow(clippy::cognitive_complexity)]
 fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) -> TokenStream {
     let import_root = get_import_root();
     let mut matches = vec![];

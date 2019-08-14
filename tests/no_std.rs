@@ -3,5 +3,18 @@
 #[macro_use]
 extern crate derive_more;
 
-#[derive(AddAssign, MulAssign, Add, Mul, Not, Index, Display, FromStr, Into, From, IndexMut, Constructor)]
+#[derive(
+    AddAssign,
+    MulAssign,
+    Add,
+    Mul,
+    Not,
+    Index,
+    Display,
+    FromStr,
+    Into,
+    From,
+    IndexMut,
+    Constructor
+)]
 struct MyInts(u64);

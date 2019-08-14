@@ -4,7 +4,6 @@ use std::{
 };
 
 use proc_macro2::{Ident, Span, TokenStream};
-use regex::Regex;
 use syn::{
     parse::{Error, Result},
     spanned::Spanned,
@@ -411,30 +410,6 @@ impl<'a, 'b> State<'a, 'b> {
     }
 }
 
-lazy_static! {
-    /// Regular expression for parsing formatting placeholders from a string.
-    ///
-    /// Reproduces `maybe-format` expression of [formatting syntax][1].
-    ///
-    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
-    static ref MAYBE_PLACEHOLDER: Regex = Regex::new(
-        r"(\{\{|}}|(?P<placeholder>\{[^{}]*}))",
-    ).unwrap();
-
-    /// Regular expression for parsing inner type of formatting placeholder.
-    ///
-    /// Reproduces `format` expression of [formatting syntax][1], but is simplified
-    /// in the following way (as we need to parse `type` only):
-    /// - `argument` is replaced just with `\d+` (instead of [`identifier`][2]);
-    /// - `character` is allowed to be any symbol.
-    ///
-    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
-    /// [2]: https://doc.rust-lang.org/reference/identifiers.html#identifiers
-    static ref PLACEHOLDER_FORMAT: Regex = Regex::new(
-        r"^\{(?P<arg>\d+)?(:(.?[<^>])?[+-]?#?0?(\w+\$|\d+)?(\.(\w+\$|\d+|\*))?(?P<type>([oxXpbeE?]|[xX]\?)?)?)?}$",
-    ).unwrap();
-}
-
 /// Representation of formatting placeholder.
 #[derive(Debug, PartialEq)]
 struct Placeholder {
@@ -448,24 +423,18 @@ impl Placeholder {
     /// Parses [`Placeholder`]s from a given formatting string.
     fn parse_fmt_string(s: &str) -> Vec<Placeholder> {
         let mut n = 0;
-        MAYBE_PLACEHOLDER
-            .captures_iter(s)
-            .filter_map(|cap| cap.name("placeholder"))
+        ::parsing::all_placeholders(s)
+            .into_iter()
+            .flat_map(|x| x)
             .map(|m| {
-                let captured = PLACEHOLDER_FORMAT.captures(m.as_str()).unwrap();
-                let position = captured
-                    .name("arg")
-                    .map(|s| s.as_str().parse().unwrap())
-                    .unwrap_or_else(|| {
-                        // Assign "the next argument".
-                        // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
-                        n += 1;
-                        n - 1
-                    });
-                let typ = captured
-                    .name("type")
-                    .map(|s| s.as_str())
-                    .unwrap_or_default();
+                let (maybe_arg, maybe_typ) = ::parsing::format(m).unwrap();
+                let position = maybe_arg.unwrap_or_else(|| {
+                    // Assign "the next argument".
+                    // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
+                    n += 1;
+                    n - 1
+                });
+                let typ = maybe_typ.unwrap_or_default();
                 let trait_name = match typ {
                     "" => "Display",
                     "?" | "x?" | "X?" => "Debug",
@@ -489,15 +458,13 @@ impl Placeholder {
 
 #[cfg(test)]
 mod regex_maybe_placeholder_spec {
-    use super::*;
 
     #[test]
     fn parses_placeholders_and_omits_escaped() {
         let fmt_string = "{}, {:?}, {{}}, {{{1:0$}}}";
-        let placeholders: Vec<_> = MAYBE_PLACEHOLDER
-            .captures_iter(&fmt_string)
-            .filter_map(|cap| cap.name("placeholder"))
-            .map(|m| m.as_str())
+        let placeholders: Vec<_> = ::parsing::all_placeholders(&fmt_string)
+            .into_iter()
+            .flat_map(|x| x)
             .collect();
         assert_eq!(placeholders, vec!["{}", "{:?}", "{1:0$}"]);
     }
@@ -505,7 +472,6 @@ mod regex_maybe_placeholder_spec {
 
 #[cfg(test)]
 mod regex_placeholder_format_spec {
-    use super::*;
 
     #[test]
     fn detects_type() {
@@ -529,12 +495,7 @@ mod regex_placeholder_format_spec {
             ("{9:>8.*}", ""),
             ("{2:.1$x}", "x"),
         ] {
-            let typ = PLACEHOLDER_FORMAT
-                .captures(p)
-                .unwrap()
-                .name("type")
-                .map(|s| s.as_str())
-                .unwrap_or_default();
+            let typ = ::parsing::format(p).unwrap().1.unwrap_or_default();
             assert_eq!(typ, expected);
         }
     }
@@ -556,13 +517,12 @@ mod regex_placeholder_format_spec {
             ("{9:>8.*}", "9"),
             ("{2:.1$x}", "2"),
         ] {
-            let arg = PLACEHOLDER_FORMAT
-                .captures(p)
+            let arg = ::parsing::format(p)
                 .unwrap()
-                .name("arg")
-                .map(|s| s.as_str())
+                .0
+                .map(|s| s.to_string())
                 .unwrap_or_default();
-            assert_eq!(arg, expected);
+            assert_eq!(arg, String::from(expected));
         }
     }
 }
