@@ -18,15 +18,18 @@
 //! #[macro_use]
 //! extern crate derive_more;
 //!
+//! # #[cfg(all( feature = "add_like", feature = "from"))]
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! struct MyInt(i32);
 //!
+//! # #[cfg(all( feature = "constructor", feature = "from", feature = "into", feature = "mul_like"))]
 //! #[derive(Debug, Eq, PartialEq, From, Into, Constructor, Mul)]
 //! struct Point2D {
 //!     x: i32,
 //!     y: i32,
 //! }
 //!
+//! # #[cfg(all( feature = "add_like", feature = "from"))]
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! enum MyEnum {
 //!     Int(i32),
@@ -34,6 +37,7 @@
 //!     Nothing,
 //! }
 //!
+//! # #[cfg(all(feature = "add_like", feature = "constructor", feature = "from", feature = "into", feature = "mul_like"))]
 //! fn main() {
 //!     let my_11 = MyInt(5) + 6.into();
 //!     assert_eq!(MyInt(11), MyInt(5) + 6.into());
@@ -42,6 +46,9 @@
 //!     assert_eq!(Point2D { x: 5, y: 6 }, Point2D::new(5, 6));
 //!     assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
 //! }
+//! # #[cfg(not(all( feature = "add_like", feature = "constructor", feature = "from", feature = "into", feature = "mul_like")))]
+//! # fn main() {
+//! # }
 //! ```
 //!
 //! ## The derivable traits
@@ -200,6 +207,8 @@ mod utils;
 
 #[cfg(feature = "add_assign_like")]
 mod add_assign_like;
+#[cfg(any(feature = "add_like", feature = "add_assign_like"))]
+mod add_helpers;
 #[cfg(feature = "add_like")]
 mod add_like;
 #[cfg(feature = "constructor")]
