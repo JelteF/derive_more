@@ -9,7 +9,7 @@ use syn::{
     spanned::Spanned,
     Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Path, Type,
 };
-use utils::{add_extra_where_clauses, get_import_root};
+use crate::utils::{add_extra_where_clauses, get_import_root};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
@@ -423,11 +423,11 @@ impl Placeholder {
     /// Parses [`Placeholder`]s from a given formatting string.
     fn parse_fmt_string(s: &str) -> Vec<Placeholder> {
         let mut n = 0;
-        ::parsing::all_placeholders(s)
+        crate::parsing::all_placeholders(s)
             .into_iter()
             .flat_map(|x| x)
             .map(|m| {
-                let (maybe_arg, maybe_typ) = ::parsing::format(m).unwrap();
+                let (maybe_arg, maybe_typ) = crate::parsing::format(m).unwrap();
                 let position = maybe_arg.unwrap_or_else(|| {
                     // Assign "the next argument".
                     // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
@@ -462,7 +462,7 @@ mod regex_maybe_placeholder_spec {
     #[test]
     fn parses_placeholders_and_omits_escaped() {
         let fmt_string = "{}, {:?}, {{}}, {{{1:0$}}}";
-        let placeholders: Vec<_> = ::parsing::all_placeholders(&fmt_string)
+        let placeholders: Vec<_> = crate::parsing::all_placeholders(&fmt_string)
             .into_iter()
             .flat_map(|x| x)
             .collect();
@@ -495,7 +495,7 @@ mod regex_placeholder_format_spec {
             ("{9:>8.*}", ""),
             ("{2:.1$x}", "x"),
         ] {
-            let typ = ::parsing::format(p).unwrap().1.unwrap_or_default();
+            let typ = crate::parsing::format(p).unwrap().1.unwrap_or_default();
             assert_eq!(typ, expected);
         }
     }
@@ -517,7 +517,7 @@ mod regex_placeholder_format_spec {
             ("{9:>8.*}", "9"),
             ("{2:.1$x}", "2"),
         ] {
-            let arg = ::parsing::format(p)
+            let arg = crate::parsing::format(p)
                 .unwrap()
                 .0
                 .map(|s| s.to_string())

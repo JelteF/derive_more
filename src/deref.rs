@@ -1,6 +1,6 @@
 use proc_macro2::{Span, TokenStream};
 use syn::{Data, DeriveInput, Field, Fields, Ident};
-use utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
+use crate::utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {

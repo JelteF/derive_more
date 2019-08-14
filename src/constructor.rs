@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
-use utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
+use crate::utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(Constructor)]` into an implementation of `Constructor`
 pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {

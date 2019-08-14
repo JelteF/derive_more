@@ -2,7 +2,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
-use utils::{add_extra_type_param_bound_op_output, get_import_root, named_to_vec, unnamed_to_vec};
+use crate::utils::{add_extra_type_param_bound_op_output, get_import_root, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let import_root = get_import_root();
