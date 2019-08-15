@@ -31,7 +31,7 @@ matrix:
     - env: TARGET=x86_64-unknown-linux-gnu # this is the default job
       before_script:
         - rustup component add clippy
-        - go get go get github.com/pelletier/go-toml/cmd/tomljson
+        - go get github.com/pelletier/go-toml/cmd/tomljson
       script:
          - cargo clippy --all -- -D clippy::all
          - bash ci/test_all_features.sh
