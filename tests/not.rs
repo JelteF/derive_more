@@ -1,5 +1,3 @@
-#![cfg(feature = "not_like")]
-
 #![allow(dead_code)]
 #[macro_use]
 extern crate derive_more;

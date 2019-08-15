@@ -231,6 +231,8 @@ mod index_mut;
 mod into;
 #[cfg(feature = "mul_assign_like")]
 mod mul_assign_like;
+#[cfg(any(feature = "mul_like", feature = "mul_assign_like"))]
+mod mul_helpers;
 #[cfg(feature = "mul_like")]
 mod mul_like;
 #[cfg(feature = "not_like")]

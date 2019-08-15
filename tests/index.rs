@@ -1,5 +1,3 @@
-#![cfg(feature = "index")]
-
 #![allow(dead_code, unused_imports)]
 #[macro_use]
 extern crate derive_more;
