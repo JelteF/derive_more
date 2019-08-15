@@ -1,6 +1,7 @@
+use crate::mul_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{
     add_where_clauses_for_new_ident, field_idents, get_field_types_iter, named_to_vec,
-    number_idents, unnamed_to_vec,
+    unnamed_to_vec,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -72,13 +73,6 @@ fn tuple_content<'a, T: ToTokens>(
     quote!(#input_type(#(#exprs),*))
 }
 
-pub fn tuple_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
-    number_idents(fields.len())
-        .iter()
-        .map(|i| quote!(self.#i.#method_ident(rhs)))
-        .collect()
-}
-
 fn struct_content<'a, T: ToTokens>(
     input_type: &T,
     fields: &[&'a Field],
@@ -87,11 +81,4 @@ fn struct_content<'a, T: ToTokens>(
     let exprs = struct_exprs(fields, method_ident);
     let field_names = field_idents(fields);
     quote!(#input_type{#(#field_names: #exprs),*})
-}
-
-pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
-    field_idents(fields)
-        .iter()
-        .map(|f| quote!(self.#f.#method_ident(rhs)))
-        .collect()
 }

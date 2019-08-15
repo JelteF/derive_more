@@ -1,4 +1,4 @@
-use crate::mul_like::{struct_exprs, tuple_exprs};
+use crate::mul_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{
     add_where_clauses_for_new_ident, get_field_types_iter, named_to_vec, unnamed_to_vec,
 };

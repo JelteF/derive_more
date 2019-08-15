@@ -40,4 +40,201 @@ appveyor = { repository = "JelteF/derive_more" }
 
 [features]
 nightly = []
+add_assign_like = []
+add_like = []
+constructor = []
+deref = []
+deref_mut = []
+display = []
+from = []
+from_str = []
+index = []
+index_mut = []
+into = []
+mul_assign_like = []
+mul_like = []
+not_like = []
+try_into = []
 generate-parsing-rs = ["peg"]
+
+default = [
+    "add_assign_like",
+    "add_like",
+    "constructor",
+    "deref",
+    "deref_mut",
+    "display",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "mul_assign_like",
+    "mul_like",
+    "not_like",
+    "try_into",
+]
+
+[[test]]
+name = "add_assign"
+path = "tests/add_assign.rs"
+required-features = ["add_assign_like"]
+
+[[test]]
+name = "add"
+path = "tests/add.rs"
+required-features = ["add_like"]
+
+[[test]]
+name = "boats_display_derive"
+path = "tests/boats_display_derive.rs"
+required-features = ["display"]
+
+[[test]]
+name = "constructor"
+path = "tests/constructor.rs"
+required-features = ["constructor"]
+
+[[test]]
+name = "deref_mut"
+path = "tests/deref_mut.rs"
+required-features = ["deref_mut"]
+
+[[test]]
+name = "deref"
+path = "tests/deref.rs"
+required-features = ["deref"]
+
+[[test]]
+name = "display"
+path = "tests/display.rs"
+required-features = ["display"]
+
+[[test]]
+name = "from"
+path = "tests/from.rs"
+required-features = ["from"]
+
+[[test]]
+name = "from_str"
+path = "tests/from_str.rs"
+required-features = ["from_str"]
+
+[[test]]
+name = "index_mut"
+path = "tests/index_mut.rs"
+required-features = ["index_mut"]
+
+[[test]]
+name = "index"
+path = "tests/index.rs"
+required-features = ["index"]
+
+[[test]]
+name = "into"
+path = "tests/into.rs"
+required-features = ["into"]
+
+[[test]]
+name = "mul_assign"
+path = "tests/mul_assign.rs"
+required-features = ["mul_assign_like"]
+
+[[test]]
+name = "mul"
+path = "tests/mul.rs"
+required-features = ["mul_like"]
+
+[[test]]
+name = "not"
+path = "tests/not.rs"
+required-features = ["not_like"]
+
+[[test]]
+name = "try_into"
+path = "tests/try_into.rs"
+required-features = ["try_into"]
+
+[[test]]
+name = "no_std"
+path = "tests/no_std.rs"
+required-features = [
+    "add_assign_like",
+    "add_like",
+    "constructor",
+    "deref",
+    "deref_mut",
+    "display",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "mul_assign_like",
+    "mul_like",
+    "not_like",
+    "try_into",
+]
+
+[[test]]
+name = "generics"
+path = "tests/generics.rs"
+required-features = [
+    "add_assign_like",
+    "add_like",
+    "constructor",
+    "deref",
+    "deref_mut",
+    "display",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "mul_assign_like",
+    "mul_like",
+    "not_like",
+    "try_into",
+]
+
+[[test]]
+name = "lib"
+path = "tests/lib.rs"
+required-features = [
+    "add_assign_like",
+    "add_like",
+    "constructor",
+    "deref",
+    "deref_mut",
+    "display",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "mul_assign_like",
+    "mul_like",
+    "not_like",
+    "try_into",
+]
+
+[[example]]
+name = "deny_missing_docs"
+path = "examples/deny_missing_docs.rs"
+required-features = [
+    "add_assign_like",
+    "add_like",
+    "constructor",
+    "deref",
+    "deref_mut",
+    "display",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "mul_assign_like",
+    "mul_like",
+    "not_like",
+    "try_into",
+]
