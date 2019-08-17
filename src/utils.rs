@@ -46,7 +46,7 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     for type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
         let bound: TypeParamBound =
-            parse_str(&quote!(::std::ops::#trait_ident<Output=#type_ident>).to_string()).unwrap();
+            parse_str(&quote!(::core::ops::#trait_ident<Output=#type_ident>).to_string()).unwrap();
         type_param.bounds.push(bound)
     }
 
@@ -54,7 +54,7 @@ pub fn add_extra_type_param_bound_op_output<'a>(
 }
 
 pub fn add_extra_ty_param_bound_op<'a>(generics: &'a Generics, trait_ident: &'a Ident) -> Generics {
-    add_extra_ty_param_bound(generics, &quote!(::std::ops::#trait_ident))
+    add_extra_ty_param_bound(generics, &quote!(::core::ops::#trait_ident))
 }
 
 pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, bound: &'a TokenStream) -> Generics {
@@ -93,7 +93,7 @@ pub fn add_where_clauses_for_new_ident<'a>(
     type_where_clauses: TokenStream,
 ) -> Generics {
     let generic_param = if fields.len() > 1 {
-        quote!(#type_ident: ::std::marker::Copy)
+        quote!(#type_ident: ::core::marker::Copy)
     } else {
         quote!(#type_ident)
     };
