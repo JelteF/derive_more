@@ -5,6 +5,7 @@ use syn::{Data, DeriveInput, Field, Fields, Ident};
 
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_name = trait_name.trim_end_matches("ToInner");
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let trait_path = &quote!(::std::ops::#trait_ident);
     let input_type = &input.ident;
@@ -28,13 +29,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     // let generics = add_extra_ty_param_bound(&input.generics, trait_path);
-    let casted_trait = &quote!(<#field_type as #trait_path>);
-    quote! {
+    quote!{
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
+            type Target = #field_type;
             #[inline]
-            fn deref_mut(&mut self) -> &mut Self::Target {
-                #casted_trait::deref_mut(&mut #member)
+            fn deref(&self) -> &Self::Target {
+                &#member
             }
         }
     }

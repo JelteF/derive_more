@@ -14,7 +14,7 @@ extern crate derive_more;
 #[derive(Display)]
 #[derive(Octal)]
 #[derive(Binary)]
-#[derive(Deref, DerefMut)]
+#[derive(DerefToInner, DerefMutToInner)]
 #[derive(Sum)]
 #[derive(MulSelf)]
 #[derive(Product)]
@@ -205,7 +205,7 @@ fn main() {
     assert_eq!(MyInt(6), int_vec.clone().into_iter().product());
 
     let mut boxed = MyBoxedInt(Box::new(5));
-    assert_eq!(Box::new(5), *boxed);
-    **boxed = 7;
+    assert_eq!(5, *boxed);
+    *boxed = 7;
     assert_eq!(MyBoxedInt(Box::new(7)), boxed)
 }

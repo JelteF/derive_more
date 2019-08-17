@@ -45,6 +45,8 @@ add_like = []
 constructor = []
 deref = []
 deref_mut = []
+deref_to_inner = []
+deref_mut_to_inner = []
 display = []
 from = []
 from_str = []
@@ -64,6 +66,8 @@ default = [
     "constructor",
     "deref",
     "deref_mut",
+    "deref_to_inner",
+    "deref_mut_to_inner",
     "display",
     "from",
     "from_str",
