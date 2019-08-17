@@ -1,11 +1,11 @@
+use crate::utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
 use proc_macro2::TokenStream;
+use quote::quote;
 use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
-use utils::{add_extra_ty_param_bound, get_import_root, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
-    let import_root = get_import_root();
-    let trait_path = &quote!(#import_root::str::FromStr);
+    let trait_path = &quote!(::core::str::FromStr);
     let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let input_type = &input.ident;
@@ -26,8 +26,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         {
             type Err = <#field_type as #trait_path>::Err;
             #[inline]
-            fn from_str(src: &str) -> #import_root::result::Result<Self, Self::Err> {
-                return #import_root::result::Result::Ok(#result)
+            fn from_str(src: &str) -> ::core::result::Result<Self, Self::Err> {
+                return ::core::result::Result::Ok(#result)
             }
         }
     }

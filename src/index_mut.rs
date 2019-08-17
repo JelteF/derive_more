@@ -1,13 +1,13 @@
+use crate::utils::{add_where_clauses_for_new_ident, named_to_vec, unnamed_to_vec};
 use proc_macro2::{Span, TokenStream};
+use quote::quote;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
-use utils::{add_where_clauses_for_new_ident, get_import_root, named_to_vec, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(IndexMut)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let index_type = &Ident::new("__IdxT", Span::call_site());
-    let import_root = get_import_root();
-    let trait_path = &quote!(#import_root::ops::#trait_ident<#index_type>);
+    let trait_path = &quote!(::core::ops::#trait_ident<#index_type>);
     let input_type = &input.ident;
     let field_vec: Vec<&Field>;
     let member = match input.data {
@@ -25,7 +25,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         _ => panic_one_field(trait_name),
     };
     let field_type = &field_vec[0].ty;
-    let type_where_clauses = quote!{
+    let type_where_clauses = quote! {
         where #field_type: #trait_path
     };
 
@@ -40,7 +40,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let (_, ty_generics, _) = input.generics.split_for_impl();
     // let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let casted_trait = &quote!(<#field_type as #trait_path>);
-    quote!{
+    quote! {
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
             #[inline]

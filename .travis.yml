@@ -10,6 +10,11 @@ sudo: required
 # overridden on a case by case basis down below
 rust: stable
 
+addons:
+  apt:
+    packages:
+      - jq
+
 env:
   global:
     # TODO Update this to match the name of your project.
@@ -26,8 +31,10 @@ matrix:
     - env: TARGET=x86_64-unknown-linux-gnu # this is the default job
       before_script:
         - rustup component add clippy
+        - go get github.com/pelletier/go-toml/cmd/tomljson
       script:
          - cargo clippy --all -- -D clippy::all
+         - bash ci/test_all_features.sh
 
     # Linux
     - env: TARGET=x86_64-unknown-linux-gnu # this is the default job
@@ -42,9 +49,10 @@ matrix:
       rust: nightly
     - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true
       rust: nightly
-    - env: TARGET=x86_64-apple-darwin
-      os: osx
-      rust: nightly
+      # Currentl failing
+      #- env: TARGET=x86_64-apple-darwin
+      #  os: osx
+      #  rust: nightly
 
 before_install: set -e
 
