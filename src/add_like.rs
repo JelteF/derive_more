@@ -107,14 +107,14 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 let matcher = quote! {
                     (#subtype{#(#field_names: #l_vars),*},
                      #subtype{#(#field_names: #r_vars),*}) => {
-                        ::std::result::Result::Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
+                        ::core::result::Result::Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
                     }
                 };
                 matches.push(matcher);
             }
             Fields::Unit => {
                 let message = format!("Cannot {}() unit variants", method_ident.to_string());
-                matches.push(quote!((#subtype, #subtype) => ::std::result::Result::Err(#message)));
+                matches.push(quote!((#subtype, #subtype) => ::core::result::Result::Err(#message)));
             }
         }
     }
@@ -126,7 +126,7 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
             "Trying to {} mismatched enum variants",
             method_ident.to_string()
         );
-        matches.push(quote!(_ => ::std::result::Result::Err(#message)));
+        matches.push(quote!(_ => ::core::result::Result::Err(#message)));
     }
     quote!(
         match (self, rhs) {

@@ -72,16 +72,16 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
         let message = format!("Only {} can be converted to {}", variants, output_type);
 
         let try_from = quote! {
-            impl#impl_generics ::std::convert::TryFrom<#input_type#ty_generics> for
+            impl#impl_generics ::core::convert::TryFrom<#input_type#ty_generics> for
                 (#(#original_types),*) #where_clause {
                 type Error = &'static str;
 
                 #[allow(unused_variables)]
                 #[inline]
-                fn try_from(value: #input_type#ty_generics) -> ::std::result::Result<Self, Self::Error> {
+                fn try_from(value: #input_type#ty_generics) -> ::core::result::Result<Self, Self::Error> {
                     match value {
-                        #(#matchers)|* => ::std::result::Result::Ok(#vars),
-                        _ => ::std::result::Result::Err(#message),
+                        #(#matchers)|* => ::core::result::Result::Ok(#vars),
+                        _ => ::core::result::Result::Err(#message),
                     }
                 }
             }

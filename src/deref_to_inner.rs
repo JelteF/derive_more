@@ -7,7 +7,7 @@ use syn::{Data, DeriveInput, Field, Fields, Ident};
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_name = trait_name.trim_end_matches("ToInner");
     let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(::std::ops::#trait_ident);
+    let trait_path = &quote!(::core::ops::#trait_ident);
     let input_type = &input.ident;
     let field_vec: Vec<&Field>;
     let member = match input.data {
