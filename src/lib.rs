@@ -217,10 +217,10 @@ mod constructor;
 mod deref;
 #[cfg(feature = "deref_mut")]
 mod deref_mut;
-#[cfg(feature = "deref_to_inner")]
-mod deref_to_inner;
 #[cfg(feature = "deref_mut_to_inner")]
 mod deref_mut_to_inner;
+#[cfg(feature = "deref_to_inner")]
+mod deref_to_inner;
 #[cfg(feature = "display")]
 mod display;
 #[cfg(feature = "from")]
@@ -394,5 +394,15 @@ create_derive!("try_into", try_into, TryInto, try_into_derive);
 
 create_derive!("deref", deref, Deref, deref_derive);
 create_derive!("deref_mut", deref_mut, DerefMut, deref_mut_derive);
-create_derive!("deref_to_inner", deref_to_inner, DerefToInner, deref_to_inner_derive);
-create_derive!("deref_mut_to_inner", deref_mut_to_inner, DerefMutToInner, deref_mut_to_inner_derive);
+create_derive!(
+    "deref_to_inner",
+    deref_to_inner,
+    DerefToInner,
+    deref_to_inner_derive
+);
+create_derive!(
+    "deref_mut_to_inner",
+    deref_mut_to_inner,
+    DerefMutToInner,
+    deref_mut_to_inner_derive
+);

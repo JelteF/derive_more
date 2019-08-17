@@ -12,14 +12,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let method_ident = Ident::new(&(method_name.to_string()), Span::call_site());
     let input_type = &input.ident;
     let trait_path = quote!(::core::iter::#trait_ident);
-    let op_trait_name = if trait_name == "Sum" {
-        "Add"
-    } else {
-        "Mul"
-    };
+    let op_trait_name = if trait_name == "Sum" { "Add" } else { "Mul" };
     let op_trait_ident = Ident::new(op_trait_name, Span::call_site());
     let op_path = quote!(::core::ops::#op_trait_ident);
-    let op_method_ident = Ident::new(&(op_trait_name.to_string().to_lowercase()), Span::call_site());
+    let op_method_ident = Ident::new(
+        &(op_trait_name.to_string().to_lowercase()),
+        Span::call_site(),
+    );
     let type_params: Vec<_> = input
         .generics
         .type_params()

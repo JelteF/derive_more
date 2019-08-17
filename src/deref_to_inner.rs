@@ -29,7 +29,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let generics = add_extra_ty_param_bound(&input.generics, trait_path);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     // let generics = add_extra_ty_param_bound(&input.generics, trait_path);
-    quote!{
+    quote! {
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
             type Target = #field_type;
