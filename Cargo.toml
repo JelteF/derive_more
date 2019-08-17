@@ -102,14 +102,24 @@ path = "tests/constructor.rs"
 required-features = ["constructor"]
 
 [[test]]
+name = "deref"
+path = "tests/deref.rs"
+required-features = ["deref"]
+
+[[test]]
 name = "deref_mut"
 path = "tests/deref_mut.rs"
 required-features = ["deref_mut"]
 
 [[test]]
-name = "deref"
-path = "tests/deref.rs"
-required-features = ["deref"]
+name = "deref_to_inner"
+path = "tests/deref_to_inner.rs"
+required-features = ["deref_to_inner"]
+
+[[test]]
+name = "deref_mut_to_inner"
+path = "tests/deref_mut_to_inner.rs"
+required-features = ["deref_mut_to_inner"]
 
 [[test]]
 name = "display"

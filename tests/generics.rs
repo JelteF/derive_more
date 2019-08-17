@@ -13,6 +13,8 @@ extern crate derive_more;
     Sum,
     IndexMut,
     AddAssign,
+    DerefToInner,
+    DerefMutToInner,
     Constructor
 )]
 struct Wrapped<T: Clone>(T);
@@ -30,6 +32,8 @@ struct WrappedDouble<T: Clone, U: Clone>(T, U);
     Mul,
     IndexMut,
     AddAssign,
+    DerefToInner,
+    DerefMutToInner,
     Constructor,
     Sum
 )]
