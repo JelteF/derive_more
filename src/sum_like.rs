@@ -25,15 +25,15 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         .type_params()
         .map(|t| t.ident.clone())
         .collect();
-    let generics = if type_params.len() > 0 {
+    let generics = if type_params.is_empty() {
+        input.generics.clone()
+    } else {
         let generic_type = quote!(<#(#type_params),*>);
         let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
         let operator_where_clause = quote! {
             where #input_type#generic_type: #op_path<Output=#input_type#generic_type>
         };
         add_extra_where_clauses(&generics, operator_where_clause)
-    } else {
-        input.generics.clone()
     };
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
