@@ -21,7 +21,10 @@ pub struct ParseError {
 }
 pub type ParseResult<T> = Result<T, ParseError>;
 impl ::std::fmt::Display for ParseError {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::result::Result<(), ::std::fmt::Error> {
+    fn fmt(
+        &self,
+        fmt: &mut ::std::fmt::Formatter<'_>,
+    ) -> ::std::result::Result<(), ::std::fmt::Error> {
         write!(fmt, "error at {}:{}: expected ", self.line, self.column)?;
         if self.expected.len() == 0 {
             write!(fmt, "EOF")?;
@@ -46,7 +49,12 @@ impl ::std::error::Error for ParseError {
         "parse error"
     }
 }
-fn slice_eq(input: &str, state: &mut ParseState<'_>, pos: usize, m: &'static str) -> RuleResult<()> {
+fn slice_eq(
+    input: &str,
+    state: &mut ParseState<'_>,
+    pos: usize,
+    m: &'static str,
+) -> RuleResult<()> {
     #![inline]
     #![allow(dead_code)]
     let l = m.len();

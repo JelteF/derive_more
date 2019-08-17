@@ -54,6 +54,7 @@ into = []
 mul_assign_like = []
 mul_like = []
 not_like = []
+sum_like = []
 try_into = []
 generate-parsing-rs = ["peg"]
 
@@ -72,6 +73,7 @@ default = [
     "mul_assign_like",
     "mul_like",
     "not_like",
+    "sum_like",
     "try_into",
 ]
 
@@ -151,6 +153,11 @@ path = "tests/not.rs"
 required-features = ["not_like"]
 
 [[test]]
+name = "sum"
+path = "tests/sum.rs"
+required-features = ["sum_like"]
+
+[[test]]
 name = "try_into"
 path = "tests/try_into.rs"
 required-features = ["try_into"]
@@ -173,6 +180,7 @@ required-features = [
     "mul_assign_like",
     "mul_like",
     "not_like",
+    "sum_like",
     "try_into",
 ]
 

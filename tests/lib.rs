@@ -4,7 +4,7 @@ extern crate derive_more;
 #[derive(From)]
 #[derive(Into)]
 #[derive(Constructor)]
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 #[derive(Add)]
 #[derive(Mul)]
 #[derive(Neg)]
@@ -14,7 +14,17 @@ extern crate derive_more;
 #[derive(Display)]
 #[derive(Octal)]
 #[derive(Binary)]
+#[derive(Sum)]
+#[derive(Product)]
 struct MyInt(i32);
+
+impl ::core::ops::Mul for MyInt {
+    type Output = MyInt;
+    #[inline]
+    fn mul(self, rhs: MyInt) -> MyInt {
+        MyInt(self.0.mul(rhs.0))
+    }
+}
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
@@ -189,6 +199,10 @@ fn main() {
     assert_eq!(8, myvec[1]);
     myvec[0] = 20;
     assert_eq!(20, myvec[0]);
+
+    let int_vec = vec![MyInt(2), MyInt(3)];
+    assert_eq!(MyInt(5), int_vec.clone().into_iter().sum());
+    assert_eq!(MyInt(6), int_vec.clone().into_iter().product());
 
     let mut boxed = MyBoxedInt(Box::new(5));
     assert_eq!(5, *boxed);

@@ -241,6 +241,8 @@ mod not_like;
 #[allow(ellipsis_inclusive_range_patterns)]
 #[allow(clippy::all)]
 mod parsing;
+#[cfg(feature = "sum_like")]
+mod sum_like;
 #[cfg(feature = "try_into")]
 mod try_into;
 
@@ -361,6 +363,9 @@ create_derive!(
     ShlAssign,
     shl_assign_derive
 );
+
+create_derive!("sum_like", sum_like, Sum, sum_derive);
+create_derive!("sum_like", sum_like, Product, product_derive);
 
 create_derive!("from_str", from_str, FromStr, from_str_derive);
 
