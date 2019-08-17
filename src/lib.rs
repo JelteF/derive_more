@@ -295,6 +295,11 @@ create_derive!("add_like", add_like, Sub, sub_derive);
 create_derive!("add_like", add_like, BitAnd, bit_and_derive);
 create_derive!("add_like", add_like, BitOr, bit_or_derive);
 create_derive!("add_like", add_like, BitXor, bit_xor_derive);
+create_derive!("add_like", add_like, MulSelf, mul_self_derive);
+create_derive!("add_like", add_like, DivSelf, div_self_derive);
+create_derive!("add_like", add_like, RemSelf, rem_self_derive);
+create_derive!("add_like", add_like, ShrSelf, shr_self_derive);
+create_derive!("add_like", add_like, ShlSelf, shl_self_derive);
 
 create_derive!("mul_like", mul_like, Mul, mul_derive);
 create_derive!("mul_like", mul_like, Div, div_derive);

@@ -8,6 +8,7 @@ use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+    let trait_name = trait_name.trim_end_matches("Self");
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_lowercase();
     let method_ident = Ident::new(&method_name, Span::call_site());

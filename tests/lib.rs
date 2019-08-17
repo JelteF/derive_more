@@ -15,16 +15,9 @@ extern crate derive_more;
 #[derive(Octal)]
 #[derive(Binary)]
 #[derive(Sum)]
+#[derive(MulSelf)]
 #[derive(Product)]
 struct MyInt(i32);
-
-impl ::core::ops::Mul for MyInt {
-    type Output = MyInt;
-    #[inline]
-    fn mul(self, rhs: MyInt) -> MyInt {
-        MyInt(self.0.mul(rhs.0))
-    }
-}
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
