@@ -81,7 +81,7 @@ enum EmptyEnum {}
 struct Generic<T>(T);
 
 #[derive(Display)]
-#[display(affix = "Here's a prefix for {} and a suffix")]
+#[display(fmt = "Here's a prefix for {} and a suffix")]
 enum Affix {
     A(u32),
     #[display(fmt = "{} -- {}", wat, stuff)]

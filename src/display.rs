@@ -167,7 +167,7 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(meta)
         }
     }
-    fn get_meta_fmt(&self, meta: &Meta) -> Result<Format> {
+    fn get_meta_fmt(&self, meta: &Meta, outer_enum: bool) -> Result<Format> {
         let list = match meta {
             Meta::List(list) => list,
             _ => {
@@ -186,6 +186,42 @@ impl<'a, 'b> State<'a, 'b> {
                 ..
             })) => match path {
                 op if op.segments.first().expect("path shouldn't be empty").ident == "fmt" => {
+                    if outer_enum {
+                        if list.nested.iter().skip(1).count() != 0 {
+                            return Err(Error::new(
+                                list.nested[1].span(),
+                                "`affix` formatting requires a single `fmt` argument",
+                            ));
+                        }
+                        // TODO: Check for a single `Display` group?
+                        let fmt_string = match &list.nested[0] {
+                            NestedMeta::Meta(Meta::NameValue(MetaNameValue {
+                                path,
+                                lit: Lit::Str(s),
+                                ..
+                            })) if path
+                                .segments
+                                .first()
+                                .expect("path shouldn't be empty")
+                                .ident
+                                == "fmt" =>
+                            {
+                                s.value()
+                            }
+                            // This one has been checked already in get_meta_fmt() method.
+                            _ => unreachable!(),
+                        };
+
+                        let num_placeholders = Placeholder::parse_fmt_string(&fmt_string).len();
+                        if num_placeholders > 1 {
+                            return Err(Error::new(
+                                list.nested[1].span(),
+                                "fmt string for enum should have at at most 1 placeholder",
+                            ));
+                        } else if num_placeholders == 1 {
+                            return Ok(Format::Affix(quote_spanned!(fmt.span()=> #fmt)));
+                        }
+                    }
                     let args = list
                         .nested
                         .iter()
@@ -268,7 +304,7 @@ impl<'a, 'b> State<'a, 'b> {
             Data::Enum(e) => {
                 match self
                     .find_meta(&self.input.attrs)
-                    .and_then(|m| m.map(|m| self.get_meta_fmt(&m)).transpose())?
+                    .and_then(|m| m.map(|m| self.get_meta_fmt(&m, true)).transpose())?
                 {
                     Some(Format::Fmt(fmt)) => {
                         e.variants.iter().try_for_each(|v| {
@@ -292,7 +328,7 @@ impl<'a, 'b> State<'a, 'b> {
                             let matcher = self.get_matcher(&v.fields);
                             let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
                                 let span = meta.span();
-                                match self.get_meta_fmt(&meta)? {
+                                match self.get_meta_fmt(&meta, false)? {
                                     Format::Fmt(fmt) => fmt,
                                     Format::Affix(_) => return Err(Error::new(
                                         span,
@@ -320,7 +356,7 @@ impl<'a, 'b> State<'a, 'b> {
 
                         if let Some(meta) = self.find_meta(&v.attrs)? {
                             let span = meta.span();
-                            fmt = match self.get_meta_fmt(&meta)? {
+                            fmt = match self.get_meta_fmt(&meta, false)? {
                                 Format::Fmt(fmt) => fmt,
                                 Format::Affix(_) => return Err(Error::new(
                                     span,
@@ -353,7 +389,7 @@ impl<'a, 'b> State<'a, 'b> {
 
                 if let Some(meta) = self.find_meta(&self.input.attrs)? {
                     let span = meta.span();
-                    fmt = match self.get_meta_fmt(&meta)? {
+                    fmt = match self.get_meta_fmt(&meta, false)? {
                         Format::Fmt(fmt) => fmt,
                         Format::Affix(_) => {
                             return Err(Error::new(span, "cannot use an `affix` on a struct"))
@@ -378,7 +414,7 @@ impl<'a, 'b> State<'a, 'b> {
                     )
                 })?;
                 let span = meta.span();
-                let fmt = match self.get_meta_fmt(&meta)? {
+                let fmt = match self.get_meta_fmt(&meta, false)? {
                     Format::Fmt(fmt) => fmt,
                     Format::Affix(_) => {
                         return Err(Error::new(span, "cannot use an `affix` on a struct"))
