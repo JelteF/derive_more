@@ -386,6 +386,7 @@ create_derive!("display", display, UpperHex, upper_hex_derive, upper_hex);
 create_derive!("display", display, LowerExp, lower_exp_derive, lower_exp);
 create_derive!("display", display, UpperExp, upper_exp_derive, upper_exp);
 create_derive!("display", display, Pointer, pointer_derive, pointer);
+create_derive!("display", display, DebugCustom, debug_custom_derive, debug);
 
 create_derive!("index", index, Index, index_derive);
 create_derive!("index_mut", index_mut, IndexMut, index_mut_derive);

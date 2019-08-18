@@ -14,6 +14,7 @@ use syn::{
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
+    let trait_name = trait_name.trim_end_matches("Custom");
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let trait_path = &quote!(::core::fmt::#trait_ident);
     let trait_attr = match trait_name {
@@ -25,6 +26,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
         "LowerExp" => "lower_exp",
         "UpperExp" => "upper_exp",
         "Pointer" => "pointer",
+        "Debug" => "debug",
         _ => unimplemented!(),
     };
     let type_params = input
