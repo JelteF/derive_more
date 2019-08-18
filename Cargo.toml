@@ -53,6 +53,7 @@ from_str = []
 index = []
 index_mut = []
 into = []
+into_iterator = []
 mul_assign_like = []
 mul_like = []
 not_like = []
@@ -74,6 +75,7 @@ default = [
     "index",
     "index_mut",
     "into",
+    "into_iterator",
     "mul_assign_like",
     "mul_like",
     "not_like",
@@ -150,6 +152,11 @@ required-features = ["index"]
 name = "into"
 path = "tests/into.rs"
 required-features = ["into"]
+
+[[test]]
+name = "into_iterator"
+path = "tests/into_iterator.rs"
+required-features = ["into_iterator"]
 
 [[test]]
 name = "mul_assign"

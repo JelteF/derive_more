@@ -23,6 +23,7 @@ struct MyInt(i32);
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
 #[derive(Deref, DerefMut)]
+#[derive(IntoIterator)]
 struct MyVec(Vec<i32>);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -199,6 +200,7 @@ fn main() {
     assert_eq!(8, myvec[1]);
     myvec[0] = 20;
     assert_eq!(20, myvec[0]);
+    assert_eq!(myvec.into_iter().next(), Some(20));
 
     let int_vec = vec![MyInt(2), MyInt(3)];
     assert_eq!(MyInt(5), int_vec.clone().into_iter().sum());

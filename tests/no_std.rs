@@ -36,9 +36,13 @@ struct MyInts(u64);
     AddAssign,
     DerefToInner,
     DerefMutToInner,
+    IntoIterator,
     Constructor
 )]
 struct Wrapped<T: Clone>(T);
+
+#[derive(Deref, DerefMut)]
+struct Wrapped2<T: Clone>(T);
 
 #[derive(From, Not, Add, Mul, AddAssign, Constructor, Sum)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
