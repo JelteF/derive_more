@@ -50,6 +50,7 @@ struct Struct<T: Clone> {
 struct Struct2<T: Clone> {
     t: T,
 }
+
 #[derive(From, Not, Add, Mul, AddAssign, Constructor, Sum)]
 struct DoubleStruct<T: Clone, U: Clone> {
     t: T,
