@@ -20,7 +20,7 @@ extern crate derive_more;
 )]
 struct Wrapped<T: Clone>(T);
 
-#[derive(Deref, DerefMut)]
+#[derive(Iterator, Deref, DerefMut)]
 struct Wrapped2<T: Clone>(T);
 
 #[derive(From, Not, Add, Mul, AddAssign, Constructor, Sum)]
@@ -46,7 +46,7 @@ struct Struct<T: Clone> {
     t: T,
 }
 
-#[derive(Deref, DerefMut)]
+#[derive(Iterator, Deref, DerefMut)]
 struct Struct2<T: Clone> {
     t: T,
 }

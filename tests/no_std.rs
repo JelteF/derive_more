@@ -23,6 +23,9 @@ extern crate derive_more;
 )]
 struct MyInts(u64);
 
+#[derive(Iterator)]
+struct MyVec<'a>(::core::slice::Iter<'a, i32>);
+
 #[derive(
     From,
     FromStr,
@@ -41,11 +44,12 @@ struct MyInts(u64);
 )]
 struct Wrapped<T: Clone>(T);
 
-#[derive(Deref, DerefMut)]
+#[derive(Iterator, Deref, DerefMut)]
 struct Wrapped2<T: Clone>(T);
 
 #[derive(From, Not, Add, Mul, AddAssign, Constructor, Sum)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
+
 
 #[derive(Add, Not, TryInto)]
 enum MixedInts {

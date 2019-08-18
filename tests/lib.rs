@@ -26,6 +26,9 @@ struct MyInt(i32);
 #[derive(IntoIterator)]
 struct MyVec(Vec<i32>);
 
+#[derive(Iterator)]
+struct MyIter<'a>(::core::slice::Iter<'a, i32>);
+
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Deref, DerefMut)]
 struct MyBoxedInt(Box<i32>);
@@ -200,6 +203,8 @@ fn main() {
     assert_eq!(8, myvec[1]);
     myvec[0] = 20;
     assert_eq!(20, myvec[0]);
+    let mut my_iter = MyIter(myvec.iter());
+    assert_eq!(my_iter.next(), Some(&20));
     assert_eq!(myvec.into_iter().next(), Some(20));
 
     let int_vec = vec![MyInt(2), MyInt(3)];

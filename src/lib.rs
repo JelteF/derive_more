@@ -235,6 +235,8 @@ mod index_mut;
 mod into;
 #[cfg(feature = "into_iterator")]
 mod into_iterator;
+#[cfg(feature = "iterator")]
+mod iterator;
 #[cfg(feature = "mul_assign_like")]
 mod mul_assign_like;
 #[cfg(any(feature = "mul_like", feature = "mul_assign_like"))]
@@ -394,6 +396,7 @@ create_derive!("index", index, Index, index_derive);
 create_derive!("index_mut", index_mut, IndexMut, index_mut_derive);
 
 create_derive!("into_iterator", into_iterator, IntoIterator, into_iterator_derive);
+create_derive!("iterator", iterator, Iterator, iterator_derive);
 
 create_derive!("try_into", try_into, TryInto, try_into_derive);
 

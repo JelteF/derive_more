@@ -54,6 +54,7 @@ index = []
 index_mut = []
 into = []
 into_iterator = []
+iterator = []
 mul_assign_like = []
 mul_like = []
 not_like = []
@@ -76,6 +77,7 @@ default = [
     "index_mut",
     "into",
     "into_iterator",
+    "iterator",
     "mul_assign_like",
     "mul_like",
     "not_like",
