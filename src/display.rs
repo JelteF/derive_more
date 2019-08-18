@@ -239,14 +239,14 @@ impl<'a, 'b> State<'a, 'b> {
                     ))
                 }
                 _ => {
-                    return Err(Error::new(
+                    Err(Error::new(
                         list.nested[0].span(),
                         self.get_proper_fmt_syntax(),
                     ))
                 }
             },
             _ => {
-                return Err(Error::new(
+                Err(Error::new(
                     list.nested[0].span(),
                     self.get_proper_fmt_syntax(),
                 ))
