@@ -1,7 +1,8 @@
-use add_like::{struct_exprs, tuple_exprs};
+use crate::add_helpers::{struct_exprs, tuple_exprs};
+use crate::utils::{add_extra_ty_param_bound_op, named_to_vec, unnamed_to_vec};
 use proc_macro2::{Span, TokenStream};
+use quote::quote;
 use syn::{Data, DeriveInput, Fields, Ident};
-use utils::{add_extra_ty_param_bound_op, get_import_root, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
@@ -25,9 +26,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         _ => panic!(format!("Only structs can use derive({})", trait_name)),
     };
 
-    let import_root = get_import_root();
     quote!(
-        impl#impl_generics #import_root::ops::#trait_ident for #input_type#ty_generics #where_clause {
+        impl#impl_generics ::core::ops::#trait_ident for #input_type#ty_generics #where_clause {
             #[inline]
             fn #method_ident(&mut self, rhs: #input_type#ty_generics) {
                 #(#exprs;

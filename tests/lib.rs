@@ -4,7 +4,7 @@ extern crate derive_more;
 #[derive(From)]
 #[derive(Into)]
 #[derive(Constructor)]
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 #[derive(Add)]
 #[derive(Mul)]
 #[derive(Neg)]
@@ -14,10 +14,15 @@ extern crate derive_more;
 #[derive(Display)]
 #[derive(Octal)]
 #[derive(Binary)]
+#[derive(DerefToInner, DerefMutToInner)]
+#[derive(Sum)]
+#[derive(MulSelf)]
+#[derive(Product)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
+#[derive(Deref, DerefMut)]
 struct MyVec(Vec<i32>);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -184,11 +189,20 @@ fn main() {
     assert_eq!(DoubleUInt(5, 6) * 10, DoubleUInt(50, 60));
     // assert_eq!(DoubleUIntStruct{x:5, y:6} * 10, DoubleUIntStruct{x:50, y:60});
 
+    let mut myint = MyInt(5);
+    assert_eq!(5, *myint);
+    *myint = 7;
+    assert_eq!(MyInt(7), myint);
+
     let mut myvec = MyVec(vec![5, 8]);
     assert_eq!(5, myvec[0]);
     assert_eq!(8, myvec[1]);
     myvec[0] = 20;
     assert_eq!(20, myvec[0]);
+
+    let int_vec = vec![MyInt(2), MyInt(3)];
+    assert_eq!(MyInt(5), int_vec.clone().into_iter().sum());
+    assert_eq!(MyInt(6), int_vec.clone().into_iter().product());
 
     let mut boxed = MyBoxedInt(Box::new(5));
     assert_eq!(5, *boxed);

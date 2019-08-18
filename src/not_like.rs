@@ -1,11 +1,10 @@
+use crate::utils::{add_extra_type_param_bound_op_output, named_to_vec, unnamed_to_vec};
 use proc_macro2::{Span, TokenStream};
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident, Index};
-use utils::{add_extra_type_param_bound_op_output, get_import_root, named_to_vec, unnamed_to_vec};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
-    let import_root = get_import_root();
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_lowercase();
     let method_ident = &Ident::new(&method_name, Span::call_site());
@@ -35,7 +34,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     quote!(
-        impl#impl_generics #import_root::ops::#trait_ident for #input_type#ty_generics #where_clause {
+        impl#impl_generics ::core::ops::#trait_ident for #input_type#ty_generics #where_clause {
             type Output = #output_type;
             #[inline]
             fn #method_ident(self) -> #output_type {
@@ -103,7 +102,7 @@ fn enum_output_type_and_content(
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype(#(#vars.#method_iter()),*));
                 if has_unit_type {
-                    body = quote!(::std::result::Result::Ok(#body))
+                    body = quote!(::core::result::Result::Ok(#body))
                 }
                 let matcher = quote! {
                     #subtype(#(#vars),*) => {
@@ -129,7 +128,7 @@ fn enum_output_type_and_content(
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
                 if has_unit_type {
-                    body = quote!(::std::result::Result::Ok(#body))
+                    body = quote!(::core::result::Result::Ok(#body))
                 }
                 let matcher = quote! {
                     #subtype{#(#field_names: #vars),*} => {
@@ -140,7 +139,7 @@ fn enum_output_type_and_content(
             }
             Fields::Unit => {
                 let message = format!("Cannot {}() unit variants", method_ident.to_string());
-                matches.push(quote!(#subtype => ::std::result::Result::Err(#message)));
+                matches.push(quote!(#subtype => ::core::result::Result::Err(#message)));
             }
         }
     }
@@ -152,7 +151,7 @@ fn enum_output_type_and_content(
     );
 
     let output_type = if has_unit_type {
-        quote!(::std::result::Result<#input_type#ty_generics, &'static str>)
+        quote!(::core::result::Result<#input_type#ty_generics, &'static str>)
     } else {
         quote!(#input_type#ty_generics)
     };

@@ -18,15 +18,18 @@
 //! #[macro_use]
 //! extern crate derive_more;
 //!
+//! # #[cfg(all( feature = "add_like", feature = "from"))]
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! struct MyInt(i32);
 //!
+//! # #[cfg(all( feature = "constructor", feature = "from", feature = "into", feature = "mul_like"))]
 //! #[derive(Debug, Eq, PartialEq, From, Into, Constructor, Mul)]
 //! struct Point2D {
 //!     x: i32,
 //!     y: i32,
 //! }
 //!
+//! # #[cfg(all( feature = "add_like", feature = "from"))]
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! enum MyEnum {
 //!     Int(i32),
@@ -34,6 +37,7 @@
 //!     Nothing,
 //! }
 //!
+//! # #[cfg(all(feature = "add_like", feature = "constructor", feature = "from", feature = "into", feature = "mul_like"))]
 //! fn main() {
 //!     let my_11 = MyInt(5) + 6.into();
 //!     assert_eq!(MyInt(11), MyInt(5) + 6.into());
@@ -42,6 +46,9 @@
 //!     assert_eq!(Point2D { x: 5, y: 6 }, Point2D::new(5, 6));
 //!     assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
 //! }
+//! # #[cfg(not(all( feature = "add_like", feature = "constructor", feature = "from", feature = "into", feature = "mul_like")))]
+//! # fn main() {
+//! # }
 //! ```
 //!
 //! ## The derivable traits
@@ -189,34 +196,58 @@
 
 #![recursion_limit = "128"]
 
-#[macro_use]
-extern crate lazy_static;
 extern crate proc_macro;
-extern crate proc_macro2;
-#[macro_use]
-extern crate quote;
-extern crate regex;
-extern crate syn;
+use proc_macro2;
+use syn;
 
 use proc_macro::TokenStream;
 use syn::parse::Error as ParseError;
 
 mod utils;
 
+#[cfg(feature = "add_assign_like")]
 mod add_assign_like;
+#[cfg(any(feature = "add_like", feature = "add_assign_like"))]
+mod add_helpers;
+#[cfg(feature = "add_like")]
 mod add_like;
+#[cfg(feature = "constructor")]
 mod constructor;
+#[cfg(feature = "deref")]
 mod deref;
+#[cfg(feature = "deref_mut")]
 mod deref_mut;
+#[cfg(feature = "deref_mut_to_inner")]
+mod deref_mut_to_inner;
+#[cfg(feature = "deref_to_inner")]
+mod deref_to_inner;
+#[cfg(feature = "display")]
 mod display;
+#[cfg(feature = "from")]
 mod from;
+#[cfg(feature = "from_str")]
 mod from_str;
+#[cfg(feature = "index")]
 mod index;
+#[cfg(feature = "index_mut")]
 mod index_mut;
+#[cfg(feature = "into")]
 mod into;
+#[cfg(feature = "mul_assign_like")]
 mod mul_assign_like;
+#[cfg(any(feature = "mul_like", feature = "mul_assign_like"))]
+mod mul_helpers;
+#[cfg(feature = "mul_like")]
 mod mul_like;
+#[cfg(feature = "not_like")]
 mod not_like;
+#[cfg(feature = "display")]
+#[allow(ellipsis_inclusive_range_patterns)]
+#[allow(clippy::all)]
+mod parsing;
+#[cfg(feature = "sum_like")]
+mod sum_like;
+#[cfg(feature = "try_into")]
 mod try_into;
 
 // This trait describes the possible return types of
@@ -243,7 +274,8 @@ impl Output for Result<proc_macro2::TokenStream, ParseError> {
 }
 
 macro_rules! create_derive(
-    ($mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)*) => {
+    ($feature:literal, $mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)*) => {
+        #[cfg(feature = $feature)]
         #[proc_macro_derive($trait_, attributes($($attribute),*))]
         #[doc(hidden)]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
@@ -253,54 +285,124 @@ macro_rules! create_derive(
     }
 );
 
-create_derive!(from, From, from_derive);
+create_derive!("from", from, From, from_derive);
 
-create_derive!(into, Into, into_derive);
+create_derive!("into", into, Into, into_derive);
 
-create_derive!(constructor, Constructor, constructor_derive);
+create_derive!("constructor", constructor, Constructor, constructor_derive);
 
-create_derive!(not_like, Not, not_derive);
-create_derive!(not_like, Neg, neg_derive);
+create_derive!("not_like", not_like, Not, not_derive);
+create_derive!("not_like", not_like, Neg, neg_derive);
 
-create_derive!(add_like, Add, add_derive);
-create_derive!(add_like, Sub, sub_derive);
-create_derive!(add_like, BitAnd, bit_and_derive);
-create_derive!(add_like, BitOr, bit_or_derive);
-create_derive!(add_like, BitXor, bit_xor_derive);
+create_derive!("add_like", add_like, Add, add_derive);
+create_derive!("add_like", add_like, Sub, sub_derive);
+create_derive!("add_like", add_like, BitAnd, bit_and_derive);
+create_derive!("add_like", add_like, BitOr, bit_or_derive);
+create_derive!("add_like", add_like, BitXor, bit_xor_derive);
+create_derive!("add_like", add_like, MulSelf, mul_self_derive);
+create_derive!("add_like", add_like, DivSelf, div_self_derive);
+create_derive!("add_like", add_like, RemSelf, rem_self_derive);
+create_derive!("add_like", add_like, ShrSelf, shr_self_derive);
+create_derive!("add_like", add_like, ShlSelf, shl_self_derive);
 
-create_derive!(mul_like, Mul, mul_derive);
-create_derive!(mul_like, Div, div_derive);
-create_derive!(mul_like, Rem, rem_derive);
-create_derive!(mul_like, Shr, shr_derive);
-create_derive!(mul_like, Shl, shl_derive);
+create_derive!("mul_like", mul_like, Mul, mul_derive);
+create_derive!("mul_like", mul_like, Div, div_derive);
+create_derive!("mul_like", mul_like, Rem, rem_derive);
+create_derive!("mul_like", mul_like, Shr, shr_derive);
+create_derive!("mul_like", mul_like, Shl, shl_derive);
 
-create_derive!(add_assign_like, AddAssign, add_assign_derive);
-create_derive!(add_assign_like, SubAssign, sub_assign_derive);
-create_derive!(add_assign_like, BitAndAssign, bit_and_assign_derive);
-create_derive!(add_assign_like, BitOrAssign, bit_or_assign_derive);
-create_derive!(add_assign_like, BitXorAssign, bit_xor_assign_derive);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    AddAssign,
+    add_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    SubAssign,
+    sub_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    BitAndAssign,
+    bit_and_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    BitOrAssign,
+    bit_or_assign_derive
+);
+create_derive!(
+    "add_assign_like",
+    add_assign_like,
+    BitXorAssign,
+    bit_xor_assign_derive
+);
 
-create_derive!(mul_assign_like, MulAssign, mul_assign_derive);
-create_derive!(mul_assign_like, DivAssign, div_assign_derive);
-create_derive!(mul_assign_like, RemAssign, rem_assign_derive);
-create_derive!(mul_assign_like, ShrAssign, shr_assign_derive);
-create_derive!(mul_assign_like, ShlAssign, shl_assign_derive);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    MulAssign,
+    mul_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    DivAssign,
+    div_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    RemAssign,
+    rem_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    ShrAssign,
+    shr_assign_derive
+);
+create_derive!(
+    "mul_assign_like",
+    mul_assign_like,
+    ShlAssign,
+    shl_assign_derive
+);
 
-create_derive!(from_str, FromStr, from_str_derive);
+create_derive!("sum_like", sum_like, Sum, sum_derive);
+create_derive!("sum_like", sum_like, Product, product_derive);
 
-create_derive!(display, Display, display_derive, display);
-create_derive!(display, Binary, binary_derive, binary);
-create_derive!(display, Octal, octal_derive, octal);
-create_derive!(display, LowerHex, lower_hex_derive, lower_hex);
-create_derive!(display, UpperHex, upper_hex_derive, upper_hex);
-create_derive!(display, LowerExp, lower_exp_derive, lower_exp);
-create_derive!(display, UpperExp, upper_exp_derive, upper_exp);
-create_derive!(display, Pointer, pointer_derive, pointer);
+create_derive!("from_str", from_str, FromStr, from_str_derive);
 
-create_derive!(index, Index, index_derive);
-create_derive!(index_mut, IndexMut, index_mut_derive);
+create_derive!("display", display, Display, display_derive, display);
+create_derive!("display", display, Binary, binary_derive, binary);
+create_derive!("display", display, Octal, octal_derive, octal);
+create_derive!("display", display, LowerHex, lower_hex_derive, lower_hex);
+create_derive!("display", display, UpperHex, upper_hex_derive, upper_hex);
+create_derive!("display", display, LowerExp, lower_exp_derive, lower_exp);
+create_derive!("display", display, UpperExp, upper_exp_derive, upper_exp);
+create_derive!("display", display, Pointer, pointer_derive, pointer);
 
-create_derive!(try_into, TryInto, try_into_derive);
+create_derive!("index", index, Index, index_derive);
+create_derive!("index_mut", index_mut, IndexMut, index_mut_derive);
 
-create_derive!(deref, Deref, deref_derive);
-create_derive!(deref_mut, DerefMut, deref_mut_derive);
+create_derive!("try_into", try_into, TryInto, try_into_derive);
+
+create_derive!("deref", deref, Deref, deref_derive);
+create_derive!("deref_mut", deref_mut, DerefMut, deref_mut_derive);
+create_derive!(
+    "deref_to_inner",
+    deref_to_inner,
+    DerefToInner,
+    deref_to_inner_derive
+);
+create_derive!(
+    "deref_mut_to_inner",
+    deref_mut_to_inner,
+    DerefMutToInner,
+    deref_mut_to_inner_derive
+);

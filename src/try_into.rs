@@ -1,8 +1,8 @@
+use crate::utils::{field_idents, named_to_vec, numbered_vars, unnamed_to_vec};
 use proc_macro2::TokenStream;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use std::collections::HashMap;
 use syn::{Data, DataEnum, DeriveInput, Fields};
-use utils::{field_idents, named_to_vec, numbered_vars, unnamed_to_vec};
 
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
 pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
@@ -12,6 +12,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
     let mut variants_per_types = HashMap::new();
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -71,16 +72,16 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum) -> TokenStream {
         let message = format!("Only {} can be converted to {}", variants, output_type);
 
         let try_from = quote! {
-            impl#impl_generics ::std::convert::TryFrom<#input_type#ty_generics> for
+            impl#impl_generics ::core::convert::TryFrom<#input_type#ty_generics> for
                 (#(#original_types),*) #where_clause {
                 type Error = &'static str;
 
                 #[allow(unused_variables)]
                 #[inline]
-                fn try_from(value: #input_type#ty_generics) -> ::std::result::Result<Self, Self::Error> {
+                fn try_from(value: #input_type#ty_generics) -> ::core::result::Result<Self, Self::Error> {
                     match value {
-                        #(#matchers)|* => ::std::result::Result::Ok(#vars),
-                        _ => ::std::result::Result::Err(#message),
+                        #(#matchers)|* => ::core::result::Result::Ok(#vars),
+                        _ => ::core::result::Result::Err(#message),
                     }
                 }
             }
