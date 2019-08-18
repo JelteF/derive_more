@@ -103,22 +103,10 @@ struct State<'a, 'b> {
     type_params: HashSet<Ident>,
 }
 
-enum Format {
-    Fmt(TokenStream),
-    Affix(TokenStream),
-}
-
 impl<'a, 'b> State<'a, 'b> {
     fn get_proper_fmt_syntax(&self) -> impl Display {
         format!(
             r#"Proper syntax: #[{}(fmt = "My format", "arg1", "arg2")]"#,
-            self.trait_attr
-        )
-    }
-
-    fn get_proper_affix_syntax(&self) -> impl Display {
-        format!(
-            r#"Proper syntax: #[{}(affix = "My enum prefix for {{}} and then a suffix")]"#,
             self.trait_attr
         )
     }
@@ -167,13 +155,12 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(meta)
         }
     }
-    fn get_meta_fmt(&self, meta: &Meta, outer_enum: bool) -> Result<Format> {
+    fn get_meta_fmt(&self, meta: &Meta, outer_enum: bool) -> Result<(TokenStream, bool)> {
         let list = match meta {
             Meta::List(list) => list,
             _ => {
                 return Err(Error::new(
                     meta.span(),
-                    // TODO: Fix this help to include `affix` is this is an `enum`
                     self.get_proper_fmt_syntax(),
                 ));
             }
@@ -190,7 +177,7 @@ impl<'a, 'b> State<'a, 'b> {
                         if list.nested.iter().skip(1).count() != 0 {
                             return Err(Error::new(
                                 list.nested[1].span(),
-                                "`affix` formatting requires a single `fmt` argument",
+                                "`fmt` formatting requires a single `fmt` argument",
                             ));
                         }
                         // TODO: Check for a single `Display` group?
@@ -219,7 +206,7 @@ impl<'a, 'b> State<'a, 'b> {
                                 "fmt string for enum should have at at most 1 placeholder",
                             ));
                         } else if num_placeholders == 1 {
-                            return Ok(Format::Affix(quote_spanned!(fmt.span()=> #fmt)));
+                            return Ok((quote_spanned!(fmt.span()=> #fmt), true));
                         }
                     }
                     let args = list
@@ -244,21 +231,11 @@ impl<'a, 'b> State<'a, 'b> {
                             Ok(quote_spanned!(list.span()=> #args #arg,))
                         })?;
 
-                    Ok(Format::Fmt(
+                    Ok((
                         quote_spanned!(meta.span()=> _derive_more_DisplayAs(|f| write!(f, #fmt, #args))),
+                        false,
                     ))
                 }
-                op if op.segments.first().expect("path shouldn't be empty").ident == "affix" => {
-                    if list.nested.iter().skip(1).count() != 0 {
-                        return Err(Error::new(
-                            list.nested[1].span(),
-                            "`affix` formatting requires a single `fmt` argument",
-                        ));
-                    }
-                    // TODO: Check for a single `Display` group?
-                    Ok(Format::Affix(quote_spanned!(fmt.span()=> #fmt)))
-                }
-                // TODO: Fix this help to include `affix` is this is an `enum`
                 _ => {
                     return Err(Error::new(
                         list.nested[0].span(),
@@ -266,7 +243,6 @@ impl<'a, 'b> State<'a, 'b> {
                     ))
                 }
             },
-            // TODO: Fix this help to include `affix` is this is an `enum`
             _ => {
                 return Err(Error::new(
                     list.nested[0].span(),
@@ -306,12 +282,12 @@ impl<'a, 'b> State<'a, 'b> {
                     .find_meta(&self.input.attrs)
                     .and_then(|m| m.map(|m| self.get_meta_fmt(&m, true)).transpose())?
                 {
-                    Some(Format::Fmt(fmt)) => {
+                    Some((fmt, false)) => {
                         e.variants.iter().try_for_each(|v| {
                             if let Some(meta) = self.find_meta(&v.attrs)? {
                                 Err(Error::new(
                                     meta.span(),
-                                    "`fmt` cannot be used on variant when the whole enum has one. Did you mean to use `affix`?",
+                                    "`fmt` cannot be used on variant when the whole enum has a format string without a placeholder, maybe you want to add a placeholder?",
                                 ))
                             } else {
                                 Ok(())
@@ -323,25 +299,19 @@ impl<'a, 'b> State<'a, 'b> {
                             HashMap::new(),
                         ))
                     }
-                    Some(Format::Affix(outer_fmt)) => {
-                        let fmt = e.variants.iter().try_fold(TokenStream::new(), |arms, v| {
+                    Some((outer_fmt, true)) => {
+                        let fmt: Result<TokenStream> = e.variants.iter().try_fold(TokenStream::new(), |arms, v| {
                             let matcher = self.get_matcher(&v.fields);
                             let fmt = if let Some(meta) = self.find_meta(&v.attrs)? {
-                                let span = meta.span();
-                                match self.get_meta_fmt(&meta, false)? {
-                                    Format::Fmt(fmt) => fmt,
-                                    Format::Affix(_) => return Err(Error::new(
-                                        span,
-                                        "cannot use an `affix` on an enum variant"
-                                    )),
-                                }
+                                self.get_meta_fmt(&meta, false)?.0
                             } else {
                                 self.infer_fmt(&v.fields, &v.ident)?
                             };
                             let name = &self.input.ident;
                             let v_name = &v.ident;
                             Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(_derive_more_Display_formatter, #outer_fmt, #fmt),))
-                        })?;
+                        });
+                        let fmt = fmt?;
                         Ok((
                             quote_spanned!(self.input.span()=> #fmt),
                             HashMap::new(),
@@ -355,14 +325,7 @@ impl<'a, 'b> State<'a, 'b> {
                         let bounds: HashMap<_, _>;
 
                         if let Some(meta) = self.find_meta(&v.attrs)? {
-                            let span = meta.span();
-                            fmt = match self.get_meta_fmt(&meta, false)? {
-                                Format::Fmt(fmt) => fmt,
-                                Format::Affix(_) => return Err(Error::new(
-                                    span,
-                                    "cannot use an `affix` on an enum variant",
-                                )),
-                            };
+                            fmt = self.get_meta_fmt(&meta, false)?.0;
                             bounds = self.get_used_type_params_bounds(&v.fields, &meta);
                         } else {
                             fmt = self.infer_fmt(&v.fields, v_name)?;
@@ -388,13 +351,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let bounds: HashMap<_, _>;
 
                 if let Some(meta) = self.find_meta(&self.input.attrs)? {
-                    let span = meta.span();
-                    fmt = match self.get_meta_fmt(&meta, false)? {
-                        Format::Fmt(fmt) => fmt,
-                        Format::Affix(_) => {
-                            return Err(Error::new(span, "cannot use an `affix` on a struct"))
-                        }
-                    };
+                    fmt = self.get_meta_fmt(&meta, false)?.0;
                     bounds = self.get_used_type_params_bounds(&s.fields, &meta);
                 } else {
                     fmt = self.infer_fmt(&s.fields, name)?;
@@ -413,13 +370,7 @@ impl<'a, 'b> State<'a, 'b> {
                         "Can not automatically infer format for unions",
                     )
                 })?;
-                let span = meta.span();
-                let fmt = match self.get_meta_fmt(&meta, false)? {
-                    Format::Fmt(fmt) => fmt,
-                    Format::Affix(_) => {
-                        return Err(Error::new(span, "cannot use an `affix` on a struct"))
-                    }
-                };
+                let fmt = self.get_meta_fmt(&meta, false)?.0;
 
                 Ok((
                     quote_spanned!(self.input.span()=> _ => write!(_derive_more_Display_formatter, "{}", #fmt),),
