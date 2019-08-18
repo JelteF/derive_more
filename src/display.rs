@@ -69,13 +69,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
             #[allow(unused_variables)]
             #[inline]
             fn fmt(&self, _derive_more_Display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                use std::fmt::{Display, Formatter, Result};
+                use core::fmt::{Display, Formatter, Result};
                 struct _derive_more_DisplayAs<F>(F)
                 where
                     F: Fn(&mut Formatter) -> Result;
 
                 const _derive_more_DisplayAs_impl: () = {
-                    use std::fmt::{Display, Formatter, Result};
+                    use core::fmt::{Display, Formatter, Result};
 
                     impl <F> Display for _derive_more_DisplayAs<F>
                     where
