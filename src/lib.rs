@@ -396,6 +396,8 @@ create_derive!("index", index, Index, index_derive);
 create_derive!("index_mut", index_mut, IndexMut, index_mut_derive);
 
 create_derive!("into_iterator", into_iterator, IntoIterator, into_iterator_derive);
+create_derive!("into_iterator", into_iterator, IntoIteratorRef, into_iterator_ref_derive);
+create_derive!("into_iterator", into_iterator, IntoIteratorRefMut, into_iterator_mut_ref_derive);
 create_derive!("iterator", iterator, Iterator, iterator_derive);
 
 create_derive!("try_into", try_into, TryInto, try_into_derive);

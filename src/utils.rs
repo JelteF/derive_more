@@ -7,6 +7,63 @@ use syn::{
     TypeParamBound, WhereClause,
 };
 
+#[derive(Clone, Copy)]
+pub enum RefType {
+    No,
+    Ref,
+    Mut,
+}
+
+impl RefType {
+    pub fn from_derive(trait_name: &str) -> (Self, &str) {
+        if trait_name.ends_with("RefMut") {
+            (RefType::Mut, trait_name.trim_end_matches("RefMut"))
+        } else if trait_name.ends_with("Ref") {
+            (RefType::Ref, trait_name.trim_end_matches("Ref"))
+        } else {
+            (RefType::No, trait_name)
+        }
+    }
+
+    pub fn lifetime(self) -> TokenStream {
+        match self {
+            RefType::No => quote!(),
+            _ => quote!('__deriveMoreLifetime),
+        }
+    }
+
+    pub fn reference(self) -> TokenStream {
+        match self {
+            RefType::No => quote!(),
+            RefType::Ref => quote!(&),
+            RefType::Mut => quote!(&mut),
+        }
+    }
+
+    pub fn mutability(self) -> TokenStream {
+        match self {
+            RefType::Mut => quote!(mut),
+            _ => quote!(),
+        }
+    }
+
+    pub fn reference_with_lifetime(self) -> TokenStream {
+        if !self.is_ref() {
+            return quote!();
+        }
+        let lifetime = self.lifetime();
+        let mutability = self.mutability();
+        quote!(&#lifetime #mutability)
+    }
+
+    pub fn is_ref(self) -> bool {
+        match self {
+            RefType::No => false,
+            _ => true,
+        }
+    }
+}
+
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
         .map(|i| Ident::new(&format!("__{}{}", prefix, i), Span::call_site()))
@@ -65,6 +122,27 @@ pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, bound: &'a TokenStre
     }
 
     generics
+}
+
+pub fn add_extra_ty_param_bound_ref<'a>(
+    generics: &'a Generics,
+    bound: &'a TokenStream,
+    ref_type: RefType,
+) -> Generics {
+    match ref_type {
+        RefType::No => add_extra_ty_param_bound(generics, bound),
+        _ => {
+            let generics = generics.clone();
+            let idents = generics.type_params().map(|x| &x.ident);
+            let ref_with_lifetime = ref_type.reference_with_lifetime();
+            add_extra_where_clauses(
+                &generics,
+                quote!(
+                    where #(#ref_with_lifetime #idents: #bound),*
+                ),
+            )
+        }
+    }
 }
 
 pub fn add_extra_generic_param(generics: &Generics, generic_param: TokenStream) -> Generics {

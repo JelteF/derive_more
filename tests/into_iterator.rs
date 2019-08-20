@@ -2,10 +2,10 @@
 #[macro_use]
 extern crate derive_more;
 
-#[derive(IntoIterator)]
+#[derive(IntoIterator, IntoIteratorRef)]
 struct MyVec(Vec<i32>);
 
-#[derive(IntoIterator)]
+#[derive(IntoIterator, IntoIteratorRef)]
 struct Numbers {
     numbers: Vec<i32>,
 }
