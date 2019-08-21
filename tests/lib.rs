@@ -3,6 +3,8 @@ extern crate derive_more;
 
 #[derive(From)]
 #[derive(Into)]
+#[derive(IntoRef)]
+#[derive(IntoRefMut)]
 #[derive(Constructor)]
 #[derive(Eq, PartialEq, Debug, Clone)]
 #[derive(Add)]
@@ -61,6 +63,9 @@ struct SimpleStruct {
 #[derive(Constructor)]
 #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Into)]
+#[derive(IntoRef)]
+#[derive(IntoRefMut)]
 #[derive(AddAssign)]
 struct NormalStruct {
     int1: u64,
@@ -138,6 +143,13 @@ fn main() {
     let _: MyIntEnum = (5i64, 8i64).into();
     let _: MyIntEnum = ().into();
 
+    let int_ref: &i32 = (&myint).into();
+    assert_eq!(int_ref, &5);
+
+    let int_ref_mut: &mut i32 = (&mut myint).into();
+    assert_eq!(int_ref_mut, &mut 5);
+
+    let mut myint: MyInt = 5.into();
     let _: Unit = ().into();
     assert_eq!((), Unit.into());
     assert_eq!(Unit, Unit::new());
@@ -159,6 +171,12 @@ fn main() {
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, (5, 6).into());
     assert_eq!(SimpleStruct { int1: 5 }, SimpleStruct::new(5));
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, NormalStruct::new(5, 6));
+    assert_eq!((5, 6), NormalStruct::new(5, 6).into());
+    let mut norm_struct = NormalStruct::new(5, 6);
+    let uints_ref: (&u64, &u64) = (&norm_struct).into();
+    assert_eq!((&5, &6), uints_ref);
+    let uints_ref_mut: (&mut u64, &mut u64) = (&mut norm_struct).into();
+    assert_eq!((&mut 5, &mut 6), uints_ref_mut);
 
     assert_eq!(MyInt(4) + MyInt(1), 5.into());
     myint += MyInt(3);

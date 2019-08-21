@@ -292,6 +292,8 @@ macro_rules! create_derive(
 create_derive!("from", from, From, from_derive);
 
 create_derive!("into", into, Into, into_derive);
+create_derive!("into", into, IntoRef, into_ref_derive);
+create_derive!("into", into, IntoRefMut, into_ref_mut_derive);
 
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 

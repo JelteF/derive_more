@@ -14,6 +14,8 @@ extern crate derive_more;
     Display,
     FromStr,
     Into,
+    IntoRef,
+    IntoRefMut,
     From,
     IndexMut,
     Sum,
