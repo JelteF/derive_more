@@ -43,6 +43,7 @@ struct MyVec<'a>(::core::slice::Iter<'a, i32>);
     DerefMutToInner,
     IntoIterator,
     IntoIteratorRef,
+    IntoIteratorRefMut,
     Constructor
 )]
 struct Wrapped<T: Clone>(T);
