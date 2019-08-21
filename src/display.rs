@@ -161,10 +161,7 @@ impl<'a, 'b> State<'a, 'b> {
         let list = match meta {
             Meta::List(list) => list,
             _ => {
-                return Err(Error::new(
-                    meta.span(),
-                    self.get_proper_fmt_syntax(),
-                ));
+                return Err(Error::new(meta.span(), self.get_proper_fmt_syntax()));
             }
         };
 
@@ -238,19 +235,15 @@ impl<'a, 'b> State<'a, 'b> {
                         false,
                     ))
                 }
-                _ => {
-                    Err(Error::new(
-                        list.nested[0].span(),
-                        self.get_proper_fmt_syntax(),
-                    ))
-                }
-            },
-            _ => {
-                Err(Error::new(
+                _ => Err(Error::new(
                     list.nested[0].span(),
                     self.get_proper_fmt_syntax(),
-                ))
-            }
+                )),
+            },
+            _ => Err(Error::new(
+                list.nested[0].span(),
+                self.get_proper_fmt_syntax(),
+            )),
         }
     }
     fn infer_fmt(&self, fields: &Fields, name: &Ident) -> Result<TokenStream> {

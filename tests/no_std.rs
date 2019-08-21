@@ -54,7 +54,6 @@ struct Wrapped2<T: Clone>(T);
 #[derive(From, Not, Add, Mul, AddAssign, Constructor, Sum)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
 
-
 #[derive(Add, Not, TryInto)]
 enum MixedInts {
     SmallInt(i32),
