@@ -47,6 +47,15 @@ impl RefType {
         }
     }
 
+    pub fn pattern_ref(self) -> TokenStream {
+        match self {
+            RefType::Ref => quote!(ref),
+            RefType::Mut => quote!(ref mut),
+            _ => quote!(),
+        }
+    }
+
+
     pub fn reference_with_lifetime(self) -> TokenStream {
         if !self.is_ref() {
             return quote!();
