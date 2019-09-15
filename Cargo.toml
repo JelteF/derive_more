@@ -42,6 +42,8 @@ appveyor = { repository = "JelteF/derive_more" }
 nightly = []
 add_assign_like = []
 add_like = []
+as_mut = []
+as_ref = []
 constructor = []
 deref = []
 deref_mut = []
@@ -65,6 +67,8 @@ generate-parsing-rs = ["peg"]
 default = [
     "add_assign_like",
     "add_like",
+    "as_mut",
+    "as_ref",
     "constructor",
     "deref",
     "deref_mut",
@@ -94,6 +98,16 @@ required-features = ["add_assign_like"]
 name = "add"
 path = "tests/add.rs"
 required-features = ["add_like"]
+
+[[test]]
+name = "as_mut"
+path = "tests/as_mut.rs"
+required-features = ["as_mut"]
+
+[[test]]
+name = "as_ref"
+path = "tests/as_ref.rs"
+required-features = ["as_ref"]
 
 [[test]]
 name = "boats_display_derive"
@@ -191,6 +205,8 @@ path = "tests/no_std.rs"
 required-features = [
     "add_assign_like",
     "add_like",
+    "as_mut",
+    "as_ref",
     "constructor",
     "deref",
     "deref_mut",
@@ -213,6 +229,8 @@ path = "tests/generics.rs"
 required-features = [
     "add_assign_like",
     "add_like",
+    "as_mut",
+    "as_ref",
     "constructor",
     "deref",
     "deref_mut",
@@ -234,6 +252,8 @@ path = "tests/lib.rs"
 required-features = [
     "add_assign_like",
     "add_like",
+    "as_mut",
+    "as_ref",
     "constructor",
     "deref",
     "deref_mut",
@@ -255,6 +275,8 @@ path = "examples/deny_missing_docs.rs"
 required-features = [
     "add_assign_like",
     "add_like",
+    "as_mut",
+    "as_ref",
     "constructor",
     "deref",
     "deref_mut",

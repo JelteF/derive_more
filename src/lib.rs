@@ -211,6 +211,10 @@ mod add_assign_like;
 mod add_helpers;
 #[cfg(feature = "add_like")]
 mod add_like;
+#[cfg(feature = "as_mut")]
+mod as_mut;
+#[cfg(feature = "as_ref")]
+mod as_ref;
 #[cfg(feature = "constructor")]
 mod constructor;
 #[cfg(feature = "deref")]
@@ -435,3 +439,6 @@ create_derive!(
     DerefMutToInner,
     deref_mut_to_inner_derive
 );
+
+create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
+create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);

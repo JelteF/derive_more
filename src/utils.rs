@@ -3,8 +3,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    parse_str, Field, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, Index, Type,
-    TypeParamBound, WhereClause,
+    parse_str, Data, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident,
+    Index, Type, TypeParamBound, WhereClause,
 };
 
 #[derive(Clone, Copy)]
@@ -195,4 +195,64 @@ pub fn unnamed_to_vec(fields: &FieldsUnnamed) -> Vec<&Field> {
 
 pub fn named_to_vec(fields: &FieldsNamed) -> Vec<&Field> {
     fields.named.iter().collect()
+}
+
+
+/// Checks whether `field` is decorated with the specifed simple attribute (e.g. `#[as_ref]`)
+fn has_simple_attr(field: &Field, attr: &str) -> bool {
+    field.attrs.iter().any(|a| {
+        a.parse_meta()
+            .map(|m| {
+                m.path()
+                    .segments
+                    .first()
+                    .map(|p| p.ident == attr)
+                    .unwrap_or(false)
+            })
+            .unwrap_or(false)
+    })
+}
+
+
+/// Extracts types and identifiers from fields in the given struct
+///
+/// If `data` contains more than one field, only fields decorated with `attr` are considered.
+pub fn extract_field_info<'a>(data: &'a Data, attr: &str) -> (Vec<&'a Type>, Vec<TokenStream>) {
+
+    // Get iter over fields and check named/unnamed
+    let named;
+    let fields = match data {
+        Data::Struct(data) => match data.fields {
+            Fields::Named(_) => {
+                named = true;
+                data.fields.iter()
+            },
+            Fields::Unnamed(_) => {
+                named = false;
+                data.fields.iter()
+            },
+            Fields::Unit => panic!("struct must have one or more fields"),
+        },
+        _ => panic!("only structs may derive this trait"),
+    };
+
+    // If necessary, filter out undecorated fields
+    let len = fields.len();
+    let fields = fields.filter(|f| len == 1 || has_simple_attr(f, attr));
+
+    // Extract info needed to generate impls
+    if named {
+        fields.map(|f| {
+                let ident = f.ident.as_ref().unwrap();
+                (&f.ty, quote!(#ident))
+            })
+            .unzip()
+    } else {
+        fields.enumerate()
+            .map(|(i, f)| {
+                let index = Index::from(i);
+                (&f.ty, quote!(#index))
+            })
+            .unzip()
+    }
 }
