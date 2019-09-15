@@ -206,7 +206,7 @@ fn has_simple_attr(field: &Field, attr: &str) -> bool {
                 m.path()
                     .segments
                     .first()
-                    .map(|p| &p.ident == attr)
+                    .map(|p| p.ident == attr)
                     .unwrap_or(false)
             })
             .unwrap_or(false)
