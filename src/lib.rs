@@ -419,7 +419,7 @@ create_derive!(
     IntoIteratorRefMut,
     into_iterator_mut_ref_derive
 );
-create_derive!("iterator", iterator, Iterator, iterator_derive);
+create_derive!("iterator", iterator, Iterator, iterator_derive, iterator);
 
 create_derive!("try_into", try_into, TryInto, try_into_derive);
 create_derive!("try_into", try_into, TryIntoRef, try_into_ref_derive);
