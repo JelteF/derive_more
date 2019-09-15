@@ -440,5 +440,5 @@ create_derive!(
     deref_mut_to_inner_derive
 );
 
-create_derive!("as_mut", as_mut, AsMut, as_mut_derive);
-create_derive!("as_ref", as_ref, AsRef, as_ref_derive);
+create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
+create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
