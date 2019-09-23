@@ -9,3 +9,10 @@ struct MyInt(i32);
 struct Point1D {
     x: i32,
 }
+
+#[derive(DerefToInner)]
+struct Point1D2 {
+    x: i32,
+    #[deref_to_inner(ignore)]
+    useless: bool,
+}

@@ -25,3 +25,20 @@ impl<'a> ::std::ops::Deref for NumRef<'a> {
         <&'a mut i32 as ::std::ops::Deref>::deref(&self.num)
     }
 }
+
+#[derive(DerefMut)]
+struct NumRef2<'a> {
+    num: &'a mut i32,
+    #[deref_mut(ignore)]
+    useless: bool,
+}
+
+// Deref implementation is needed for DerefMut
+impl<'a> ::std::ops::Deref for NumRef2<'a> {
+    type Target = <&'a mut i32 as ::std::ops::Deref>::Target;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        <&'a mut i32 as ::std::ops::Deref>::deref(&self.num)
+    }
+}
+

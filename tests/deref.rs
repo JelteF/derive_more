@@ -9,3 +9,10 @@ struct MyBoxedInt(Box<i32>);
 struct NumRef<'a> {
     num: &'a i32,
 }
+
+#[derive(Deref)]
+struct NumRef2<'a> {
+    num: &'a i32,
+    #[deref(ignore)]
+    useless: bool,
+}

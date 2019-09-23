@@ -398,26 +398,29 @@ create_derive!("display", display, UpperExp, upper_exp_derive, upper_exp);
 create_derive!("display", display, Pointer, pointer_derive, pointer);
 create_derive!("display", display, DebugCustom, debug_custom_derive, debug);
 
-create_derive!("index", index, Index, index_derive);
-create_derive!("index_mut", index_mut, IndexMut, index_mut_derive);
+create_derive!("index", index, Index, index_derive, index);
+create_derive!("index_mut", index_mut, IndexMut, index_mut_derive, index_mut);
 
 create_derive!(
     "into_iterator",
     into_iterator,
     IntoIterator,
-    into_iterator_derive
+    into_iterator_derive,
+    into_iterator
 );
 create_derive!(
     "into_iterator",
     into_iterator,
     IntoIteratorRef,
-    into_iterator_ref_derive
+    into_iterator_ref_derive,
+    into_iterator_ref
 );
 create_derive!(
     "into_iterator",
     into_iterator,
     IntoIteratorRefMut,
-    into_iterator_mut_ref_derive
+    into_iterator_mut_ref_derive,
+    into_iterator_ref_mut
 );
 create_derive!("iterator", iterator, Iterator, iterator_derive, iterator);
 
@@ -425,19 +428,21 @@ create_derive!("try_into", try_into, TryInto, try_into_derive);
 create_derive!("try_into", try_into, TryIntoRef, try_into_ref_derive);
 create_derive!("try_into", try_into, TryIntoRefMut, try_into_ref_mut_derive);
 
-create_derive!("deref", deref, Deref, deref_derive);
-create_derive!("deref_mut", deref_mut, DerefMut, deref_mut_derive);
+create_derive!("deref", deref, Deref, deref_derive, deref);
+create_derive!("deref_mut", deref_mut, DerefMut, deref_mut_derive, deref_mut);
 create_derive!(
     "deref_to_inner",
     deref_to_inner,
     DerefToInner,
-    deref_to_inner_derive
+    deref_to_inner_derive,
+    deref_to_inner
 );
 create_derive!(
     "deref_mut_to_inner",
     deref_mut_to_inner,
     DerefMutToInner,
-    deref_mut_to_inner_derive
+    deref_mut_to_inner_derive,
+    deref_mut_to_inner
 );
 
 create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);

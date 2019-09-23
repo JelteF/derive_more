@@ -7,7 +7,8 @@ use syn::{
     parse_str,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    Generics, Ident, Index, Meta, NestedMeta, Type, TypeParamBound, WhereClause,
+    Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Type, TypeGenerics, TypeParamBound,
+    WhereClause,
 };
 
 #[derive(Clone, Copy)]
@@ -54,7 +55,7 @@ impl RefType {
         match self {
             RefType::Ref => quote!(ref),
             RefType::Mut => quote!(ref mut),
-            _ => quote!(),
+            RefType::No => quote!(),
         }
     }
 
@@ -71,6 +72,13 @@ impl RefType {
         match self {
             RefType::No => false,
             _ => true,
+        }
+    }
+    pub fn attr_suffix(self) -> &'static str {
+        match self {
+            RefType::Ref => "_ref",
+            RefType::Mut => "_ref_mut",
+            RefType::No => "",
         }
     }
 }
@@ -265,24 +273,26 @@ fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     ))
 }
 
-pub struct State<'a> {
+pub struct State<'input> {
+    pub input: &'input DeriveInput,
     pub trait_name: &'static str,
     pub trait_module: TokenStream,
     pub trait_path: TokenStream,
     pub trait_attr: String,
-    // input: &'a DeriveInput,
     pub named: bool,
-    pub fields: Vec<&'a Field>,
+    pub fields: Vec<&'input Field>,
+    pub generics: Generics,
     enabled: Vec<bool>,
 }
 
-impl<'a> State<'a> {
-    pub fn new<'b>(
-        input: &'b DeriveInput,
+impl<'input> State<'input> {
+    pub fn new<'arg_input>(
+        input: &'arg_input DeriveInput,
         trait_name: &'static str,
         trait_module: TokenStream,
         trait_attr: String,
-    ) -> Result<State<'b>> {
+    ) -> Result<State<'arg_input>> {
+        let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
         let trait_path = quote!(#trait_module::#trait_ident);
         let named;
@@ -317,8 +327,10 @@ impl<'a> State<'a> {
         } else {
             Ok(vec![true; fields.len()])
         };
+        let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
 
         Ok(State {
+            input,
             trait_name,
             trait_module,
             trait_path,
@@ -326,24 +338,41 @@ impl<'a> State<'a> {
             // input,
             fields,
             named,
+            generics,
             enabled: enabled?,
         })
     }
+    pub fn add_trait_path_type_param(&mut self, params: TokenStream) {
+        let trait_path = &self.trait_path;
+        self.trait_path = quote!(#trait_path<#params>)
+    }
 
-    pub fn assert_single_enabled_field(&self) -> (&'a Field, &'a Type, Box<dyn ToTokens>) {
+    pub fn assert_single_enabled_field<'state>(&'state self) -> (SingleFieldData<'input, 'state>) {
         let enabled_fields = self.enabled_fields();
         if enabled_fields.len() != 1 {
             panic_one_field(self.trait_name, &self.trait_attr);
         };
         let mut field_idents = self.enabled_fields_idents();
-        (
-            enabled_fields[0],
-            &enabled_fields[0].ty,
-            field_idents.remove(0),
-        )
+        let field_type = &enabled_fields[0].ty;
+        let trait_path = &self.trait_path;
+        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        let field_ident = field_idents.remove(0);
+        let field_ident_ref = &field_ident;
+        SingleFieldData {
+            input_type: &self.input.ident,
+            field: enabled_fields[0],
+            field_type,
+            member: quote!(self.#field_ident_ref),
+            field_ident,
+            trait_path,
+            casted_trait: quote!(<#field_type as #trait_path>),
+            impl_generics,
+            ty_generics,
+            where_clause,
+        }
     }
 
-    fn enabled_fields(&self) -> Vec<&'a Field> {
+    fn enabled_fields(&self) -> Vec<&'input Field> {
         self.fields
             .iter()
             .zip(&self.enabled)
@@ -381,6 +410,19 @@ impl<'a> State<'a> {
             .map(|(f, _)| f)
             .collect()
     }
+}
+
+pub struct SingleFieldData<'input, 'state> {
+    pub input_type: &'input Ident,
+    pub field: &'input Field,
+    pub field_type: &'input Type,
+    pub field_ident: Box<dyn ToTokens>,
+    pub member: TokenStream,
+    pub trait_path: &'state TokenStream,
+    pub casted_trait: TokenStream,
+    pub impl_generics: ImplGenerics<'state>,
+    pub ty_generics: TypeGenerics<'state>,
+    pub where_clause: Option<&'state WhereClause>,
 }
 
 fn get_ignore_meta(trait_attr: &str, attrs: &[Attribute]) -> Result<Option<IgnoreMeta>> {
