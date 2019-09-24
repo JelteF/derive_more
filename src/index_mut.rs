@@ -29,7 +29,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 
     let new_generics = add_where_clauses_for_new_ident(
         &input.generics,
-        &vec![field],
+        &[field],
         index_type,
         type_where_clauses,
     );

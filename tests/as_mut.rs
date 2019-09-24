@@ -6,18 +6,15 @@ extern crate derive_more;
 use std::path::PathBuf;
 use std::ptr;
 
-
 #[derive(AsMut)]
 struct SingleFieldTuple(String);
 
 #[test]
 fn single_field_tuple() {
-
     let mut item = SingleFieldTuple(String::from("test"));
 
     assert!(ptr::eq(&mut item.0, item.as_mut()));
 }
-
 
 #[derive(AsMut)]
 struct SingleFieldStruct {
@@ -26,7 +23,6 @@ struct SingleFieldStruct {
 
 #[test]
 fn single_field_struct() {
-
     let mut item = SingleFieldStruct {
         first: String::from("test"),
     };
@@ -34,19 +30,16 @@ fn single_field_struct() {
     assert!(ptr::eq(&mut item.first, item.as_mut()));
 }
 
-
 #[derive(AsMut)]
 struct MultiFieldTuple(#[as_mut] String, #[as_mut] PathBuf, Vec<usize>);
 
 #[test]
 fn multi_field_tuple() {
-
     let mut item = MultiFieldTuple(String::from("test"), PathBuf::new(), vec![]);
 
     assert!(ptr::eq(&mut item.0, item.as_mut()));
     assert!(ptr::eq(&mut item.1, item.as_mut()));
 }
-
 
 #[derive(AsMut)]
 struct MultiFieldStruct {
@@ -59,7 +52,6 @@ struct MultiFieldStruct {
 
 #[test]
 fn multi_field_struct() {
-
     let mut item = MultiFieldStruct {
         first: String::from("test"),
         second: PathBuf::new(),

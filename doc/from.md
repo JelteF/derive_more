@@ -9,7 +9,7 @@ For structs with a single field you can call `.into()` on the desired content
 itself after deriving `From`.
 For structs that have multiple fields `.into()` needs to be called on a tuple
 containing the desired content for each field.
-For enums `.into()` works for each variant as if they were structs. 
+For enums `.into()` works for each variant as if they were structs.
 This way the variant can not only be initialized, but also be chosen based on
 the type that `.into()` is called on.
 
@@ -56,8 +56,6 @@ impl ::std::convert::From<(i32, i32)> for MyInts {
     }
 }
 ```
-
-
 
 # Regular structs
 
@@ -117,7 +115,6 @@ impl ::std::convert::From<(i32, i32)> for Point2D {
     }
 }
 ```
-
 
 # Enums
 

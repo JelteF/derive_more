@@ -28,7 +28,6 @@ fn main() {
 }
 ```
 
-
 # Tuple structs
 
 When deriving `DerefMut` for a tuple struct with one field:
@@ -59,9 +58,7 @@ impl ::std::ops::DerefMut for MyBoxedInt {
 }
 ```
 
-
 # Regular structs
-
 
 When deriving `DerefMut` for a regular struct with one field:
 

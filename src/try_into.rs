@@ -1,4 +1,6 @@
-use crate::utils::{RefType, field_idents, named_to_vec, numbered_vars, unnamed_to_vec, add_extra_generic_param};
+use crate::utils::{
+    add_extra_generic_param, field_idents, named_to_vec, numbered_vars, unnamed_to_vec, RefType,
+};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use std::collections::HashMap;

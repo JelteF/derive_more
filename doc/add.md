@@ -33,8 +33,6 @@ impl ::std::ops::Add for MyInts {
 
 The behaviour is similar with more or less fields.
 
-
-
 # Regular structs
 
 When deriving `Add` for a regular struct with two fields like this:
@@ -68,7 +66,6 @@ impl ::std::ops::Add for Point2D {
 ```
 
 The behaviour is similar for more or less fields.
-
 
 # Enums
 

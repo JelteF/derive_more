@@ -35,7 +35,6 @@ struct Point1D2 {
     useless: bool,
 }
 
-
 // Deref implementation is needed for DerefMutToInner
 impl ::std::ops::Deref for Point1D2 {
     type Target = i32;

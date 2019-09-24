@@ -65,8 +65,6 @@ impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for MyInts
 
 The behaviour is similar with more or less fields.
 
-
-
 # Regular structs
 
 When deriving `Mul` for a regular struct with a single field like this:
@@ -129,7 +127,6 @@ impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for Point2D
     }
 }
 ```
-
 
 # Enums
 

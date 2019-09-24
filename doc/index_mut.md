@@ -28,7 +28,6 @@ fn main() {
 }
 ```
 
-
 # Tuple structs
 
 When deriving `IndexMut` for a tuple struct with one field:
@@ -65,9 +64,7 @@ where
 }
 ```
 
-
 # Regular structs
-
 
 When deriving `IndexMut` for a regular struct with one field:
 

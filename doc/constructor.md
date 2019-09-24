@@ -7,7 +7,6 @@ can now derive this method by using `#[derive(Constructor)]`, even though
 similar to the `from` method when deriving `From`, except that it takes multiple
 arguments instead of a tuple.
 
-
 # Tuple structs
 
 When deriving `Constructor` for a tuple struct with a two fields like this:
@@ -31,7 +30,6 @@ impl MyInts {
 ```
 
 The generated code is similar for more or less fields.
-
 
 # Regular structs
 

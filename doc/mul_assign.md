@@ -32,10 +32,7 @@ impl<__RhsT: ::std::marker::Copy> ::std::ops::MulAssign<__RhsT> for MyInts
 The behaviour is similar with more or less fields, except for the fact that
 `__RhsT` does not need to implement `Copy` when only a single field is present.
 
-
-
 # Regular structs
-
 
 When deriving `MulAssign` for a regular struct with two fields like this:
 
@@ -69,7 +66,6 @@ impl<__RhsT: ::std::marker::Copy> ::std::ops::MulAssign<__RhsT> for Point2D
 The behaviour is again similar with more or less fields, except that `Copy`
 doesn't have to be implemented for `__Rhst` when the struct has only a single
 field.
-
 
 # Enums
 

@@ -1,6 +1,6 @@
-use crate::utils::{State, SingleFieldData};
+use crate::utils::{SingleFieldData, State};
 use proc_macro2::TokenStream;
-use quote::{quote};
+use quote::quote;
 use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`

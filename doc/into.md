@@ -53,8 +53,6 @@ impl ::std::convert::From<MyInts> for (i32, i32) {
 }
 ```
 
-
-
 # Regular structs
 
 For regular structs almost the same code is generated as for tuple structs
@@ -111,7 +109,6 @@ impl ::std::convert::From<Point2D> for (i32, i32) {
     }
 }
 ```
-
 
 # Enums
 
