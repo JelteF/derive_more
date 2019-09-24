@@ -29,8 +29,6 @@ impl ::std::ops::AddAssign for MyInts {
 
 The behaviour is similar with more or less fields.
 
-
-
 # Regular structs
 
 When deriving for a regular struct with two fields like this:
@@ -61,7 +59,6 @@ impl ::std::ops::AddAssign for Point2D {
 ```
 
 The behaviour is similar with more or less fields.
-
 
 # Enums
 

@@ -23,7 +23,6 @@ fn main() {
 }
 ```
 
-
 # Tuple structs
 
 When deriving `FromStr` for a tuple struct with one field:
@@ -47,9 +46,7 @@ impl ::std::str::FromStr for MyInt {
 }
 ```
 
-
 # Regular structs
-
 
 When deriving `FromStr` for a regular struct with one field:
 

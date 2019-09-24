@@ -41,4 +41,3 @@ impl<'a> ::std::ops::Deref for NumRef2<'a> {
         <&'a mut i32 as ::std::ops::Deref>::deref(&self.num)
     }
 }
-

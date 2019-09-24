@@ -25,7 +25,6 @@ fn main() {
 }
 ```
 
-
 # Tuple structs
 
 When deriving `Deref` for a tuple struct with one field:
@@ -50,9 +49,7 @@ impl ::std::ops::Deref for MyBoxedInt {
 }
 ```
 
-
 # Regular structs
-
 
 When deriving `Deref` for a regular struct with one field:
 

@@ -133,7 +133,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! derive_more = "0.13.0"
+//! derive_more = "0.15.0"
 //! ```
 //!
 //! And this to the top of your Rust file:
@@ -150,7 +150,7 @@
 //!```toml
 //!# Example Cargo.toml
 //![dependencies]
-//!derive_more = {version = "0.13.0", default-features = false, features=["no_std"]}
+//!derive_more = {version = "0.15.0", default-features = false, features=["no_std"]}
 //!```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
@@ -399,7 +399,13 @@ create_derive!("display", display, Pointer, pointer_derive, pointer);
 create_derive!("display", display, DebugCustom, debug_custom_derive, debug);
 
 create_derive!("index", index, Index, index_derive, index);
-create_derive!("index_mut", index_mut, IndexMut, index_mut_derive, index_mut);
+create_derive!(
+    "index_mut",
+    index_mut,
+    IndexMut,
+    index_mut_derive,
+    index_mut
+);
 
 create_derive!(
     "into_iterator",
@@ -429,7 +435,13 @@ create_derive!("try_into", try_into, TryIntoRef, try_into_ref_derive);
 create_derive!("try_into", try_into, TryIntoRefMut, try_into_ref_mut_derive);
 
 create_derive!("deref", deref, Deref, deref_derive, deref);
-create_derive!("deref_mut", deref_mut, DerefMut, deref_mut_derive, deref_mut);
+create_derive!(
+    "deref_mut",
+    deref_mut,
+    DerefMut,
+    deref_mut_derive,
+    deref_mut
+);
 create_derive!(
     "deref_to_inner",
     deref_to_inner,

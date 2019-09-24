@@ -391,13 +391,13 @@ impl<'input> State<'input> {
                             .as_ref()
                             .expect("Tried to get field names of a tuple struct")
                             .clone(),
-                    ) as Box<ToTokens>
+                    ) as Box<dyn ToTokens>
                 })
                 .collect()
         } else {
             let count = self.fields.len();
             (0..count)
-                .map(|i| Box::new(Index::from(i)) as Box<ToTokens>)
+                .map(|i| Box::new(Index::from(i)) as Box<dyn ToTokens>)
                 .collect()
         }
     }
