@@ -133,7 +133,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! derive_more = "0.13.0"
+//! derive_more = "0.15.0"
 //! ```
 //!
 //! And this to the top of your Rust file:
@@ -150,7 +150,7 @@
 //!```toml
 //!# Example Cargo.toml
 //![dependencies]
-//!derive_more = {version = "0.13.0", default-features = false, features=["no_std"]}
+//!derive_more = {version = "0.15.0", default-features = false, features=["no_std"]}
 //!```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
