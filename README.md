@@ -19,7 +19,6 @@ It does this by allowing you to derive lots of commonly used traits for both str
 
 By using this library the following code just works:
 
-
 ```rust
 #[macro_use]
 extern crate derive_more;
@@ -63,6 +62,7 @@ documentation.
 automatically derive `Div` as well. To derive both you should do `#[derive(Mul, Div)]`
 
 ### Conversion traits
+
 These are traits that are used to convert automatically between types.
 
 1. [`From`]
@@ -71,12 +71,14 @@ These are traits that are used to convert automatically between types.
 4. [`TryInto`]
 
 ### Formatting traits
+
 These traits are used for converting a struct to a string in different ways.
 
 1. `Display`-like, contains [`Display`], [`Binary`], [`Octal`], [`LowerHex`], [`UpperHex`],
    [`LowerExp`], [`UpperExp`], [`Pointer`]
 
 ### Operators
+
 These are traits that can be used for operator overloading.
 
 1. [`Index`]
@@ -92,11 +94,11 @@ These are traits that can be used for operator overloading.
    [`ShlAssign`]
 
 ### Static methods
+
 These don't derive traits, but derive static methods instead.
 
 1. `Constructor`, this derives a `new` method that can be used as a constructor. This is very
    basic if you need more customization for your constructor, check out the [`derive-new`] crate.
-
 
 ## Generated code
 
@@ -132,7 +134,7 @@ Then add the following to `Cargo.toml`:
 
 ```toml
 [dependencies]
-derive_more = "0.13.0"
+derive_more = "0.15.0"
 ```
 
 And this to the top of your Rust file:
