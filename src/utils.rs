@@ -254,11 +254,11 @@ impl<'input> State<'input> {
             _ => panic_one_field(&trait_name, &trait_attr),
         };
 
-        let ignore_attrs: Result<Vec<_>> = fields
+        let meta_infos: Result<Vec<_>> = fields
             .iter()
-            .map(|f| get_ignore_meta(&trait_attr, &f.attrs))
+            .map(|f| get_meta_info(&trait_attr, &f.attrs))
             .collect();
-        let first_match = ignore_attrs?.into_iter().filter_map(|at| at).next();
+        let first_match = meta_infos?.into_iter().filter_map(|info| info.enabled).next();
         let enabled: Result<Vec<_>> = if let Some(first_match) = first_match {
             fields
                 .iter()
@@ -316,7 +316,10 @@ impl<'input> State<'input> {
         let fields = self.enabled_fields();
         let field_idents = self.enabled_fields_idents();
         let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
-        let members: Vec<_> = field_idents.iter().map(|ident| quote!(self.#ident)).collect();
+        let members: Vec<_> = field_idents
+            .iter()
+            .map(|ident| quote!(self.#ident))
+            .collect();
         let trait_path = &self.trait_path;
         let casted_traits: Vec<_> = field_types
             .iter()
@@ -403,7 +406,7 @@ pub struct MultiFieldData<'input, 'state> {
     pub where_clause: Option<&'state WhereClause>,
 }
 
-fn get_ignore_meta(trait_attr: &str, attrs: &[Attribute]) -> Result<Option<IgnoreMeta>> {
+fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
     let mut it = attrs
         .iter()
         .filter_map(|m| m.parse_meta().ok())
@@ -418,14 +421,20 @@ fn get_ignore_meta(trait_attr: &str, attrs: &[Attribute]) -> Result<Option<Ignor
     let meta = if let Some(meta) = it.next() {
         meta
     } else {
-        return Ok(None);
+        return Ok(MetaInfo {
+            enabled: None,
+            forward: None,
+        });
     };
     if let Some(meta2) = it.next() {
         return Err(Error::new(meta2.span(), "Too many formats given"));
     }
     let mut list = match meta.clone() {
         Meta::Path(_) => {
-            return Ok(Some(IgnoreMeta::Enabled));
+            return Ok(MetaInfo {
+                enabled: Some(true),
+                forward: None,
+            })
         }
         Meta::List(list) => list,
         _ => {
@@ -453,23 +462,23 @@ fn get_ignore_meta(trait_attr: &str, attrs: &[Attribute]) -> Result<Option<Ignor
     if ident != "ignore" {
         return Err(Error::new(meta.span(), "Attribute format not supported6"));
     }
-    Ok(Some(IgnoreMeta::Ignored))
+    Ok(MetaInfo {
+        enabled: Some(false),
+        forward: None,
+    })
 }
 
-fn is_enabled(trait_attr: &str, attrs: &[Attribute], first_match: IgnoreMeta) -> Result<bool> {
-    let ignore_meta = if let Some(ignore_meta) = get_ignore_meta(trait_attr, attrs)? {
-        ignore_meta
-    } else {
-        if first_match == IgnoreMeta::Enabled {
-            return Ok(false);
-        }
-        return Ok(true);
-    };
-    Ok(ignore_meta == IgnoreMeta::Enabled)
+fn is_enabled(trait_attr: &str, attrs: &[Attribute], first_match_enabled: bool) -> Result<bool> {
+    if let Some(enabled) = get_meta_info(trait_attr, attrs)?.enabled {
+        return Ok(enabled);
+    }
+    if first_match_enabled {
+        return Ok(false);
+    }
+    return Ok(true);
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
-enum IgnoreMeta {
-    Enabled,
-    Ignored,
+struct MetaInfo {
+    enabled: Option<bool>,
+    forward: Option<bool>,
 }
