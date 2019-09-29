@@ -1,21 +1,34 @@
-use crate::utils;
+use crate::utils::{MultiFieldData, State};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::DeriveInput;
+use syn::{parse::Result, DeriveInput};
 
-pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
-    let input_type = &input.ident;
-    let (impl_generics, input_generics, where_clause) = input.generics.split_for_impl();
-    let (field_type, field_ident) = utils::extract_field_info(&input.data, "as_ref");
+pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    let state = State::new(
+        input,
+        trait_name,
+        quote!(::core::convert),
+        String::from("as_ref"),
+    )?;
+    let MultiFieldData {
+        input_type,
+        field_types,
+        members,
+        trait_path,
+        impl_generics,
+        ty_generics,
+        where_clause,
+        ..
+    } = state.enabled_fields_data();
 
-    quote! {#(
-        impl#impl_generics ::core::convert::AsRef<#field_type> for #input_type#input_generics
+    Ok(quote! {#(
+        impl#impl_generics #trait_path<#field_types> for #input_type#ty_generics
         #where_clause
         {
             #[inline]
-            fn as_ref(&self) -> &#field_type {
-                &self.#field_ident
+            fn as_ref(&self) -> &#field_types {
+                &#members
             }
         }
-    )*}
+    )*})
 }

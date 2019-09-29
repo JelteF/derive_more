@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-
+#![cfg_attr(not(feature = "default"), allow(dead_code))]
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
@@ -207,65 +206,6 @@ pub fn named_to_vec(fields: &FieldsNamed) -> Vec<&Field> {
     fields.named.iter().collect()
 }
 
-/// Checks whether `field` is decorated with the specifed simple attribute (e.g. `#[as_ref]`)
-fn has_simple_attr(field: &Field, attr: &str) -> bool {
-    field.attrs.iter().any(|a| {
-        a.parse_meta()
-            .map(|m| {
-                m.path()
-                    .segments
-                    .first()
-                    .map(|p| p.ident == attr)
-                    .unwrap_or(false)
-            })
-            .unwrap_or(false)
-    })
-}
-
-/// Extracts types and identifiers from fields in the given struct
-///
-/// If `data` contains more than one field, only fields decorated with `attr` are considered.
-pub fn extract_field_info<'a>(data: &'a Data, attr: &str) -> (Vec<&'a Type>, Vec<TokenStream>) {
-    // Get iter over fields and check named/unnamed
-    let named;
-    let fields = match data {
-        Data::Struct(data) => match data.fields {
-            Fields::Named(_) => {
-                named = true;
-                data.fields.iter()
-            }
-            Fields::Unnamed(_) => {
-                named = false;
-                data.fields.iter()
-            }
-            Fields::Unit => panic!("struct must have one or more fields"),
-        },
-        _ => panic!("only structs may derive this trait"),
-    };
-
-    // If necessary, filter out undecorated fields
-    let len = fields.len();
-    let fields = fields.filter(|f| len == 1 || has_simple_attr(f, attr));
-
-    // Extract info needed to generate impls
-    if named {
-        fields
-            .map(|f| {
-                let ident = f.ident.as_ref().unwrap();
-                (&f.ty, quote!(#ident))
-            })
-            .unzip()
-    } else {
-        fields
-            .enumerate()
-            .map(|(i, f)| {
-                let index = Index::from(i);
-                (&f.ty, quote!(#index))
-            })
-            .unzip()
-    }
-}
-
 fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     panic!(format!(
         "derive({}) only works when forwarding to a single field. Try putting #[{}] or #[{}(ignore)] on the fields in the struct",
@@ -372,6 +312,31 @@ impl<'input> State<'input> {
         }
     }
 
+    pub fn enabled_fields_data<'state>(&'state self) -> (MultiFieldData<'input, 'state>) {
+        let fields = self.enabled_fields();
+        let field_idents = self.enabled_fields_idents();
+        let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
+        let members: Vec<_> = field_idents.iter().map(|ident| quote!(self.#ident)).collect();
+        let trait_path = &self.trait_path;
+        let casted_traits: Vec<_> = field_types
+            .iter()
+            .map(|field_type| quote!(<#field_type as #trait_path>))
+            .collect();
+        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        MultiFieldData {
+            input_type: &self.input.ident,
+            fields,
+            field_types,
+            members,
+            field_idents,
+            trait_path,
+            casted_traits,
+            impl_generics,
+            ty_generics,
+            where_clause,
+        }
+    }
+
     fn enabled_fields(&self) -> Vec<&'input Field> {
         self.fields
             .iter()
@@ -420,6 +385,19 @@ pub struct SingleFieldData<'input, 'state> {
     pub member: TokenStream,
     pub trait_path: &'state TokenStream,
     pub casted_trait: TokenStream,
+    pub impl_generics: ImplGenerics<'state>,
+    pub ty_generics: TypeGenerics<'state>,
+    pub where_clause: Option<&'state WhereClause>,
+}
+
+pub struct MultiFieldData<'input, 'state> {
+    pub input_type: &'input Ident,
+    pub fields: Vec<&'input Field>,
+    pub field_types: Vec<&'input Type>,
+    pub field_idents: Vec<Box<dyn ToTokens>>,
+    pub members: Vec<TokenStream>,
+    pub trait_path: &'state TokenStream,
+    pub casted_traits: Vec<TokenStream>,
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
     pub where_clause: Option<&'state WhereClause>,
