@@ -37,7 +37,7 @@ matrix:
          - bash ci/test_all_features.sh
 
     # Linux
-    - env: TARGET=x86_64-unknown-linux-gnu # this is the default job
+    - env: TARGET=x86_64-unknown-linux-gnu DOCS=true # this is the default job
     - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true
 
     # OSX
@@ -45,11 +45,12 @@ matrix:
       os: osx
 
     # Testing other channels
-    - env: TARGET=x86_64-unknown-linux-gnu DOCS=true
-      rust: nightly
+    # # currently failing
+    # - env: TARGET=x86_64-unknown-linux-gnu DOCS=true
+    #   rust: nightly
     - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true
       rust: nightly
-      # Currentl failing
+      # Currently failing
       #- env: TARGET=x86_64-apple-darwin
       #  os: osx
       #  rust: nightly

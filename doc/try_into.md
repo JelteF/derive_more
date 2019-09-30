@@ -11,7 +11,6 @@ indirect implementation of `TryInto` as recommended by the
 # Example usage
 
 ```rust
-#![feature(try_from)]
 # #[macro_use] extern crate derive_more;
 use std::convert::TryFrom;
 use std::convert::TryInto;
@@ -44,7 +43,6 @@ When deriving `TryInto` for an enum, each enum variant gets its own
 For instance, when deriving `TryInto` for an enum link this:
 
 ```rust
-#![feature(try_from)]
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(TryInto)]
@@ -61,7 +59,6 @@ enum MixedInts {
 Code like this will be generated:
 
 ```rust
-# #![feature(try_from)]
 # enum MixedInts {
 #     SmallInt(i32),
 #     BigInt(i64),
@@ -120,7 +117,6 @@ impl ::std::convert::TryFrom<MixedInts> for (u32) {
 When deriving `TryInto` for an enum with Unit variants like this:
 
 ```rust
-#![feature(try_from)]
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(TryInto)]
@@ -133,7 +129,6 @@ enum EnumWithUnit {
 Code like this will be generated:
 
 ```rust
-# #![feature(try_from)]
 # enum EnumWithUnit {
 #     SmallInt(i32),
 #     Unit,
