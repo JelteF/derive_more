@@ -475,7 +475,7 @@ fn is_enabled(trait_attr: &str, attrs: &[Attribute], first_match_enabled: bool) 
     if first_match_enabled {
         return Ok(false);
     }
-    return Ok(true);
+    Ok(true)
 }
 
 struct MetaInfo {

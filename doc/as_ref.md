@@ -10,13 +10,17 @@ When `AsRef` is derived for a newtype or struct with one field, a single impleme
 to expose the underlying field.
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
 #[derive(AsRef)]
 struct MyWrapper(String);
+```
 
 
+Generates:
 
-// Generates:
-
+```
+# struct MyWrapper(String);
 impl AsRef<String> for MyWrapper {
     fn as_ref(&self) -> &String {
         &self.0
@@ -31,28 +35,37 @@ also mark one or more fields with the `#[as_ref]` attribute. An implementation w
 each indicated field.
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
 #[derive(AsRef)]
 struct MyWrapper {
     #[as_ref]
     name: String,
     #[as_ref]
-    path: Path,
+    num: i32,
     valid: bool,
 }
 
+```
 
 
-// Generates:
+Generates:
 
+```
+# struct MyWrapper {
+#     name: String,
+#     num: i32,
+#     valid: bool,
+# }
 impl AsRef<String> for MyWrapper {
     fn as_ref(&self) -> &String {
         &self.name
     }
 }
 
-impl AsRef<Path> for MyWrapper {
-    fn as_ref(&self) -> &Path {
-        &self.path
+impl AsRef<i32> for MyWrapper {
+    fn as_ref(&self) -> &i32 {
+        &self.num
     }
 }
 ```
@@ -60,7 +73,9 @@ impl AsRef<Path> for MyWrapper {
 Note that `AsRef<T>` may only be implemented once for any given type `T`. This means any attempt to
 mark more than one field of the same type with `#[as_ref]` will result in a compilation error.
 
-```rust
+```compile_fail
+# #[macro_use] extern crate derive_more;
+# fn main(){}
 // Error! Conflicting implementations of AsRef<String>
 #[derive(AsRef)]
 struct MyWrapper {

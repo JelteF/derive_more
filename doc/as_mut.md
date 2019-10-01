@@ -10,13 +10,17 @@ When `AsMut` is derived for a newtype or struct with one field, a single impleme
 to expose the underlying field.
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
 #[derive(AsMut)]
 struct MyWrapper(String);
+```
 
 
+Generates:
 
-// Generates:
-
+```
+# struct MyWrapper(String);
 impl AsMut<String> for MyWrapper {
     fn as_mut(&mut self) -> &mut String {
         &mut self.0
@@ -31,28 +35,38 @@ also mark one or more fields with the `#[as_mut]` attribute. An implementation w
 each indicated field.
 
 ```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
 #[derive(AsMut)]
 struct MyWrapper {
     #[as_mut]
     name: String,
     #[as_mut]
-    path: Path,
+    num: i32,
     valid: bool,
 }
 
 
+```
 
-// Generates:
 
+Generates:
+
+```
+# struct MyWrapper {
+#     name: String,
+#     num: i32,
+#     valid: bool,
+# }
 impl AsMut<String> for MyWrapper {
     fn as_mut(&mut self) -> &mut String {
         &mut self.name
     }
 }
 
-impl AsMut<Path> for MyWrapper {
-    fn as_mut(&mut self) -> &mut Path {
-        &mut self.path
+impl AsMut<i32> for MyWrapper {
+    fn as_mut(&mut self) -> &mut i32 {
+        &mut self.num
     }
 }
 ```
@@ -60,7 +74,9 @@ impl AsMut<Path> for MyWrapper {
 Note that `AsMut<T>` may only be implemented once for any given type `T`. This means any attempt to
 mark more than one field of the same type with `#[as_mut]` will result in a compilation error.
 
-```rust
+```compile_fail
+# #[macro_use] extern crate derive_more;
+# fn main(){}
 // Error! Conflicting implementations of AsMut<String>
 #[derive(AsMut)]
 struct MyWrapper {
