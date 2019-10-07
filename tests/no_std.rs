@@ -19,10 +19,12 @@ extern crate derive_more;
     From,
     IndexMut,
     Sum,
-    DerefToInner,
-    DerefMutToInner,
+    Deref,
+    DerefMut,
     Constructor
 )]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct MyInts(u64);
 
 #[derive(Iterator)]
@@ -39,13 +41,15 @@ struct MyVec<'a>(::core::slice::Iter<'a, i32>);
     Sum,
     IndexMut,
     AddAssign,
-    DerefToInner,
-    DerefMutToInner,
+    Deref,
+    DerefMut,
     IntoIterator,
     IntoIteratorRef,
     IntoIteratorRefMut,
     Constructor
 )]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct Wrapped<T: Clone>(T);
 
 #[derive(Iterator, Deref, DerefMut)]

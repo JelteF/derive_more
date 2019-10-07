@@ -222,7 +222,7 @@ pub struct State<'input> {
     pub named: bool,
     pub fields: Vec<&'input Field>,
     pub generics: Generics,
-    enabled: Vec<bool>,
+    full_meta_infos: Vec<FullMetaInfo>,
 }
 
 impl<'input> State<'input> {
@@ -251,22 +251,26 @@ impl<'input> State<'input> {
                     vec![]
                 }
             },
-            _ => panic_one_field(&trait_name, &trait_attr),
+            _ => {
+                panic_one_field(&trait_name, &trait_attr);
+            }
         };
-
+        let struct_meta_info = get_meta_info(&trait_attr, &input.attrs)?;
         let meta_infos: Result<Vec<_>> = fields
             .iter()
-            .map(|f| get_meta_info(&trait_attr, &f.attrs))
+            .map(|f| &f.attrs)
+            .map(|attrs| get_meta_info(&trait_attr, attrs))
             .collect();
-        let first_match = meta_infos?.into_iter().filter_map(|info| info.enabled).next();
-        let enabled: Result<Vec<_>> = if let Some(first_match) = first_match {
-            fields
-                .iter()
-                .map(|f| is_enabled(&trait_attr, &f.attrs, first_match))
-                .collect()
-        } else {
-            Ok(vec![true; fields.len()])
-        };
+        let meta_infos = meta_infos?;
+        let first_match = meta_infos.iter().filter_map(|info| info.enabled).next();
+        let defaults = struct_meta_info.to_full(FullMetaInfo {
+            enabled: first_match.map_or(true, |enabled| !enabled),
+            forward: false,
+        });
+        let full_meta_infos: Vec<_> = meta_infos
+            .iter()
+            .map(|info| info.to_full(defaults))
+            .collect();
         let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
 
         Ok(State {
@@ -279,7 +283,7 @@ impl<'input> State<'input> {
             fields,
             named,
             generics,
-            enabled: enabled?,
+            full_meta_infos,
         })
     }
     pub fn add_trait_path_type_param(&mut self, params: TokenStream) {
@@ -303,6 +307,7 @@ impl<'input> State<'input> {
             field: enabled_fields[0],
             field_type,
             member: quote!(self.#field_ident_ref),
+            info: self.enabled_fields_infos()[0],
             field_ident,
             trait_path,
             casted_trait: quote!(<#field_type as #trait_path>),
@@ -331,6 +336,7 @@ impl<'input> State<'input> {
             fields,
             field_types,
             members,
+            infos: self.enabled_fields_infos(),
             field_idents,
             trait_path,
             casted_traits,
@@ -343,8 +349,8 @@ impl<'input> State<'input> {
     fn enabled_fields(&self) -> Vec<&'input Field> {
         self.fields
             .iter()
-            .zip(&self.enabled)
-            .filter(|(_, ig)| **ig)
+            .zip(self.full_meta_infos.iter().map(|info| info.enabled))
+            .filter(|(_, ig)| *ig)
             .map(|(f, _)| *f)
             .collect()
     }
@@ -373,9 +379,16 @@ impl<'input> State<'input> {
     fn enabled_fields_idents(&self) -> Vec<Box<dyn ToTokens>> {
         self.field_idents()
             .into_iter()
-            .zip(&self.enabled)
-            .filter(|(_, ig)| **ig)
+            .zip(self.full_meta_infos.iter().map(|info| info.enabled))
+            .filter(|(_, ig)| *ig)
             .map(|(f, _)| f)
+            .collect()
+    }
+    fn enabled_fields_infos(&self) -> Vec<FullMetaInfo> {
+        self.full_meta_infos
+            .iter()
+            .filter(|info| info.enabled)
+            .copied()
             .collect()
     }
 }
@@ -386,6 +399,7 @@ pub struct SingleFieldData<'input, 'state> {
     pub field_type: &'input Type,
     pub field_ident: Box<dyn ToTokens>,
     pub member: TokenStream,
+    pub info: FullMetaInfo,
     pub trait_path: &'state TokenStream,
     pub casted_trait: TokenStream,
     pub impl_generics: ImplGenerics<'state>,
@@ -399,6 +413,7 @@ pub struct MultiFieldData<'input, 'state> {
     pub field_types: Vec<&'input Type>,
     pub field_idents: Vec<Box<dyn ToTokens>>,
     pub members: Vec<TokenStream>,
+    pub infos: Vec<FullMetaInfo>,
     pub trait_path: &'state TokenStream,
     pub casted_traits: Vec<TokenStream>,
     pub impl_generics: ImplGenerics<'state>,
@@ -429,7 +444,7 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
     if let Some(meta2) = it.next() {
         return Err(Error::new(meta2.span(), "Too many formats given"));
     }
-    let mut list = match meta.clone() {
+    let list = match meta.clone() {
         Meta::Path(_) => {
             return Ok(MetaInfo {
                 enabled: Some(true),
@@ -441,44 +456,53 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
             return Err(Error::new(meta.span(), "Attribute format not supported1"));
         }
     };
-    if list.nested.len() != 1 {
-        return Err(Error::new(meta.span(), "Attribute format not supported2"));
-    }
-    let element = list.nested.pop().unwrap();
-    let nested_meta = if let NestedMeta::Meta(meta) = element.value() {
-        meta
-    } else {
-        return Err(Error::new(meta.span(), "Attribute format not supported3"));
-    };
-    if let Meta::Path(_) = nested_meta {
-    } else {
-        return Err(Error::new(meta.span(), "Attribute format not supported4"));
-    }
-    let ident = if let Some(ident) = nested_meta.path().segments.first().map(|p| &p.ident) {
-        ident
-    } else {
-        return Err(Error::new(meta.span(), "Attribute format not supported5"));
-    };
-    if ident != "ignore" {
-        return Err(Error::new(meta.span(), "Attribute format not supported6"));
-    }
-    Ok(MetaInfo {
-        enabled: Some(false),
+    let mut info = MetaInfo {
+        enabled: Some(true),
         forward: None,
-    })
+    };
+    for element in list.nested.into_iter() {
+        let nested_meta = if let NestedMeta::Meta(meta) = element {
+            meta
+        } else {
+            return Err(Error::new(meta.span(), "Attribute format not supported3"));
+        };
+        if let Meta::Path(_) = nested_meta {
+        } else {
+            return Err(Error::new(meta.span(), "Attribute format not supported4"));
+        }
+        let ident = if let Some(ident) = nested_meta.path().segments.first().map(|p| &p.ident) {
+            ident
+        } else {
+            return Err(Error::new(meta.span(), "Attribute format not supported5"));
+        };
+        if ident == "ignore" {
+            info.enabled = Some(false);
+        } else if ident == "forward" {
+            info.forward = Some(true);
+        } else {
+            return Err(Error::new(meta.span(), "Attribute format not supported6"));
+        };
+    }
+    Ok(info)
 }
 
-fn is_enabled(trait_attr: &str, attrs: &[Attribute], first_match_enabled: bool) -> Result<bool> {
-    if let Some(enabled) = get_meta_info(trait_attr, attrs)?.enabled {
-        return Ok(enabled);
-    }
-    if first_match_enabled {
-        return Ok(false);
-    }
-    Ok(true)
+#[derive(Copy, Clone, Debug)]
+pub struct FullMetaInfo {
+    pub enabled: bool,
+    pub forward: bool,
 }
 
+#[derive(Copy, Clone)]
 struct MetaInfo {
     enabled: Option<bool>,
     forward: Option<bool>,
+}
+
+impl MetaInfo {
+    fn to_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
+        FullMetaInfo {
+            enabled: self.enabled.unwrap_or(defaults.enabled),
+            forward: self.forward.unwrap_or(defaults.forward),
+        }
+    }
 }

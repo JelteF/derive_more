@@ -16,3 +16,28 @@ struct NumRef2<'a> {
     #[deref(ignore)]
     useless: bool,
 }
+
+#[derive(Deref)]
+#[deref(forward)]
+struct MyInt(i32);
+
+#[derive(Deref)]
+#[deref(forward)]
+struct Point1D {
+    x: i32,
+}
+
+#[derive(Deref)]
+#[deref(forward)]
+struct Point1D2 {
+    x: i32,
+    #[deref(ignore)]
+    useless: bool,
+}
+
+#[derive(Deref)]
+struct Point1D3 {
+    #[deref(forward)]
+    x: i32,
+    useless: bool,
+}

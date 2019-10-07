@@ -13,22 +13,33 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     )?;
     let SingleFieldData {
         input_type,
+        field_type,
         trait_path,
         casted_trait,
         impl_generics,
         ty_generics,
         where_clause,
         member,
+        info,
         ..
     } = state.assert_single_enabled_field();
+
+    let (target, body) = if info.forward {
+        (quote!(#field_type), quote!(&#member))
+    } else {
+        (
+            quote!(#casted_trait::Target),
+            quote!(#casted_trait::deref(&#member)),
+        )
+    };
 
     Ok(quote! {
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
-            type Target = #casted_trait::Target;
+            type Target = #target;
             #[inline]
             fn deref(&self) -> &Self::Target {
-                #casted_trait::deref(&#member)
+                #body
             }
         }
     })

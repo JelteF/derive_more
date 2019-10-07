@@ -16,10 +16,12 @@ extern crate derive_more;
 #[derive(Display)]
 #[derive(Octal)]
 #[derive(Binary)]
-#[derive(DerefToInner, DerefMutToInner)]
+#[derive(Deref, DerefMut)]
 #[derive(Sum)]
 #[derive(MulSelf)]
 #[derive(Product)]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]

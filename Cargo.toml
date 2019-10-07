@@ -47,8 +47,6 @@ as_ref = []
 constructor = []
 deref = []
 deref_mut = []
-deref_to_inner = []
-deref_mut_to_inner = []
 display = []
 from = []
 from_str = []
@@ -72,8 +70,6 @@ default = [
     "constructor",
     "deref",
     "deref_mut",
-    "deref_to_inner",
-    "deref_mut_to_inner",
     "display",
     "from",
     "from_str",
@@ -128,16 +124,6 @@ required-features = ["deref"]
 name = "deref_mut"
 path = "tests/deref_mut.rs"
 required-features = ["deref_mut"]
-
-[[test]]
-name = "deref_to_inner"
-path = "tests/deref_to_inner.rs"
-required-features = ["deref_to_inner"]
-
-[[test]]
-name = "deref_mut_to_inner"
-path = "tests/deref_mut_to_inner.rs"
-required-features = ["deref_mut_to_inner"]
 
 [[test]]
 name = "display"

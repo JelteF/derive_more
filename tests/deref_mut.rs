@@ -41,3 +41,32 @@ impl<'a> ::std::ops::Deref for NumRef2<'a> {
         <&'a mut i32 as ::std::ops::Deref>::deref(&self.num)
     }
 }
+
+#[derive(DerefMut)]
+#[deref_mut(forward)]
+struct MyInt(i32);
+
+// Deref implementation is needed for DerefMutToInner
+impl ::std::ops::Deref for MyInt {
+    type Target = i32;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(DerefMut)]
+struct Point1D {
+    #[deref_mut(forward)]
+    x: i32,
+}
+
+// Deref implementation is needed for DerefMutToInner
+impl ::std::ops::Deref for Point1D {
+    type Target = i32;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.x
+    }
+}
+
