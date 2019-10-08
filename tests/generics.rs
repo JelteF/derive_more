@@ -48,6 +48,8 @@ struct WrappedDouble<T: Clone, U: Clone>(T, U);
     Constructor,
     Sum
 )]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct Struct<T: Clone> {
     t: T,
 }
