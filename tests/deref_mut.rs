@@ -3,6 +3,7 @@
 extern crate derive_more;
 
 #[derive(DerefMut)]
+#[deref_mut(forward)]
 struct MyBoxedInt(Box<i32>);
 // Deref implementation is needed for DerefMut
 impl ::std::ops::Deref for MyBoxedInt {
@@ -15,6 +16,7 @@ impl ::std::ops::Deref for MyBoxedInt {
 
 #[derive(DerefMut)]
 struct NumRef<'a> {
+    #[deref_mut(forward)]
     num: &'a mut i32,
 }
 // Deref implementation is needed for DerefMut
@@ -27,6 +29,7 @@ impl<'a> ::std::ops::Deref for NumRef<'a> {
 }
 
 #[derive(DerefMut)]
+#[deref_mut(forward)]
 struct NumRef2<'a> {
     num: &'a mut i32,
     #[deref_mut(ignore)]
@@ -43,7 +46,6 @@ impl<'a> ::std::ops::Deref for NumRef2<'a> {
 }
 
 #[derive(DerefMut)]
-#[deref_mut(forward)]
 struct MyInt(i32);
 
 // Deref implementation is needed for DerefMutToInner
@@ -57,7 +59,6 @@ impl ::std::ops::Deref for MyInt {
 
 #[derive(DerefMut)]
 struct Point1D {
-    #[deref_mut(forward)]
     x: i32,
 }
 

@@ -23,9 +23,15 @@ extern crate derive_more;
     DerefMut,
     Constructor
 )]
+struct MyInts(u64);
+
+#[derive(
+    Deref,
+    DerefMut
+)]
 #[deref(forward)]
 #[deref_mut(forward)]
-struct MyInts(u64);
+struct MyBoxedInt<'a>(&'a mut u64);
 
 #[derive(Iterator)]
 struct MyVec<'a>(::core::slice::Iter<'a, i32>);

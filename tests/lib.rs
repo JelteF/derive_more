@@ -20,14 +20,14 @@ extern crate derive_more;
 #[derive(Sum)]
 #[derive(MulSelf)]
 #[derive(Product)]
-#[deref(forward)]
-#[deref_mut(forward)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
 #[derive(Deref, DerefMut)]
 #[derive(IntoIterator, IntoIteratorRef, IntoIteratorRefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct MyVec(Vec<i32>);
 
 #[derive(Iterator)]
@@ -35,6 +35,8 @@ struct MyIter<'a>(::core::slice::Iter<'a, i32>);
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct MyBoxedInt(Box<i32>);
 
 #[derive(Eq, PartialEq, Debug)]

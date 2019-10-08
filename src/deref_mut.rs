@@ -23,9 +23,9 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         ..
     } = state.assert_single_enabled_field();
     let body = if info.forward {
-        quote!(&mut #member)
-    } else {
         quote!(#casted_trait::deref_mut(&mut #member))
+    } else {
+        quote!(&mut #member)
     };
 
     Ok(quote! {

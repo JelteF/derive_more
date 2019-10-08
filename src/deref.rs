@@ -25,12 +25,12 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     } = state.assert_single_enabled_field();
 
     let (target, body) = if info.forward {
-        (quote!(#field_type), quote!(&#member))
-    } else {
         (
             quote!(#casted_trait::Target),
             quote!(#casted_trait::deref(&#member)),
         )
+    } else {
+        (quote!(#field_type), quote!(&#member))
     };
 
     Ok(quote! {
