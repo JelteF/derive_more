@@ -9,9 +9,11 @@ mostly useful for newtypes that contain a pointer type such as `Box` or `Rc`.
 ```rust
 # #[macro_use] extern crate derive_more;
 #[derive(Deref)]
+#[deref(forward)]
 struct MyBoxedInt(Box<i32>);
 
 #[derive(Deref)]
+#[deref(forward)]
 struct NumRef<'a> {
     num: &'a i32,
 }
@@ -33,6 +35,7 @@ When deriving `Deref` for a tuple struct with one field:
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Deref)]
+#[deref(forward)]
 struct MyBoxedInt(Box<i32>);
 ```
 
@@ -57,6 +60,7 @@ When deriving `Deref` for a regular struct with one field:
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Deref)]
+#[deref(forward)]
 struct NumRef<'a> {
     num: &'a i32,
 }

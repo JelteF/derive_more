@@ -10,9 +10,13 @@ will allow you to mutably dereference the struct its member directly.
 ```rust
 # #[macro_use] extern crate derive_more;
 #[derive(Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct MyBoxedInt(Box<i32>);
 
 #[derive(Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct NumRef<'a> {
     num: &'a mut i32,
 }
@@ -36,6 +40,8 @@ When deriving `DerefMut` for a tuple struct with one field:
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct MyBoxedInt(Box<i32>);
 ```
 
@@ -66,6 +72,8 @@ When deriving `DerefMut` for a regular struct with one field:
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
 struct NumRef<'a> {
     num: &'a mut i32,
 }
