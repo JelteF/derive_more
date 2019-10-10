@@ -120,8 +120,9 @@ impl ::std::convert::From<(i32, i32)> for Point2D {
 
 When deriving `From` for enums a new `impl` will be generated for each of its
 variants.
-There's one exception, if multiple variants have the same type signature no `From`
-implementation will be derived for any of those variants.
+If you don't want this for a variant you can put the `#[from(ignore)]` attribute
+on that variant. One case where this can be useful is when two variants would
+overlap.
 For instance when deriving `From` for the following enum:
 
 ```rust
@@ -133,6 +134,7 @@ enum MixedInts {
     NamedBigInt { int: i64 },
     TwoSmallInts(i32, i32),
     NamedBigInts { x: i64, y: i64 },
+    #[from(ignore)]
     Unsigned(u32),
     NamedUnsigned { x: u32 },
 }
@@ -141,7 +143,7 @@ enum MixedInts {
 
 Code like this will be generated:
 
-```rust
+```edition2018
 # enum MixedInts {
 #     SmallInt(i32),
 #     NamedBigInt { int: i64 },
@@ -150,30 +152,46 @@ Code like this will be generated:
 #     Unsigned(u32),
 #     NamedUnsigned { x: u32 },
 # }
-impl ::std::convert::From<(i32)> for MixedInts {
+impl ::core::convert::From<(i32)> for MixedInts {
+    #[allow(unused_variables)]
+    #[inline]
     fn from(original: (i32)) -> MixedInts {
         MixedInts::SmallInt(original)
     }
 }
 
-impl ::std::convert::From<(i64)> for MixedInts {
+impl ::core::convert::From<(i64)> for MixedInts {
+    #[allow(unused_variables)]
+    #[inline]
     fn from(original: (i64)) -> MixedInts {
         MixedInts::NamedBigInt { int: original }
     }
 }
 
-impl ::std::convert::From<(i32, i32)> for MixedInts {
+impl ::core::convert::From<(i32, i32)> for MixedInts {
+    #[allow(unused_variables)]
+    #[inline]
     fn from(original: (i32, i32)) -> MixedInts {
         MixedInts::TwoSmallInts(original.0, original.1)
     }
 }
 
-impl ::std::convert::From<(i64, i64)> for MixedInts {
+impl ::core::convert::From<(i64, i64)> for MixedInts {
+    #[allow(unused_variables)]
+    #[inline]
     fn from(original: (i64, i64)) -> MixedInts {
         MixedInts::NamedBigInts {
             x: original.0,
             y: original.1,
         }
+    }
+}
+
+impl ::core::convert::From<(u32)> for MixedInts {
+    #[allow(unused_variables)]
+    #[inline]
+    fn from(original: (u32)) -> MixedInts {
+        MixedInts::NamedUnsigned { x: original }
     }
 }
 ```

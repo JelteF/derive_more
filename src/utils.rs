@@ -7,7 +7,7 @@ use syn::{
     spanned::Spanned,
     Attribute, Data, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
     Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Type, TypeGenerics, TypeParamBound,
-    WhereClause,
+    Variant, WhereClause,
 };
 
 #[derive(Clone, Copy)]
@@ -216,14 +216,22 @@ fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     ))
 }
 
+#[derive(PartialEq, Eq)]
+pub enum DeriveType {
+    Unnamed,
+    Named,
+    Enum,
+}
+
 pub struct State<'input> {
     pub input: &'input DeriveInput,
     pub trait_name: &'static str,
     pub trait_module: TokenStream,
     pub trait_path: TokenStream,
     pub trait_attr: String,
-    pub named: bool,
+    pub derive_type: DeriveType,
     pub fields: Vec<&'input Field>,
+    pub variants: Vec<&'input Variant>,
     pub generics: Generics,
     full_meta_infos: Vec<FullMetaInfo>,
 }
@@ -238,30 +246,31 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
         let trait_path = quote!(#trait_module::#trait_ident);
-        let named;
-        let fields: Vec<_> = match input.data {
+        let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
                 Fields::Unnamed(ref fields) => {
-                    named = false;
-                    unnamed_to_vec(fields)
+                    (DeriveType::Unnamed, unnamed_to_vec(fields), vec![])
                 }
-                Fields::Named(ref fields) => {
-                    named = true;
-                    named_to_vec(fields)
-                }
-                Fields::Unit => {
-                    named = false;
-                    vec![]
-                }
+
+                Fields::Named(ref fields) => (DeriveType::Named, named_to_vec(fields), vec![]),
+                Fields::Unit => (DeriveType::Named, vec![], vec![]),
             },
-            _ => {
-                panic_one_field(&trait_name, &trait_attr);
-            }
+            Data::Enum(ref data_enum) => (
+                DeriveType::Enum,
+                vec![],
+                data_enum.variants.iter().collect(),
+            ),
+            Data::Union(_) => panic!(format!("can not derive({}) for union", trait_name)),
         };
+        let attrs: Vec<_> = if derive_type == DeriveType::Enum {
+            variants.iter().map(|v| &v.attrs).collect()
+        } else {
+            fields.iter().map(|f| &f.attrs).collect()
+        };
+
         let struct_meta_info = get_meta_info(&trait_attr, &input.attrs)?;
-        let meta_infos: Result<Vec<_>> = fields
+        let meta_infos: Result<Vec<_>> = attrs
             .iter()
-            .map(|f| &f.attrs)
             .map(|attrs| get_meta_info(&trait_attr, attrs))
             .collect();
         let meta_infos = meta_infos?;
@@ -284,7 +293,8 @@ impl<'input> State<'input> {
             trait_attr,
             // input,
             fields,
-            named,
+            variants,
+            derive_type,
             generics,
             full_meta_infos,
         })
@@ -295,6 +305,9 @@ impl<'input> State<'input> {
     }
 
     pub fn assert_single_enabled_field<'state>(&'state self) -> (SingleFieldData<'input, 'state>) {
+        if self.derive_type == DeriveType::Enum {
+            panic_one_field(self.trait_name, &self.trait_attr);
+        }
         let enabled_fields = self.enabled_fields();
         if enabled_fields.len() != 1 {
             panic_one_field(self.trait_name, &self.trait_attr);
@@ -310,7 +323,7 @@ impl<'input> State<'input> {
             field: enabled_fields[0],
             field_type,
             member: quote!(self.#field_ident_ref),
-            info: self.enabled_fields_infos()[0],
+            info: self.enabled_infos()[0],
             field_ident,
             trait_path,
             casted_trait: quote!(<#field_type as #trait_path>),
@@ -321,6 +334,9 @@ impl<'input> State<'input> {
     }
 
     pub fn enabled_fields_data<'state>(&'state self) -> (MultiFieldData<'input, 'state>) {
+        if self.derive_type == DeriveType::Enum {
+            panic!(format!("can not derive({}) for enum", self.trait_name))
+        }
         let fields = self.enabled_fields();
         let field_idents = self.enabled_fields_idents();
         let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
@@ -339,7 +355,7 @@ impl<'input> State<'input> {
             fields,
             field_types,
             members,
-            infos: self.enabled_fields_infos(),
+            infos: self.enabled_infos(),
             field_idents,
             trait_path,
             casted_traits,
@@ -347,6 +363,34 @@ impl<'input> State<'input> {
             ty_generics,
             where_clause,
         }
+    }
+
+    pub fn enabled_variant_data<'state>(&'state self) -> (MultiVariantData<'input, 'state>) {
+        if self.derive_type != DeriveType::Enum {
+            panic!(format!("can only derive({}) for enum", self.trait_name))
+        }
+        let variants = self.enabled_variants();
+        let trait_path = &self.trait_path;
+        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        MultiVariantData {
+            input_type: &self.input.ident,
+            variants,
+            infos: self.enabled_infos(),
+            trait_path,
+            impl_generics,
+            ty_generics,
+            where_clause,
+        }
+    }
+
+
+    fn enabled_variants(&self) -> Vec<&'input Variant> {
+        self.variants
+            .iter()
+            .zip(self.full_meta_infos.iter().map(|info| info.enabled))
+            .filter(|(_, ig)| *ig)
+            .map(|(f, _)| *f)
+            .collect()
     }
 
     fn enabled_fields(&self) -> Vec<&'input Field> {
@@ -359,7 +403,7 @@ impl<'input> State<'input> {
     }
 
     fn field_idents(&self) -> Vec<Box<dyn ToTokens>> {
-        if self.named {
+        if self.derive_type == DeriveType::Named {
             self.fields
                 .iter()
                 .map(|f| {
@@ -387,7 +431,7 @@ impl<'input> State<'input> {
             .map(|(f, _)| f)
             .collect()
     }
-    fn enabled_fields_infos(&self) -> Vec<FullMetaInfo> {
+    fn enabled_infos(&self) -> Vec<FullMetaInfo> {
         self.full_meta_infos
             .iter()
             .filter(|info| info.enabled)
@@ -419,6 +463,16 @@ pub struct MultiFieldData<'input, 'state> {
     pub infos: Vec<FullMetaInfo>,
     pub trait_path: &'state TokenStream,
     pub casted_traits: Vec<TokenStream>,
+    pub impl_generics: ImplGenerics<'state>,
+    pub ty_generics: TypeGenerics<'state>,
+    pub where_clause: Option<&'state WhereClause>,
+}
+
+pub struct MultiVariantData<'input, 'state> {
+    pub input_type: &'input Ident,
+    pub variants: Vec<&'input Variant>,
+    pub infos: Vec<FullMetaInfo>,
+    pub trait_path: &'state TokenStream,
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
     pub where_clause: Option<&'state WhereClause>,

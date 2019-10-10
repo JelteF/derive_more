@@ -289,7 +289,7 @@ macro_rules! create_derive(
     }
 );
 
-create_derive!("from", from, From, from_derive);
+create_derive!("from", from, From, from_derive, from);
 
 create_derive!("into", into, Into, into_derive);
 create_derive!("into", into, IntoRef, into_ref_derive);

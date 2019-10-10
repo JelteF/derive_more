@@ -85,6 +85,7 @@ struct NestedInt(MyInt);
 #[derive(Add, Sub)]
 enum SimpleMyIntEnum {
     Int(i32),
+    #[from(ignore)]
     _UnsignedOne(u32),
     _UnsignedTwo(u32),
 }
@@ -102,6 +103,7 @@ enum SimpleSignedIntEnum {
 #[derive(Neg)]
 enum SimpleEnum {
     Int(i32),
+    #[from(ignore)]
     _Ints(i32, i32),
     LabeledInts { a: i32, b: i32 },
     _SomeUnit,
@@ -115,8 +117,10 @@ enum MyIntEnum {
     BigInt(i64),
     TwoInts(i32, i32),
     Point2D { x: i64, y: i64 },
+    #[from(ignore)]
     _UnsignedOne(u32),
     _UnsignedTwo(u32),
+    #[from(ignore)]
     _Uints1(u64, u64),
     _Uints2 { x: u64, y: u64 },
     Nothing,

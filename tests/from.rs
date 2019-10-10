@@ -34,6 +34,7 @@ enum MixedInts {
     NamedBigInt { int: i64 },
     TwoSmallInts(i32, i32),
     NamedBigInts { x: i64, y: i64 },
+    #[from(ignore)]
     Unsigned(u32),
     NamedUnsigned { x: u32 },
 }
