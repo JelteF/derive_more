@@ -187,11 +187,14 @@ pub fn add_where_clauses_for_new_ident<'a>(
     fields: &[&'a Field],
     type_ident: &Ident,
     type_where_clauses: TokenStream,
+    sized: bool,
 ) -> Generics {
     let generic_param = if fields.len() > 1 {
         quote!(#type_ident: ::core::marker::Copy)
-    } else {
+    } else if sized {
         quote!(#type_ident)
+    } else {
+        quote!(#type_ident: ?::core::marker::Sized)
     };
 
     let generics = add_extra_where_clauses(generics, type_where_clauses);

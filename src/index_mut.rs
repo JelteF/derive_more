@@ -32,6 +32,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         &[field],
         index_type,
         type_where_clauses,
+        true,
     );
 
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();

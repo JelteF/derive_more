@@ -17,6 +17,16 @@ fn single_field_tuple() {
 }
 
 #[derive(AsRef)]
+#[as_ref(forward)]
+struct SingleFieldForward(Vec<i32>);
+
+#[test]
+fn single_field_forward() {
+    let item = SingleFieldForward(vec![]);
+    let _: &[i32] = <SingleFieldForward as AsRef<[i32]>>::as_ref(&item);
+}
+
+#[derive(AsRef)]
 struct SingleFieldStruct {
     first: String,
 }

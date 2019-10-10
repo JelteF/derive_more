@@ -17,6 +17,16 @@ fn single_field_tuple() {
 }
 
 #[derive(AsMut)]
+#[as_mut(forward)]
+struct SingleFieldForward(Vec<i32>);
+
+#[test]
+fn single_field_forward() {
+    let mut item = SingleFieldForward(vec![]);
+    let _: &mut [i32] = <SingleFieldForward as AsMut<[i32]>>::as_mut(&mut item);
+}
+
+#[derive(AsMut)]
 struct SingleFieldStruct {
     first: String,
 }
