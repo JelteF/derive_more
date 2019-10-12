@@ -1,10 +1,7 @@
-use crate::utils::{
-    field_idents, get_field_types, named_to_vec, number_idents, unnamed_to_vec, DeriveType,
-    MultiFieldData, State,
-};
-use proc_macro2::TokenStream;
+use crate::utils::{add_where_clauses_for_new_ident, DeriveType, MultiFieldData, State};
+use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{parse::Result, DeriveInput, Field, Fields};
+use syn::{parse::Result, DeriveInput, Ident, Index};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
@@ -17,103 +14,82 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     if state.derive_type == DeriveType::Enum {
         Ok(enum_from(input, state))
     } else {
-        struct_from(input, state)
+        Ok(struct_from(input, &state))
     }
 }
 
-pub fn struct_from(input: &DeriveInput, state: State) -> Result<TokenStream> {
+pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
     let MultiFieldData {
+        variant_type,
         fields,
-        field_types,
+        field_idents,
+        infos,
         input_type,
         trait_path,
         ..
     } = state.enabled_fields_data();
+
+    let mut new_generics = input.generics.clone();
+    let sub_items: Vec<_> = infos
+        .iter()
+        .zip(fields.iter())
+        .enumerate()
+        .map(|(i, (info, field))| {
+            let field_type = &field.ty;
+            let variable = if fields.len() == 1 {
+                quote!(original)
+            } else {
+                let tuple_index = Index::from(i);
+                quote!(original.#tuple_index)
+            };
+            if info.forward {
+                let type_param = &Ident::new(&format!("__FromT{}", i), Span::call_site());
+                let sub_trait_path = quote!(#trait_path<#type_param>);
+                let type_where_clauses = quote! {
+                    where #field_type: #sub_trait_path
+                };
+                new_generics = add_where_clauses_for_new_ident(
+                    &input.generics,
+                    &[field],
+                    type_param,
+                    type_where_clauses,
+                    true,
+                );
+                let casted_trait = quote!(<#field_type as #sub_trait_path>);
+                (quote!(#casted_trait::from(#variable)), quote!(#type_param))
+            } else {
+                (variable, quote!(#field_type))
+            }
+        })
+        .collect();
+    let initializers = sub_items.iter().map(|i| &i.0);
+    let from_types: Vec<_> = sub_items.iter().map(|i| &i.1).collect();
     let body = if state.derive_type == DeriveType::Named {
-        struct_body(input_type, &fields)
+        quote!(#variant_type{#(#field_idents: #initializers),*})
     } else {
-        tuple_body(input_type, &fields)
+        quote!(#variant_type(#(#initializers),*))
     };
+    let (impl_generics, _, where_clause) = new_generics.split_for_impl();
+    let (_, ty_generics, _) = input.generics.split_for_impl();
 
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-
-    Ok(quote! {
-        impl#impl_generics #trait_path<(#(#field_types),*)> for
-            #input_type#ty_generics #where_clause {
-
-            #[allow(unused_variables)]
-            #[inline]
-            fn from(original: (#(#field_types),*)) -> #input_type#ty_generics {
-                #body
-            }
-        }
-    })
-}
-
-pub fn from_impl<T: ToTokens>(input: &DeriveInput, fields: &[&Field], body: T) -> TokenStream {
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-    let input_type = &input.ident;
-    let original_types = &get_field_types(fields);
     quote! {
-        impl#impl_generics ::core::convert::From<(#(#original_types),*)> for
+        impl#impl_generics #trait_path<(#(#from_types),*)> for
             #input_type#ty_generics #where_clause {
 
             #[allow(unused_variables)]
             #[inline]
-            fn from(original: (#(#original_types),*)) -> #input_type#ty_generics {
+            fn from(original: (#(#from_types),*)) -> #input_type#ty_generics {
                 #body
             }
         }
-    }
-}
-
-fn tuple_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
-    if fields.len() == 1 {
-        quote!(#return_type(original))
-    } else {
-        let field_names = &number_idents(fields.len());
-        quote!(#return_type(#(original.#field_names),*))
-    }
-}
-
-fn struct_body<T: ToTokens>(return_type: T, fields: &[&Field]) -> TokenStream {
-    if fields.len() == 1 {
-        let field_name = &fields[0].ident;
-        quote!(#return_type{#field_name: original})
-    } else {
-        let argument_field_names = &number_idents(fields.len());
-        let field_names = &field_idents(fields);
-        quote!(#return_type{#(#field_names: original.#argument_field_names),*})
     }
 }
 
 fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
-    let input_type = &input.ident;
     let mut tokens = TokenStream::new();
 
-    for variant in state.enabled_variant_data().variants {
-        match variant.fields {
-            Fields::Unnamed(ref fields) => {
-                let field_vec = &unnamed_to_vec(fields);
-
-                let variant_ident = &variant.ident;
-                let body = tuple_body(quote!(#input_type::#variant_ident), field_vec);
-                from_impl(input, field_vec, body).to_tokens(&mut tokens)
-            }
-
-            Fields::Named(ref fields) => {
-                let field_vec = &named_to_vec(fields);
-
-                let variant_ident = &variant.ident;
-                let body = struct_body(quote!(#input_type::#variant_ident), field_vec);
-                from_impl(input, field_vec, body).to_tokens(&mut tokens)
-            }
-            Fields::Unit => {
-                let variant_ident = &variant.ident;
-                let body = struct_body(quote!(#input_type::#variant_ident), &[]);
-                from_impl(input, &[], body).to_tokens(&mut tokens)
-            }
-        }
+    for variant_state in state.enabled_variant_data().variant_states {
+        struct_from(input, variant_state).to_tokens(&mut tokens);
     }
     tokens
 }

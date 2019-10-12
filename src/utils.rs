@@ -232,6 +232,8 @@ pub struct State<'input> {
     pub derive_type: DeriveType,
     pub fields: Vec<&'input Field>,
     pub variants: Vec<&'input Variant>,
+    pub variant_states: Vec<State<'input>>,
+    pub variant: Option<&'input Variant>,
     pub generics: Generics,
     full_meta_infos: Vec<FullMetaInfo>,
 }
@@ -283,6 +285,25 @@ impl<'input> State<'input> {
             .iter()
             .map(|info| info.to_full(defaults))
             .collect();
+
+        let variant_states: Result<Vec<_>> = if derive_type == DeriveType::Enum {
+            variants
+                .iter()
+                .zip(full_meta_infos.iter().copied())
+                .map(|(variant, info)| {
+                    State::from_variant(
+                        input,
+                        trait_name,
+                        trait_module.clone(),
+                        trait_attr.clone(),
+                        variant,
+                        info,
+                    )
+                })
+                .collect()
+        } else {
+            Ok(vec![])
+        };
         let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
 
         Ok(State {
@@ -294,6 +315,56 @@ impl<'input> State<'input> {
             // input,
             fields,
             variants,
+            variant_states: variant_states?,
+            variant: None,
+            derive_type,
+            generics,
+            full_meta_infos,
+        })
+    }
+
+    pub fn from_variant<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+        variant: &'arg_input Variant,
+        default_info: FullMetaInfo,
+    ) -> Result<State<'arg_input>> {
+        let trait_name = trait_name.trim_end_matches("ToInner");
+        let trait_ident = Ident::new(trait_name, Span::call_site());
+        let trait_path = quote!(#trait_module::#trait_ident);
+        let (derive_type, fields): (_, Vec<_>) = match variant.fields {
+            Fields::Unnamed(ref fields) => (DeriveType::Unnamed, unnamed_to_vec(fields)),
+
+            Fields::Named(ref fields) => (DeriveType::Named, named_to_vec(fields)),
+            Fields::Unit => (DeriveType::Named, vec![]),
+        };
+
+        let meta_infos: Result<Vec<_>> = fields
+            .iter()
+            .map(|f| &f.attrs)
+            .map(|attrs| get_meta_info(&trait_attr, attrs))
+            .collect();
+        let meta_infos = meta_infos?;
+        let full_meta_infos: Vec<_> = meta_infos
+            .iter()
+            .map(|info| info.to_full(default_info))
+            .collect();
+
+        let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
+
+        Ok(State {
+            input,
+            trait_name,
+            trait_module,
+            trait_path,
+            trait_attr,
+            // input,
+            fields,
+            variants: vec![],
+            variant_states: vec![],
+            variant: Some(variant),
             derive_type,
             generics,
             full_meta_infos,
@@ -350,8 +421,17 @@ impl<'input> State<'input> {
             .map(|field_type| quote!(<#field_type as #trait_path>))
             .collect();
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        let input_type = &self.input.ident;
+        let variant_type = self.variant.map_or_else(
+            || quote!(#input_type),
+            |v| {
+                let variant_name = &v.ident;
+                quote!(#input_type::#variant_name)
+            },
+        );
         MultiFieldData {
-            input_type: &self.input.ident,
+            input_type,
+            variant_type,
             fields,
             field_types,
             members,
@@ -375,6 +455,7 @@ impl<'input> State<'input> {
         MultiVariantData {
             input_type: &self.input.ident,
             variants,
+            variant_states: self.enabled_variant_states(),
             infos: self.enabled_infos(),
             trait_path,
             impl_generics,
@@ -383,15 +464,24 @@ impl<'input> State<'input> {
         }
     }
 
-
     fn enabled_variants(&self) -> Vec<&'input Variant> {
         self.variants
             .iter()
             .zip(self.full_meta_infos.iter().map(|info| info.enabled))
             .filter(|(_, ig)| *ig)
-            .map(|(f, _)| *f)
+            .map(|(v, _)| *v)
             .collect()
     }
+
+    fn enabled_variant_states(&self) -> Vec<&State<'input>> {
+        self.variant_states
+            .iter()
+            .zip(self.full_meta_infos.iter().map(|info| info.enabled))
+            .filter(|(_, ig)| *ig)
+            .map(|(v, _)| v)
+            .collect()
+    }
+
 
     fn enabled_fields(&self) -> Vec<&'input Field> {
         self.fields
@@ -456,6 +546,7 @@ pub struct SingleFieldData<'input, 'state> {
 
 pub struct MultiFieldData<'input, 'state> {
     pub input_type: &'input Ident,
+    pub variant_type: TokenStream,
     pub fields: Vec<&'input Field>,
     pub field_types: Vec<&'input Type>,
     pub field_idents: Vec<Box<dyn ToTokens>>,
@@ -471,6 +562,7 @@ pub struct MultiFieldData<'input, 'state> {
 pub struct MultiVariantData<'input, 'state> {
     pub input_type: &'input Ident,
     pub variants: Vec<&'input Variant>,
+    pub variant_states: Vec<&'state State<'input>>,
     pub infos: Vec<FullMetaInfo>,
     pub trait_path: &'state TokenStream,
     pub impl_generics: ImplGenerics<'state>,
