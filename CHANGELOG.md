@@ -30,6 +30,16 @@ compatibility.
 - You can use features to cut down compile time of the crate by only compiling
   the code needed for the derives that you use. (see Cargo.toml for the
   features, by default they are all on)
+- Add `IntoRef`, `TryIntRef`, `IntoRefMut` and `TryIntoRefMut` derives, which
+  are the same as `Into` and `TryInto` but they return refs to the inner fields.
+- Derives for `AsRef`, `AsMut`, `Sum`, `Product`, `IntoIterator`,
+  `IntoIteratorRef` and `IntoIteratorRefMut`
+- Make `no_std` work out of the box
+- Allow `#[display(fmt="some shared display text for the enum {}")]` attribute
+  on enum.
+
+### Other things
+- Remove dependency on `regex` to cut down compile time.
 
 ## 0.15.0 - 2019-06-08
 
