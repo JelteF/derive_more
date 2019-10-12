@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+
+This release is planned to be the last release before 1.0 of this library. It
+adds a lot of configuration to the derives by using attributes. This will allow
+future releases to add features/options without breaking backwards
+compatibility.
+
+### Breaking changes
+
+- Requires Rust edition 2018
+- Use `syn` 1.0
+- `no_std` feature is removed, it now supports `no_std` without having to
+  configure any features.
+- `Deref` derives now dereference to the type in the newtype. So if you have
+  `MyBox(Box<i32>)`, dereferencing it will result in a `Box<i32>` not an `i32`.
+  To get the old behaviour of forwarding the dereference you can add the
+  `#[deref(forward)]` attribute on the struct or field.
+
+### New features
+
+- Choosing the field of a struct for which to derive the newtype derive.
+- Ignoring variants of enums when deriving `From`.
+- You can use features to cut down compile time of the crate by only compiling
+  the code needed for the derives that you use. (see Cargo.toml for the
+  features, by default they are all on)
+
 ## 0.15.0 - 2019-06-08
 
 - Automatic detection of traits needed for `Display` format strings
