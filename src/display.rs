@@ -9,7 +9,7 @@ use quote::{quote, quote_spanned};
 use syn::{
     parse::{Error, Result},
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Path, Type,
+    Attribute, Data, DeriveInput, Fields, GenericArgument, Lit, Meta, MetaNameValue, NestedMeta, Path, PathArguments, Type,
 };
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
@@ -387,7 +387,7 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .enumerate()
             .filter_map(|(i, field)| {
-                if !self.has_type_param_in(field) {
+                if !self.has_type_param_in(&field.ty) {
                     return None;
                 }
                 let path: Path = field
@@ -469,7 +469,7 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .take(1)
             .filter_map(|field| {
-                if !self.has_type_param_in(field) {
+                if !self.has_type_param_in(&field.ty) {
                     return None;
                 }
                 Some((
@@ -492,14 +492,57 @@ impl<'a, 'b> State<'a, 'b> {
             })
             .collect()
     }
-    fn has_type_param_in(&self, field: &syn::Field) -> bool {
-        if let Type::Path(ref ty) = field.ty {
-            return match ty.path.segments.first() {
-                Some(t) => self.type_params.contains(&t.ident),
-                _ => false,
-            };
+    fn has_type_param_in(&self, ty: &syn::Type) -> bool {
+        match ty {
+            Type::Path(ty) => {
+                if let Some(qself) = &ty.qself {
+                    if self.has_type_param_in(&qself.ty) {
+                        return true;
+                    }
+                }
+
+                if let Some(segment) = ty.path.segments.first() {
+                    if self.type_params.contains(&segment.ident) {
+                        return true;
+                    }
+                }
+
+                ty.path.segments.iter()
+                    .find(|segment| {
+                        if let PathArguments::AngleBracketed(arguments) = &segment.arguments {
+                            arguments.args.iter().find(|argument| {
+                                match argument {
+                                    GenericArgument::Type(ty) => {
+                                        self.has_type_param_in(ty)
+                                    },
+                                    GenericArgument::Constraint(constraint) => {
+                                        self.type_params.contains(&constraint.ident)
+                                    },
+                                    _ => false,
+                                }
+                            })
+                            .is_some()
+                        } else {
+                            false
+                        }
+                    })
+                    .is_some()
+            },
+
+            Type::Array(ty) => {
+                self.has_type_param_in(&ty.elem)
+            },
+            Type::Slice(ty) => {
+                self.has_type_param_in(&ty.elem)
+            },
+            Type::Tuple(ty) => {
+                ty.elems.iter()
+                    .find(|ty| self.has_type_param_in(ty))
+                    .is_some()
+            },
+
+            _ => false,
         }
-        false
     }
 }
 
