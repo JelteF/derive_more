@@ -511,9 +511,9 @@ impl<'a, 'b> State<'a, 'b> {
                 }
 
                 ty.path.segments.iter()
-                    .find(|segment| {
+                    .any(|segment| {
                         if let PathArguments::AngleBracketed(arguments) = &segment.arguments {
-                            arguments.args.iter().find(|argument| {
+                            arguments.args.iter().any(|argument| {
                                 match argument {
                                     GenericArgument::Type(ty) => {
                                         self.has_type_param_in_impl(ty, false)
@@ -524,12 +524,10 @@ impl<'a, 'b> State<'a, 'b> {
                                     _ => false,
                                 }
                             })
-                                .is_some()
                         } else {
                             false
                         }
                     })
-                    .is_some()
             },
 
             Type::Reference(ty) => {
