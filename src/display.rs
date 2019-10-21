@@ -493,10 +493,13 @@ impl<'a, 'b> State<'a, 'b> {
             .collect()
     }
     fn has_type_param_in(&self, ty: &syn::Type) -> bool {
+        self.has_type_param_in_impl(ty, true)
+    }
+    fn has_type_param_in_impl(&self, ty: &syn::Type, top_call: bool) -> bool {
         match ty {
             Type::Path(ty) => {
                 if let Some(qself) = &ty.qself {
-                    if self.has_type_param_in(&qself.ty) {
+                    if self.has_type_param_in_impl(&qself.ty, false) {
                         return true;
                     }
                 }
@@ -513,7 +516,7 @@ impl<'a, 'b> State<'a, 'b> {
                             arguments.args.iter().find(|argument| {
                                 match argument {
                                     GenericArgument::Type(ty) => {
-                                        self.has_type_param_in(ty)
+                                        self.has_type_param_in_impl(ty, false)
                                     },
                                     GenericArgument::Constraint(constraint) => {
                                         self.type_params.contains(&constraint.ident)
@@ -521,7 +524,7 @@ impl<'a, 'b> State<'a, 'b> {
                                     _ => false,
                                 }
                             })
-                            .is_some()
+                                .is_some()
                         } else {
                             false
                         }
@@ -529,16 +532,12 @@ impl<'a, 'b> State<'a, 'b> {
                     .is_some()
             },
 
-            Type::Array(ty) => {
-                self.has_type_param_in(&ty.elem)
-            },
-            Type::Slice(ty) => {
-                self.has_type_param_in(&ty.elem)
-            },
-            Type::Tuple(ty) => {
-                ty.elems.iter()
-                    .find(|ty| self.has_type_param_in(ty))
-                    .is_some()
+            Type::Reference(ty) => {
+                if !top_call {
+                    self.has_type_param_in_impl(&ty.elem, false)
+                } else {
+                    false
+                }
             },
 
             _ => false,
