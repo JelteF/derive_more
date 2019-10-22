@@ -301,6 +301,28 @@ mod generic {
         }
     }
 
+    mod reference {
+        use super::*;
+
+        #[test]
+        fn auto_generic_reference() {
+            #[derive(Display)]
+            struct AutoGenericReference<'a, T>(&'a T);
+
+            let s = AutoGenericReference(&10);
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_static_reference() {
+            #[derive(Display)]
+            struct AutoGenericStaticReference<T: 'static>(&'static T);
+
+            let s = AutoGenericStaticReference(&10);
+            assert_eq!(s.to_string(), "10");
+        }
+    }
+
     mod indirect {
         use super::*;
 
@@ -310,10 +332,10 @@ mod generic {
         #[test]
         fn auto_generic_indirect() {
             #[derive(Display)]
-            struct AutoGenericIndirectRef<T: 'static>(Struct<&'static T>);
+            struct AutoGenericIndirect<T: 'static>(Struct<&'static T>);
 
             const V: i32 = 10;
-            let s = AutoGenericIndirectRef(Struct(&V));
+            let s = AutoGenericIndirect(Struct(&V));
             assert_eq!(s.to_string(), "10");
         }
     }
