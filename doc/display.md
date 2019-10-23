@@ -33,6 +33,54 @@ i.e. `_0`, `_1`, `_2`, etc.
 The syntax does not change, but the name of the attribute is the snake case version of the trait.
 E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
 
+# Deriving `Display` for generic data types
+
+When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type 
+arguments used during formatting are bound by respective formatting trait.
+
+E.g., for a structure Foo defined like this:
+
+```rust
+#[derive(Display)]
+#[display(fmt = "{} {:?} {} {:p}", a, b, c, d)]
+struct Foo<'a, T1, T2: Trait, T3> {
+    a: T1,
+    b: <T2 as Trait>::Type,
+    c: Bar<T3>,
+    d: &'a T1,
+}
+```
+
+Following where clauses would be generated:
+
+* `T1: Display + Pointer`
+* `<T2 as Trait>::Type: Debug`
+* `Bar<T3>: Display`
+
+## Specifying additional trait bounds
+
+Sometimes you may want to specify additional trait bounds on your generic type parameters, so that they
+could be used during formatting. This can be done with a `#[display(bound = "...")]` attribute.
+
+`#[display(bound = "...")]` accepts single string argument in a format generally similar to a format 
+used in angle bracket list: `T, U: MyTrait, V: Trait1 + Trait2`.
+
+Specifying type argument without explicitly specifying trait bounds is a shortcut to bind by formatting 
+type.
+
+Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
+by traits, i.e., no lifetime parameters or lifetime bounds allowed in bound-string.
+
+```rust
+#[derive(Display)]
+#[display(bound = "T: MyTrait, U")]
+#[display(fmt = "{} {}", "a.my_function()", "transform(b.to_string())")]
+struct MyStruct<T, U> {
+    a: T,
+    b: U,
+}
+```
+
 # Example usage
 
 ```rust
