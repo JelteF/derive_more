@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
+    ops::Deref,
 };
 
 use crate::utils::add_extra_where_clauses;
@@ -9,7 +10,7 @@ use quote::{quote, quote_spanned};
 use syn::{
     parse::{Error, Result},
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Fields, Lit, Meta, MetaNameValue, NestedMeta, Path, Type,
+    Attribute, Data, DeriveInput, Fields, GenericArgument, Lit, Meta, MetaNameValue, NestedMeta, Path, PathArguments, Type, TypeReference
 };
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
@@ -383,19 +384,20 @@ impl<'a, 'b> State<'a, 'b> {
             return HashMap::new();
         }
 
-        let fields_type_params: HashMap<_, _> = fields
+        let fields_type_params: HashMap<Path, _> = fields
             .iter()
             .enumerate()
             .filter_map(|(i, field)| {
-                if !self.has_type_param_in(field) {
-                    return None;
-                }
-                let path: Path = field
-                    .ident
-                    .clone()
-                    .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()))
-                    .into();
-                Some((path, field.ty.clone()))
+                self.get_type_param(&field.ty).map(|ty| {
+                    (
+                        field
+                            .ident
+                            .clone()
+                            .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()))
+                            .into(),
+                        ty
+                    )
+                })
             })
             .collect();
         if fields_type_params.is_empty() {
@@ -469,37 +471,79 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .take(1)
             .filter_map(|field| {
-                if !self.has_type_param_in(field) {
-                    return None;
-                }
-                Some((
-                    field.ty.clone(),
-                    [match self.trait_attr {
-                        "display" => "Display",
-                        "binary" => "Binary",
-                        "octal" => "Octal",
-                        "lower_hex" => "LowerHex",
-                        "upper_hex" => "UpperHex",
-                        "lower_exp" => "LowerExp",
-                        "upper_exp" => "UpperExp",
-                        "pointer" => "Pointer",
-                        _ => unreachable!(),
-                    }]
-                    .iter()
-                    .cloned()
-                    .collect(),
-                ))
+                self.get_type_param(&field.ty).map(|ty| {
+                    (
+                        ty,
+                        [match self.trait_attr {
+                            "display" => "Display",
+                            "binary" => "Binary",
+                            "octal" => "Octal",
+                            "lower_hex" => "LowerHex",
+                            "upper_hex" => "UpperHex",
+                            "lower_exp" => "LowerExp",
+                            "upper_exp" => "UpperExp",
+                            "pointer" => "Pointer",
+                            _ => unreachable!(),
+                        }]
+                            .iter()
+                            .cloned()
+                            .collect()
+                    )
+                })
             })
             .collect()
     }
-    fn has_type_param_in(&self, field: &syn::Field) -> bool {
-        if let Type::Path(ref ty) = field.ty {
-            return match ty.path.segments.first() {
-                Some(t) => self.type_params.contains(&t.ident),
-                _ => false,
-            };
+    fn has_type_param_in(&self, ty: &syn::Type) -> bool {
+        match ty {
+            Type::Path(ty) => {
+                if let Some(qself) = &ty.qself {
+                    if self.has_type_param_in(&qself.ty) {
+                        return true;
+                    }
+                }
+
+                if let Some(segment) = ty.path.segments.first() {
+                    if self.type_params.contains(&segment.ident) {
+                        return true;
+                    }
+                }
+
+                ty.path.segments.iter()
+                    .any(|segment| {
+                        if let PathArguments::AngleBracketed(arguments) = &segment.arguments {
+                            arguments.args.iter().any(|argument| {
+                                match argument {
+                                    GenericArgument::Type(ty) => {
+                                        self.has_type_param_in(ty)
+                                    },
+                                    GenericArgument::Constraint(constraint) => {
+                                        self.type_params.contains(&constraint.ident)
+                                    },
+                                    _ => false,
+                                }
+                            })
+                        } else {
+                            false
+                        }
+                    })
+            },
+
+            Type::Reference(ty) => {
+                self.has_type_param_in(&ty.elem)
+            },
+
+            _ => false,
         }
-        false
+    }
+    fn get_type_param(&self, ty: &syn::Type) -> Option<syn::Type> {
+        if self.has_type_param_in(ty) {
+            match ty {
+                Type::Reference(TypeReference { elem: ty, .. }) => Some(ty.deref().clone()),
+                ty => Some(ty.clone())
+            }
+        } else {
+            None
+        }
     }
 }
 

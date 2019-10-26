@@ -217,4 +217,126 @@ mod generic {
         let s = UnusedGenericStruct(());
         assert_eq!(s.to_string(), "12");
     }
+
+    mod associated_type_field_enumerator {
+        use super::*;
+
+        trait Trait {
+            type Type;
+        }
+
+        struct Struct;
+
+        impl Trait for Struct {
+            type Type = i32;
+        }
+
+        #[test]
+        fn auto_generic_named_struct_associated() {
+            #[derive(Display)]
+            struct AutoGenericNamedStructAssociated<T: Trait> {
+                field: <T as Trait>::Type,
+            }
+
+            let s = AutoGenericNamedStructAssociated::<Struct>{ field: 10 };
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_unnamed_struct_associated() {
+            #[derive(Display)]
+            struct AutoGenericUnnamedStructAssociated<T: Trait>(<T as Trait>::Type);
+
+            let s = AutoGenericUnnamedStructAssociated::<Struct>(10);
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_enum_associated() {
+            #[derive(Display)]
+            enum AutoGenericEnumAssociated<T: Trait> {
+                Enumerator(<T as Trait>::Type),
+            }
+
+            let e = AutoGenericEnumAssociated::<Struct>::Enumerator(10);
+            assert_eq!(e.to_string(), "10");
+        }
+    }
+
+    mod complex_type_field_enumerator {
+        use super::*;
+
+        #[derive(Display)]
+        struct Struct<T>(T);
+
+        #[test]
+        fn auto_generic_named_struct_complex() {
+            #[derive(Display)]
+            struct AutoGenericNamedStructComplex<T> {
+                field: Struct<T>,
+            }
+
+            let s = AutoGenericNamedStructComplex { field: Struct(10) };
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_unnamed_struct_complex() {
+            #[derive(Display)]
+            struct AutoGenericUnnamedStructComplex<T>(Struct<T>);
+
+            let s = AutoGenericUnnamedStructComplex(Struct(10));
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_enum_complex() {
+            #[derive(Display)]
+            enum AutoGenericEnumComplex<T> {
+                Enumerator(Struct<T>),
+            }
+
+            let e = AutoGenericEnumComplex::Enumerator(Struct(10));
+            assert_eq!(e.to_string(), "10")
+        }
+    }
+
+    mod reference {
+        use super::*;
+
+        #[test]
+        fn auto_generic_reference() {
+            #[derive(Display)]
+            struct AutoGenericReference<'a, T>(&'a T);
+
+            let s = AutoGenericReference(&10);
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_static_reference() {
+            #[derive(Display)]
+            struct AutoGenericStaticReference<T: 'static>(&'static T);
+
+            let s = AutoGenericStaticReference(&10);
+            assert_eq!(s.to_string(), "10");
+        }
+    }
+
+    mod indirect {
+        use super::*;
+
+        #[derive(Display)]
+        struct Struct<T>(T);
+
+        #[test]
+        fn auto_generic_indirect() {
+            #[derive(Display)]
+            struct AutoGenericIndirect<T: 'static>(Struct<&'static T>);
+
+            const V: i32 = 10;
+            let s = AutoGenericIndirect(Struct(&V));
+            assert_eq!(s.to_string(), "10");
+        }
+    }
 }
