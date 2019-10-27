@@ -13,6 +13,50 @@ For enums `.into()` works for each variant as if they were structs.
 This way the variant can not only be initialized, but also be chosen based on
 the type that `.into()` is called on.
 
+# Example usage
+
+```rust
+# #[macro_use] extern crate derive_more;
+
+// Allow converting from i32
+#[derive(From, PartialEq)]
+struct MyInt(i32);
+
+// Forward from call to the field, so allow converting
+// from anything that can be converted into an i64 (so most integers)
+#[derive(From, PartialEq)]
+#[from(forward)]
+struct MyInt64(i64);
+
+// You can ignore a variant
+#[derive(From, PartialEq)]
+enum MyEnum {
+    SmallInt(i32),
+    NamedBigInt { int: i64 },
+    #[from(ignore)]
+    NoFromImpl(i64),
+}
+
+// Or explicitly annotate the once you need
+#[derive(From, PartialEq)]
+enum MyEnum2 {
+    #[from]
+    SmallInt(i32),
+    #[from]
+    NamedBigInt { int: i64 },
+    NoFromImpl(i64),
+}
+
+
+fn main() {
+    assert!(MyInt(2) == 2.into());
+    assert!(MyInt64(6) == 6u8.into());
+    assert!(MyEnum::SmallInt(123) == 123i32.into());
+    assert!(MyEnum::SmallInt(123) != 123i64.into());
+    assert!(MyEnum::NamedBigInt{int: 123} == 123i64.into());
+}
+```
+
 # Tuple structs
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
