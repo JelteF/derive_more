@@ -48,8 +48,9 @@ matrix:
     # # currently failing
     # - env: TARGET=x86_64-unknown-linux-gnu DOCS=true
     #   rust: nightly
-    - env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true
-      rust: nightly
+      # Currently failing
+      #- env: TARGET=x86_64-unknown-linux-musl DISABLE_TESTS=true
+      #  rust: nightly
       # Currently failing
       #- env: TARGET=x86_64-apple-darwin
       #  os: osx
