@@ -1,21 +1,27 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
-    iter::FromIterator,
-    ops::Deref,
+    iter::FromIterator as _,
+    ops::Deref as _,
+    str::FromStr as _,
 };
 
 use crate::utils::add_extra_where_clauses;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    parse::{Error, Result},
-    spanned::Spanned,
+    parse::{
+        Error,
+        Result,
+        Parser as _,
+    },
+    punctuated::Punctuated,
     Attribute,
     Data,
     DeriveInput,
     Fields,
     GenericArgument,
+    GenericParam,
     Lit,
     Meta,
     MetaList,
@@ -28,8 +34,10 @@ use syn::{
     TraitBound,
     TraitBoundModifier,
     Type,
+    TypeParamBound,
     TypePath,
     TypeReference,
+    spanned::Spanned as _,
 };
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
@@ -213,14 +221,10 @@ impl<'a, 'b> State<'a, 'b> {
                                         segments: inner_meta_path,
                                         ..
                                     },
-                                    lit: Lit::Str(meta),
+                                    lit: Lit::Str(_),
                                     ..
                                 })) => {
-                                    if inner_meta_path.len() == 1 && inner_meta_path[0].ident == expected_inner_meta_path {
-                                        true
-                                    } else {
-                                        false
-                                    }
+                                    inner_meta_path.len() == 1 && inner_meta_path[0].ident == expected_inner_meta_path
                                 }
                                 _ => {
                                     false
@@ -244,19 +248,15 @@ impl<'a, 'b> State<'a, 'b> {
         }
     }
     fn parse_meta_bounds(&self, bounds: &syn::LitStr) -> Result<HashMap<Type, HashSet<TraitBound>>> {
-        use std::str::FromStr;
-        use proc_macro2::TokenStream;
-        use syn::{self, parse::Parser, punctuated::Punctuated, GenericParam, Type, TypeParam, TypeParamBound, Token};
-
         let span = bounds.span();
 
         let input = bounds.value();
         let tokens = TokenStream::from_str(&input)?;
         let parser = Punctuated::<GenericParam, Token![,]>::parse_terminated;
-        let bounds = parser.parse2(tokens).map_err(|error| Error::new(span.clone(), error.to_string()))?;
+        let bounds = parser.parse2(tokens).map_err(|error| Error::new(span, error.to_string()))?;
 
         if bounds.is_empty() {
-            return Err(Error::new(span.clone(), "No bounds specified"));
+            return Err(Error::new(span, "No bounds specified"));
         }
 
         bounds.into_iter().try_fold(HashMap::new(), |mut accumulator, generic_param| {
@@ -264,40 +264,40 @@ impl<'a, 'b> State<'a, 'b> {
                 GenericParam::Type(type_param) => {
                     if self.type_params.contains(&type_param.ident) {
                         if !type_param.attrs.is_empty() {
-                            Err(Error::new(span.clone(), "Attributes aren't allowed"))
+                            Err(Error::new(span, "Attributes aren't allowed"))
                         } else if type_param.eq_token.is_some() || type_param.default.is_some() {
-                            Err(Error::new(span.clone(), "Default type parameters aren't allowed"))
+                            Err(Error::new(span, "Default type parameters aren't allowed"))
                         } else {
                             let ident = type_param.ident.to_string();
 
                             let ty = Type::Path(TypePath { qself: None, path: type_param.ident.into() });
-                            let bounds = accumulator.entry(ty).or_insert_with(|| HashSet::new());
+                            let bounds = accumulator.entry(ty).or_insert_with(HashSet::new);
 
-                            let bounds = type_param.bounds.into_iter().try_fold(bounds, |mut accumulator, bound| {
+                            let bounds = type_param.bounds.into_iter().try_fold(bounds, |accumulator, bound| {
                                 match bound {
                                     TypeParamBound::Trait(bound) => {
                                         if bound.lifetimes.is_some() {
-                                            Err(Error::new(span.clone(), "Higher-rank trait bounds aren't allowed"))
+                                            Err(Error::new(span, "Higher-rank trait bounds aren't allowed"))
                                         } else {
                                             accumulator.insert(bound);
                                             Ok(accumulator)
                                         }
                                     }
-                                    _ => Err(Error::new(span.clone(), "Only trait bounds allowed")),
+                                    _ => Err(Error::new(span, "Only trait bounds allowed")),
                                 }
                             })?;
 
                             if !bounds.is_empty() {
                                 Ok(accumulator)
                             } else {
-                                Err(Error::new(span.clone(), format!("No bounds specified for type parameter {}", ident)))
+                                Err(Error::new(span, format!("No bounds specified for type parameter {}", ident)))
                             }
                         }
                     } else {
-                        Err(Error::new(span.clone(), "Unknown generic type argument specified"))
+                        Err(Error::new(span, "Unknown generic type argument specified"))
                     }
                 },
-                _ => Err(Error::new(span.clone(), "Only trait bounds allowed")),
+                _ => Err(Error::new(span, "Only trait bounds allowed")),
             }
         })
     }
@@ -540,7 +540,7 @@ impl<'a, 'b> State<'a, 'b> {
                                     let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
 
                                     extra_bounds.into_iter().for_each(|(ty, extra_bounds)| {
-                                        bounds.entry(ty).or_insert_with(|| HashSet::new()).extend(extra_bounds);
+                                        bounds.entry(ty).or_insert_with(HashSet::new).extend(extra_bounds);
                                     });
 
                                     Ok(())
