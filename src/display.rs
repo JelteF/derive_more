@@ -268,6 +268,8 @@ impl<'a, 'b> State<'a, 'b> {
                         } else if type_param.eq_token.is_some() || type_param.default.is_some() {
                             Err(Error::new(span.clone(), "Default type parameters aren't allowed"))
                         } else {
+                            let ident = type_param.ident.to_string();
+
                             let ty = Type::Path(TypePath { qself: None, path: type_param.ident.into() });
                             let bounds = accumulator.entry(ty).or_insert_with(|| HashSet::new());
 
@@ -285,11 +287,11 @@ impl<'a, 'b> State<'a, 'b> {
                                 }
                             })?;
 
-                            if bounds.is_empty() {
-                                bounds.insert(trait_name_to_trait_bound(attribute_name_to_trait_name(self.trait_attr)));
+                            if !bounds.is_empty() {
+                                Ok(accumulator)
+                            } else {
+                                Err(Error::new(span.clone(), format!("No bounds specified for type parameter {}", ident)))
                             }
-
-                            Ok(accumulator)
                         }
                     } else {
                         Err(Error::new(span.clone(), "Unknown generic type argument specified"))

@@ -346,7 +346,17 @@ mod generic {
         #[test]
         fn bound_simple() {
             #[derive(Display)]
-            #[display(bound = "T1, T2")]
+            #[display(fmt = "{} {}", _0, _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[test]
+        fn bound_redundant() {
+            #[derive(Display)]
+            #[display(bound = "T1: ::std::fmt::Display, T2: ::std::fmt::Display")]
             #[display(fmt = "{} {}", _0, _1)]
             struct Struct<T1, T2>(T1, T2);
 

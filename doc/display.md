@@ -63,17 +63,14 @@ Sometimes you may want to specify additional trait bounds on your generic type p
 could be used during formatting. This can be done with a `#[display(bound = "...")]` attribute.
 
 `#[display(bound = "...")]` accepts single string argument in a format generally similar to a format 
-used in angle bracket list: `T, U: MyTrait, V: Trait1 + Trait2`.
-
-Specifying type argument without explicitly specifying trait bounds is a shortcut to bind by formatting 
-type.
+used in angle bracket list: `T: MyTrait, U: Trait1 + Trait2`.
 
 Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
 by traits, i.e., no lifetime parameters or lifetime bounds allowed in bound-string.
 
 ```rust
 #[derive(Display)]
-#[display(bound = "T: MyTrait, U")]
+#[display(bound = "T: MyTrait, U: ::std::fmt::Display")]
 #[display(fmt = "{} {}", "a.my_function()", "transform(b.to_string())")]
 struct MyStruct<T, U> {
     a: T,
