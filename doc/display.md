@@ -33,13 +33,12 @@ i.e. `_0`, `_1`, `_2`, etc.
 The syntax does not change, but the name of the attribute is the snake case version of the trait.
 E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
 
-# Deriving `Display` for generic data types
+# Generic data types
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type 
 arguments used during formatting are bound by respective formatting trait.
 
-E.g., for a structure Foo defined like this:
-
+E.g., for a structure `Foo` defined like this:
 ```rust
 #[macro_use] extern crate derive_more;
 
@@ -57,22 +56,21 @@ struct Foo<'a, T1, T2: Trait, T3> {
 }
 ```
 
-Following where clauses would be generated:
-
+The following where clauses would be generated:
 * `T1: Display + Pointer`
 * `<T2 as Trait>::Type: Debug`
 * `Bar<T3>: Display`
 
-## Specifying additional trait bounds
+## Custom trait bounds
 
 Sometimes you may want to specify additional trait bounds on your generic type parameters, so that they
 could be used during formatting. This can be done with a `#[display(bound = "...")]` attribute.
 
-`#[display(bound = "...")]` accepts single string argument in a format similar to a format 
+`#[display(bound = "...")]` accepts a single string argument in a format similar to the format 
 used in angle bracket list: `T: MyTrait, U: Trait1 + Trait2`.
 
 Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
-by traits, i.e., no lifetime parameters or lifetime bounds allowed in bound-string.
+by traits, i.e. no lifetime parameters or lifetime bounds allowed in bound-string.
 
 ```rust
 #[macro_use] extern crate derive_more;

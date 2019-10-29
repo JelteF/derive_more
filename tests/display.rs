@@ -344,7 +344,7 @@ mod generic {
         use super::*;
 
         #[test]
-        fn bound_simple() {
+        fn simple() {
             #[derive(Display)]
             #[display(fmt = "{} {}", _0, _1)]
             struct Struct<T1, T2>(T1, T2);
@@ -354,7 +354,7 @@ mod generic {
         }
 
         #[test]
-        fn bound_redundant() {
+        fn redundant() {
             #[derive(Display)]
             #[display(bound = "T1: ::std::fmt::Display, T2: ::std::fmt::Display")]
             #[display(fmt = "{} {}", _0, _1)]
@@ -365,7 +365,7 @@ mod generic {
         }
 
         #[test]
-        fn bound_complex() {
+        fn complex() {
             trait Trait1 {
                 fn function1(&self) -> &'static str;
             }
