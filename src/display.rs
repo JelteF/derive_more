@@ -16,34 +16,13 @@ use syn::{
         Parser as _,
     },
     punctuated::Punctuated,
-    Attribute,
-    Data,
-    DeriveInput,
-    Fields,
-    GenericArgument,
-    GenericParam,
-    Lit,
-    Meta,
-    MetaList,
-    MetaNameValue,
-    NestedMeta,
-    Path,
-    PathArguments,
-    PathSegment,
-    Token,
-    TraitBound,
-    TraitBoundModifier,
-    Type,
-    TypeParamBound,
-    TypePath,
-    TypeReference,
     spanned::Spanned as _,
 };
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
-pub fn expand(input: &DeriveInput, trait_name: &str) -> Result<TokenStream> {
+pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_name = trait_name.trim_end_matches("Custom");
-    let trait_ident = Ident::new(trait_name, Span::call_site());
+    let trait_ident = syn::Ident::new(trait_name, Span::call_site());
     let trait_path = &quote!(::core::fmt::#trait_ident);
     let trait_attr = trait_name_to_attribute_name(trait_name);
     let type_params = input
@@ -143,16 +122,16 @@ fn attribute_name_to_trait_name(attribute_name: &str) -> &'static str {
     }
 }
 
-fn trait_name_to_trait_bound(trait_name: &str) -> TraitBound {
+fn trait_name_to_trait_bound(trait_name: &str) -> syn::TraitBound {
     let path_segments_iterator = vec!["core", "fmt", trait_name].into_iter()
-        .map(|segment| PathSegment::from(Ident::new(segment, Span::call_site())));
+        .map(|segment| syn::PathSegment::from(Ident::new(segment, Span::call_site())));
 
-    TraitBound {
+    syn::TraitBound {
         lifetimes: None,
-        modifier: TraitBoundModifier::None,
+        modifier: syn::TraitBoundModifier::None,
         paren_token: None,
-        path: Path {
-            leading_colon: Some(Token![::](Span::call_site())),
+        path: syn::Path {
+            leading_colon: Some(syn::Token![::](Span::call_site())),
             segments: syn::punctuated::Punctuated::from_iter(path_segments_iterator),
         },
     }
@@ -161,7 +140,7 @@ fn trait_name_to_trait_bound(trait_name: &str) -> TraitBound {
 struct State<'a, 'b> {
     trait_path: &'b TokenStream,
     trait_attr: &'static str,
-    input: &'a DeriveInput,
+    input: &'a syn::DeriveInput,
     type_params: HashSet<Ident>,
 }
 
@@ -176,10 +155,10 @@ impl<'a, 'b> State<'a, 'b> {
         format!("Proper syntax: #[{}(bound = \"T, U: Trait1 + Trait2, V: Trait3\")]", self.trait_attr)
     }
 
-    fn get_matcher(&self, fields: &Fields) -> TokenStream {
+    fn get_matcher(&self, fields: &syn::Fields) -> TokenStream {
         match fields {
-            Fields::Unit => TokenStream::new(),
-            Fields::Unnamed(fields) => {
+            syn::Fields::Unit => TokenStream::new(),
+            syn::Fields::Unnamed(fields) => {
                 let fields: TokenStream = (0..fields.unnamed.len())
                     .map(|n| {
                         let i = Ident::new(&format!("_{}", n), Span::call_site());
@@ -188,7 +167,7 @@ impl<'a, 'b> State<'a, 'b> {
                     .collect();
                 quote!((#fields))
             }
-            Fields::Named(fields) => {
+            syn::Fields::Named(fields) => {
                 let fields: TokenStream = fields
                     .named
                     .iter()
@@ -201,43 +180,30 @@ impl<'a, 'b> State<'a, 'b> {
             }
         }
     }
-    fn find_meta(&self, attrs: &[Attribute], expected_inner_meta_path: &str) -> Result<Option<Meta>> {
+    fn find_meta(&self, attrs: &[syn::Attribute], meta_key: &str) -> Result<Option<syn::Meta>> {
         let mut iterator = attrs.iter()
             .filter_map(|attr| attr.parse_meta().ok())
             .filter(|meta| {
-                match meta {
-                    Meta::List(MetaList {
-                        path: Path {
-                            segments: outer_meta_path,
-                            ..
-                        },
-                        nested: inner_meta,
-                        ..
-                    }) => {
-                        if outer_meta_path.len() == 1 && outer_meta_path[0].ident == self.trait_attr && !inner_meta.is_empty() {
-                            match &inner_meta[0] {
-                                NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                                    path: Path {
-                                        segments: inner_meta_path,
-                                        ..
-                                    },
-                                    lit: Lit::Str(_),
-                                    ..
-                                })) => {
-                                    inner_meta_path.len() == 1 && inner_meta_path[0].ident == expected_inner_meta_path
-                                }
-                                _ => {
-                                    false
-                                },
-                            }
-                        } else {
-                            false
-                        }
-                    }
-                    _ => {
-                        false
-                    },
+                let meta = match meta {
+                    syn::Meta::List(meta) => meta,
+                    _ => return false,
+                };
+
+                if !meta.path.is_ident(self.trait_attr) || meta.nested.is_empty() {
+                    return false;
                 }
+
+                let meta = match &meta.nested[0] {
+                    syn::NestedMeta::Meta(meta) => meta,
+                    _ => return false,
+                };
+
+                let meta = match meta {
+                    syn::Meta::NameValue(meta) => meta,
+                    _ => return false,
+                };
+
+                meta.path.is_ident(meta_key)
             });
 
         let meta = iterator.next();
@@ -247,12 +213,12 @@ impl<'a, 'b> State<'a, 'b> {
             Err(Error::new(meta.span(), "Too many attributes specified"))
         }
     }
-    fn parse_meta_bounds(&self, bounds: &syn::LitStr) -> Result<HashMap<Type, HashSet<TraitBound>>> {
+    fn parse_meta_bounds(&self, bounds: &syn::LitStr) -> Result<HashMap<syn::Type, HashSet<syn::TraitBound>>> {
         let span = bounds.span();
 
         let input = bounds.value();
         let tokens = TokenStream::from_str(&input)?;
-        let parser = Punctuated::<GenericParam, Token![,]>::parse_terminated;
+        let parser = Punctuated::<syn::GenericParam, syn::Token![,]>::parse_terminated;
         let bounds = parser.parse2(tokens).map_err(|error| Error::new(span, error.to_string()))?;
 
         if bounds.is_empty() {
@@ -261,7 +227,7 @@ impl<'a, 'b> State<'a, 'b> {
 
         bounds.into_iter().try_fold(HashMap::new(), |mut accumulator, generic_param| {
             match generic_param {
-                GenericParam::Type(type_param) => {
+                syn::GenericParam::Type(type_param) => {
                     if self.type_params.contains(&type_param.ident) {
                         if !type_param.attrs.is_empty() {
                             Err(Error::new(span, "Attributes aren't allowed"))
@@ -270,12 +236,12 @@ impl<'a, 'b> State<'a, 'b> {
                         } else {
                             let ident = type_param.ident.to_string();
 
-                            let ty = Type::Path(TypePath { qself: None, path: type_param.ident.into() });
+                            let ty = syn::Type::Path(syn::TypePath { qself: None, path: type_param.ident.into() });
                             let bounds = accumulator.entry(ty).or_insert_with(HashSet::new);
 
                             let bounds = type_param.bounds.into_iter().try_fold(bounds, |accumulator, bound| {
                                 match bound {
-                                    TypeParamBound::Trait(bound) => {
+                                    syn::TypeParamBound::Trait(bound) => {
                                         if bound.lifetimes.is_some() {
                                             Err(Error::new(span, "Higher-rank trait bounds aren't allowed"))
                                         } else {
@@ -301,18 +267,18 @@ impl<'a, 'b> State<'a, 'b> {
             }
         })
     }
-    fn parse_meta_fmt(&self, meta: &Meta, outer_enum: bool) -> Result<(TokenStream, bool)> {
+    fn parse_meta_fmt(&self, meta: &syn::Meta, outer_enum: bool) -> Result<(TokenStream, bool)> {
         let list = match meta {
-            Meta::List(list) => list,
+            syn::Meta::List(list) => list,
             _ => {
                 return Err(Error::new(meta.span(), self.get_proper_fmt_syntax()));
             }
         };
 
         match &list.nested[0] {
-            NestedMeta::Meta(Meta::NameValue(MetaNameValue {
+            syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                 path,
-                lit: Lit::Str(fmt),
+                lit: syn::Lit::Str(fmt),
                 ..
             })) => match path {
                 op if op.segments.first().expect("path shouldn't be empty").ident == "fmt" => {
@@ -325,9 +291,9 @@ impl<'a, 'b> State<'a, 'b> {
                         }
                         // TODO: Check for a single `Display` group?
                         let fmt_string = match &list.nested[0] {
-                            NestedMeta::Meta(Meta::NameValue(MetaNameValue {
+                            syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                                 path,
-                                lit: Lit::Str(s),
+                                lit: syn::Lit::Str(s),
                                 ..
                             })) if path
                                 .segments
@@ -358,8 +324,8 @@ impl<'a, 'b> State<'a, 'b> {
                         .skip(1) // skip fmt = "..."
                         .try_fold(TokenStream::new(), |args, arg| {
                             let arg = match arg {
-                                NestedMeta::Lit(Lit::Str(s)) => s,
-                                NestedMeta::Meta(Meta::Path(i)) => {
+                                syn::NestedMeta::Lit(syn::Lit::Str(s)) => s,
+                                syn::NestedMeta::Meta(syn::Meta::Path(i)) => {
                                     return Ok(quote_spanned!(list.span()=> #args #i,));
                                 }
                                 _ => {
@@ -390,11 +356,11 @@ impl<'a, 'b> State<'a, 'b> {
             )),
         }
     }
-    fn infer_fmt(&self, fields: &Fields, name: &Ident) -> Result<TokenStream> {
+    fn infer_fmt(&self, fields: &syn::Fields, name: &Ident) -> Result<TokenStream> {
         let fields = match fields {
-            Fields::Unit => return Ok(quote!(stringify!(#name))),
-            Fields::Named(fields) => &fields.named,
-            Fields::Unnamed(fields) => &fields.unnamed,
+            syn::Fields::Unit => return Ok(quote!(stringify!(#name))),
+            syn::Fields::Named(fields) => &fields.named,
+            syn::Fields::Unnamed(fields) => &fields.unnamed,
         };
         if fields.is_empty() {
             return Ok(quote!(stringify!(#name)));
@@ -414,9 +380,9 @@ impl<'a, 'b> State<'a, 'b> {
     }
     fn get_match_arms_and_extra_bounds(
         &self,
-    ) -> Result<(TokenStream, HashMap<Type, HashSet<TraitBound>>)> {
+    ) -> Result<(TokenStream, HashMap<syn::Type, HashSet<syn::TraitBound>>)> {
         let result: Result<_> = match &self.input.data {
-            Data::Enum(e) => {
+            syn::Data::Enum(e) => {
                 match self
                     .find_meta(&self.input.attrs, "fmt")
                     .and_then(|m| m.map(|m| self.parse_meta_fmt(&m, true)).transpose())?
@@ -483,7 +449,7 @@ impl<'a, 'b> State<'a, 'b> {
                     }),
                 }
             }
-            Data::Struct(s) => {
+            syn::Data::Struct(s) => {
                 let matcher = self.get_matcher(&s.fields);
                 let name = &self.input.ident;
                 let fmt: TokenStream;
@@ -502,7 +468,7 @@ impl<'a, 'b> State<'a, 'b> {
                     bounds,
                 ))
             }
-            Data::Union(_) => {
+            syn::Data::Union(_) => {
                 let meta = self.find_meta(&self.input.attrs, "fmt")?.ok_or_else(|| {
                     Error::new(
                         self.input.span(),
@@ -525,7 +491,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let span = meta.span();
 
                 match meta {
-                    Meta::List(MetaList {
+                    syn::Meta::List(syn::MetaList {
                         nested: meta,
                         ..
                     }) => {
@@ -533,8 +499,8 @@ impl<'a, 'b> State<'a, 'b> {
                             Err(Error::new(span, self.get_proper_bound_syntax()))
                         } else {
                             match &meta[0] {
-                                NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-                                    lit: Lit::Str(extra_bounds),
+                                syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
+                                    lit: syn::Lit::Str(extra_bounds),
                                     ..
                                 })) => {
                                     let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
@@ -559,14 +525,14 @@ impl<'a, 'b> State<'a, 'b> {
     }
     fn get_used_type_params_bounds(
         &self,
-        fields: &Fields,
-        meta: &Meta,
-    ) -> HashMap<Type, HashSet<TraitBound>> {
+        fields: &syn::Fields,
+        meta: &syn::Meta,
+    ) -> HashMap<syn::Type, HashSet<syn::TraitBound>> {
         if self.type_params.is_empty() {
             return HashMap::new();
         }
 
-        let fields_type_params: HashMap<Path, _> = fields
+        let fields_type_params: HashMap<syn::Path, _> = fields
             .iter()
             .enumerate()
             .filter_map(|(i, field)| {
@@ -587,7 +553,7 @@ impl<'a, 'b> State<'a, 'b> {
         }
 
         let list = match meta {
-            Meta::List(list) => list,
+            syn::Meta::List(list) => list,
             // This one has been checked already in get_meta_fmt() method.
             _ => unreachable!(),
         };
@@ -597,10 +563,10 @@ impl<'a, 'b> State<'a, 'b> {
             .skip(1) // skip fmt = "..."
             .enumerate()
             .filter_map(|(i, arg)| match arg {
-                NestedMeta::Lit(Lit::Str(ref s)) => {
+                syn::NestedMeta::Lit(syn::Lit::Str(ref s)) => {
                     syn::parse_str(&s.value()).ok().map(|id| (i, id))
                 }
-                NestedMeta::Meta(Meta::Path(ref id)) => Some((i, id.clone())),
+                syn::NestedMeta::Meta(syn::Meta::Path(ref id)) => Some((i, id.clone())),
                 // This one has been checked already in get_meta_fmt() method.
                 _ => unreachable!(),
             })
@@ -609,9 +575,9 @@ impl<'a, 'b> State<'a, 'b> {
             return HashMap::new();
         }
         let fmt_string = match &list.nested[0] {
-            NestedMeta::Meta(Meta::NameValue(MetaNameValue {
+            syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                 path,
-                lit: Lit::Str(s),
+                lit: syn::Lit::Str(s),
                 ..
             })) if path
                 .segments
@@ -641,11 +607,11 @@ impl<'a, 'b> State<'a, 'b> {
             },
         )
     }
-    fn infer_type_params_bounds(&self, fields: &Fields) -> HashMap<Type, HashSet<TraitBound>> {
+    fn infer_type_params_bounds(&self, fields: &syn::Fields) -> HashMap<syn::Type, HashSet<syn::TraitBound>> {
         if self.type_params.is_empty() {
             return HashMap::new();
         }
-        if let Fields::Unit = fields {
+        if let syn::Fields::Unit = fields {
             return HashMap::new();
         }
         // infer_fmt() uses only first field.
@@ -668,7 +634,7 @@ impl<'a, 'b> State<'a, 'b> {
     fn get_type_param(&self, ty: &syn::Type) -> Option<syn::Type> {
         if self.has_type_param_in(ty) {
             match ty {
-                Type::Reference(TypeReference { elem: ty, .. }) => Some(ty.deref().clone()),
+                syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => Some(ty.deref().clone()),
                 ty => Some(ty.clone())
             }
         } else {
@@ -677,7 +643,7 @@ impl<'a, 'b> State<'a, 'b> {
     }
     fn has_type_param_in(&self, ty: &syn::Type) -> bool {
         match ty {
-            Type::Path(ty) => {
+            syn::Type::Path(ty) => {
                 if let Some(qself) = &ty.qself {
                     if self.has_type_param_in(&qself.ty) {
                         return true;
@@ -692,13 +658,13 @@ impl<'a, 'b> State<'a, 'b> {
 
                 ty.path.segments.iter()
                     .any(|segment| {
-                        if let PathArguments::AngleBracketed(arguments) = &segment.arguments {
+                        if let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments {
                             arguments.args.iter().any(|argument| {
                                 match argument {
-                                    GenericArgument::Type(ty) => {
+                                    syn::GenericArgument::Type(ty) => {
                                         self.has_type_param_in(ty)
                                     },
-                                    GenericArgument::Constraint(constraint) => {
+                                    syn::GenericArgument::Constraint(constraint) => {
                                         self.type_params.contains(&constraint.ident)
                                     },
                                     _ => false,
@@ -710,7 +676,7 @@ impl<'a, 'b> State<'a, 'b> {
                     })
             },
 
-            Type::Reference(ty) => {
+            syn::Type::Reference(ty) => {
                 self.has_type_param_in(&ty.elem)
             },
 
