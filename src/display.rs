@@ -495,9 +495,13 @@ impl<'a, 'b> State<'a, 'b> {
         let span = meta.span();
 
         let meta = match meta {
-            syn::Meta::List(meta) if meta.nested.len() == 1 => meta.nested,
+            syn::Meta::List(meta) => meta.nested,
             _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
         };
+
+        if meta.nested.len() != 1 {
+            return Err(Error::new(span, self.get_proper_bound_syntax()));
+        }
 
         let meta = match &meta[0] {
             syn::NestedMeta::Meta(syn::Meta::NameValue(meta)) => meta,
