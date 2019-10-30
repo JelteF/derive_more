@@ -487,40 +487,33 @@ impl<'a, 'b> State<'a, 'b> {
 
         let (arms, mut bounds) = result?;
 
-        match self.find_meta(&self.input.attrs, "bound")? {
-            Some(meta) => {
-                let span = meta.span();
+        let meta = match self.find_meta(&self.input.attrs, "bound")? {
+            Some(meta) => meta,
+            _ => return Ok((arms, bounds)),
+        };
 
-                match meta {
-                    syn::Meta::List(syn::MetaList {
-                        nested: meta,
-                        ..
-                    }) => {
-                        if meta.len() != 1 {
-                            Err(Error::new(span, self.get_proper_bound_syntax()))
-                        } else {
-                            match &meta[0] {
-                                syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
-                                    lit: syn::Lit::Str(extra_bounds),
-                                    ..
-                                })) => {
-                                    let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
+        let span = meta.span();
 
-                                    extra_bounds.into_iter().for_each(|(ty, extra_bounds)| {
-                                        bounds.entry(ty).or_insert_with(HashSet::new).extend(extra_bounds);
-                                    });
+        let meta = match meta {
+            syn::Meta::List(meta) if meta.nested.len() == 1 => meta.nested,
+            _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
+        };
 
-                                    Ok(())
-                                }
-                                _ => Err(Error::new(span, self.get_proper_bound_syntax())),
-                            }
-                        }
-                    },
-                    _ => Err(Error::new(span, self.get_proper_bound_syntax())),
-                }
-            },
-            None => Ok(()),
-        }?;
+        let meta = match &meta[0] {
+            syn::NestedMeta::Meta(syn::Meta::NameValue(meta)) => meta,
+            _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
+        };
+
+        let extra_bounds = match &meta.lit {
+            syn::Lit::Str(extra_bounds) => extra_bounds,
+            _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
+        };
+
+        let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
+
+        for (ty, extra_bounds) in extra_bounds {
+            bounds.entry(ty).or_insert_with(HashSet::new).extend(extra_bounds);
+        }
 
         Ok((arms, bounds))
     }
