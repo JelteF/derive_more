@@ -219,53 +219,54 @@ impl<'a, 'b> State<'a, 'b> {
         let input = bounds.value();
         let tokens = TokenStream::from_str(&input)?;
         let parser = Punctuated::<syn::GenericParam, syn::Token![,]>::parse_terminated;
-        let bounds = parser.parse2(tokens).map_err(|error| Error::new(span, error.to_string()))?;
 
-        if bounds.is_empty() {
+        let generic_params = parser.parse2(tokens)
+            .map_err(|error| Error::new(span, error.to_string()))?;
+
+        if generic_params.is_empty() {
             return Err(Error::new(span, "No bounds specified"));
         }
 
-        bounds.into_iter().try_fold(HashMap::new(), |mut accumulator, generic_param| {
-            match generic_param {
-                syn::GenericParam::Type(type_param) => {
-                    if self.type_params.contains(&type_param.ident) {
-                        if !type_param.attrs.is_empty() {
-                            Err(Error::new(span, "Attributes aren't allowed"))
-                        } else if type_param.eq_token.is_some() || type_param.default.is_some() {
-                            Err(Error::new(span, "Default type parameters aren't allowed"))
-                        } else {
-                            let ident = type_param.ident.to_string();
+        let mut bounds = HashMap::new();
 
-                            let ty = syn::Type::Path(syn::TypePath { qself: None, path: type_param.ident.into() });
-                            let bounds = accumulator.entry(ty).or_insert_with(HashSet::new);
+        for generic_param in generic_params {
+            let type_param = match generic_param {
+                syn::GenericParam::Type(type_param) => type_param,
+                _ => return Err(Error::new(span, "Only trait bounds allowed")),
+            };
 
-                            let bounds = type_param.bounds.into_iter().try_fold(bounds, |accumulator, bound| {
-                                match bound {
-                                    syn::TypeParamBound::Trait(bound) => {
-                                        if bound.lifetimes.is_some() {
-                                            Err(Error::new(span, "Higher-rank trait bounds aren't allowed"))
-                                        } else {
-                                            accumulator.insert(bound);
-                                            Ok(accumulator)
-                                        }
-                                    }
-                                    _ => Err(Error::new(span, "Only trait bounds allowed")),
-                                }
-                            })?;
-
-                            if !bounds.is_empty() {
-                                Ok(accumulator)
-                            } else {
-                                Err(Error::new(span, format!("No bounds specified for type parameter {}", ident)))
-                            }
-                        }
-                    } else {
-                        Err(Error::new(span, "Unknown generic type argument specified"))
-                    }
-                },
-                _ => Err(Error::new(span, "Only trait bounds allowed")),
+            if !self.type_params.contains(&type_param.ident) {
+                return Err(Error::new(span, "Unknown generic type argument specified"));
+            } else if !type_param.attrs.is_empty() {
+                return Err(Error::new(span, "Attributes aren't allowed"));
+            } else if type_param.eq_token.is_some() || type_param.default.is_some() {
+                return Err(Error::new(span, "Default type parameters aren't allowed"));
             }
-        })
+
+            let ident = type_param.ident.to_string();
+
+            let ty = syn::Type::Path(syn::TypePath { qself: None, path: type_param.ident.into() });
+            let bounds = bounds.entry(ty).or_insert_with(HashSet::new);
+
+            for bound in type_param.bounds {
+                let bound = match bound {
+                    syn::TypeParamBound::Trait(bound) => bound,
+                    _ => return Err(Error::new(span, "Only trait bounds allowed")),
+                };
+
+                if bound.lifetimes.is_some() {
+                    return Err(Error::new(span, "Higher-rank trait bounds aren't allowed"));
+                }
+
+                bounds.insert(bound);
+            }
+
+            if bounds.is_empty() {
+                return Err(Error::new(span, format!("No bounds specified for type parameter {}", ident)));
+            }
+        }
+
+        Ok(bounds)
     }
     fn parse_meta_fmt(&self, meta: &syn::Meta, outer_enum: bool) -> Result<(TokenStream, bool)> {
         let list = match meta {
