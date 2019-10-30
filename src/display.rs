@@ -499,7 +499,7 @@ impl<'a, 'b> State<'a, 'b> {
             _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
         };
 
-        if meta.nested.len() != 1 {
+        if meta.len() != 1 {
             return Err(Error::new(span, self.get_proper_bound_syntax()));
         }
 
