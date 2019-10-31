@@ -40,11 +40,8 @@ arguments used during formatting are bound by respective formatting trait.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
-#[macro_use] extern crate derive_more;
-
-trait Trait {
-    type Type;
-}
+# #[macro_use] extern crate derive_more;
+# trait Trait { type Type; }
 
 #[derive(Display)]
 #[display(fmt = "{} {} {:?} {:p}", a, b, c, d)]
@@ -72,26 +69,35 @@ used in angle bracket list: `T: MyTrait, U: Trait1 + Trait2`.
 Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
 by traits, i.e. no lifetime parameters or lifetime bounds allowed in bound-string.
 
-```rust
-#[macro_use] extern crate derive_more;
+As double-quote `fmt` arguments are parsed as an arbitrary Rust expression and passed to generated
+`write!` as-is, it's impossible to meaningfully infer any kind of trait bounds for generic type parameters
+used this way. That means that you'll **have to** explicitly specify all trait bound used. Either in the
+struct/enum definition, or via `#[display(bound = "...")]` attribute.
 
-trait MyTrait {
-    fn my_function(&self) -> i32;
-}
+Note how we have to bound `U` and `V` by `Display` in the following example, as no bound is inferred.
+Not even `Display`. 
+
+Also note, that `"c"` case is just a curious example. Bound inference works as expected if you simply 
+write `c` without double-quotes.
+
+```rust
+# #[macro_use] extern crate derive_more;
+# trait MyTrait { fn my_function(&self) -> i32; }
 
 #[derive(Display)]
-#[display(bound = "T: MyTrait, U: ::std::fmt::Display")]
-#[display(fmt = "{} {}", "a.my_function()", "b.to_string()")]
-struct MyStruct<T, U> {
+#[display(bound = "T: MyTrait, U: Display, V: Display")]
+#[display(fmt = "{} {} {}", "a.my_function()", "b.to_string().len()", "c")] 
+struct MyStruct<T, U, V> {
     a: T,
     b: U,
+    c: V,
 }
 ```
 
 # Example usage
 
 ```rust
-#[macro_use] extern crate derive_more;
+# #[macro_use] extern crate derive_more;
 
 use std::path::PathBuf;
 
