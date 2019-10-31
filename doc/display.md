@@ -82,6 +82,7 @@ write `c` without double-quotes.
 
 ```rust
 # #[macro_use] extern crate derive_more;
+# use std::fmt::Display;
 # trait MyTrait { fn my_function(&self) -> i32; }
 
 #[derive(Display)]
