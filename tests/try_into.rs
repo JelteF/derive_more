@@ -9,7 +9,8 @@ use std::convert::{TryFrom, TryInto};
 // been redefined.
 type Result = ();
 
-#[derive(Clone, Copy, TryInto, TryIntoRef, TryIntoRefMut)]
+#[derive(Clone, Copy, TryInto)]
+#[try_into(owned, ref, ref_mut)]
 enum MixedInts {
     SmallInt(i32),
     NamedBigInt { int: i64 },
@@ -19,8 +20,6 @@ enum MixedInts {
     NamedUnsigned { x: u32 },
     Unit,
     #[try_into(ignore)]
-    #[try_into_ref(ignore)]
-    #[try_into_ref_mut(ignore)]
     Unit2,
 }
 

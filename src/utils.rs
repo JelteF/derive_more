@@ -10,7 +10,7 @@ use syn::{
     TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub enum RefType {
     No,
     Ref,
@@ -250,6 +250,7 @@ pub struct State<'input> {
     pub variant_states: Vec<State<'input>>,
     pub variant: Option<&'input Variant>,
     pub generics: Generics,
+    default_info: FullMetaInfo,
     full_meta_infos: Vec<FullMetaInfo>,
 }
 
@@ -295,11 +296,28 @@ impl<'input> State<'input> {
             .map(|attrs| get_meta_info(&trait_attr, attrs))
             .collect();
         let meta_infos = meta_infos?;
-        let first_match = meta_infos.iter().filter_map(|info| info.enabled).next();
+        let first_match = meta_infos
+            .iter()
+            .filter_map(|info| info.enabled.map(|_| info))
+            .next();
+
         let defaults = struct_meta_info.to_full(FullMetaInfo {
-            enabled: first_match.map_or(true, |enabled| !enabled),
+            // Default to enabled true, except when first attribute has explicit
+            // enabling
+            enabled: first_match.map_or(true, |info| !info.enabled.unwrap()),
             forward: false,
+            // Default to owned true, except when first attribute has one of owned,
+            // ref or ref_mut
+            // - not a single attibute means default true
+            // - an attribute, but non of owned, ref or ref_mut means default true
+            // - an attribute, and owned, ref or ref_mut means default false
+            owned: first_match.map_or(true, |info| {
+                info.owned.is_none() && info.ref_.is_none() || info.ref_mut.is_none()
+            }),
+            ref_: false,
+            ref_mut: false,
         });
+
         let full_meta_infos: Vec<_> = meta_infos
             .iter()
             .map(|info| info.to_full(defaults))
@@ -339,6 +357,7 @@ impl<'input> State<'input> {
             derive_type,
             generics,
             full_meta_infos,
+            default_info: defaults,
         })
     }
 
@@ -389,6 +408,7 @@ impl<'input> State<'input> {
             derive_type,
             generics,
             full_meta_infos,
+            default_info,
         })
     }
     pub fn add_trait_path_type_param(&mut self, params: TokenStream) {
@@ -451,6 +471,7 @@ impl<'input> State<'input> {
             input_type,
             variant_type,
             variant_name,
+            variant_info: self.default_info,
             fields,
             field_types,
             members,
@@ -518,10 +539,10 @@ impl<'input> State<'input> {
             self.fields
                 .iter()
                 .map(|f| {
-                        f.ident
-                            .as_ref()
-                            .expect("Tried to get field names of a tuple struct")
-                            .to_token_stream()
+                    f.ident
+                        .as_ref()
+                        .expect("Tried to get field names of a tuple struct")
+                        .to_token_stream()
                 })
                 .collect()
         } else {
@@ -570,6 +591,7 @@ pub struct MultiFieldData<'input, 'state> {
     pub input_type: &'input Ident,
     pub variant_type: TokenStream,
     pub variant_name: Option<&'input Ident>,
+    pub variant_info: FullMetaInfo,
     pub fields: Vec<&'input Field>,
     pub field_types: Vec<&'input Type>,
     pub field_idents: Vec<TokenStream>,
@@ -626,33 +648,31 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
                 false
             }
         });
+    let mut info = MetaInfo {
+        enabled: None,
+        forward: None,
+        owned: None,
+        ref_: None,
+        ref_mut: None,
+    };
 
     let meta = if let Some(meta) = it.next() {
         meta
     } else {
-        return Ok(MetaInfo {
-            enabled: None,
-            forward: None,
-        });
+        return Ok(info);
     };
+
+    info.enabled = Some(true);
+
     if let Some(meta2) = it.next() {
         return Err(Error::new(meta2.span(), "Too many formats given"));
     }
     let list = match meta.clone() {
-        Meta::Path(_) => {
-            return Ok(MetaInfo {
-                enabled: Some(true),
-                forward: None,
-            })
-        }
+        Meta::Path(_) => return Ok(info),
         Meta::List(list) => list,
         _ => {
             return Err(Error::new(meta.span(), "Attribute format not supported1"));
         }
-    };
-    let mut info = MetaInfo {
-        enabled: Some(true),
-        forward: None,
     };
     for element in list.nested.into_iter() {
         let nested_meta = if let NestedMeta::Meta(meta) = element {
@@ -675,6 +695,12 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
             info.enabled = Some(false);
         } else if ident == "forward" {
             info.forward = Some(true);
+        } else if ident == "owned" {
+            info.owned = Some(true);
+        } else if ident == "ref" {
+            info.ref_ = Some(true);
+        } else if ident == "ref_mut" {
+            info.ref_mut = Some(true);
         } else {
             return Err(Error::new(meta.span(), "Attribute format not supported6"));
         };
@@ -686,12 +712,18 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
 pub struct FullMetaInfo {
     pub enabled: bool,
     pub forward: bool,
+    pub owned: bool,
+    pub ref_: bool,
+    pub ref_mut: bool,
 }
 
 #[derive(Copy, Clone)]
 struct MetaInfo {
     enabled: Option<bool>,
     forward: Option<bool>,
+    owned: Option<bool>,
+    ref_: Option<bool>,
+    ref_mut: Option<bool>,
 }
 
 impl MetaInfo {
@@ -699,6 +731,25 @@ impl MetaInfo {
         FullMetaInfo {
             enabled: self.enabled.unwrap_or(defaults.enabled),
             forward: self.forward.unwrap_or(defaults.forward),
+            owned: self.owned.unwrap_or(defaults.owned),
+            ref_: self.ref_.unwrap_or(defaults.ref_),
+            ref_mut: self.ref_mut.unwrap_or(defaults.ref_mut),
         }
+    }
+}
+
+impl FullMetaInfo {
+    pub fn ref_types(self) -> Vec<RefType> {
+        let mut ref_types = vec![];
+        if self.owned {
+            ref_types.push(RefType::No);
+        }
+        if self.ref_ {
+            ref_types.push(RefType::Ref);
+        }
+        if self.ref_mut {
+            ref_types.push(RefType::Mut);
+        }
+        ref_types
     }
 }

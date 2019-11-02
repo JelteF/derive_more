@@ -25,9 +25,10 @@ struct MyInt(i32);
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
 #[derive(Deref, DerefMut)]
-#[derive(IntoIterator, IntoIteratorRef, IntoIteratorRefMut)]
+#[derive(IntoIterator)]
 #[deref(forward)]
 #[deref_mut(forward)]
+#[into_iterator(owned, ref, ref_mut)]
 struct MyVec(Vec<i32>);
 
 #[derive(Iterator)]

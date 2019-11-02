@@ -47,12 +47,11 @@ struct MyVec<'a>(::core::slice::Iter<'a, i32>);
     Deref,
     DerefMut,
     IntoIterator,
-    IntoIteratorRef,
-    IntoIteratorRefMut,
     Constructor
 )]
 #[deref(forward)]
 #[deref_mut(forward)]
+#[into_iterator(owned, ref, ref_mut)]
 struct Wrapped<T: Clone>(T);
 
 #[derive(Iterator, Deref, DerefMut)]
@@ -61,7 +60,8 @@ struct Wrapped2<T: Clone>(T);
 #[derive(From, Not, Add, Mul, AddAssign, Constructor, Sum)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
 
-#[derive(Add, Not, TryInto, TryIntoRef, TryIntoRefMut)]
+#[derive(Add, Not, TryInto)]
+#[try_into(owned, ref, ref_mut)]
 enum MixedInts {
     SmallInt(i32),
     BigInt(i64),
