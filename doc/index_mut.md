@@ -1,6 +1,6 @@
 % What #[derive(IndexMut)] generates
 
-Deriving `IndexMut` only works only works for a single field of a struct.
+Deriving `IndexMut` only works for a single field of a struct.
 Furthermore it requires that the type also implements `Index`, so usually
 `Index` should also be derived.
 The result is that you will mutably index it's member directly.

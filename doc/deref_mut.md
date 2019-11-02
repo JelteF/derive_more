@@ -1,16 +1,17 @@
 % What #[derive(DerefMut)] generates
 
-Deriving `Deref` only works for a single field of a struct.  Furthermore it
-requires that the type also implements `Deref`, so usually `Deref` should also
-be derived. The resulting implementation of `Deref` will allow you to mutably
-dereference the struct its member directly.
+Deriving `Deref` only works for a single field of a struct.
+Furthermore it requires that the type also implements `Deref`, so usually
+`Deref` should also be derived.
+The resulting implementation of `Deref` will allow you to mutably dereference
+the struct its member directly.
 
 1. Dereferencing to the field, i.e. like if your type was a reference type.
 2. Doing a dereference on the field, for when the field itself is a reference
    type like `&mut` and `Box`.
 
-With `#[deref_mut]` or `#[deref_mut(ignore)]` it's possible to indicate the field that
-you want to derive `DerefMut` for.
+With `#[deref_mut]` or `#[deref_mut(ignore)]` it's possible to indicate the
+field that you want to derive `DerefMut` for.
 
 # Example usage
 

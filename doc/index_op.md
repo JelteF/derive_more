@@ -1,6 +1,6 @@
 % What #[derive(Index)] generates
 
-Deriving `Index` only works only works for a single field of a struct.
+Deriving `Index` only works for a single field of a struct.
 The result is that you will index it's member directly.
 
 With `#[index]` or `#[index(ignore)]` it's possible to indicate the field that
