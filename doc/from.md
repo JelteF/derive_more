@@ -187,7 +187,7 @@ enum MixedInts {
 
 Code like this will be generated:
 
-```edition2018
+```rust
 # enum MixedInts {
 #     SmallInt(i32),
 #     NamedBigInt { int: i64 },
