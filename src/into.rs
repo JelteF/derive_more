@@ -1,6 +1,6 @@
 use crate::utils::{
-    add_extra_generic_param, field_idents, get_field_types, named_to_vec, number_idents,
-    unnamed_to_vec, RefType,
+    add_extra_generic_param, field_idents, get_field_types, named_to_vec,
+    number_idents, unnamed_to_vec, RefType,
 };
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};

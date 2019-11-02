@@ -25,10 +25,7 @@ extern crate derive_more;
 )]
 struct MyInts(u64);
 
-#[derive(
-    Deref,
-    DerefMut
-)]
+#[derive(Deref, DerefMut)]
 #[deref(forward)]
 #[deref_mut(forward)]
 struct MyBoxedInt<'a>(&'a mut u64);

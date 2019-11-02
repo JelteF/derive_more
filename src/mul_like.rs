@@ -47,8 +47,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         where #(#tys: #trait_path_iter<#scalar_iter, Output=#tys>),*
     };
 
-    let new_generics =
-        add_where_clauses_for_new_ident(&input.generics, &fields, scalar_ident, type_where_clauses, true);
+    let new_generics = add_where_clauses_for_new_ident(
+        &input.generics,
+        &fields,
+        scalar_ident,
+        type_where_clauses,
+        true,
+    );
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 

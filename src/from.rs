@@ -1,4 +1,6 @@
-use crate::utils::{add_where_clauses_for_new_ident, DeriveType, MultiFieldData, State};
+use crate::utils::{
+    add_where_clauses_for_new_ident, DeriveType, MultiFieldData, State,
+};
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{parse::Result, DeriveInput, Ident, Index};
@@ -43,7 +45,8 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
                 quote!(original.#tuple_index)
             };
             if info.forward {
-                let type_param = &Ident::new(&format!("__FromT{}", i), Span::call_site());
+                let type_param =
+                    &Ident::new(&format!("__FromT{}", i), Span::call_site());
                 let sub_trait_path = quote!(#trait_path<#type_param>);
                 let type_where_clauses = quote! {
                     where #field_type: #sub_trait_path

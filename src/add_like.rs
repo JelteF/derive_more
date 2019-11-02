@@ -1,6 +1,7 @@
 use crate::add_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{
-    add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars, unnamed_to_vec,
+    add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
+    unnamed_to_vec,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -60,7 +61,11 @@ fn tuple_content<T: ToTokens>(
     quote!(#input_type(#(#exprs),*))
 }
 
-fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> TokenStream {
+fn struct_content(
+    input_type: &Ident,
+    fields: &[&Field],
+    method_ident: &Ident,
+) -> TokenStream {
     // It's safe to unwrap because struct fields always have an identifier
     let exprs = struct_exprs(fields, method_ident);
     let field_names = field_idents(fields);
@@ -69,7 +74,11 @@ fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -
 }
 
 #[allow(clippy::cognitive_complexity)]
-fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) -> TokenStream {
+fn enum_content(
+    input_type: &Ident,
+    data_enum: &DataEnum,
+    method_ident: &Ident,
+) -> TokenStream {
     let mut matches = vec![];
     let mut method_iter = iter::repeat(method_ident);
 
@@ -113,7 +122,8 @@ fn enum_content(input_type: &Ident, data_enum: &DataEnum, method_ident: &Ident) 
                 matches.push(matcher);
             }
             Fields::Unit => {
-                let message = format!("Cannot {}() unit variants", method_ident.to_string());
+                let message =
+                    format!("Cannot {}() unit variants", method_ident.to_string());
                 matches.push(quote!((#subtype, #subtype) => ::core::result::Result::Err(#message)));
             }
         }

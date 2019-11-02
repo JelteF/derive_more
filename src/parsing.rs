@@ -192,10 +192,13 @@ fn __parse_placeholder_inner<'input>(
                                     let __seq_res = {
                                         __state.suppress_fail += 1;
                                         let __assert_res = if __input.len() > __pos {
-                                            let (__ch, __next) = char_range_at(__input, __pos);
+                                            let (__ch, __next) =
+                                                char_range_at(__input, __pos);
                                             match __ch {
                                                 '{' | '}' => Matched(__next, ()),
-                                                _ => __state.mark_failure(__pos, "[{}]"),
+                                                _ => {
+                                                    __state.mark_failure(__pos, "[{}]")
+                                                }
                                             }
                                         } else {
                                             __state.mark_failure(__pos, "[{}]")
@@ -207,7 +210,9 @@ fn __parse_placeholder_inner<'input>(
                                         }
                                     };
                                     match __seq_res {
-                                        Matched(__pos, _) => any_char(__input, __state, __pos),
+                                        Matched(__pos, _) => {
+                                            any_char(__input, __state, __pos)
+                                        }
                                         Failed => Failed,
                                     }
                                 };
@@ -240,7 +245,9 @@ fn __parse_placeholder_inner<'input>(
                     Failed => Failed,
                 }
             } {
-                Matched(__newpos, _) => Matched(__newpos, &__input[str_start..__newpos]),
+                Matched(__newpos, _) => {
+                    Matched(__newpos, &__input[str_start..__newpos])
+                }
                 Failed => Failed,
             }
         };
@@ -305,7 +312,9 @@ fn __parse_arg<'input>(
                     Failed
                 }
             } {
-                Matched(__newpos, _) => Matched(__newpos, &__input[str_start..__newpos]),
+                Matched(__newpos, _) => {
+                    Matched(__newpos, &__input[str_start..__newpos])
+                }
                 Failed => Failed,
             }
         };
@@ -340,40 +349,56 @@ fn __parse_ty<'input>(
                         match __choice_res {
                             Matched(__pos, __value) => Matched(__pos, __value),
                             Failed => {
-                                let __choice_res = slice_eq(__input, __state, __pos, "x");
+                                let __choice_res =
+                                    slice_eq(__input, __state, __pos, "x");
                                 match __choice_res {
                                     Matched(__pos, __value) => Matched(__pos, __value),
                                     Failed => {
-                                        let __choice_res = slice_eq(__input, __state, __pos, "X");
+                                        let __choice_res =
+                                            slice_eq(__input, __state, __pos, "X");
                                         match __choice_res {
-                                            Matched(__pos, __value) => Matched(__pos, __value),
+                                            Matched(__pos, __value) => {
+                                                Matched(__pos, __value)
+                                            }
                                             Failed => {
-                                                let __choice_res =
-                                                    slice_eq(__input, __state, __pos, "p");
+                                                let __choice_res = slice_eq(
+                                                    __input, __state, __pos, "p",
+                                                );
                                                 match __choice_res {
                                                     Matched(__pos, __value) => {
                                                         Matched(__pos, __value)
                                                     }
                                                     Failed => {
-                                                        let __choice_res =
-                                                            slice_eq(__input, __state, __pos, "b");
+                                                        let __choice_res = slice_eq(
+                                                            __input, __state, __pos,
+                                                            "b",
+                                                        );
                                                         match __choice_res {
                                                             Matched(__pos, __value) => {
                                                                 Matched(__pos, __value)
                                                             }
                                                             Failed => {
-                                                                let __choice_res = slice_eq(
-                                                                    __input, __state, __pos, "e",
-                                                                );
+                                                                let __choice_res =
+                                                                    slice_eq(
+                                                                        __input,
+                                                                        __state, __pos,
+                                                                        "e",
+                                                                    );
                                                                 match __choice_res {
-                                                                    Matched(__pos, __value) => {
-                                                                        Matched(__pos, __value)
-                                                                    }
+                                                                    Matched(
+                                                                        __pos,
+                                                                        __value,
+                                                                    ) => Matched(
+                                                                        __pos, __value,
+                                                                    ),
                                                                     Failed => {
-                                                                        let __choice_res = slice_eq(
-                                                                            __input, __state,
-                                                                            __pos, "E",
-                                                                        );
+                                                                        let __choice_res =
+                                                                            slice_eq(
+                                                                                __input,
+                                                                                __state,
+                                                                                __pos,
+                                                                                "E",
+                                                                            );
                                                                         match __choice_res {
                                                                             Matched(
                                                                                 __pos,
@@ -401,7 +426,9 @@ fn __parse_ty<'input>(
                     }
                 }
             } {
-                Matched(__newpos, _) => Matched(__newpos, &__input[str_start..__newpos]),
+                Matched(__newpos, _) => {
+                    Matched(__newpos, &__input[str_start..__newpos])
+                }
                 Failed => Failed,
             }
         };
@@ -481,10 +508,11 @@ fn __parse_format_spec<'input>(
                         };
                         match __seq_res {
                             Matched(__pos, _) => {
-                                let __seq_res = match slice_eq(__input, __state, __pos, "#") {
-                                    Matched(__newpos, _) => Matched(__newpos, ()),
-                                    Failed => Matched(__pos, ()),
-                                };
+                                let __seq_res =
+                                    match slice_eq(__input, __state, __pos, "#") {
+                                        Matched(__newpos, _) => Matched(__newpos, ()),
+                                        Failed => Matched(__pos, ()),
+                                    };
                                 match __seq_res {
                                     Matched(__pos, _) => {
                                         let __seq_res = match {
@@ -494,27 +522,40 @@ fn __parse_format_spec<'input>(
                                                     let mut __repeat_value = vec![];
                                                     loop {
                                                         let __pos = __repeat_pos;
-                                                        let __step_res = if __input.len() > __pos {
-                                                            let (__ch, __next) =
-                                                                char_range_at(__input, __pos);
-                                                            match __ch {
-                                                                'A'...'Z'
-                                                                | 'a'...'z'
-                                                                | '0'...'9'
-                                                                | '_' => Matched(__next, ()),
-                                                                _ => __state.mark_failure(
+                                                        let __step_res =
+                                                            if __input.len() > __pos {
+                                                                let (__ch, __next) =
+                                                                    char_range_at(
+                                                                        __input, __pos,
+                                                                    );
+                                                                match __ch {
+                                                                    'A'...'Z'
+                                                                    | 'a'...'z'
+                                                                    | '0'...'9'
+                                                                    | '_' => Matched(
+                                                                        __next,
+                                                                        (),
+                                                                    ),
+                                                                    _ => __state
+                                                                        .mark_failure(
+                                                                        __pos,
+                                                                        "[A-Za-z0-9_]",
+                                                                    ),
+                                                                }
+                                                            } else {
+                                                                __state.mark_failure(
                                                                     __pos,
                                                                     "[A-Za-z0-9_]",
-                                                                ),
-                                                            }
-                                                        } else {
-                                                            __state
-                                                                .mark_failure(__pos, "[A-Za-z0-9_]")
-                                                        };
+                                                                )
+                                                            };
                                                         match __step_res {
-                                                            Matched(__newpos, __value) => {
+                                                            Matched(
+                                                                __newpos,
+                                                                __value,
+                                                            ) => {
                                                                 __repeat_pos = __newpos;
-                                                                __repeat_value.push(__value);
+                                                                __repeat_value
+                                                                    .push(__value);
                                                             }
                                                             Failed => {
                                                                 break;
@@ -528,34 +569,51 @@ fn __parse_format_spec<'input>(
                                                     }
                                                 };
                                                 match __seq_res {
-                                                    Matched(__pos, _) => {
-                                                        slice_eq(__input, __state, __pos, "$")
-                                                    }
+                                                    Matched(__pos, _) => slice_eq(
+                                                        __input, __state, __pos, "$",
+                                                    ),
                                                     Failed => Failed,
                                                 }
                                             };
                                             match __choice_res {
-                                                Matched(__pos, __value) => Matched(__pos, __value),
+                                                Matched(__pos, __value) => {
+                                                    Matched(__pos, __value)
+                                                }
                                                 Failed => {
                                                     let mut __repeat_pos = __pos;
                                                     let mut __repeat_value = vec![];
                                                     loop {
                                                         let __pos = __repeat_pos;
-                                                        let __step_res = if __input.len() > __pos {
+                                                        let __step_res = if __input
+                                                            .len()
+                                                            > __pos
+                                                        {
                                                             let (__ch, __next) =
-                                                                char_range_at(__input, __pos);
+                                                                char_range_at(
+                                                                    __input, __pos,
+                                                                );
                                                             match __ch {
-                                                                '0'...'9' => Matched(__next, ()),
+                                                                '0'...'9' => {
+                                                                    Matched(__next, ())
+                                                                }
                                                                 _ => __state
-                                                                    .mark_failure(__pos, "[0-9]"),
+                                                                    .mark_failure(
+                                                                        __pos, "[0-9]",
+                                                                    ),
                                                             }
                                                         } else {
-                                                            __state.mark_failure(__pos, "[0-9]")
+                                                            __state.mark_failure(
+                                                                __pos, "[0-9]",
+                                                            )
                                                         };
                                                         match __step_res {
-                                                            Matched(__newpos, __value) => {
+                                                            Matched(
+                                                                __newpos,
+                                                                __value,
+                                                            ) => {
                                                                 __repeat_pos = __newpos;
-                                                                __repeat_value.push(__value);
+                                                                __repeat_value
+                                                                    .push(__value);
                                                             }
                                                             Failed => {
                                                                 break;
@@ -570,23 +628,27 @@ fn __parse_format_spec<'input>(
                                                 }
                                             }
                                         } {
-                                            Matched(__newpos, _) => Matched(__newpos, ()),
+                                            Matched(__newpos, _) => {
+                                                Matched(__newpos, ())
+                                            }
                                             Failed => Matched(__pos, ()),
                                         };
                                         match __seq_res {
                                             Matched(__pos, _) => {
-                                                let __seq_res =
-                                                    match slice_eq(__input, __state, __pos, "0") {
-                                                        Matched(__newpos, _) => {
-                                                            Matched(__newpos, ())
-                                                        }
-                                                        Failed => Matched(__pos, ()),
-                                                    };
+                                                let __seq_res = match slice_eq(
+                                                    __input, __state, __pos, "0",
+                                                ) {
+                                                    Matched(__newpos, _) => {
+                                                        Matched(__newpos, ())
+                                                    }
+                                                    Failed => Matched(__pos, ()),
+                                                };
                                                 match __seq_res {
                                                     Matched(__pos, _) => {
                                                         let __seq_res = match {
                                                             let __seq_res = slice_eq(
-                                                                __input, __state, __pos, ".",
+                                                                __input, __state,
+                                                                __pos, ".",
                                                             );
                                                             match __seq_res {
                                                                 Matched(__pos, _) => {
@@ -644,15 +706,18 @@ fn __parse_format_spec<'input>(
                                                                         }
                                                                     };
                                                                     match __choice_res {
-                                                                        Matched(__pos, __value) => {
-                                                                            Matched(__pos, __value)
-                                                                        }
+                                                                        Matched(
+                                                                            __pos,
+                                                                            __value,
+                                                                        ) => Matched(
+                                                                            __pos,
+                                                                            __value,
+                                                                        ),
                                                                         Failed => {
                                                                             let __choice_res = {
                                                                                 let mut __repeat_pos =
                                                                                     __pos;
-                                                                                let mut __repeat_value =
-                                                                                    vec![];
+                                                                                let mut __repeat_value = vec![];
                                                                                 loop {
                                                                                     let __pos = __repeat_pos ;
                                                                                     let __step_res =
@@ -710,25 +775,41 @@ fn __parse_format_spec<'input>(
                                                             Matched(__newpos, _) => {
                                                                 Matched(__newpos, ())
                                                             }
-                                                            Failed => Matched(__pos, ()),
+                                                            Failed => {
+                                                                Matched(__pos, ())
+                                                            }
                                                         };
                                                         match __seq_res {
                                                             Matched(__pos, _) => {
-                                                                let __seq_res = match __parse_ty(
-                                                                    __input, __state, __pos,
-                                                                ) {
-                                                                    Matched(__newpos, __value) => {
+                                                                let __seq_res =
+                                                                    match __parse_ty(
+                                                                        __input,
+                                                                        __state, __pos,
+                                                                    ) {
                                                                         Matched(
                                                                             __newpos,
-                                                                            Some(__value),
-                                                                        )
-                                                                    }
-                                                                    Failed => Matched(__pos, None),
-                                                                };
+                                                                            __value,
+                                                                        ) => Matched(
+                                                                            __newpos,
+                                                                            Some(
+                                                                                __value,
+                                                                            ),
+                                                                        ),
+                                                                        Failed => {
+                                                                            Matched(
+                                                                                __pos,
+                                                                                None,
+                                                                            )
+                                                                        }
+                                                                    };
                                                                 match __seq_res {
-                                                                    Matched(__pos, n) => {
-                                                                        Matched(__pos, { n })
-                                                                    }
+                                                                    Matched(
+                                                                        __pos,
+                                                                        n,
+                                                                    ) => Matched(
+                                                                        __pos,
+                                                                        { n },
+                                                                    ),
                                                                     Failed => Failed,
                                                                 }
                                                             }
@@ -772,7 +853,8 @@ fn __parse_all_placeholders<'input>(
                     match __choice_res {
                         Matched(__pos, __value) => Matched(__pos, __value),
                         Failed => {
-                            let __choice_res = __parse_placeholder_inner(__input, __state, __pos);
+                            let __choice_res =
+                                __parse_placeholder_inner(__input, __state, __pos);
                             match __choice_res {
                                 Matched(__pos, __value) => Matched(__pos, __value),
                                 Failed => __parse_discard_any(__input, __state, __pos),
@@ -793,7 +875,9 @@ fn __parse_all_placeholders<'input>(
             Matched(__repeat_pos, __repeat_value)
         };
         match __seq_res {
-            Matched(__pos, x) => Matched(__pos, { x.into_iter().flat_map(|x| x).collect() }),
+            Matched(__pos, x) => {
+                Matched(__pos, { x.into_iter().flat_map(|x| x).collect() })
+            }
             Failed => Failed,
         }
     }
@@ -815,15 +899,20 @@ fn __parse_format<'input>(
                 };
                 match __seq_res {
                     Matched(__pos, n) => {
-                        let __seq_res = match __parse_format_spec(__input, __state, __pos) {
-                            Matched(__newpos, __value) => Matched(__newpos, Some(__value)),
-                            Failed => Matched(__pos, None),
-                        };
+                        let __seq_res =
+                            match __parse_format_spec(__input, __state, __pos) {
+                                Matched(__newpos, __value) => {
+                                    Matched(__newpos, Some(__value))
+                                }
+                                Failed => Matched(__pos, None),
+                            };
                         match __seq_res {
                             Matched(__pos, o) => {
                                 let __seq_res = slice_eq(__input, __state, __pos, "}");
                                 match __seq_res {
-                                    Matched(__pos, _) => Matched(__pos, { (n, o.and_then(|x| x)) }),
+                                    Matched(__pos, _) => {
+                                        Matched(__pos, { (n, o.and_then(|x| x)) })
+                                    }
                                     Failed => Failed,
                                 }
                             }
@@ -858,7 +947,9 @@ pub fn all_placeholders<'input>(__input: &'input str) -> ParseResult<Vec<&'input
     })
 }
 
-pub fn format<'input>(__input: &'input str) -> ParseResult<(Option<usize>, Option<&'input str>)> {
+pub fn format<'input>(
+    __input: &'input str,
+) -> ParseResult<(Option<usize>, Option<&'input str>)> {
     #![allow(non_snake_case, unused)]
     let mut __state = ParseState::new();
     match __parse_format(__input, &mut __state, 0) {

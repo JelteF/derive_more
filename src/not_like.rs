@@ -1,4 +1,6 @@
-use crate::utils::{add_extra_type_param_bound_op_output, named_to_vec, unnamed_to_vec};
+use crate::utils::{
+    add_extra_type_param_bound_op_output, named_to_vec, unnamed_to_vec,
+};
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::iter;
@@ -25,7 +27,9 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             ),
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
-        Data::Enum(ref data_enum) => enum_output_type_and_content(input, data_enum, method_ident),
+        Data::Enum(ref data_enum) => {
+            enum_output_type_and_content(input, data_enum, method_ident)
+        }
 
         _ => panic!(format!(
             "Only structs and enums can use derive({})",
@@ -61,7 +65,11 @@ fn tuple_content<T: ToTokens>(
     quote!(#input_type(#(#exprs),*))
 }
 
-fn struct_content(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> TokenStream {
+fn struct_content(
+    input_type: &Ident,
+    fields: &[&Field],
+    method_ident: &Ident,
+) -> TokenStream {
     let mut exprs = vec![];
 
     for field in fields {
@@ -126,7 +134,8 @@ fn enum_output_type_and_content(
                     .map(|i| Ident::new(&format!("__{}", i), Span::call_site()))
                     .collect();
                 let method_iter = method_iter.by_ref();
-                let mut body = quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
+                let mut body =
+                    quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
                 if has_unit_type {
                     body = quote!(::core::result::Result::Ok(#body))
                 }
@@ -138,7 +147,8 @@ fn enum_output_type_and_content(
                 matches.push(matcher);
             }
             Fields::Unit => {
-                let message = format!("Cannot {}() unit variants", method_ident.to_string());
+                let message =
+                    format!("Cannot {}() unit variants", method_ident.to_string());
                 matches.push(quote!(#subtype => ::core::result::Result::Err(#message)));
             }
         }

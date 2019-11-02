@@ -238,7 +238,7 @@ mod generic {
                 field: <T as Trait>::Type,
             }
 
-            let s = AutoGenericNamedStructAssociated::<Struct>{ field: 10 };
+            let s = AutoGenericNamedStructAssociated::<Struct> { field: 10 };
             assert_eq!(s.to_string(), "10");
         }
 

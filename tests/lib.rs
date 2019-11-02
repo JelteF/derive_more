@@ -105,7 +105,10 @@ enum SimpleEnum {
     Int(i32),
     #[from(ignore)]
     _Ints(i32, i32),
-    LabeledInts { a: i32, b: i32 },
+    LabeledInts {
+        a: i32,
+        b: i32,
+    },
     _SomeUnit,
 }
 
@@ -116,13 +119,19 @@ enum MyIntEnum {
     SmallInt(i32),
     BigInt(i64),
     TwoInts(i32, i32),
-    Point2D { x: i64, y: i64 },
+    Point2D {
+        x: i64,
+        y: i64,
+    },
     #[from(ignore)]
     _UnsignedOne(u32),
     _UnsignedTwo(u32),
     #[from(ignore)]
     _Uints1(u64, u64),
-    _Uints2 { x: u64, y: u64 },
+    _Uints2 {
+        x: u64,
+        y: u64,
+    },
     Nothing,
 }
 
@@ -208,7 +217,9 @@ fn main() {
     assert_eq!((SimpleMyIntEnum::Int(6) - 5.into()).unwrap(), 1.into());
     assert_eq!(-SimpleSignedIntEnum::Int(6), (-6i32).into());
     assert_eq!(
-        (SimpleEnum::LabeledInts { a: 6, b: 5 } + SimpleEnum::LabeledInts { a: 1, b: 4 }).unwrap(),
+        (SimpleEnum::LabeledInts { a: 6, b: 5 }
+            + SimpleEnum::LabeledInts { a: 1, b: 4 })
+        .unwrap(),
         SimpleEnum::LabeledInts { a: 7, b: 9 }
     );
 

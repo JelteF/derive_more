@@ -5,9 +5,9 @@ use syn::{
     parse::{Error, Result},
     parse_str,
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Type, TypeGenerics, TypeParamBound,
-    Variant, WhereClause,
+    Attribute, Data, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed,
+    GenericParam, Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Type,
+    TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
 
 #[derive(Clone, Copy)]
@@ -120,19 +120,27 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     let mut generics = generics.clone();
     for type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
-        let bound: TypeParamBound =
-            parse_str(&quote!(::core::ops::#trait_ident<Output=#type_ident>).to_string()).unwrap();
+        let bound: TypeParamBound = parse_str(
+            &quote!(::core::ops::#trait_ident<Output=#type_ident>).to_string(),
+        )
+        .unwrap();
         type_param.bounds.push(bound)
     }
 
     generics
 }
 
-pub fn add_extra_ty_param_bound_op<'a>(generics: &'a Generics, trait_ident: &'a Ident) -> Generics {
+pub fn add_extra_ty_param_bound_op<'a>(
+    generics: &'a Generics,
+    trait_ident: &'a Ident,
+) -> Generics {
     add_extra_ty_param_bound(generics, &quote!(::core::ops::#trait_ident))
 }
 
-pub fn add_extra_ty_param_bound<'a>(generics: &'a Generics, bound: &'a TokenStream) -> Generics {
+pub fn add_extra_ty_param_bound<'a>(
+    generics: &'a Generics,
+    bound: &'a TokenStream,
+) -> Generics {
     let mut generics = generics.clone();
     let bound: TypeParamBound = parse_str(&bound.to_string()).unwrap();
     for type_param in &mut generics.type_params_mut() {
@@ -163,7 +171,10 @@ pub fn add_extra_ty_param_bound_ref<'a>(
     }
 }
 
-pub fn add_extra_generic_param(generics: &Generics, generic_param: TokenStream) -> Generics {
+pub fn add_extra_generic_param(
+    generics: &Generics,
+    generic_param: TokenStream,
+) -> Generics {
     let generic_param: GenericParam = parse_str(&generic_param.to_string()).unwrap();
     let mut generics = generics.clone();
     generics.params.push(generic_param);
@@ -171,8 +182,12 @@ pub fn add_extra_generic_param(generics: &Generics, generic_param: TokenStream) 
     generics
 }
 
-pub fn add_extra_where_clauses(generics: &Generics, type_where_clauses: TokenStream) -> Generics {
-    let mut type_where_clauses: WhereClause = parse_str(&type_where_clauses.to_string()).unwrap();
+pub fn add_extra_where_clauses(
+    generics: &Generics,
+    type_where_clauses: TokenStream,
+) -> Generics {
+    let mut type_where_clauses: WhereClause =
+        parse_str(&type_where_clauses.to_string()).unwrap();
     let mut new_generics = generics.clone();
     if let Some(old_where) = new_generics.where_clause {
         type_where_clauses.predicates.extend(old_where.predicates)
@@ -254,7 +269,9 @@ impl<'input> State<'input> {
                     (DeriveType::Unnamed, unnamed_to_vec(fields), vec![])
                 }
 
-                Fields::Named(ref fields) => (DeriveType::Named, named_to_vec(fields), vec![]),
+                Fields::Named(ref fields) => {
+                    (DeriveType::Named, named_to_vec(fields), vec![])
+                }
                 Fields::Unit => (DeriveType::Named, vec![], vec![]),
             },
             Data::Enum(ref data_enum) => (
@@ -262,7 +279,9 @@ impl<'input> State<'input> {
                 vec![],
                 data_enum.variants.iter().collect(),
             ),
-            Data::Union(_) => panic!(format!("can not derive({}) for union", trait_name)),
+            Data::Union(_) => {
+                panic!(format!("can not derive({}) for union", trait_name))
+            }
         };
         let attrs: Vec<_> = if derive_type == DeriveType::Enum {
             variants.iter().map(|v| &v.attrs).collect()
@@ -335,7 +354,9 @@ impl<'input> State<'input> {
         let trait_ident = Ident::new(trait_name, Span::call_site());
         let trait_path = quote!(#trait_module::#trait_ident);
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
-            Fields::Unnamed(ref fields) => (DeriveType::Unnamed, unnamed_to_vec(fields)),
+            Fields::Unnamed(ref fields) => {
+                (DeriveType::Unnamed, unnamed_to_vec(fields))
+            }
 
             Fields::Named(ref fields) => (DeriveType::Named, named_to_vec(fields)),
             Fields::Unit => (DeriveType::Named, vec![]),
@@ -375,7 +396,9 @@ impl<'input> State<'input> {
         self.trait_path = quote!(#trait_path<#params>)
     }
 
-    pub fn assert_single_enabled_field<'state>(&'state self) -> (SingleFieldData<'input, 'state>) {
+    pub fn assert_single_enabled_field<'state>(
+        &'state self,
+    ) -> (SingleFieldData<'input, 'state>) {
         if self.derive_type == DeriveType::Enum {
             panic_one_field(self.trait_name, &self.trait_attr);
         }
@@ -404,7 +427,9 @@ impl<'input> State<'input> {
         }
     }
 
-    pub fn enabled_fields_data<'state>(&'state self) -> (MultiFieldData<'input, 'state>) {
+    pub fn enabled_fields_data<'state>(
+        &'state self,
+    ) -> (MultiFieldData<'input, 'state>) {
         if self.derive_type == DeriveType::Enum {
             panic!(format!("can not derive({}) for enum", self.trait_name))
         }
@@ -445,7 +470,9 @@ impl<'input> State<'input> {
         }
     }
 
-    pub fn enabled_variant_data<'state>(&'state self) -> (MultiVariantData<'input, 'state>) {
+    pub fn enabled_variant_data<'state>(
+        &'state self,
+    ) -> (MultiVariantData<'input, 'state>) {
         if self.derive_type != DeriveType::Enum {
             panic!(format!("can only derive({}) for enum", self.trait_name))
         }
@@ -481,7 +508,6 @@ impl<'input> State<'input> {
             .map(|(v, _)| v)
             .collect()
     }
-
 
     fn enabled_fields(&self) -> Vec<&'input Field> {
         self.fields
@@ -619,7 +645,9 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
         } else {
             return Err(Error::new(meta.span(), "Attribute format not supported4"));
         }
-        let ident = if let Some(ident) = nested_meta.path().segments.first().map(|p| &p.ident) {
+        let ident = if let Some(ident) =
+            nested_meta.path().segments.first().map(|p| &p.ident)
+        {
             ident
         } else {
             return Err(Error::new(meta.span(), "Attribute format not supported5"));

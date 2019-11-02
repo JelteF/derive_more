@@ -27,7 +27,6 @@ struct NumRef3<'a> {
     useless: bool,
 }
 
-
 #[derive(Deref)]
 struct MyInt(i32);
 

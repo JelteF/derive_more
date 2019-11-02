@@ -10,11 +10,7 @@ use crate::utils::add_extra_where_clauses;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    parse::{
-        Error,
-        Result,
-        Parser as _,
-    },
+    parse::{Error, Parser as _, Result},
     punctuated::Punctuated,
     spanned::Spanned as _,
 };
@@ -45,9 +41,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             .map(|(ty, trait_names)| {
                 let bounds: Vec<_> = trait_names
                     .into_iter()
-                    .map(|bound| {
-                        quote!(#bound)
-                    })
+                    .map(|bound| quote!(#bound))
                     .collect();
                 quote!(#ty: #(#bounds)+*)
             })
@@ -123,7 +117,8 @@ fn attribute_name_to_trait_name(attribute_name: &str) -> &'static str {
 }
 
 fn trait_name_to_trait_bound(trait_name: &str) -> syn::TraitBound {
-    let path_segments_iterator = vec!["core", "fmt", trait_name].into_iter()
+    let path_segments_iterator = vec!["core", "fmt", trait_name]
+        .into_iter()
         .map(|segment| syn::PathSegment::from(Ident::new(segment, Span::call_site())));
 
     syn::TraitBound {
@@ -152,7 +147,10 @@ impl<'a, 'b> State<'a, 'b> {
         )
     }
     fn get_proper_bound_syntax(&self) -> impl Display {
-        format!("Proper syntax: #[{}(bound = \"T, U: Trait1 + Trait2, V: Trait3\")]", self.trait_attr)
+        format!(
+            "Proper syntax: #[{}(bound = \"T, U: Trait1 + Trait2, V: Trait3\")]",
+            self.trait_attr
+        )
     }
 
     fn get_matcher(&self, fields: &syn::Fields) -> TokenStream {
@@ -180,8 +178,13 @@ impl<'a, 'b> State<'a, 'b> {
             }
         }
     }
-    fn find_meta(&self, attrs: &[syn::Attribute], meta_key: &str) -> Result<Option<syn::Meta>> {
-        let mut iterator = attrs.iter()
+    fn find_meta(
+        &self,
+        attrs: &[syn::Attribute],
+        meta_key: &str,
+    ) -> Result<Option<syn::Meta>> {
+        let mut iterator = attrs
+            .iter()
             .filter_map(|attr| attr.parse_meta().ok())
             .filter(|meta| {
                 let meta = match meta {
@@ -213,14 +216,18 @@ impl<'a, 'b> State<'a, 'b> {
             Err(Error::new(meta.span(), "Too many attributes specified"))
         }
     }
-    fn parse_meta_bounds(&self, bounds: &syn::LitStr) -> Result<HashMap<syn::Type, HashSet<syn::TraitBound>>> {
+    fn parse_meta_bounds(
+        &self,
+        bounds: &syn::LitStr,
+    ) -> Result<HashMap<syn::Type, HashSet<syn::TraitBound>>> {
         let span = bounds.span();
 
         let input = bounds.value();
         let tokens = TokenStream::from_str(&input)?;
         let parser = Punctuated::<syn::GenericParam, syn::Token![,]>::parse_terminated;
 
-        let generic_params = parser.parse2(tokens)
+        let generic_params = parser
+            .parse2(tokens)
             .map_err(|error| Error::new(span, error.to_string()))?;
 
         if generic_params.is_empty() {
@@ -236,7 +243,10 @@ impl<'a, 'b> State<'a, 'b> {
             };
 
             if !self.type_params.contains(&type_param.ident) {
-                return Err(Error::new(span, "Unknown generic type argument specified"));
+                return Err(Error::new(
+                    span,
+                    "Unknown generic type argument specified",
+                ));
             } else if !type_param.attrs.is_empty() {
                 return Err(Error::new(span, "Attributes aren't allowed"));
             } else if type_param.eq_token.is_some() || type_param.default.is_some() {
@@ -245,7 +255,10 @@ impl<'a, 'b> State<'a, 'b> {
 
             let ident = type_param.ident.to_string();
 
-            let ty = syn::Type::Path(syn::TypePath { qself: None, path: type_param.ident.into() });
+            let ty = syn::Type::Path(syn::TypePath {
+                qself: None,
+                path: type_param.ident.into(),
+            });
             let bounds = bounds.entry(ty).or_insert_with(HashSet::new);
 
             for bound in type_param.bounds {
@@ -255,20 +268,30 @@ impl<'a, 'b> State<'a, 'b> {
                 };
 
                 if bound.lifetimes.is_some() {
-                    return Err(Error::new(span, "Higher-rank trait bounds aren't allowed"));
+                    return Err(Error::new(
+                        span,
+                        "Higher-rank trait bounds aren't allowed",
+                    ));
                 }
 
                 bounds.insert(bound);
             }
 
             if bounds.is_empty() {
-                return Err(Error::new(span, format!("No bounds specified for type parameter {}", ident)));
+                return Err(Error::new(
+                    span,
+                    format!("No bounds specified for type parameter {}", ident),
+                ));
             }
         }
 
         Ok(bounds)
     }
-    fn parse_meta_fmt(&self, meta: &syn::Meta, outer_enum: bool) -> Result<(TokenStream, bool)> {
+    fn parse_meta_fmt(
+        &self,
+        meta: &syn::Meta,
+        outer_enum: bool,
+    ) -> Result<(TokenStream, bool)> {
         let list = match meta {
             syn::Meta::List(list) => list,
             _ => {
@@ -282,7 +305,9 @@ impl<'a, 'b> State<'a, 'b> {
                 lit: syn::Lit::Str(fmt),
                 ..
             })) => match path {
-                op if op.segments.first().expect("path shouldn't be empty").ident == "fmt" => {
+                op if op.segments.first().expect("path shouldn't be empty").ident
+                    == "fmt" =>
+                {
                     if outer_enum {
                         if list.nested.iter().skip(1).count() != 0 {
                             return Err(Error::new(
@@ -292,11 +317,13 @@ impl<'a, 'b> State<'a, 'b> {
                         }
                         // TODO: Check for a single `Display` group?
                         let fmt_string = match &list.nested[0] {
-                            syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
-                                path,
-                                lit: syn::Lit::Str(s),
-                                ..
-                            })) if path
+                            syn::NestedMeta::Meta(syn::Meta::NameValue(
+                                syn::MetaNameValue {
+                                    path,
+                                    lit: syn::Lit::Str(s),
+                                    ..
+                                },
+                            )) if path
                                 .segments
                                 .first()
                                 .expect("path shouldn't be empty")
@@ -309,7 +336,8 @@ impl<'a, 'b> State<'a, 'b> {
                             _ => unreachable!(),
                         };
 
-                        let num_placeholders = Placeholder::parse_fmt_string(&fmt_string).len();
+                        let num_placeholders =
+                            Placeholder::parse_fmt_string(&fmt_string).len();
                         if num_placeholders > 1 {
                             return Err(Error::new(
                                 list.nested[1].span(),
@@ -470,12 +498,13 @@ impl<'a, 'b> State<'a, 'b> {
                 ))
             }
             syn::Data::Union(_) => {
-                let meta = self.find_meta(&self.input.attrs, "fmt")?.ok_or_else(|| {
-                    Error::new(
-                        self.input.span(),
-                        "Can not automatically infer format for unions",
-                    )
-                })?;
+                let meta =
+                    self.find_meta(&self.input.attrs, "fmt")?.ok_or_else(|| {
+                        Error::new(
+                            self.input.span(),
+                            "Can not automatically infer format for unions",
+                        )
+                    })?;
                 let fmt = self.parse_meta_fmt(&meta, false)?.0;
 
                 Ok((
@@ -516,7 +545,10 @@ impl<'a, 'b> State<'a, 'b> {
         let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
 
         for (ty, extra_bounds) in extra_bounds {
-            bounds.entry(ty).or_insert_with(HashSet::new).extend(extra_bounds);
+            bounds
+                .entry(ty)
+                .or_insert_with(HashSet::new)
+                .extend(extra_bounds);
         }
 
         Ok((arms, bounds))
@@ -539,9 +571,11 @@ impl<'a, 'b> State<'a, 'b> {
                         field
                             .ident
                             .clone()
-                            .unwrap_or_else(|| Ident::new(&format!("_{}", i), Span::call_site()))
+                            .unwrap_or_else(|| {
+                                Ident::new(&format!("_{}", i), Span::call_site())
+                            })
                             .into(),
-                        ty
+                        ty,
                     )
                 })
             })
@@ -605,7 +639,10 @@ impl<'a, 'b> State<'a, 'b> {
             },
         )
     }
-    fn infer_type_params_bounds(&self, fields: &syn::Fields) -> HashMap<syn::Type, HashSet<syn::TraitBound>> {
+    fn infer_type_params_bounds(
+        &self,
+        fields: &syn::Fields,
+    ) -> HashMap<syn::Type, HashSet<syn::TraitBound>> {
         if self.type_params.is_empty() {
             return HashMap::new();
         }
@@ -620,10 +657,12 @@ impl<'a, 'b> State<'a, 'b> {
                 self.get_type_param(&field.ty).map(|ty| {
                     (
                         ty,
-                        [trait_name_to_trait_bound(attribute_name_to_trait_name(self.trait_attr))]
-                            .iter()
-                            .cloned()
-                            .collect()
+                        [trait_name_to_trait_bound(attribute_name_to_trait_name(
+                            self.trait_attr,
+                        ))]
+                        .iter()
+                        .cloned()
+                        .collect(),
                     )
                 })
             })
@@ -632,8 +671,10 @@ impl<'a, 'b> State<'a, 'b> {
     fn get_type_param(&self, ty: &syn::Type) -> Option<syn::Type> {
         if self.has_type_param_in(ty) {
             match ty {
-                syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => Some(ty.deref().clone()),
-                ty => Some(ty.clone())
+                syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => {
+                    Some(ty.deref().clone())
+                }
+                ty => Some(ty.clone()),
             }
         } else {
             None
@@ -654,29 +695,26 @@ impl<'a, 'b> State<'a, 'b> {
                     }
                 }
 
-                ty.path.segments.iter()
-                    .any(|segment| {
-                        if let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments {
-                            arguments.args.iter().any(|argument| {
-                                match argument {
-                                    syn::GenericArgument::Type(ty) => {
-                                        self.has_type_param_in(ty)
-                                    },
-                                    syn::GenericArgument::Constraint(constraint) => {
-                                        self.type_params.contains(&constraint.ident)
-                                    },
-                                    _ => false,
-                                }
-                            })
-                        } else {
-                            false
-                        }
-                    })
-            },
+                ty.path.segments.iter().any(|segment| {
+                    if let syn::PathArguments::AngleBracketed(arguments) =
+                        &segment.arguments
+                    {
+                        arguments.args.iter().any(|argument| match argument {
+                            syn::GenericArgument::Type(ty) => {
+                                self.has_type_param_in(ty)
+                            }
+                            syn::GenericArgument::Constraint(constraint) => {
+                                self.type_params.contains(&constraint.ident)
+                            }
+                            _ => false,
+                        })
+                    } else {
+                        false
+                    }
+                })
+            }
 
-            syn::Type::Reference(ty) => {
-                self.has_type_param_in(&ty.elem)
-            },
+            syn::Type::Reference(ty) => self.has_type_param_in(&ty.elem),
 
             _ => false,
         }

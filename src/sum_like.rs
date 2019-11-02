@@ -1,6 +1,6 @@
 use crate::utils::{
-    add_extra_ty_param_bound, add_extra_where_clauses, field_idents, get_field_types, named_to_vec,
-    unnamed_to_vec,
+    add_extra_ty_param_bound, add_extra_where_clauses, field_idents, get_field_types,
+    named_to_vec, unnamed_to_vec,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -69,7 +69,11 @@ fn tuple_identity<T: ToTokens>(
     quote!(#input_type(#(::core::iter::empty::<#types>().#method_ident()),*))
 }
 
-fn struct_identity(input_type: &Ident, fields: &[&Field], method_ident: &Ident) -> TokenStream {
+fn struct_identity(
+    input_type: &Ident,
+    fields: &[&Field],
+    method_ident: &Ident,
+) -> TokenStream {
     let field_names = field_idents(fields);
     let types = &get_field_types(fields);
 

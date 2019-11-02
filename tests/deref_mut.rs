@@ -70,4 +70,3 @@ impl ::std::ops::Deref for Point1D {
         &self.x
     }
 }
-

@@ -1,5 +1,6 @@
 use crate::utils::{
-    add_extra_generic_param, add_extra_ty_param_bound_ref, RefType, SingleFieldData, State,
+    add_extra_generic_param, add_extra_ty_param_bound_ref, RefType, SingleFieldData,
+    State,
 };
 use proc_macro2::TokenStream;
 use quote::quote;

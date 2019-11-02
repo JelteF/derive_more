@@ -15,7 +15,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     #[allow(deprecated)]
     let method_name = method_name.trim_right_matches("Assign");
     let method_name = method_name.to_lowercase();
-    let method_ident = Ident::new(&(method_name.to_string() + "_assign"), Span::call_site());
+    let method_ident =
+        Ident::new(&(method_name.to_string() + "_assign"), Span::call_site());
     let input_type = &input.ident;
 
     let (exprs, fields) = match input.data {
@@ -44,8 +45,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         where #(#tys: #trait_path_iter<#scalar_iter>),*
     };
 
-    let new_generics =
-        add_where_clauses_for_new_ident(&input.generics, &fields, scalar_ident, type_where_clauses, true);
+    let new_generics = add_where_clauses_for_new_ident(
+        &input.generics,
+        &fields,
+        scalar_ident,
+        type_where_clauses,
+        true,
+    );
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 

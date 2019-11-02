@@ -1,4 +1,6 @@
-use crate::utils::{field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec};
+use crate::utils::{
+    field_idents, get_field_types, named_to_vec, numbered_vars, unnamed_to_vec,
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Field, Fields, Ident};
@@ -39,7 +41,8 @@ fn tuple_body(return_type: &Ident, fields: &[&Field]) -> (TokenStream, Vec<Ident
 }
 
 fn struct_body(return_type: &Ident, fields: &[&Field]) -> (TokenStream, Vec<Ident>) {
-    let field_names: &Vec<Ident> = &field_idents(fields).iter().map(|f| (**f).clone()).collect();
+    let field_names: &Vec<Ident> =
+        &field_idents(fields).iter().map(|f| (**f).clone()).collect();
     let vars = field_names;
     let ret_vars = field_names.clone();
     (quote!(#return_type{#(#field_names: #vars),*}), ret_vars)

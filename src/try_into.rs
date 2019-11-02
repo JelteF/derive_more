@@ -1,5 +1,6 @@
 use crate::utils::{
-    add_extra_generic_param, field_idents, named_to_vec, numbered_vars, unnamed_to_vec, RefType,
+    add_extra_generic_param, field_idents, named_to_vec, numbered_vars, unnamed_to_vec,
+    RefType,
 };
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -15,7 +16,11 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
 }
 
 #[allow(clippy::cognitive_complexity)]
-fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum, trait_name: &str) -> TokenStream {
+fn enum_try_into(
+    input: &DeriveInput,
+    data_enum: &DataEnum,
+    trait_name: &str,
+) -> TokenStream {
     let mut variants_per_types = HashMap::new();
     let (ref_type, _) = RefType::from_derive(trait_name);
     let pattern_ref = ref_type.pattern_ref();
@@ -34,8 +39,12 @@ fn enum_try_into(input: &DeriveInput, data_enum: &DataEnum, trait_name: &str) ->
 
     for variant in &data_enum.variants {
         let original_types = match variant.fields {
-            Fields::Unnamed(ref fields) => unnamed_to_vec(fields).iter().map(|f| &f.ty).collect(),
-            Fields::Named(ref fields) => named_to_vec(fields).iter().map(|f| &f.ty).collect(),
+            Fields::Unnamed(ref fields) => {
+                unnamed_to_vec(fields).iter().map(|f| &f.ty).collect()
+            }
+            Fields::Named(ref fields) => {
+                named_to_vec(fields).iter().map(|f| &f.ty).collect()
+            }
             Fields::Unit => vec![],
         };
         variants_per_types
