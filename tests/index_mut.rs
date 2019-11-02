@@ -18,30 +18,13 @@ where
 
 #[derive(IndexMut)]
 struct Numbers {
+    #[index_mut]
     numbers: Vec<i32>,
-}
-
-//Index implementation is required for IndexMut
-impl<__IdxT> ::core::ops::Index<__IdxT> for Numbers
-where
-    Vec<i32>: ::core::ops::Index<__IdxT>,
-{
-    type Output = <Vec<i32> as ::core::ops::Index<__IdxT>>::Output;
-    #[inline]
-    fn index(&self, idx: __IdxT) -> &Self::Output {
-        <Vec<i32> as ::core::ops::Index<__IdxT>>::index(&self.numbers, idx)
-    }
-}
-
-#[derive(IndexMut)]
-struct Numbers2 {
-    numbers: Vec<i32>,
-    #[index_mut(ignore)]
     useless: bool,
 }
 
 //Index implementation is required for IndexMut
-impl<__IdxT> ::core::ops::Index<__IdxT> for Numbers2
+impl<__IdxT> ::core::ops::Index<__IdxT> for Numbers
 where
     Vec<i32>: ::core::ops::Index<__IdxT>,
 {

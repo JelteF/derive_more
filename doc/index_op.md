@@ -1,7 +1,10 @@
 % What #[derive(Index)] generates
 
-Deriving `Index` only works for structs with only a single field, e.g.
-newtypes. The result is that you will index it's member directly.
+Deriving `Index` only works only works for a single field of a struct.
+The result is that you will index it's member directly.
+
+With `#[index]` or `#[index(ignore)]` it's possible to indicate the field that
+you want to derive `Index` for.
 
 # Example usage
 
@@ -10,54 +13,32 @@ newtypes. The result is that you will index it's member directly.
 #[derive(Index)]
 struct MyVec(Vec<i32>);
 
+// You can specify the field you want to derive Index for
 #[derive(Index)]
 struct Numbers {
+    #[index]
     numbers: Vec<i32>,
+    useless: bool,
 }
 
 fn main() {
     assert_eq!(5, MyVec(vec![5, 8])[0]);
-    assert_eq!(200, Numbers{numbers: vec![100, 200]}[1]);
+    assert_eq!(200, Numbers{numbers: vec![100, 200], useless: false}[1]);
 }
 ```
 
-# Tuple structs
+# Structs
 
-When deriving `Index` for a tuple struct with one field:
-
-```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
-#[derive(Index)]
-struct MyVec(Vec<i32>);
-```
-
-Code like this will be generated:
-
-```rust
-# struct MyVec(Vec<i32>);
-impl<__IdxT> ::std::ops::Index<__IdxT> for MyVec
-where
-    Vec<i32>: ::std::ops::Index<__IdxT>,
-{
-    type Output = <Vec<i32> as ::std::ops::Index<__IdxT>>::Output;
-    #[inline]
-    fn index(&self, idx: __IdxT) -> &Self::Output {
-        <Vec<i32> as ::std::ops::Index<__IdxT>>::index(&self.0, idx)
-    }
-}
-```
-
-# Regular structs
-
-When deriving `Index` for a regular struct with one field:
+When deriving `Index` for a struct:
 
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Index)]
 struct Numbers {
+    #[index]
     numbers: Vec<i32>,
+    useless: bool,
 }
 ```
 
@@ -66,17 +47,19 @@ Code like this will be generated:
 ```rust
 # struct Numbers {
 #     numbers: Vec<i32>,
+#     useless: bool,
 # }
-impl<__IdxT> ::std::ops::Index<__IdxT> for Numbers
+impl<__IdxT> ::core::ops::Index<__IdxT> for Numbers
 where
-    Vec<i32>: ::std::ops::Index<__IdxT>,
+    Vec<i32>: ::core::ops::Index<__IdxT>,
 {
-    type Output = <Vec<i32> as ::std::ops::Index<__IdxT>>::Output;
+    type Output = <Vec<i32> as ::core::ops::Index<__IdxT>>::Output;
     #[inline]
     fn index(&self, idx: __IdxT) -> &Self::Output {
-        <Vec<i32> as ::std::ops::Index<__IdxT>>::index(&self.numbers, idx)
+        <Vec<i32> as ::core::ops::Index<__IdxT>>::index(&self.numbers, idx)
     }
 }
+
 ```
 
 # Enums

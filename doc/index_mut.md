@@ -1,9 +1,12 @@
 % What #[derive(IndexMut)] generates
 
-Deriving `IndexMut` only works for structs with only a single field, e.g.
-newtypes. Furthermore it requires that the type also implements `Index`, so
-usually `Index` should also be derived. The result is that you will mutably
-index it's member directly.
+Deriving `IndexMut` only works only works for a single field of a struct.
+Furthermore it requires that the type also implements `Index`, so usually
+`Index` should also be derived.
+The result is that you will mutably index it's member directly.
+
+With `#[index_mut]` or `#[index_mut(ignore)]` it's possible to indicate the
+field that you want to derive `IndexMut` for.
 
 # Example usage
 
@@ -14,7 +17,10 @@ struct MyVec(Vec<i32>);
 
 #[derive(Index, IndexMut)]
 struct Numbers {
+    #[index]
+    #[index_mut]
     numbers: Vec<i32>,
+    useless: bool,
 }
 
 fn main() {
@@ -22,58 +28,25 @@ fn main() {
     myvec[0] = 50;
     assert_eq!(50, myvec[0]);
 
-    let mut numbers = Numbers{numbers: vec![100, 200]};
+    let mut numbers = Numbers{numbers: vec![100, 200], useless: false};
     numbers[1] = 400;
     assert_eq!(400, numbers[1]);
 }
 ```
 
-# Tuple structs
-
-When deriving `IndexMut` for a tuple struct with one field:
-
-```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
-#[derive(Index, IndexMut)]
-struct MyVec(Vec<i32>);
-```
-
-Code like this will be generated to implement `IndexMut`:
-
-```rust
-# struct MyVec(Vec<i32>);
-# impl<__IdxT> ::std::ops::Index<__IdxT> for MyVec
-# where
-#     Vec<i32>: ::std::ops::Index<__IdxT>,
-# {
-#     type Output = <Vec<i32> as ::std::ops::Index<__IdxT>>::Output;
-#     #[inline]
-#     fn index(&self, idx: __IdxT) -> &Self::Output {
-#         <Vec<i32> as ::std::ops::Index<__IdxT>>::index(&self.0, idx)
-#     }
-# }
-impl<__IdxT> ::std::ops::IndexMut<__IdxT> for MyVec
-where
-    Vec<i32>: ::std::ops::IndexMut<__IdxT>,
-{
-    #[inline]
-    fn index_mut(&mut self, idx: __IdxT) -> &mut Self::Output {
-        <Vec<i32> as ::std::ops::IndexMut<__IdxT>>::index_mut(&mut self.0, idx)
-    }
-}
-```
-
 # Regular structs
 
-When deriving `IndexMut` for a regular struct with one field:
+When deriving `IndexMut` for a struct:
 
 ```rust
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Index, IndexMut)]
 struct Numbers {
+    #[index]
+    #[index_mut]
     numbers: Vec<i32>,
+    useless: bool,
 }
 ```
 
@@ -82,27 +55,27 @@ Code like this will be generated to implement `IndexMut`:
 ```rust
 # struct Numbers {
 #     numbers: Vec<i32>,
+#     useless: bool,
 # }
-# impl<__IdxT> ::std::ops::Index<__IdxT> for Numbers
+# impl<__IdxT> ::core::ops::Index<__IdxT> for Numbers
 # where
-#     Vec<i32>: ::std::ops::Index<__IdxT>,
+#     Vec<i32>: ::core::ops::Index<__IdxT>,
 # {
-#     type Output = <Vec<i32> as ::std::ops::Index<__IdxT>>::Output;
+#     type Output = <Vec<i32> as ::core::ops::Index<__IdxT>>::Output;
 #     #[inline]
 #     fn index(&self, idx: __IdxT) -> &Self::Output {
-#         <Vec<i32> as ::std::ops::Index<__IdxT>>::index(&self.numbers, idx)
+#         <Vec<i32> as ::core::ops::Index<__IdxT>>::index(&self.numbers, idx)
 #     }
 # }
-impl<__IdxT> ::std::ops::IndexMut<__IdxT> for Numbers
+impl<__IdxT> ::core::ops::IndexMut<__IdxT> for Numbers
 where
-    Vec<i32>: ::std::ops::IndexMut<__IdxT>,
+    Vec<i32>: ::core::ops::IndexMut<__IdxT>,
 {
     #[inline]
     fn index_mut(&mut self, idx: __IdxT) -> &mut Self::Output {
-        <Vec<i32> as ::std::ops::IndexMut<__IdxT>>::index_mut(&mut self.numbers, idx)
+        <Vec<i32> as ::core::ops::IndexMut<__IdxT>>::index_mut(&mut self.numbers, idx)
     }
 }
-
 ```
 
 # Enums
