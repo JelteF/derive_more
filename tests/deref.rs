@@ -43,8 +43,8 @@ struct Point1D2 {
 }
 
 #[derive(Deref)]
-struct Point1D3 {
+struct CoolVec {
+    cool: bool,
     #[deref]
-    x: i32,
-    useless: bool,
+    vec: Vec<i32>,
 }
