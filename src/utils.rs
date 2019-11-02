@@ -411,7 +411,7 @@ impl<'input> State<'input> {
             field: data.fields[0],
             field_type: data.field_types[0],
             member: data.members[0].clone(),
-            info: data.infos[0].clone(),
+            info: data.infos[0],
             field_ident: data.field_idents[0].clone(),
             trait_path: data.trait_path,
             casted_trait: data.casted_traits[0].clone(),
