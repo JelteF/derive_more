@@ -417,7 +417,7 @@ impl<'input> State<'input> {
             casted_trait: data.casted_traits[0].clone(),
             impl_generics: data.impl_generics.clone(),
             ty_generics: data.ty_generics.clone(),
-            where_clause: data.where_clause.clone(),
+            where_clause: data.where_clause,
             multi_field_data: data,
         }
     }
