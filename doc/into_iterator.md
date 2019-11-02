@@ -1,0 +1,67 @@
+% Using #[derive(IntoIterator)] generates
+
+Deriving `IntoIterator` only works for a single field of a struct.
+The result is that you will call `.into_iter()` on this field directly.
+
+With `#[into_iterator]` or `#[into_iterator(ignore)]` it's possible to indicate
+the field that you want to derive `Index` for.
+
+# Example usage
+
+```rust
+# #[macro_use] extern crate derive_more;
+#[derive(Index)]
+struct MyVec(Vec<i32>);
+
+// You can specify the field you want to derive Index for
+#[derive(Index)]
+struct Numbers {
+    #[index]
+    numbers: Vec<i32>,
+    useless: bool,
+}
+
+fn main() {
+    assert_eq!(5, MyVec(vec![5, 8])[0]);
+    assert_eq!(200, Numbers{numbers: vec![100, 200], useless: false}[1]);
+}
+```
+
+# Structs
+
+When deriving `Index` for a struct:
+
+```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+#[derive(Index)]
+struct Numbers {
+    #[index]
+    numbers: Vec<i32>,
+    useless: bool,
+}
+```
+
+Code like this will be generated:
+
+```rust
+# struct Numbers {
+#     numbers: Vec<i32>,
+#     useless: bool,
+# }
+impl<__IdxT> ::core::ops::Index<__IdxT> for Numbers
+where
+    Vec<i32>: ::core::ops::Index<__IdxT>,
+{
+    type Output = <Vec<i32> as ::core::ops::Index<__IdxT>>::Output;
+    #[inline]
+    fn index(&self, idx: __IdxT) -> &Self::Output {
+        <Vec<i32> as ::core::ops::Index<__IdxT>>::index(&self.numbers, idx)
+    }
+}
+
+```
+
+# Enums
+
+Deriving `Index` is not supported for enums.
