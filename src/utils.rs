@@ -398,7 +398,7 @@ impl<'input> State<'input> {
 
     pub fn assert_single_enabled_field<'state>(
         &'state self,
-    ) -> (SingleFieldData<'input, 'state>) {
+    ) -> SingleFieldData<'input, 'state> {
         if self.derive_type == DeriveType::Enum {
             panic_one_field(self.trait_name, &self.trait_attr);
         }
@@ -429,7 +429,7 @@ impl<'input> State<'input> {
 
     pub fn enabled_fields_data<'state>(
         &'state self,
-    ) -> (MultiFieldData<'input, 'state>) {
+    ) -> MultiFieldData<'input, 'state> {
         if self.derive_type == DeriveType::Enum {
             panic!(format!("can not derive({}) for enum", self.trait_name))
         }
@@ -472,7 +472,7 @@ impl<'input> State<'input> {
 
     pub fn enabled_variant_data<'state>(
         &'state self,
-    ) -> (MultiVariantData<'input, 'state>) {
+    ) -> MultiVariantData<'input, 'state> {
         if self.derive_type != DeriveType::Enum {
             panic!(format!("can only derive({}) for enum", self.trait_name))
         }
@@ -509,7 +509,7 @@ impl<'input> State<'input> {
             .collect()
     }
 
-    fn enabled_fields(&self) -> Vec<&'input Field> {
+    pub fn enabled_fields(&self) -> Vec<&'input Field> {
         self.fields
             .iter()
             .zip(self.full_meta_infos.iter().map(|info| info.enabled))

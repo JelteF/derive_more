@@ -1,36 +1,51 @@
-use crate::utils::{add_extra_ty_param_bound, named_to_vec, unnamed_to_vec};
+use crate::utils::{DeriveType, SingleFieldData, State};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Field, Fields, Ident, Type};
+use syn::{parse::Result, DeriveInput};
 
-/// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `From`
-pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
-    let trait_path = &quote!(::core::str::FromStr);
-    let generics = add_extra_ty_param_bound(&input.generics, trait_path);
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-    let input_type = &input.ident;
-    let (result, field_type) = match input.data {
-        Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => {
-                tuple_from_str(input_type, trait_name, &unnamed_to_vec(fields))
-            }
-            Fields::Named(ref fields) => {
-                struct_from_str(input_type, trait_name, &named_to_vec(fields))
-            }
-            Fields::Unit => panic_one_field(trait_name),
-        },
-        _ => panic_one_field(trait_name),
+/// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `FromStr`
+pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    let state = State::new(
+        input,
+        trait_name,
+        quote!(::core::str),
+        trait_name.to_lowercase(),
+    )?;
+
+    // We cannot set defaults for fields, once we do we can remove this check
+    if state.fields.len() != 1 || state.enabled_fields().len() != 1 {
+        panic_one_field(trait_name);
+    }
+
+    let SingleFieldData {
+        input_type,
+        field_type,
+        field_ident,
+        trait_path,
+        casted_trait,
+        impl_generics,
+        ty_generics,
+        where_clause,
+        ..
+    } = state.assert_single_enabled_field();
+
+    let initializer = quote!(#casted_trait::from_str(src)?);
+    let body = if state.derive_type == DeriveType::Named {
+        quote!(#input_type{#field_ident: #initializer})
+    } else {
+        quote!(#input_type(#initializer))
     };
-    quote! {
+
+    Ok(quote! {
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
         {
             type Err = <#field_type as #trait_path>::Err;
             #[inline]
             fn from_str(src: &str) -> ::core::result::Result<Self, Self::Err> {
-                return ::core::result::Result::Ok(#result)
+                Ok(#body)
             }
         }
-    }
+    })
 }
 
 fn panic_one_field(trait_name: &str) -> ! {
@@ -38,34 +53,4 @@ fn panic_one_field(trait_name: &str) -> ! {
         "Only structs with one field can derive({})",
         trait_name
     ))
-}
-
-fn tuple_from_str<'a>(
-    input_type: &Ident,
-    trait_name: &str,
-    fields: &[&'a Field],
-) -> (TokenStream, &'a Type) {
-    if fields.len() != 1 {
-        panic_one_field(trait_name)
-    };
-    let field = &fields[0];
-    let field_type = &field.ty;
-    (quote!(#input_type(#field_type::from_str(src)?)), field_type)
-}
-
-fn struct_from_str<'a>(
-    input_type: &Ident,
-    trait_name: &str,
-    fields: &[&'a Field],
-) -> (TokenStream, &'a Type) {
-    if fields.len() != 1 {
-        panic_one_field(trait_name)
-    };
-    let field = &fields[0];
-    let field_type = &field.ty;
-    let field_ident = &field.ident;
-    (
-        quote!(#input_type{#field_ident: #field_type::from_str(src)?}),
-        field_type,
-    )
 }
