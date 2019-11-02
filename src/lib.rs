@@ -110,7 +110,7 @@
 //!
 //! These don't derive traits, but derive static methods instead.
 //!
-//! 1. `Constructor`, this derives a `new` method that can be used as a constructor.
+//! 1. [`Constructor`], this derives a `new` method that can be used as a constructor.
 //!    This is very basic if you need more customization for your constructor, check
 //!    out the [`derive-new`] crate.
 //!
