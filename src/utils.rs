@@ -73,13 +73,6 @@ impl RefType {
             _ => true,
         }
     }
-    pub fn attr_suffix(self) -> &'static str {
-        match self {
-            RefType::Ref => "_ref",
-            RefType::Mut => "_ref_mut",
-            RefType::No => "",
-        }
-    }
 }
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
