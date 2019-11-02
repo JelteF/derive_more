@@ -3,8 +3,8 @@
 Deriving `Deref` only works for a single field of a struct. It's possible to use
 it in two ways:
 
-1. Dereferencing to the field (for normal types, like `i32` and `Vec`)
-2. Does a dereference on the field (for reference types like `&` and `Box`)
+1. Dereferencing to the field, i.e. like if your type was a reference type.
+2. Doing a dereference on the field, for when the field itself is a reference type like `&` and `Box`.
 
 With `#[deref]` or `#[deref(ignore)]` it's possible to indicate the field that
 you want to derive `Deref` for.

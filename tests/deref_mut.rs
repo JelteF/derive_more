@@ -70,3 +70,17 @@ impl ::std::ops::Deref for Point1D {
         &self.x
     }
 }
+
+#[derive(DerefMut)]
+struct CoolVec {
+    cool: bool,
+    #[deref_mut]
+    vec: Vec<i32>,
+}
+impl ::core::ops::Deref for CoolVec {
+    type Target = Vec<i32>;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.vec
+    }
+}
