@@ -33,6 +33,68 @@ i.e. `_0`, `_1`, `_2`, etc.
 The syntax does not change, but the name of the attribute is the snake case version of the trait.
 E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
 
+# Generic data types
+
+When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type 
+arguments used during formatting are bound by respective formatting trait.
+
+E.g., for a structure `Foo` defined like this:
+```rust
+# #[macro_use] extern crate derive_more;
+# trait Trait { type Type; }
+
+#[derive(Display)]
+#[display(fmt = "{} {} {:?} {:p}", a, b, c, d)]
+struct Foo<'a, T1, T2: Trait, T3> {
+    a: T1,
+    b: <T2 as Trait>::Type,
+    c: Vec<T3>,
+    d: &'a T1,
+}
+```
+
+The following where clauses would be generated:
+* `T1: Display + Pointer`
+* `<T2 as Trait>::Type: Debug`
+* `Bar<T3>: Display`
+
+## Custom trait bounds
+
+Sometimes you may want to specify additional trait bounds on your generic type parameters, so that they
+could be used during formatting. This can be done with a `#[display(bound = "...")]` attribute.
+
+`#[display(bound = "...")]` accepts a single string argument in a format similar to the format 
+used in angle bracket list: `T: MyTrait, U: Trait1 + Trait2`.
+
+Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
+by traits, i.e. no lifetime parameters or lifetime bounds allowed in bound-string.
+
+As double-quote `fmt` arguments are parsed as an arbitrary Rust expression and passed to generated
+`write!` as-is, it's impossible to meaningfully infer any kind of trait bounds for generic type parameters
+used this way. That means that you'll **have to** explicitly specify all trait bound used. Either in the
+struct/enum definition, or via `#[display(bound = "...")]` attribute.
+
+Note how we have to bound `U` and `V` by `Display` in the following example, as no bound is inferred.
+Not even `Display`. 
+
+Also note, that `"c"` case is just a curious example. Bound inference works as expected if you simply 
+write `c` without double-quotes.
+
+```rust
+# #[macro_use] extern crate derive_more;
+# use std::fmt::Display;
+# trait MyTrait { fn my_function(&self) -> i32; }
+
+#[derive(Display)]
+#[display(bound = "T: MyTrait, U: Display, V: Display")]
+#[display(fmt = "{} {} {}", "a.my_function()", "b.to_string().len()", "c")] 
+struct MyStruct<T, U, V> {
+    a: T,
+    b: U,
+    c: V,
+}
+```
+
 # Example usage
 
 ```rust

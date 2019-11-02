@@ -339,4 +339,60 @@ mod generic {
             assert_eq!(s.to_string(), "10");
         }
     }
+
+    mod bound {
+        use super::*;
+
+        #[test]
+        fn simple() {
+            #[derive(Display)]
+            #[display(fmt = "{} {}", _0, _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[test]
+        fn redundant() {
+            #[derive(Display)]
+            #[display(bound = "T1: ::std::fmt::Display, T2: ::std::fmt::Display")]
+            #[display(fmt = "{} {}", _0, _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[test]
+        fn complex() {
+            trait Trait1 {
+                fn function1(&self) -> &'static str;
+            }
+
+            trait Trait2 {
+                fn function2(&self) -> &'static str;
+            }
+
+            impl Trait1 for i32 {
+                fn function1(&self) -> &'static str {
+                    "WHAT"
+                }
+            }
+
+            impl Trait2 for i32 {
+                fn function2(&self) -> &'static str {
+                    "EVER"
+                }
+            }
+
+            #[derive(Display)]
+            #[display(bound = "T1: Trait1 + Trait2, T2: Trait1 + Trait2")]
+            #[display(fmt = "{} {} {} {}", "_0.function1()", _0, "_1.function2()", _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "WHAT 10 EVER 20");
+        }
+    }
 }
