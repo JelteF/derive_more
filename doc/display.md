@@ -125,9 +125,11 @@ enum E {
 }
 
 #[derive(Display)]
-#[display(fmt = "Java EE")]
+#[display(fmt = "Java EE: {}")]
 enum EE {
+    #[display(fmt="A")]
     A,
+    #[display(fmt="B")]
     B,
 }
 
@@ -158,8 +160,8 @@ fn main() {
     assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
     #[cfg(feature = "nightly")]
     assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
-    assert_eq!(EE::A.to_string(), "Java EE");
-    assert_eq!(EE::B.to_string(), "Java EE");
+    assert_eq!(EE::A.to_string(), "Java EE: A");
+    assert_eq!(EE::B.to_string(), "Java EE: B");
     assert_eq!(U { i: 2 }.to_string(), "Hello there!");
     assert_eq!(format!("{:o}", S), "7");
     assert_eq!(format!("{:X}", UH), "UpperHex");
