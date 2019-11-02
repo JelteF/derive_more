@@ -447,16 +447,17 @@ impl<'input> State<'input> {
             .collect();
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
         let input_type = &self.input.ident;
-        let variant_type = self.variant.map_or_else(
-            || quote!(#input_type),
+        let (variant_name, variant_type) = self.variant.map_or_else(
+            || (None, quote!(#input_type)),
             |v| {
                 let variant_name = &v.ident;
-                quote!(#input_type::#variant_name)
+                (Some(variant_name), quote!(#input_type::#variant_name))
             },
         );
         MultiFieldData {
             input_type,
             variant_type,
+            variant_name,
             fields,
             field_types,
             members,
@@ -467,6 +468,7 @@ impl<'input> State<'input> {
             impl_generics,
             ty_generics,
             where_clause,
+            state: self,
         }
     }
 
@@ -573,6 +575,7 @@ pub struct SingleFieldData<'input, 'state> {
 pub struct MultiFieldData<'input, 'state> {
     pub input_type: &'input Ident,
     pub variant_type: TokenStream,
+    pub variant_name: Option<&'input Ident>,
     pub fields: Vec<&'input Field>,
     pub field_types: Vec<&'input Type>,
     pub field_idents: Vec<Box<dyn ToTokens>>,
@@ -583,6 +586,7 @@ pub struct MultiFieldData<'input, 'state> {
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
     pub where_clause: Option<&'state WhereClause>,
+    pub state: &'state State<'input>,
 }
 
 pub struct MultiVariantData<'input, 'state> {

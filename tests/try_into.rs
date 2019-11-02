@@ -18,6 +18,10 @@ enum MixedInts {
     Unsigned(u32),
     NamedUnsigned { x: u32 },
     Unit,
+    #[try_into(ignore)]
+    #[try_into_ref(ignore)]
+    #[try_into_ref_mut(ignore)]
+    Unit2,
 }
 
 #[test]

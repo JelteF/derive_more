@@ -1,28 +1,27 @@
 use crate::utils::{
-    add_extra_generic_param, field_idents, named_to_vec, numbered_vars, unnamed_to_vec,
-    RefType,
+    add_extra_generic_param, numbered_vars, DeriveType, MultiFieldData, RefType, State,
 };
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use std::collections::HashMap;
-use syn::{Data, DataEnum, DeriveInput, Fields};
+use syn::{DeriveInput, Result};
 
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
-pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
-    match input.data {
-        Data::Enum(ref data_enum) => enum_try_into(input, data_enum, trait_name),
-        _ => panic!("Only enums can derive TryInto"),
-    }
-}
-
 #[allow(clippy::cognitive_complexity)]
-fn enum_try_into(
-    input: &DeriveInput,
-    data_enum: &DataEnum,
-    trait_name: &str,
-) -> TokenStream {
-    let mut variants_per_types = HashMap::new();
+pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let (ref_type, _) = RefType::from_derive(trait_name);
+
+    let state = State::new(
+        input,
+        trait_name,
+        quote!(::core::convert),
+        String::from("try_into") + ref_type.attr_suffix(),
+    )?;
+    if state.derive_type != DeriveType::Enum {
+        panic!("Only enums can derive TryInto");
+    }
+
+    let mut variants_per_types = HashMap::new();
     let pattern_ref = ref_type.pattern_ref();
     let lifetime = ref_type.lifetime();
     let reference_with_lifetime = ref_type.reference_with_lifetime();
@@ -37,39 +36,32 @@ fn enum_try_into(
     };
     let input_type = &input.ident;
 
-    for variant in &data_enum.variants {
-        let original_types = match variant.fields {
-            Fields::Unnamed(ref fields) => {
-                unnamed_to_vec(fields).iter().map(|f| &f.ty).collect()
-            }
-            Fields::Named(ref fields) => {
-                named_to_vec(fields).iter().map(|f| &f.ty).collect()
-            }
-            Fields::Unit => vec![],
-        };
+    for variant_state in state.enabled_variant_data().variant_states {
+        let multi_field_data = variant_state.enabled_fields_data();
         variants_per_types
-            .entry(original_types)
+            .entry(multi_field_data.field_types.clone())
             .or_insert_with(Vec::new)
-            .push(variant);
+            .push(multi_field_data);
     }
 
     let mut tokens = TokenStream::new();
 
-    for (ref original_types, ref variants) in variants_per_types {
+    for (ref original_types, ref multi_field_datas) in variants_per_types {
         let mut matchers = vec![];
         let vars = &numbered_vars(original_types.len(), "");
-        for variant in variants.iter() {
-            let subtype = &variant.ident;
-            let subtype = quote!(#input_type::#subtype);
-            matchers.push(match variant.fields {
-                Fields::Unnamed(_) => quote!(#subtype(#(#pattern_ref #vars),*)),
-                Fields::Named(ref fields) => {
-                    let field_vec = &named_to_vec(fields);
-                    let field_names = &field_idents(field_vec);
-                    quote!(#subtype{#(#field_names: #pattern_ref #vars),*})
-                }
-                Fields::Unit => quote!(#subtype),
-            });
+        for multi_field_data in multi_field_datas {
+            let MultiFieldData {
+                variant_type,
+                field_idents,
+                state,
+                ..
+            } = multi_field_data;
+            let body = if state.derive_type == DeriveType::Named {
+                quote!(#variant_type{#(#field_idents: #pattern_ref #vars),*})
+            } else {
+                quote!(#variant_type(#(#pattern_ref #vars),*))
+            };
+            matchers.push(body);
         }
 
         let vars = if vars.len() == 1 {
@@ -87,12 +79,18 @@ fn enum_try_into(
                 .collect::<Vec<_>>();
             format!("({})", types.join(", "))
         };
-        let variants = variants
+        let variant_names = multi_field_datas
             .iter()
-            .map(|v| format!("{}", v.ident))
+            .map(|d| {
+                format!(
+                    "{}",
+                    d.variant_name.expect("Somehow there was no variant name")
+                )
+            })
             .collect::<Vec<_>>()
             .join(", ");
-        let message = format!("Only {} can be converted to {}", variants, output_type);
+        let message =
+            format!("Only {} can be converted to {}", variant_names, output_type);
 
         let try_from = quote! {
             impl#impl_generics ::core::convert::TryFrom<#reference_with_lifetime #input_type#ty_generics> for
@@ -111,5 +109,5 @@ fn enum_try_into(
         };
         try_from.to_tokens(&mut tokens)
     }
-    tokens
+    Ok(tokens)
 }
