@@ -1,35 +1,79 @@
-% What #[derive(Deref)] generates
+% Using #[derive(Deref)]
 
-Deriving `Deref` only works for structs with a single field, e.g.
-newtypes. The result is that you will deref it's member directly. So this is
-mostly useful for newtypes that contain a pointer type such as `Box` or `Rc`.
+Deriving `Deref` only works for a single field of a struct. It's possible to use
+it in two ways:
+
+1. Dereferencing to the field (for normal types, like `i32` and `Vec`)
+2. Does a dereference on the field (for reference types like `&` and `Box`)
+
+With `#[deref]` or `#[deref(ignore)]` it's possible to indicate the field that
+you want to derive `Deref` for.
 
 # Example usage
 
 ```rust
 # #[macro_use] extern crate derive_more;
+
+#[derive(Deref)]
+struct Num {
+    num: i32,
+}
+
 #[derive(Deref)]
 #[deref(forward)]
 struct MyBoxedInt(Box<i32>);
 
+// You can specify the field you want to derive Deref for
 #[derive(Deref)]
-#[deref(forward)]
-struct NumRef<'a> {
-    num: &'a i32,
+struct CoolVec {
+    cool: bool,
+    #[deref]
+    vec: Vec<i32>,
 }
 
 fn main() {
-    let int = 123i32;
-    let boxed = MyBoxedInt(Box::new(int));
-    let num_ref = NumRef{num: &int};
+    let num = Num{num: 123};
+    let boxed = MyBoxedInt(Box::new(123));
+    let cool_vec = CoolVec{cool: true, vec: vec![123]};
+    assert_eq!(123, *num);
     assert_eq!(123, *boxed);
-    assert_eq!(123, *num_ref);
+    assert_eq!(vec![123], *cool_vec);
 }
 ```
 
-# Tuple structs
+# Structs
 
-When deriving `Deref` for a tuple struct with one field:
+When deriving a non-forwarded `Deref` for a struct:
+
+```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+#[derive(Deref)]
+struct CoolVec {
+    cool: bool,
+    #[deref]
+    vec: Vec<i32>,
+}
+```
+
+Code like this will be generated:
+
+```rust
+# struct CoolVec {
+#     cool: bool,
+#     vec: Vec<i32>,
+# }
+impl ::core::ops::Deref for CoolVec {
+    type Target = Vec<i32>;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.vec
+    }
+}
+```
+
+
+When deriving a forwarded `Deref` for a struct:
 
 ```rust
 # #[macro_use] extern crate derive_more;
@@ -43,40 +87,11 @@ Code like this will be generated:
 
 ```rust
 # struct MyBoxedInt(Box<i32>);
-impl ::std::ops::Deref for MyBoxedInt {
-    type Target = <Box<i32> as ::std::ops::Deref>::Target;
+impl ::core::ops::Deref for MyBoxedInt {
+    type Target = <Box<i32> as ::core::ops::Deref>::Target;
     #[inline]
     fn deref(&self) -> &Self::Target {
-        <Box<i32> as ::std::ops::Deref>::deref(&self.0)
-    }
-}
-```
-
-# Regular structs
-
-When deriving `Deref` for a regular struct with one field:
-
-```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
-#[derive(Deref)]
-#[deref(forward)]
-struct NumRef<'a> {
-    num: &'a i32,
-}
-```
-
-Code like this will be generated:
-
-```rust
-# struct NumRef<'a> {
-#     num: &'a i32,
-# }
-impl<'a> ::std::ops::Deref for NumRef<'a> {
-    type Target = <&'a i32 as ::std::ops::Deref>::Target;
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        <&'a i32 as ::std::ops::Deref>::deref(&self.num)
+        <Box<i32> as ::core::ops::Deref>::deref(&self.0)
     }
 }
 ```
