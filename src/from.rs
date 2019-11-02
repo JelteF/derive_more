@@ -21,6 +21,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 }
 
 pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
+    let multi_field_data = state.enabled_fields_data();
     let MultiFieldData {
         variant_type,
         fields,
@@ -29,7 +30,7 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
         input_type,
         trait_path,
         ..
-    } = state.enabled_fields_data();
+    } = multi_field_data.clone();
 
     let mut new_generics = input.generics.clone();
     let sub_items: Vec<_> = infos
@@ -65,13 +66,10 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
             }
         })
         .collect();
-    let initializers = sub_items.iter().map(|i| &i.0);
+    let initializers: Vec<_> = sub_items.iter().map(|i| &i.0).collect();
     let from_types: Vec<_> = sub_items.iter().map(|i| &i.1).collect();
-    let body = if state.derive_type == DeriveType::Named {
-        quote!(#variant_type{#(#field_idents: #initializers),*})
-    } else {
-        quote!(#variant_type(#(#initializers),*))
-    };
+
+    let body = multi_field_data.initializer(&initializers);
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 

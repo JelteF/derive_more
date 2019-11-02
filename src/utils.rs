@@ -402,34 +402,27 @@ impl<'input> State<'input> {
         if self.derive_type == DeriveType::Enum {
             panic_one_field(self.trait_name, &self.trait_attr);
         }
-        let enabled_fields = self.enabled_fields();
-        if enabled_fields.len() != 1 {
+        let data = self.enabled_fields_data();
+        if data.fields.len() != 1 {
             panic_one_field(self.trait_name, &self.trait_attr);
         };
-        let mut field_idents = self.enabled_fields_idents();
-        let field_type = &enabled_fields[0].ty;
-        let trait_path = &self.trait_path;
-        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
-        let field_ident = field_idents.remove(0);
-        let field_ident_ref = &field_ident;
         SingleFieldData {
-            input_type: &self.input.ident,
-            field: enabled_fields[0],
-            field_type,
-            member: quote!(self.#field_ident_ref),
-            info: self.enabled_infos()[0],
-            field_ident,
-            trait_path,
-            casted_trait: quote!(<#field_type as #trait_path>),
-            impl_generics,
-            ty_generics,
-            where_clause,
+            input_type: data.input_type,
+            field: data.fields[0],
+            field_type: data.field_types[0],
+            member: data.members[0].clone(),
+            info: data.infos[0].clone(),
+            field_ident: data.field_idents[0].clone(),
+            trait_path: data.trait_path,
+            casted_trait: data.casted_traits[0].clone(),
+            impl_generics: data.impl_generics.clone(),
+            ty_generics: data.ty_generics.clone(),
+            where_clause: data.where_clause.clone(),
+            multi_field_data: data,
         }
     }
 
-    pub fn enabled_fields_data<'state>(
-        &'state self,
-    ) -> MultiFieldData<'input, 'state> {
+    pub fn enabled_fields_data<'state>(&'state self) -> MultiFieldData<'input, 'state> {
         if self.derive_type == DeriveType::Enum {
             panic!(format!("can not derive({}) for enum", self.trait_name))
         }
@@ -520,28 +513,26 @@ impl<'input> State<'input> {
             .collect()
     }
 
-    fn field_idents(&self) -> Vec<Box<dyn ToTokens>> {
+    fn field_idents(&self) -> Vec<TokenStream> {
         if self.derive_type == DeriveType::Named {
             self.fields
                 .iter()
                 .map(|f| {
-                    Box::new(
                         f.ident
                             .as_ref()
                             .expect("Tried to get field names of a tuple struct")
-                            .clone(),
-                    ) as Box<dyn ToTokens>
+                            .to_token_stream()
                 })
                 .collect()
         } else {
             let count = self.fields.len();
             (0..count)
-                .map(|i| Box::new(Index::from(i)) as Box<dyn ToTokens>)
+                .map(|i| Index::from(i).to_token_stream())
                 .collect()
         }
     }
 
-    fn enabled_fields_idents(&self) -> Vec<Box<dyn ToTokens>> {
+    fn enabled_fields_idents(&self) -> Vec<TokenStream> {
         self.field_idents()
             .into_iter()
             .zip(self.full_meta_infos.iter().map(|info| info.enabled))
@@ -558,11 +549,12 @@ impl<'input> State<'input> {
     }
 }
 
+#[derive(Clone)]
 pub struct SingleFieldData<'input, 'state> {
     pub input_type: &'input Ident,
     pub field: &'input Field,
     pub field_type: &'input Type,
-    pub field_ident: Box<dyn ToTokens>,
+    pub field_ident: TokenStream,
     pub member: TokenStream,
     pub info: FullMetaInfo,
     pub trait_path: &'state TokenStream,
@@ -570,15 +562,17 @@ pub struct SingleFieldData<'input, 'state> {
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
     pub where_clause: Option<&'state WhereClause>,
+    multi_field_data: MultiFieldData<'input, 'state>,
 }
 
+#[derive(Clone)]
 pub struct MultiFieldData<'input, 'state> {
     pub input_type: &'input Ident,
     pub variant_type: TokenStream,
     pub variant_name: Option<&'input Ident>,
     pub fields: Vec<&'input Field>,
     pub field_types: Vec<&'input Type>,
-    pub field_idents: Vec<Box<dyn ToTokens>>,
+    pub field_idents: Vec<TokenStream>,
     pub members: Vec<TokenStream>,
     pub infos: Vec<FullMetaInfo>,
     pub trait_path: &'state TokenStream,
@@ -598,6 +592,27 @@ pub struct MultiVariantData<'input, 'state> {
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
     pub where_clause: Option<&'state WhereClause>,
+}
+
+impl<'input, 'state> MultiFieldData<'input, 'state> {
+    pub fn initializer<T: ToTokens>(&self, initializers: &[T]) -> TokenStream {
+        let MultiFieldData {
+            variant_type,
+            field_idents,
+            ..
+        } = self;
+        if self.state.derive_type == DeriveType::Named {
+            quote!(#variant_type{#(#field_idents: #initializers),*})
+        } else {
+            quote!(#variant_type(#(#initializers),*))
+        }
+    }
+}
+
+impl<'input, 'state> SingleFieldData<'input, 'state> {
+    pub fn initializer<T: ToTokens>(&self, initializers: &[T]) -> TokenStream {
+        self.multi_field_data.initializer(initializers)
+    }
 }
 
 fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {

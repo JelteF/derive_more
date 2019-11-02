@@ -1,4 +1,4 @@
-use crate::utils::{DeriveType, SingleFieldData, State};
+use crate::utils::{SingleFieldData, State};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse::Result, DeriveInput};
@@ -17,24 +17,20 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         panic_one_field(trait_name);
     }
 
+    let single_field_data = state.assert_single_enabled_field();
     let SingleFieldData {
         input_type,
         field_type,
-        field_ident,
         trait_path,
         casted_trait,
         impl_generics,
         ty_generics,
         where_clause,
         ..
-    } = state.assert_single_enabled_field();
+    } = single_field_data.clone();
 
-    let initializer = quote!(#casted_trait::from_str(src)?);
-    let body = if state.derive_type == DeriveType::Named {
-        quote!(#input_type{#field_ident: #initializer})
-    } else {
-        quote!(#input_type(#initializer))
-    };
+    let initializers = [quote!(#casted_trait::from_str(src)?)];
+    let body = single_field_data.initializer(&initializers);
 
     Ok(quote! {
         impl#impl_generics #trait_path for #input_type#ty_generics #where_clause

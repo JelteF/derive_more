@@ -1,5 +1,5 @@
 use crate::utils::{
-    add_extra_generic_param, numbered_vars, DeriveType, MultiFieldData, RefType, State,
+    add_extra_generic_param, numbered_vars, DeriveType, RefType, State,
 };
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -50,18 +50,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let mut matchers = vec![];
         let vars = &numbered_vars(original_types.len(), "");
         for multi_field_data in multi_field_datas {
-            let MultiFieldData {
-                variant_type,
-                field_idents,
-                state,
-                ..
-            } = multi_field_data;
-            let body = if state.derive_type == DeriveType::Named {
-                quote!(#variant_type{#(#field_idents: #pattern_ref #vars),*})
-            } else {
-                quote!(#variant_type(#(#pattern_ref #vars),*))
-            };
-            matchers.push(body);
+            let patterns: Vec<_> = vars.iter().map(|var| quote!(#pattern_ref #var)).collect();
+            matchers.push(multi_field_data.initializer(&patterns));
         }
 
         let vars = if vars.len() == 1 {
