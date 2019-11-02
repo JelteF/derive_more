@@ -23,9 +23,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
     let multi_field_data = state.enabled_fields_data();
     let MultiFieldData {
-        variant_type,
         fields,
-        field_idents,
         infos,
         input_type,
         trait_path,
