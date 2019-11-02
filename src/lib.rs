@@ -131,8 +131,9 @@
 //! ```rust
 //! #[macro_use]
 //! extern crate derive_more;
-//! # Only needed when using the Rust 2015, for 2018 you can skip this line
+//! // Only needed when using the Rust 2015, for 2018 you can skip this line
 //! extern crate core;
+//! # fn main() {}
 //! ```
 //!
 //! This crate supports `no_std` out of the box.
