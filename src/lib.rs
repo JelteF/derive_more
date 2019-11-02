@@ -6,7 +6,7 @@
 //! [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
 //!
 //! Rust has lots of builtin traits that are implemented for its basic types, such
-//! as [`Add`], [`Not`] or [`From`].
+//! as `Add`, `Not`, `From` or `Display`.
 //! However, when wrapping these types inside your own structs or enums you lose the
 //! implementations of these traits and are required to recreate them.
 //! This is especially annoying when your own structures are very simple, such as
