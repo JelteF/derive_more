@@ -26,6 +26,7 @@ jobs:
     name: Test features
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@master
       - name: Install tomljson
         run: go get github.com/pelletier/go-toml/cmd/tomljson
       - name: Test
