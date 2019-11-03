@@ -30,11 +30,3 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: external-doc
-
-  test: Tests
-    needs: checkout
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
