@@ -1,0 +1,71 @@
+% Using #[derive(Sum)]
+
+The derived `Sum` implementation will allow an iterator of your type to be
+summed together into a new instance of the type with all the fields added
+together. Apart from the original types requiring an implementation of `Sum`, it
+is also required that your type to implements `Add`. So normally you want to
+derive that one as well.
+
+All this is also true for the `Product`, except that then all the fields are
+multiplied and an implementation of `Mul` is required.
+NOTE: Currently the `Mul` implementation of `derive_more` doesn't implement
+multiplying the type with itself, so your own implementation would be required.
+
+# Example usage
+
+```rust
+# #[macro_use] extern crate derive_more;
+#[derive(Add, Sum, PartialEq)]
+struct MyInts(i32, i64);
+
+fn main() {
+    let int_vec = vec![MyInts(2, 3), MyInts(4, 5), MyInts(6, 7)];
+    assert!(MyInts(12, 15) == int_vec.into_iter().sum())
+}
+```
+
+
+# Structs
+
+When deriving `Sum` for a struct with two fields its like this:
+
+```rust
+# #[macro_use] extern crate derive_more;
+# fn main(){}
+#[derive(Add, Sum)]
+struct MyInts(i32, i64);
+```
+
+Code like this will be generated for the `Sum` implementation:
+
+```rust
+# struct MyInts(i32, i64);
+# impl ::core::ops::Add for MyInts {
+#     type Output = MyInts;
+#     #[inline]
+#     fn add(self, rhs: MyInts) -> MyInts {
+#         MyInts(self.0.add(rhs.0), self.1.add(rhs.1))
+#     }
+# }
+impl ::core::iter::Sum for MyInts {
+    #[inline]
+    fn sum<I: ::core::iter::Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(
+            MyInts(
+                ::core::iter::empty::<i32>().sum(),
+                ::core::iter::empty::<i64>().sum(),
+            ),
+            ::core::ops::Add::add,
+        )
+    }
+}
+```
+
+The trick here is that we get the identity struct by calling sum on empty
+iterators.
+This way we can get the identity for sum (i.e. `0`) and the identity for product
+(i.e. `1`).
+
+# Enums
+
+Deriving `Sum` for enums is not supported.
