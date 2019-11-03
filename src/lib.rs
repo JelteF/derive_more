@@ -21,7 +21,7 @@
 //!
 //! ```rust
 //! extern crate derive_more;
-//! use derive_more::{Add, From, Into, Display};
+//! use derive_more::{Add, Display, From, Into};
 //!
 //! #[derive(PartialEq, From, Add)]
 //! struct MyInt(i32);
@@ -34,10 +34,10 @@
 //!
 //! #[derive(PartialEq, From, Add, Display)]
 //! enum MyEnum {
-//!     #[display(fmt="int: {}", _0)]
+//!     #[display(fmt = "int: {}", _0)]
 //!     Int(i32),
 //!     Uint(u32),
-//!     #[display(fmt="nothing")]
+//!     #[display(fmt = "nothing")]
 //!     Nothing,
 //! }
 //!
