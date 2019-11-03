@@ -20,8 +20,8 @@
 //! By using this library the following code just works:
 //!
 //! ```rust
-//! #[macro_use]
 //! extern crate derive_more;
+//! use derive_more::{Add, From, Constructor, Mul, Into};
 //!
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! struct MyInt(i32);
@@ -39,14 +39,12 @@
 //!     Nothing,
 //! }
 //!
-//! fn main() {
-//!     let my_11 = MyInt(5) + 6.into();
-//!     assert_eq!(MyInt(11), MyInt(5) + 6.into());
-//!     assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
-//!     assert_eq!((5, 6), Point2D { x: 5, y: 6 }.into());
-//!     assert_eq!(Point2D { x: 5, y: 6 }, Point2D::new(5, 6));
-//!     assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
-//! }
+//! let my_11 = MyInt(5) + 6.into();
+//! assert_eq!(MyInt(11), MyInt(5) + 6.into());
+//! assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
+//! assert_eq!((5, 6), Point2D { x: 5, y: 6 }.into());
+//! assert_eq!(Point2D { x: 5, y: 6 }, Point2D::new(5, 6));
+//! assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
 //! ```
 //!
 //! ## The derivable traits
@@ -129,11 +127,9 @@
 //! And this to the top of your Rust file:
 //!
 //! ```rust
-//! #[macro_use]
 //! extern crate derive_more;
 //! // Only needed when using the Rust 2015, for 2018 you can skip this line
 //! extern crate core;
-//! # fn main() {}
 //! ```
 //!
 //! This crate supports `no_std` out of the box.

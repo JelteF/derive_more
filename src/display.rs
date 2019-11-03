@@ -343,7 +343,8 @@ impl<'a, 'b> State<'a, 'b> {
                                 list.nested[1].span(),
                                 "fmt string for enum should have at at most 1 placeholder",
                             ));
-                        } else if num_placeholders == 1 {
+                        }
+                        if num_placeholders == 1 {
                             return Ok((quote_spanned!(fmt.span()=> #fmt), true));
                         }
                     }
@@ -736,7 +737,7 @@ impl Placeholder {
         let mut n = 0;
         crate::parsing::all_placeholders(s)
             .into_iter()
-            .flat_map(|x| x)
+            .flatten()
             .map(|m| {
                 let (maybe_arg, maybe_typ) = crate::parsing::format(m).unwrap();
                 let position = maybe_arg.unwrap_or_else(|| {
