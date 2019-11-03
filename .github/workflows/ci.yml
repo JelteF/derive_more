@@ -36,14 +36,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-      - uses: actions-rs/cargo@v1
+      - name: Install cargo-external-doc
+        uses: actions-rs/cargo@v1
         with:
           command: install
           args: --git https://github.com/JelteF/cargo-external-doc --force
-      - uses: actions-rs/cargo@v1
+      - name: Build library
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Run cargo-external-doc
+        uses: actions-rs/cargo@v1
         with:
           command: external-doc
 
