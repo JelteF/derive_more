@@ -15,8 +15,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     #[allow(deprecated)]
     let method_name = method_name.trim_right_matches("Assign");
     let method_name = method_name.to_lowercase();
-    let method_ident =
-        Ident::new(&(method_name + "_assign"), Span::call_site());
+    let method_ident = Ident::new(&(method_name + "_assign"), Span::call_site());
     let input_type = &input.ident;
 
     let (exprs, fields) = match input.data {
