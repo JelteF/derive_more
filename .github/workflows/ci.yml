@@ -20,27 +20,18 @@ jobs:
           command: external-doc
 
   test:
-    name: Test ${{matrix.os}}
+    name: Test ${{matrix.os}} ${{matrix.toolchain}}
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
+        toolchain: [stable, nightly]
         os: [ubuntu-latest, macOS-latest, windows-latest]
     steps:
       - uses: actions/checkout@master
-      - name: test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-
-  test-nightly:
-    name: Test nightly
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Install nightly
+      - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: ${{matrix.toolchain}}
           override: true
       - name: test
         uses: actions-rs/cargo@v1
