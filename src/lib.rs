@@ -21,30 +21,32 @@
 //!
 //! ```rust
 //! extern crate derive_more;
-//! use derive_more::{Add, Constructor, From, Into, Mul};
+//! use derive_more::{Add, From, Into, Display};
 //!
-//! #[derive(Debug, Eq, PartialEq, From, Add)]
+//! #[derive(PartialEq, From, Add)]
 //! struct MyInt(i32);
 //!
-//! #[derive(Debug, Eq, PartialEq, From, Into, Constructor, Mul)]
+//! #[derive(PartialEq, From, Into)]
 //! struct Point2D {
 //!     x: i32,
 //!     y: i32,
 //! }
 //!
-//! #[derive(Debug, Eq, PartialEq, From, Add)]
+//! #[derive(PartialEq, From, Add, Display)]
 //! enum MyEnum {
+//!     #[display(fmt="int: {}", _0)]
 //!     Int(i32),
-//!     UnsignedInt(u32),
+//!     Uint(u32),
+//!     #[display(fmt="nothing")]
 //!     Nothing,
 //! }
 //!
-//! let my_11 = MyInt(5) + 6.into();
-//! assert_eq!(MyInt(11), MyInt(5) + 6.into());
-//! assert_eq!(Point2D { x: 5, y: 6 } * 10, (50, 60).into());
-//! assert_eq!((5, 6), Point2D { x: 5, y: 6 }.into());
-//! assert_eq!(Point2D { x: 5, y: 6 }, Point2D::new(5, 6));
-//! assert_eq!(MyEnum::Int(15), (MyEnum::Int(8) + 7.into()).unwrap())
+//! assert!(MyInt(11) == MyInt(5) + 6.into());
+//! assert!((5, 6) == Point2D { x: 5, y: 6 }.into());
+//! assert!(MyEnum::Int(15) == (MyEnum::Int(8) + 7.into()).unwrap());
+//! assert!(MyEnum::Int(15).to_string() == "int: 15");
+//! assert!(MyEnum::Uint(42).to_string() == "42");
+//! assert!(MyEnum::Nothing.to_string() == "nothing");
 //! ```
 //!
 //! ## The derivable traits
