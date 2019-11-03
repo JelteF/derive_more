@@ -21,7 +21,7 @@
 //!
 //! ```rust
 //! extern crate derive_more;
-//! use derive_more::{Add, From, Constructor, Mul, Into};
+//! use derive_more::{Add, Constructor, From, Into, Mul};
 //!
 //! #[derive(Debug, Eq, PartialEq, From, Add)]
 //! struct MyInt(i32);
