@@ -13,6 +13,9 @@ two would be two meters, but one meter times one meter would be one square meter
 As this second case clearly requires more knowledge about the meaning of the
 type in question deriving for this is not implemented.
 
+NOTE: In case you don't want this behaviour simply derive `MulSelf` instead of
+`Mul` this will generate a `Mul` implementation as if it would be an `Add`.
+
 # Tuple structs
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:

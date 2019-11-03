@@ -7,9 +7,8 @@ is also required that your type to implements `Add`. So normally you want to
 derive that one as well.
 
 All this is also true for the `Product`, except that then all the fields are
-multiplied and an implementation of `Mul` is required.
-NOTE: Currently the `Mul` implementation of `derive_more` doesn't implement
-multiplying the type with itself, so your own implementation would be required.
+multiplied and an implementation of `Mul` is required. This is usually the
+easiest to implement by adding `#[derive(MulSelf)]`.
 
 # Example usage
 
