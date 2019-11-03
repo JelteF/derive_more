@@ -20,8 +20,11 @@ jobs:
           command: external-doc
 
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test ${{matrix.os}}
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
     steps:
       - uses: actions/checkout@master
       - name: test
@@ -43,27 +46,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-
-  test-osx:
-    name: Test OSX
-    runs-on: macOS-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-
-  test-windows:
-    name: Test Windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-
 
   clippy:
     name: Clippy
