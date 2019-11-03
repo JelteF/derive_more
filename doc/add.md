@@ -23,7 +23,7 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-impl ::std::ops::Add for MyInts {
+impl ::core::ops::Add for MyInts {
     type Output = MyInts;
     fn add(self, rhs: MyInts) -> MyInts {
         MyInts(self.0.add(rhs.0), self.1.add(rhs.1))
@@ -54,7 +54,7 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-impl ::std::ops::Add for Point2D {
+impl ::core::ops::Add for Point2D {
     type Output = Point2D;
     fn add(self, rhs: Point2D) -> Point2D {
         Point2D {
@@ -103,7 +103,7 @@ Code like this will be generated:
 #     UnsignedTwo(u32),
 #     Unit,
 # }
-impl ::std::ops::Add for MixedInts {
+impl ::core::ops::Add for MixedInts {
     type Output = Result<MixedInts, &'static str>;
     fn add(self, rhs: MixedInts) -> Result<MixedInts, &'static str> {
         match (self, rhs) {

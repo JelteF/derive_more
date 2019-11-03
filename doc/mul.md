@@ -31,8 +31,8 @@ Code like this will be generated:
 
 ```rust
 # struct MyInt(i32);
-impl<__RhsT> ::std::ops::Mul<__RhsT> for MyInt
-    where i32: ::std::ops::Mul<__RhsT, Output = i32>
+impl<__RhsT> ::core::ops::Mul<__RhsT> for MyInt
+    where i32: ::core::ops::Mul<__RhsT, Output = i32>
 {
     type Output = MyInt;
     fn mul(self, rhs: __RhsT) -> MyInt {
@@ -56,8 +56,8 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for MyInts
-    where i32: ::std::ops::Mul<__RhsT, Output = i32>
+impl<__RhsT: ::core::marker::Copy> ::core::ops::Mul<__RhsT> for MyInts
+    where i32: ::core::ops::Mul<__RhsT, Output = i32>
 {
     type Output = MyInts;
     fn mul(self, rhs: __RhsT) -> MyInts {
@@ -87,8 +87,8 @@ Code like this will be generated:
 # struct Point1D {
 #     x: i32,
 # }
-impl<__RhsT> ::std::ops::Mul<__RhsT> for Point1D
-    where i32: ::std::ops::Mul<__RhsT, Output = i32>
+impl<__RhsT> ::core::ops::Mul<__RhsT> for Point1D
+    where i32: ::core::ops::Mul<__RhsT, Output = i32>
 {
     type Output = Point1D;
     fn mul(self, rhs: __RhsT) -> Point1D {
@@ -118,8 +118,8 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-impl<__RhsT: ::std::marker::Copy> ::std::ops::Mul<__RhsT> for Point2D
-    where i32: ::std::ops::Mul<__RhsT, Output = i32>
+impl<__RhsT: ::core::marker::Copy> ::core::ops::Mul<__RhsT> for Point2D
+    where i32: ::core::ops::Mul<__RhsT, Output = i32>
 {
     type Output = Point2D;
     fn mul(self, rhs: __RhsT) -> Point2D {

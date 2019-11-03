@@ -6,11 +6,11 @@ extern crate derive_more;
 #[deref_mut(forward)]
 struct MyBoxedInt(Box<i32>);
 // Deref implementation is needed for DerefMut
-impl ::std::ops::Deref for MyBoxedInt {
-    type Target = <Box<i32> as ::std::ops::Deref>::Target;
+impl ::core::ops::Deref for MyBoxedInt {
+    type Target = <Box<i32> as ::core::ops::Deref>::Target;
     #[inline]
     fn deref(&self) -> &Self::Target {
-        <Box<i32> as ::std::ops::Deref>::deref(&self.0)
+        <Box<i32> as ::core::ops::Deref>::deref(&self.0)
     }
 }
 
@@ -20,11 +20,11 @@ struct NumRef<'a> {
     num: &'a mut i32,
 }
 // Deref implementation is needed for DerefMut
-impl<'a> ::std::ops::Deref for NumRef<'a> {
-    type Target = <&'a mut i32 as ::std::ops::Deref>::Target;
+impl<'a> ::core::ops::Deref for NumRef<'a> {
+    type Target = <&'a mut i32 as ::core::ops::Deref>::Target;
     #[inline]
     fn deref(&self) -> &Self::Target {
-        <&'a mut i32 as ::std::ops::Deref>::deref(&self.num)
+        <&'a mut i32 as ::core::ops::Deref>::deref(&self.num)
     }
 }
 
@@ -37,11 +37,11 @@ struct NumRef2<'a> {
 }
 
 // Deref implementation is needed for DerefMut
-impl<'a> ::std::ops::Deref for NumRef2<'a> {
-    type Target = <&'a mut i32 as ::std::ops::Deref>::Target;
+impl<'a> ::core::ops::Deref for NumRef2<'a> {
+    type Target = <&'a mut i32 as ::core::ops::Deref>::Target;
     #[inline]
     fn deref(&self) -> &Self::Target {
-        <&'a mut i32 as ::std::ops::Deref>::deref(&self.num)
+        <&'a mut i32 as ::core::ops::Deref>::deref(&self.num)
     }
 }
 
@@ -49,7 +49,7 @@ impl<'a> ::std::ops::Deref for NumRef2<'a> {
 struct MyInt(i32);
 
 // Deref implementation is needed for DerefMutToInner
-impl ::std::ops::Deref for MyInt {
+impl ::core::ops::Deref for MyInt {
     type Target = i32;
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -63,7 +63,7 @@ struct Point1D {
 }
 
 // Deref implementation is needed for DerefMutToInner
-impl ::std::ops::Deref for Point1D {
+impl ::core::ops::Deref for Point1D {
     type Target = i32;
     #[inline]
     fn deref(&self) -> &Self::Target {

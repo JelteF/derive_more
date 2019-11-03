@@ -356,7 +356,7 @@ mod generic {
         #[test]
         fn redundant() {
             #[derive(Display)]
-            #[display(bound = "T1: ::std::fmt::Display, T2: ::std::fmt::Display")]
+            #[display(bound = "T1: ::core::fmt::Display, T2: ::core::fmt::Display")]
             #[display(fmt = "{} {}", _0, _1)]
             struct Struct<T1, T2>(T1, T2);
 

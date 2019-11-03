@@ -19,8 +19,8 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-impl<__RhsT: ::std::marker::Copy> ::std::ops::MulAssign<__RhsT> for MyInts
-    where i32: ::std::ops::MulAssign<__RhsT>
+impl<__RhsT: ::core::marker::Copy> ::core::ops::MulAssign<__RhsT> for MyInts
+    where i32: ::core::ops::MulAssign<__RhsT>
 {
     fn mul_assign(&mut self, rhs: __RhsT) {
         self.0.mul_assign(rhs);
@@ -53,8 +53,8 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-impl<__RhsT: ::std::marker::Copy> ::std::ops::MulAssign<__RhsT> for Point2D
-    where i32: ::std::ops::MulAssign<__RhsT>
+impl<__RhsT: ::core::marker::Copy> ::core::ops::MulAssign<__RhsT> for Point2D
+    where i32: ::core::ops::MulAssign<__RhsT>
 {
     fn mul_assign(&mut self, rhs: __RhsT) {
         self.x.mul_assign(rhs);

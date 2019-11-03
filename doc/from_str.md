@@ -38,8 +38,8 @@ Code like this will be generated:
 
 ```rust
 # struct MyInt(i32);
-impl ::std::str::FromStr for MyInt {
-    type Err = <i32 as ::std::str::FromStr>::Err;
+impl ::core::str::FromStr for MyInt {
+    type Err = <i32 as ::core::str::FromStr>::Err;
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         return Ok(MyInt(i32::from_str(src)?));
     }
@@ -65,8 +65,8 @@ Code like this will be generated:
 # struct Point1D {
 #     x: i32,
 # }
-impl ::std::str::FromStr for Point1D {
-    type Err = <i32 as ::std::str::FromStr>::Err;
+impl ::core::str::FromStr for Point1D {
+    type Err = <i32 as ::core::str::FromStr>::Err;
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         return Ok(Point1D {
             x: i32::from_str(src)?,

@@ -20,8 +20,8 @@ variants you want to derive `TryInto` for.
 
 ```rust
 # #[macro_use] extern crate derive_more;
-use std::convert::TryFrom;
-use std::convert::TryInto;
+use core::convert::TryFrom;
+use core::convert::TryInto;
 #[derive(TryInto, Clone)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedData {
@@ -80,7 +80,7 @@ Code like this will be generated:
 #     UnsignedOne(u32),
 #     UnsignedTwo(u32),
 # }
-impl ::std::convert::TryFrom<MixedInts> for (i32) {
+impl ::core::convert::TryFrom<MixedInts> for (i32) {
     type Error = &'static str;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
@@ -89,7 +89,7 @@ impl ::std::convert::TryFrom<MixedInts> for (i32) {
         }
     }
 }
-impl ::std::convert::TryFrom<MixedInts> for (i64) {
+impl ::core::convert::TryFrom<MixedInts> for (i64) {
     type Error = &'static str;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
@@ -98,7 +98,7 @@ impl ::std::convert::TryFrom<MixedInts> for (i64) {
         }
     }
 }
-impl ::std::convert::TryFrom<MixedInts> for (i32, i32) {
+impl ::core::convert::TryFrom<MixedInts> for (i32, i32) {
     type Error = &'static str;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
@@ -107,7 +107,7 @@ impl ::std::convert::TryFrom<MixedInts> for (i32, i32) {
         }
     }
 }
-impl ::std::convert::TryFrom<MixedInts> for (i64, i64) {
+impl ::core::convert::TryFrom<MixedInts> for (i64, i64) {
     type Error = &'static str;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
@@ -116,7 +116,7 @@ impl ::std::convert::TryFrom<MixedInts> for (i64, i64) {
         }
     }
 }
-impl ::std::convert::TryFrom<MixedInts> for (u32) {
+impl ::core::convert::TryFrom<MixedInts> for (u32) {
     type Error = &'static str;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
@@ -146,7 +146,7 @@ Code like this will be generated:
 #     SmallInt(i32),
 #     Unit,
 # }
-impl ::std::convert::TryFrom<EnumWithUnit> for (i32) {
+impl ::core::convert::TryFrom<EnumWithUnit> for (i32) {
     type Error = &'static str;
     fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
         match value {
@@ -155,7 +155,7 @@ impl ::std::convert::TryFrom<EnumWithUnit> for (i32) {
         }
     }
 }
-impl ::std::convert::TryFrom<EnumWithUnit> for () {
+impl ::core::convert::TryFrom<EnumWithUnit> for () {
     type Error = &'static str;
     fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
         match value {

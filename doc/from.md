@@ -73,7 +73,7 @@ Code like this will be generated:
 
 ```rust
 # struct MyInt(i32);
-impl ::std::convert::From<(i32)> for MyInt {
+impl ::core::convert::From<(i32)> for MyInt {
     fn from(original: (i32)) -> MyInt {
         MyInt(original)
     }
@@ -94,7 +94,7 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-impl ::std::convert::From<(i32, i32)> for MyInts {
+impl ::core::convert::From<(i32, i32)> for MyInts {
     fn from(original: (i32, i32)) -> MyInts {
         MyInts(original.0, original.1)
     }
@@ -122,7 +122,7 @@ Code like this will be generated:
 # struct Point1D {
 #     x: i32,
 # }
-impl ::std::convert::From<(i32)> for Point1D {
+impl ::core::convert::From<(i32)> for Point1D {
     fn from(original: (i32)) -> Point1D {
         Point1D { x: original }
     }
@@ -150,7 +150,7 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-impl ::std::convert::From<(i32, i32)> for Point2D {
+impl ::core::convert::From<(i32, i32)> for Point2D {
     fn from(original: (i32, i32)) -> Point2D {
         Point2D {
             x: original.0,

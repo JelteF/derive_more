@@ -104,11 +104,11 @@ When deriving a forwarded `DerefMut` for a struct:
 
 ```rust
 # struct MyBoxedInt(Box<i32>);
-# impl ::std::ops::Deref for MyBoxedInt {
-#     type Target = <Box<i32> as ::std::ops::Deref>::Target;
+# impl ::core::ops::Deref for MyBoxedInt {
+#     type Target = <Box<i32> as ::core::ops::Deref>::Target;
 #     #[inline]
 #     fn deref(&self) -> &Self::Target {
-#         <Box<i32> as ::std::ops::Deref>::deref(&self.0)
+#         <Box<i32> as ::core::ops::Deref>::deref(&self.0)
 #     }
 # }
 impl ::core::ops::DerefMut for MyBoxedInt {
