@@ -17,7 +17,6 @@ implementation is generated to expose the underlying field.
 struct MyWrapper(String);
 ```
 
-
 Generates:
 
 ```rust
@@ -25,6 +24,38 @@ Generates:
 impl AsRef<String> for MyWrapper {
     fn as_ref(&self) -> &String {
         &self.0
+    }
+}
+```
+
+It's also possible to use the `#[as_ref(forward)]` attribute to forward
+to the `as_ref` implementation of the field. So here `SigleFieldForward`
+implements all `AsRef` for all types that `Vec<i32>` implements `AsRef` for.
+
+```rust
+# #[macro_use] extern crate derive_more;
+#[derive(AsRef)]
+#[as_ref(forward)]
+struct SingleFieldForward(Vec<i32>);
+
+fn main() {
+    let item = SingleFieldForward(vec![]);
+    let _: &[i32] = (&item).as_ref();
+}
+
+```
+
+This generates:
+
+```rust
+# struct SingleFieldForward(Vec<i32>);
+impl<__AsRefT: ?::core::marker::Sized> ::core::convert::AsRef<__AsRefT> for SingleFieldForward
+where
+    Vec<i32>: ::core::convert::AsRef<__AsRefT>,
+{
+    #[inline]
+    fn as_ref(&self) -> &__AsRefT {
+        <Vec<i32> as ::core::convert::AsRef<__AsRefT>>::as_ref(&self.0)
     }
 }
 ```
@@ -49,7 +80,6 @@ struct MyWrapper {
 }
 
 ```
-
 
 Generates:
 
