@@ -10,7 +10,7 @@ indirect implementation of `TryInto` as recommended by the
 
 By using `#[try_into(owned, ref, ref_mut)]` it's possible to derive a `TryInto`
 implementation for reference types as well.
-Pick any combination of `owned`, `ref` and `ref_mut`.
+You can pick any combination of `owned`, `ref` and `ref_mut`.
 If that's not provided the default is `#[try_into(owned)]`.
 
 With `#[try_into]` or `#[try_into(ignore)]` it's possible to indicate which
