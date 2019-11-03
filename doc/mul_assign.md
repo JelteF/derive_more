@@ -1,6 +1,6 @@
 % What #[derive(MulAssign)] generates
 
-This code is very similar to the code that is generated for `#[derive(Add)]`.
+This code is very similar to the code that is generated for `#[derive(Mul)]`.
 The difference is that it mutates the existing instance instead of creating a
 new one.
 

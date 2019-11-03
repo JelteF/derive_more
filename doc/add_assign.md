@@ -6,7 +6,7 @@ new one.
 
 # Tuple structs
 
-When deriving for a tuple struct with two fields like this:
+When deriving `AddAssign` for a tuple struct with two fields like this:
 
 ```rust
 # #[macro_use] extern crate derive_more;
