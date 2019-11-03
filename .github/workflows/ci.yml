@@ -3,21 +3,38 @@ on: [push]
 name: CI
 
 jobs:
-  build_and_test:
-    name: Rust project
+  checkout:
+    name: Checkout
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
+
+  build:
+    needs: checkout
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+
+  doc_test:
+    needs: build
+    name: Doc tests
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions-rs/cargo@v1
         with:
           command: install
           args: --git https://github.com/JelteF/cargo-external-doc --force
       - uses: actions-rs/cargo@v1
         with:
-          command: build
-      - uses: actions-rs/cargo@v1
-        with:
           command: external-doc
+
+  test: Tests
+    needs: checkout
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions-rs/cargo@v1
         with:
           command: test
