@@ -21,11 +21,11 @@ jobs:
 
   test:
     name: Test ${{matrix.os}} ${{matrix.toolchain}}
-    runs-on: ${{matrix.os}}
+    runs-on: ${{matrix.os}}-latest
     strategy:
       matrix:
         toolchain: [stable, nightly]
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu, macOS, windows]
     steps:
       - uses: actions/checkout@master
       - name: Install rust
