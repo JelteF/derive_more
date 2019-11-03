@@ -90,4 +90,4 @@ impl<'__deriveMoreLifetime> ::core::iter::IntoIterator for &'__deriveMoreLifetim
 
 # Enums
 
-Deriving `IntoITe` is not supported for enums.
+Deriving `IntoIterator` is not supported for enums.

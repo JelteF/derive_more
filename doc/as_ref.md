@@ -1,13 +1,14 @@
 % What #[derive(AsRef)] generates
 
-Deriving `AsRef` generates one or more implementations of `AsRef`, each corresponding to one of the
-fields of the decorated type. This allows types which contain some `T` to be passed anywhere that an
+Deriving `AsRef` generates one or more implementations of `AsRef`, each
+corresponding to one of the fields of the decorated type.
+This allows types which contain some `T` to be passed anywhere that an
 `AsRef<T>` is accepted.
 
 # Newtypes and Structs with One Field
 
-When `AsRef` is derived for a newtype or struct with one field, a single implementation is generated
-to expose the underlying field.
+When `AsRef` is derived for a newtype or struct with one field, a single
+implementation is generated to expose the underlying field.
 
 ```rust
 # #[macro_use] extern crate derive_more;
@@ -19,7 +20,7 @@ struct MyWrapper(String);
 
 Generates:
 
-```
+```rust
 # struct MyWrapper(String);
 impl AsRef<String> for MyWrapper {
     fn as_ref(&self) -> &String {
@@ -30,9 +31,10 @@ impl AsRef<String> for MyWrapper {
 
 # Structs with Multiple Fields
 
-When `AsRef` is derived for a struct with more than one field (including tuple structs), you must
-also mark one or more fields with the `#[as_ref]` attribute. An implementation will be generated for
-each indicated field.
+When `AsRef` is derived for a struct with more than one field (including tuple
+structs), you must also mark one or more fields with the `#[as_ref]` attribute.
+An implementation will be generated for each indicated field.
+You can also exclude a specific field by using `#[as_ref(ignore)]`.
 
 ```rust
 # #[macro_use] extern crate derive_more;
@@ -51,7 +53,7 @@ struct MyWrapper {
 
 Generates:
 
-```
+```rust
 # struct MyWrapper {
 #     name: String,
 #     num: i32,
@@ -70,8 +72,9 @@ impl AsRef<i32> for MyWrapper {
 }
 ```
 
-Note that `AsRef<T>` may only be implemented once for any given type `T`. This means any attempt to
-mark more than one field of the same type with `#[as_ref]` will result in a compilation error.
+Note that `AsRef<T>` may only be implemented once for any given type `T`.
+This means any attempt to mark more than one field of the same type with
+`#[as_ref]` will result in a compilation error.
 
 ```compile_fail
 # #[macro_use] extern crate derive_more;
