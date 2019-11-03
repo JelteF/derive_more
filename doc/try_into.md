@@ -8,6 +8,14 @@ Instead it derives `TryFrom` for each variant in the enum and thus has an
 indirect implementation of `TryInto` as recommended by the
 [docs](https://doc.rust-lang.org/core/convert/trait.TryInto.html).
 
+By using `#[try_into(owned, ref, ref_mut)]` it's possible to derive a `TryInto`
+implementation for reference types as well.
+Pick any combination of `owned`, `ref` and `ref_mut`.
+If that's not provided the default is `#[try_into(owned)]`.
+
+With `#[try_into]` or `#[try_into(ignore)]` it's possible to indicate which
+variants you want to derive `TryInto` for.
+
 # Example usage
 
 ```rust
@@ -15,6 +23,7 @@ indirect implementation of `TryInto` as recommended by the
 use std::convert::TryFrom;
 use std::convert::TryInto;
 #[derive(TryInto, Clone)]
+#[try_into(owned, ref, ref_mut)]
 enum MixedData {
     Int(u32),
     String(String),
@@ -23,7 +32,9 @@ enum MixedData {
 fn main() {
     let string = MixedData::String("foo".to_string());
     let int = MixedData::Int(123);
-    assert_eq!(123u32, int.try_into().unwrap());
+    assert_eq!(Ok(123u32), int.clone().try_into());
+    assert_eq!(Ok(&123u32), (&int.clone()).try_into());
+    assert_eq!(Ok(&mut 123u32), (&mut int.clone()).try_into());
     assert_eq!("foo".to_string(), String::try_from(string.clone()).unwrap());
     assert!(u32::try_from(string).is_err());
 }
@@ -53,6 +64,8 @@ enum MixedInts {
     NamedSmallInts { x: i64, y: i64 },
     UnsignedOne(u32),
     UnsignedTwo(u32),
+    #[try_into(ignore)]
+    NotImportant,
 }
 ```
 
