@@ -61,7 +61,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all -- -D clippy::all
+          args: --all -- -D clippy::all -D warnings
 
       - name: rustfmt
         uses: actions-rs/cargo@v1
