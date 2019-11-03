@@ -14,8 +14,6 @@ extern crate derive_more;
     Display,
     FromStr,
     Into,
-    IntoRef,
-    IntoRefMut,
     From,
     IndexMut,
     Sum,
@@ -23,6 +21,7 @@ extern crate derive_more;
     DerefMut,
     Constructor
 )]
+#[into(owned, ref, ref_mut)]
 struct MyInts(u64);
 
 #[derive(Deref, DerefMut)]

@@ -18,16 +18,6 @@ pub enum RefType {
 }
 
 impl RefType {
-    pub fn from_derive(trait_name: &str) -> (Self, &str) {
-        if trait_name.ends_with("RefMut") {
-            (RefType::Mut, trait_name.trim_end_matches("RefMut"))
-        } else if trait_name.ends_with("Ref") {
-            (RefType::Ref, trait_name.trim_end_matches("Ref"))
-        } else {
-            (RefType::No, trait_name)
-        }
-    }
-
     pub fn lifetime(self) -> TokenStream {
         match self {
             RefType::No => quote!(),

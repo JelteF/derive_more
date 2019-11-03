@@ -3,8 +3,6 @@ extern crate derive_more;
 
 #[derive(From)]
 #[derive(Into)]
-#[derive(IntoRef)]
-#[derive(IntoRefMut)]
 #[derive(Constructor)]
 #[derive(Eq, PartialEq, Debug, Clone)]
 #[derive(Add)]
@@ -20,6 +18,7 @@ extern crate derive_more;
 #[derive(Sum)]
 #[derive(MulSelf)]
 #[derive(Product)]
+#[into(owned, ref, ref_mut)]
 struct MyInt(i32);
 
 #[derive(Eq, PartialEq, Debug)]
@@ -69,9 +68,8 @@ struct SimpleStruct {
 #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 #[derive(Into)]
-#[derive(IntoRef)]
-#[derive(IntoRefMut)]
 #[derive(AddAssign)]
+#[into(owned, ref, ref_mut)]
 struct NormalStruct {
     int1: u64,
     int2: u64,

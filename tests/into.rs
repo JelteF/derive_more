@@ -2,27 +2,34 @@
 #[macro_use]
 extern crate derive_more;
 
-#[derive(Into, IntoRef, IntoRefMut)]
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
 struct EmptyTuple();
 
-#[derive(Into, IntoRef, IntoRefMut)]
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
 struct EmptyStruct {}
 
-#[derive(Into, IntoRef, IntoRefMut)]
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
 struct EmptyUnit;
 
-#[derive(Into, IntoRef, IntoRefMut)]
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
 struct MyInt(i32);
 
-#[derive(Into, IntoRef, IntoRefMut)]
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
 struct MyInts(i32, i32);
 
-#[derive(Into, IntoRef, IntoRefMut)]
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
 struct Point1D {
     x: i32,
 }
 
-#[derive(Into, IntoRef, IntoRefMut)]
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
 struct Point2D {
     x: i32,
     y: i32,
