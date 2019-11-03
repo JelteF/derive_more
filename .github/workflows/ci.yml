@@ -17,10 +17,19 @@ jobs:
         with:
           toolchain: ${{matrix.toolchain}}
           override: true
-      - name: test
+      - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
+
+  test_features_separate:
+    name: Test features
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install tomljson
+        run: go get github.com/pelletier/go-toml/cmd/tomljson
+      - name: Test
+        run: ci/test_all_features.sh
 
   doc_test:
     name: Doc tests
