@@ -13,11 +13,18 @@ type Result = ();
 #[try_into(owned, ref, ref_mut)]
 enum MixedInts {
     SmallInt(i32),
-    NamedBigInt { int: i64 },
+    NamedBigInt {
+        int: i64,
+    },
     TwoSmallInts(i32, i32),
-    NamedBigInts { x: i64, y: i64 },
+    NamedBigInts {
+        x: i64,
+        y: i64,
+    },
     Unsigned(u32),
-    NamedUnsigned { x: u32 },
+    NamedUnsigned {
+        x: u32,
+    },
     Unit,
     #[try_into(ignore)]
     Unit2,
