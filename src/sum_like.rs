@@ -9,7 +9,7 @@ use syn::{Data, DeriveInput, Field, Fields, Ident};
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let method_name = trait_name.to_string().to_lowercase();
-    let method_ident = Ident::new(&(method_name.to_string()), Span::call_site());
+    let method_ident = Ident::new(&(method_name), Span::call_site());
     let input_type = &input.ident;
     let trait_path = quote!(::core::iter::#trait_ident);
     let op_trait_name = if trait_name == "Sum" { "Add" } else { "Mul" };

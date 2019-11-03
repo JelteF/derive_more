@@ -11,7 +11,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let method_name = method_name.trim_right_matches("Assign");
     let method_name = method_name.to_lowercase();
     let method_ident =
-        Ident::new(&(method_name.to_string() + "_assign"), Span::call_site());
+        Ident::new(&(method_name + "_assign"), Span::call_site());
     let input_type = &input.ident;
 
     let generics = add_extra_ty_param_bound_op(&input.generics, &trait_ident);

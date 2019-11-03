@@ -34,7 +34,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let generics_impl;
     let (_, ty_generics, where_clause) = input.generics.split_for_impl();
     let (impl_generics, _, _) = if ref_type.is_ref() {
-        generics_impl = add_extra_generic_param(&input.generics, lifetime.clone());
+        generics_impl = add_extra_generic_param(&input.generics, lifetime);
         generics_impl.split_for_impl()
     } else {
         input.generics.split_for_impl()
