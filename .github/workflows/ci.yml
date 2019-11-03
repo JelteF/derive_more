@@ -44,8 +44,8 @@ jobs:
         with:
           command: test
 
-  clippy-fmt:
-    name: Clippy & rustfmt
+  clippy:
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -54,7 +54,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          components: rustfmt, clippy
+          components: clippy
           override: true
 
       - name: Clippy
@@ -62,6 +62,25 @@ jobs:
         with:
           command: clippy
           args: --all -- -D clippy::all -D warnings
+
+      - name: rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  rustfmt:
+    name: rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Install minimal nightly with clipy
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt
+          override: true
 
       - name: rustfmt
         uses: actions-rs/cargo@v1
