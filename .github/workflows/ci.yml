@@ -3,22 +3,6 @@ on: [push]
 name: CI
 
 jobs:
-  doc_test:
-    name: Doc tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-      - uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --git https://github.com/JelteF/cargo-external-doc --force
-      - uses: actions-rs/cargo@v1
-        with:
-          command: external-doc
-
   test:
     name: Test ${{matrix.os}} ${{matrix.toolchain}}
     runs-on: ${{matrix.os}}-latest
@@ -37,6 +21,23 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
+
+  doc_test:
+    name: Doc tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --git https://github.com/JelteF/cargo-external-doc --force
+      - uses: actions-rs/cargo@v1
+        with:
+          command: external-doc
+
 
   clippy:
     name: Clippy
