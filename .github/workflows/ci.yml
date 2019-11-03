@@ -3,31 +3,14 @@ on: [push]
 name: CI
 
 jobs:
-  build:
-    name: Build
+  doc_test:
+    name: Doc tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       - uses: actions-rs/cargo@v1
         with:
           command: build
-      - name: Upload build files
-        uses: actions/upload-artifact@v1
-        with:
-          name: build
-          path: target
-
-  doc_test:
-    needs: build
-    name: Doc tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Download build files
-        uses: actions/download-artifact@v1
-        with:
-          name: build
-          path: target
       - uses: actions-rs/cargo@v1
         with:
           command: install
