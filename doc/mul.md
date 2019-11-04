@@ -13,8 +13,9 @@ two would be two meters, but one meter times one meter would be one square meter
 As this second case clearly requires more knowledge about the meaning of the
 type in question deriving for this is not implemented.
 
-NOTE: In case you don't want this behaviour simply derive `MulSelf` instead of
-`Mul` this will generate a `Mul` implementation as if it would be an `Add`.
+NOTE: In case you don't want this behaviour you can add `#[mul(forward)]`.
+This will instead generate a `Mul` implementation with the same semantics as
+`Add`.
 
 # Tuple structs
 
@@ -133,5 +134,6 @@ impl<__RhsT: ::core::marker::Copy> ::core::ops::Mul<__RhsT> for Point2D
 
 # Enums
 
-Deriving `Mul` for enums is not (yet) supported.
+Deriving `Mul` for enums is not (yet) supported, except when you use
+`#[mul(forward)].
 Although it shouldn't be impossible no effort has been put into this yet.

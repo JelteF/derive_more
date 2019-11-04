@@ -4,6 +4,11 @@ This code is very similar to the code that is generated for `#[derive(Mul)]`.
 The difference is that it mutates the existing instance instead of creating a
 new one.
 
+You can add the `#[mul_assign(forward)]` attribute if you don't want the same
+semantics as `Mul`.
+This will instead generate a `MulAssign` implementation with the same semantics
+as `AddAssign`.
+
 # Tuple structs
 
 When deriving `MulAssign` for a tuple struct with two fields like this:
