@@ -233,7 +233,7 @@ pub struct State<'input> {
     pub variant_states: Vec<State<'input>>,
     pub variant: Option<&'input Variant>,
     pub generics: Generics,
-    default_info: FullMetaInfo,
+    pub default_info: FullMetaInfo,
     full_meta_infos: Vec<FullMetaInfo>,
 }
 

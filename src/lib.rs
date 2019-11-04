@@ -176,9 +176,13 @@ mod utils;
 
 #[cfg(feature = "add_assign_like")]
 mod add_assign_like;
-#[cfg(any(feature = "add_like", feature = "add_assign_like"))]
+#[cfg(any(
+    feature = "add_like",
+    feature = "add_assign_like",
+    feature = "mul_like"
+))]
 mod add_helpers;
-#[cfg(feature = "add_like")]
+#[cfg(any(feature = "add_like", feature = "mul_like"))]
 mod add_like;
 #[cfg(feature = "as_mut")]
 mod as_mut;
@@ -272,17 +276,12 @@ create_derive!("add_like", add_like, Sub, sub_derive);
 create_derive!("add_like", add_like, BitAnd, bit_and_derive);
 create_derive!("add_like", add_like, BitOr, bit_or_derive);
 create_derive!("add_like", add_like, BitXor, bit_xor_derive);
-create_derive!("add_like", add_like, MulSelf, mul_self_derive);
-create_derive!("add_like", add_like, DivSelf, div_self_derive);
-create_derive!("add_like", add_like, RemSelf, rem_self_derive);
-create_derive!("add_like", add_like, ShrSelf, shr_self_derive);
-create_derive!("add_like", add_like, ShlSelf, shl_self_derive);
 
-create_derive!("mul_like", mul_like, Mul, mul_derive);
-create_derive!("mul_like", mul_like, Div, div_derive);
-create_derive!("mul_like", mul_like, Rem, rem_derive);
-create_derive!("mul_like", mul_like, Shr, shr_derive);
-create_derive!("mul_like", mul_like, Shl, shl_derive);
+create_derive!("mul_like", mul_like, Mul, mul_derive, mul);
+create_derive!("mul_like", mul_like, Div, div_derive, div);
+create_derive!("mul_like", mul_like, Rem, rem_derive, rem);
+create_derive!("mul_like", mul_like, Shr, shr_derive, shr);
+create_derive!("mul_like", mul_like, Shl, shl_derive, shl);
 
 create_derive!(
     "add_assign_like",

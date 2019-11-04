@@ -1,15 +1,25 @@
+use crate::add_like;
 use crate::mul_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{
     add_where_clauses_for_new_ident, field_idents, get_field_types_iter, named_to_vec,
-    unnamed_to_vec,
+    unnamed_to_vec, State,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use std::collections::HashSet;
 use std::iter;
-use syn::{Data, DeriveInput, Field, Fields, Ident};
+use syn::{Data, DeriveInput, Field, Fields, Ident, Result};
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    let state = State::new(
+        input,
+        trait_name,
+        quote!(::core::ops),
+        trait_name.to_lowercase(),
+    )?;
+    if state.default_info.forward {
+        return Ok(add_like::expand(input, trait_name));
+    }
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let trait_path = &quote!(::core::ops::#trait_ident);
     let method_name = trait_name.to_lowercase();
@@ -34,7 +44,10 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             }
             _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
         },
-        _ => panic!(format!("Only structs can use derive({})", trait_name)),
+        _ => panic!(format!(
+            "Only structs can use derive({}) without forward",
+            trait_name
+        )),
     };
 
     let scalar_ident = &Ident::new("__RhsT", Span::call_site());
@@ -57,7 +70,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 
-    quote!(
+    Ok(quote!(
         impl#impl_generics  #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause {
             type Output = #input_type#ty_generics;
             #[inline]
@@ -66,7 +79,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             }
         }
 
-    )
+    ))
 }
 
 fn tuple_content<'a, T: ToTokens>(
