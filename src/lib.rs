@@ -251,7 +251,7 @@ impl Output for Result<proc_macro2::TokenStream, ParseError> {
 }
 
 macro_rules! create_derive(
-    ($feature:literal, $mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)*) => {
+    ($feature:literal, $mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
         #[cfg(feature = $feature)]
         #[proc_macro_derive($trait_, attributes($($attribute),*))]
         #[doc(hidden)]
@@ -287,31 +287,31 @@ create_derive!(
     "add_assign_like",
     add_assign_like,
     AddAssign,
-    add_assign_derive
+    add_assign_derive,
 );
 create_derive!(
     "add_assign_like",
     add_assign_like,
     SubAssign,
-    sub_assign_derive
+    sub_assign_derive,
 );
 create_derive!(
     "add_assign_like",
     add_assign_like,
     BitAndAssign,
-    bit_and_assign_derive
+    bit_and_assign_derive,
 );
 create_derive!(
     "add_assign_like",
     add_assign_like,
     BitOrAssign,
-    bit_or_assign_derive
+    bit_or_assign_derive,
 );
 create_derive!(
     "add_assign_like",
     add_assign_like,
     BitXorAssign,
-    bit_xor_assign_derive
+    bit_xor_assign_derive,
 );
 
 create_derive!(
@@ -319,35 +319,35 @@ create_derive!(
     mul_assign_like,
     MulAssign,
     mul_assign_derive,
-    mul_assign
+    mul_assign,
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     DivAssign,
     div_assign_derive,
-    div_assign
+    div_assign,
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     RemAssign,
     rem_assign_derive,
-    rem_assign
+    rem_assign,
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     ShrAssign,
     shr_assign_derive,
-    shr_assign
+    shr_assign,
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     ShlAssign,
     shl_assign_derive,
-    shl_assign
+    shl_assign,
 );
 
 create_derive!("sum_like", sum_like, Sum, sum_derive);
@@ -371,7 +371,7 @@ create_derive!(
     index_mut,
     IndexMut,
     index_mut_derive,
-    index_mut
+    index_mut,
 );
 
 create_derive!(
@@ -379,7 +379,7 @@ create_derive!(
     into_iterator,
     IntoIterator,
     into_iterator_derive,
-    into_iterator
+    into_iterator,
 );
 create_derive!("iterator", iterator, Iterator, iterator_derive, iterator);
 
@@ -391,7 +391,7 @@ create_derive!(
     deref_mut,
     DerefMut,
     deref_mut_derive,
-    deref_mut
+    deref_mut,
 );
 
 create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
