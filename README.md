@@ -1,4 +1,10 @@
 # `derive_more`
+
+[![Build Status](https://api.travis-ci.org/JelteF/derive_more.svg?branch=master)](https://travis-ci.org/JelteF/derive_more)
+[![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
+[![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://jeltef.github.io/derive_more/derive_more/)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
+
 Rust has lots of builtin traits that are implemented for its basic types, such as [`Add`],
 [`Not`] or [`From`].
 However, when wrapping these types inside your own structs or enums you lose the
@@ -126,7 +132,7 @@ Then add the following to `Cargo.toml`:
 
 ```toml
 [dependencies]
-derive_more = "0.15.0"
+derive_more = "0.13.0"
 ```
 
 And this to the top of your Rust file:
@@ -134,7 +140,6 @@ And this to the top of your Rust file:
 ```rust
 #[macro_use]
 extern crate derive_more;
-# fn main () {}
 ```
 
 This crate support `no_std` through the `no_std` feature. So use the following
@@ -145,3 +150,44 @@ instead if you want to use it in a `no_std` environment.
 [dependencies]
 derive_more = {version = "0.15.0", default-features = false, features=["no_std"]}
 ```
+
+[`cargo-expand`]: https://github.com/dtolnay/cargo-expand
+[`derive-new`]: https://github.com/nrc/derive-new
+[`From`]: https://doc.rust-lang.org/core/convert/trait.From.html
+[`Into`]: https://doc.rust-lang.org/core/convert/trait.Into.html
+[`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
+[`TryInto`]: https://doc.rust-lang.org/core/convert/trait.TryInto.html
+[`Display`]: https://doc.rust-lang.org/std/fmt/trait.Display.html
+[`Binary`]: https://doc.rust-lang.org/std/fmt/trait.Binary.html
+[`Octal`]: https://doc.rust-lang.org/std/fmt/trait.Octal.html
+[`LowerHex`]: https://doc.rust-lang.org/std/fmt/trait.LowerHex.html
+[`UpperHex`]: https://doc.rust-lang.org/std/fmt/trait.UpperHex.html
+[`LowerExp`]: https://doc.rust-lang.org/std/fmt/trait.LowerExp.html
+[`UpperExp`]: https://doc.rust-lang.org/std/fmt/trait.UpperExp.html
+[`Pointer`]: https://doc.rust-lang.org/std/fmt/trait.Pointer.html
+[`Index`]: https://doc.rust-lang.org/std/ops/trait.Index.html
+[`Deref`]: https://doc.rust-lang.org/std/ops/trait.Deref.html
+[`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
+[`Neg`]: https://doc.rust-lang.org/std/ops/trait.Neg.html
+[`Add`]: https://doc.rust-lang.org/std/ops/trait.Add.html
+[`Sub`]: https://doc.rust-lang.org/std/ops/trait.Sub.html
+[`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
+[`BitOr`]: https://doc.rust-lang.org/std/ops/trait.BitOr.html
+[`BitXor`]: https://doc.rust-lang.org/std/ops/trait.BitXor.html
+[`Mul`]: https://doc.rust-lang.org/std/ops/trait.Mul.html
+[`Div`]: https://doc.rust-lang.org/std/ops/trait.Div.html
+[`Rem`]: https://doc.rust-lang.org/std/ops/trait.Rem.html
+[`Shr`]: https://doc.rust-lang.org/std/ops/trait.Shr.html
+[`Shl`]: https://doc.rust-lang.org/std/ops/trait.Shl.html
+[`IndexMut`]: https://doc.rust-lang.org/std/ops/trait.IndexMut.html
+[`DerefMut`]: https://doc.rust-lang.org/std/ops/trait.DerefMut.html
+[`AddAssign`]: https://doc.rust-lang.org/std/ops/trait.AddAssign.html
+[`SubAssign`]: https://doc.rust-lang.org/std/ops/trait.SubAssign.html
+[`BitAndAssign`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html
+[`BitOrAssign`]: https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html
+[`BitXorAssign`]: https://doc.rust-lang.org/std/ops/trait.BitXorAssign.html
+[`MulAssign`]: https://doc.rust-lang.org/std/ops/trait.MulAssign.html
+[`DivAssign`]: https://doc.rust-lang.org/std/ops/trait.DivAssign.html
+[`RemAssign`]: https://doc.rust-lang.org/std/ops/trait.RemAssign.html
+[`ShrAssign`]: https://doc.rust-lang.org/std/ops/trait.ShrAssign.html
+[`ShlAssign`]: https://doc.rust-lang.org/std/ops/trait.ShlAssign.html
