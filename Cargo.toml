@@ -49,6 +49,7 @@ constructor = []
 deref = []
 deref_mut = []
 display = []
+error = []
 from = []
 from_str = []
 index = []
@@ -72,6 +73,7 @@ default = [
     "deref",
     "deref_mut",
     "display",
+    "error",
     "from",
     "from_str",
     "index",

@@ -2,12 +2,18 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-    parse::{Error, Result},
+    Error,
+    Result,
     parse_str,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed,
     GenericParam, Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Type,
     TypeGenerics, TypeParamBound, Variant, WhereClause,
+};
+
+use std::{
+    collections::HashSet,
+    ops::Deref as _,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
@@ -734,5 +740,59 @@ impl FullMetaInfo {
             ref_types.push(RefType::Mut);
         }
         ref_types
+    }
+}
+
+pub fn get_if_type_parameter_used_in_type(type_parameters: &HashSet<syn::Ident>, ty: &syn::Type) -> Option<syn::Type> {
+    if is_type_parameter_used_in_type(type_parameters, ty) {
+        match ty {
+            syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => Some(ty.deref().clone()),
+            ty => Some(ty.clone())
+        }
+    } else {
+        None
+    }
+}
+
+pub fn is_type_parameter_used_in_type(type_parameters: &HashSet<syn::Ident>, ty: &syn::Type) -> bool {
+    match ty {
+        syn::Type::Path(ty) => {
+            if let Some(qself) = &ty.qself {
+                if is_type_parameter_used_in_type(type_parameters, &qself.ty) {
+                    return true;
+                }
+            }
+
+            if let Some(segment) = ty.path.segments.first() {
+                if type_parameters.contains(&segment.ident) {
+                    return true;
+                }
+            }
+
+            ty.path.segments.iter()
+                .any(|segment| {
+                    if let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments {
+                        arguments.args.iter().any(|argument| {
+                            match argument {
+                                syn::GenericArgument::Type(ty) => {
+                                    is_type_parameter_used_in_type(type_parameters, ty)
+                                },
+                                syn::GenericArgument::Constraint(constraint) => {
+                                    type_parameters.contains(&constraint.ident)
+                                },
+                                _ => false,
+                            }
+                        })
+                    } else {
+                        false
+                    }
+                })
+        },
+
+        syn::Type::Reference(ty) => {
+            is_type_parameter_used_in_type(type_parameters,&ty.elem)
+        },
+
+        _ => false,
     }
 }

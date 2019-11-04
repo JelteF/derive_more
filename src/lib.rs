@@ -89,6 +89,11 @@
 //! 1. [`Display`-like], contains `Display`, `Binary`, `Octal`, `LowerHex`,
 //!    `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
 //!
+//! ### Error-handling traits
+//! These traits are used to define error-types.
+//!
+//! 1. [`Error`]
+//!
 //! ### Operators
 //!
 //! These are traits that can be used for operator overloading.
@@ -192,6 +197,8 @@ mod deref;
 mod deref_mut;
 #[cfg(feature = "display")]
 mod display;
+#[cfg(feature = "error")]
+mod error;
 #[cfg(feature = "from")]
 mod from;
 #[cfg(feature = "from_str")]
@@ -348,6 +355,8 @@ create_derive!(
 
 create_derive!("sum_like", sum_like, Sum, sum_derive);
 create_derive!("sum_like", sum_like, Product, product_derive);
+
+create_derive!("error", error, Error, error_derive, error);
 
 create_derive!("from_str", from_str, FromStr, from_str_derive);
 
