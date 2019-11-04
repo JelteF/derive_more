@@ -1,21 +1,31 @@
+use crate::add_assign_like;
 use crate::mul_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{
-    add_where_clauses_for_new_ident, get_field_types_iter, named_to_vec, unnamed_to_vec,
+    add_where_clauses_for_new_ident, get_field_types_iter, named_to_vec,
+    unnamed_to_vec, State,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::collections::HashSet;
 use std::iter;
-use syn::{Data, DeriveInput, Fields, Ident};
+use syn::{Data, DeriveInput, Fields, Ident, Result};
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    let method_name = trait_name
+        .to_string()
+        .to_lowercase()
+        .trim_end_matches("assign")
+        .to_string()
+        + "_assign";
+
+    let state =
+        State::new(input, trait_name, quote!(::core::ops), method_name.clone())?;
+    if state.default_info.forward {
+        return Ok(add_assign_like::expand(input, trait_name));
+    }
     let trait_ident = Ident::new(trait_name, Span::call_site());
     let trait_path = &quote!(::core::ops::#trait_ident);
-    let method_name = trait_name.to_string();
-    #[allow(deprecated)]
-    let method_name = method_name.trim_right_matches("Assign");
-    let method_name = method_name.to_lowercase();
-    let method_ident = Ident::new(&(method_name + "_assign"), Span::call_site());
+    let method_ident = Ident::new(&method_name, Span::call_site());
     let input_type = &input.ident;
 
     let (exprs, fields) = match input.data {
@@ -54,7 +64,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
 
-    quote!(
+    Ok(quote!(
         impl#impl_generics #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause{
             #[inline]
             fn #method_ident(&mut self, rhs: #scalar_ident#ty_generics) {
@@ -62,5 +72,5 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
                   )*
             }
         }
-    )
+    ))
 }

@@ -318,31 +318,36 @@ create_derive!(
     "mul_assign_like",
     mul_assign_like,
     MulAssign,
-    mul_assign_derive
+    mul_assign_derive,
+    mul_assign
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     DivAssign,
-    div_assign_derive
+    div_assign_derive,
+    div_assign
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     RemAssign,
-    rem_assign_derive
+    rem_assign_derive,
+    rem_assign
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     ShrAssign,
-    shr_assign_derive
+    shr_assign_derive,
+    shr_assign
 );
 create_derive!(
     "mul_assign_like",
     mul_assign_like,
     ShlAssign,
-    shl_assign_derive
+    shl_assign_derive,
+    shl_assign
 );
 
 create_derive!("sum_like", sum_like, Sum, sum_derive);
