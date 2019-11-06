@@ -5,7 +5,7 @@ use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(Into)]` into an implementation of `Into`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::new(
+    let state = State::with_field_ignore_and_refs(
         input,
         trait_name,
         quote!(::core::convert),

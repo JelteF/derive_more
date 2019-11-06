@@ -236,12 +236,100 @@ pub struct State<'input> {
     full_meta_infos: Vec<FullMetaInfo>,
 }
 
+#[derive(Default, Clone)]
+pub struct AttrParams {
+    pub enum_: Vec<&'static str>,
+    pub variant: Vec<&'static str>,
+    pub struct_: Vec<&'static str>,
+    pub field: Vec<&'static str>,
+}
+
+impl AttrParams {
+    pub fn new(params: Vec<&'static str>) -> AttrParams {
+        AttrParams {
+            enum_: params.clone(),
+            struct_: params.clone(),
+            variant: params.clone(),
+            field: params,
+        }
+    }
+    pub fn struct_(params: Vec<&'static str>) -> AttrParams {
+        AttrParams {
+            enum_: vec![],
+            struct_: params,
+            variant: vec![],
+            field: vec![],
+        }
+    }
+}
+
 impl<'input> State<'input> {
     pub fn new<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
         trait_module: TokenStream,
         trait_attr: String,
+    ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::default(),
+        )
+    }
+
+    pub fn with_field_ignore<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+    ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::new(vec!["ignore"]),
+        )
+    }
+
+    pub fn with_field_ignore_and_forward<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+    ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::new(vec!["ignore", "forward"]),
+        )
+    }
+
+    pub fn with_field_ignore_and_refs<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+    ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::new(vec!["ignore", "owned", "ref", "ref_mut"]),
+        )
+    }
+
+    pub fn with_attr_params<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+        allowed_attr_params: AttrParams,
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
@@ -273,10 +361,18 @@ impl<'input> State<'input> {
             fields.iter().map(|f| &f.attrs).collect()
         };
 
-        let struct_meta_info = get_meta_info(&trait_attr, &input.attrs)?;
+        let (allowed_attr_params_outer, allowed_attr_params_inner) =
+            if derive_type == DeriveType::Enum {
+                (&allowed_attr_params.enum_, &allowed_attr_params.variant)
+            } else {
+                (&allowed_attr_params.struct_, &allowed_attr_params.field)
+            };
+
+        let struct_meta_info =
+            get_meta_info(&trait_attr, &input.attrs, allowed_attr_params_outer)?;
         let meta_infos: Result<Vec<_>> = attrs
             .iter()
-            .map(|attrs| get_meta_info(&trait_attr, attrs))
+            .map(|attrs| get_meta_info(&trait_attr, attrs, allowed_attr_params_inner))
             .collect();
         let meta_infos = meta_infos?;
         let first_match = meta_infos
@@ -316,6 +412,7 @@ impl<'input> State<'input> {
                         trait_name,
                         trait_module.clone(),
                         trait_attr.clone(),
+                        allowed_attr_params.clone(),
                         variant,
                         info,
                     )
@@ -352,6 +449,7 @@ impl<'input> State<'input> {
         trait_name: &'static str,
         trait_module: TokenStream,
         trait_attr: String,
+        allowed_attr_params: AttrParams,
         variant: &'arg_input Variant,
         default_info: FullMetaInfo,
     ) -> Result<State<'arg_input>> {
@@ -371,7 +469,7 @@ impl<'input> State<'input> {
         let meta_infos: Result<Vec<_>> = fields
             .iter()
             .map(|f| &f.attrs)
-            .map(|attrs| get_meta_info(&trait_attr, attrs))
+            .map(|attrs| get_meta_info(&trait_attr, attrs, &allowed_attr_params.field))
             .collect();
         let meta_infos = meta_infos?;
         let full_meta_infos: Vec<_> = meta_infos
@@ -639,7 +737,11 @@ impl<'input, 'state> SingleFieldData<'input, 'state> {
     }
 }
 
-fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
+fn get_meta_info(
+    trait_attr: &str,
+    attrs: &[Attribute],
+    allowed_attr_params: &[&'static str],
+) -> Result<MetaInfo> {
     let mut it = attrs
         .iter()
         .filter_map(|m| m.parse_meta().ok())
@@ -664,13 +766,28 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
         return Ok(info);
     };
 
+    if allowed_attr_params.is_empty() {
+        return Err(Error::new(meta.span(), "Attribute is not allowed here"));
+    }
+
     info.enabled = Some(true);
 
     if let Some(meta2) = it.next() {
-        return Err(Error::new(meta2.span(), "Too many formats given"));
+        return Err(Error::new(
+            meta2.span(),
+            "Only a single attribute is allowed",
+        ));
     }
     let list = match meta.clone() {
-        Meta::Path(_) => return Ok(info),
+        Meta::Path(_) => {
+            if allowed_attr_params.contains(&"ignore") {
+                return Ok(info);
+            } else {
+                return Err(Error::new(meta.span(), format!("Empty attribute is not allowed, add one of the following parameters: {}",
+                    allowed_attr_params.join(", ")
+                    )));
+            }
+        }
         Meta::List(list) => list,
         _ => {
             return Err(Error::new(meta.span(), "Attribute format not supported1"));
@@ -693,19 +810,38 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
         } else {
             return Err(Error::new(meta.span(), "Attribute format not supported5"));
         };
-        if ident == "ignore" {
-            info.enabled = Some(false);
-        } else if ident == "forward" {
-            info.forward = Some(true);
-        } else if ident == "owned" {
-            info.owned = Some(true);
-        } else if ident == "ref" {
-            info.ref_ = Some(true);
-        } else if ident == "ref_mut" {
-            info.ref_mut = Some(true);
-        } else {
-            return Err(Error::new(meta.span(), "Attribute format not supported6"));
-        };
+
+        let str_ident: &str = &ident.to_string();
+        if !allowed_attr_params.contains(&str_ident) {
+            return Err(Error::new(
+                ident.span(),
+                format!(
+                    "Attribute parameter not supported. Supported attribute parameters are: {}",
+                    allowed_attr_params.join(", ")
+                ),
+            ));
+        }
+
+        match str_ident {
+            "ignore" => {
+                info.enabled = Some(false);
+            }
+            "forward" => {
+                info.forward = Some(true);
+            }
+            "owned" => {
+                info.owned = Some(true);
+            }
+            "ref" => {
+                info.ref_ = Some(true);
+            }
+            "ref_mut" => {
+                info.ref_mut = Some(true);
+            }
+            _ => {
+                return Err(Error::new(meta.span(), "Attribute format not supported7"));
+            }
+        }
     }
     Ok(info)
 }

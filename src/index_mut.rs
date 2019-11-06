@@ -6,7 +6,7 @@ use syn::{parse::Result, DeriveInput, Ident};
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let index_type = &Ident::new("__IdxT", Span::call_site());
-    let mut state = State::new(
+    let mut state = State::with_field_ignore(
         input,
         trait_name,
         quote!(::core::ops),

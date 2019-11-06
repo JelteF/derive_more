@@ -9,7 +9,7 @@ use syn::{DeriveInput, Result};
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
 #[allow(clippy::cognitive_complexity)]
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::new(
+    let state = State::with_field_ignore_and_refs(
         input,
         trait_name,
         quote!(::core::convert),

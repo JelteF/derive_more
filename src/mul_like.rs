@@ -1,6 +1,6 @@
 use crate::add_like;
 use crate::mul_helpers::generics_and_exprs;
-use crate::utils::{MultiFieldData, RefType, State};
+use crate::utils::{AttrParams, MultiFieldData, RefType, State};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::collections::HashSet;
@@ -8,11 +8,12 @@ use std::iter;
 use syn::{DeriveInput, Ident, Result};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let mut state = State::new(
+    let mut state = State::with_attr_params(
         input,
         trait_name,
         quote!(::core::ops),
         trait_name.to_lowercase(),
+        AttrParams::struct_(vec!["forward"]),
     )?;
     if state.default_info.forward {
         return Ok(add_like::expand(input, trait_name));
