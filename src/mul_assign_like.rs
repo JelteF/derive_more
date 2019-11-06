@@ -1,68 +1,51 @@
 use crate::add_assign_like;
-use crate::mul_helpers::{struct_exprs, tuple_exprs};
-use crate::utils::{
-    add_where_clauses_for_new_ident, get_field_types_iter, named_to_vec,
-    unnamed_to_vec, State,
-};
+use crate::mul_helpers::generics_and_exprs;
+use crate::utils::{MultiFieldData, RefType, State};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::collections::HashSet;
 use std::iter;
-use syn::{Data, DeriveInput, Fields, Ident, Result};
+use syn::{DeriveInput, Ident, Result};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let method_name = trait_name
-        .to_string()
         .to_lowercase()
         .trim_end_matches("assign")
         .to_string()
         + "_assign";
 
-    let state =
-        State::new(input, trait_name, quote!(::core::ops), method_name.clone())?;
+    let mut state = State::new(input, trait_name, quote!(::core::ops), method_name)?;
     if state.default_info.forward {
         return Ok(add_assign_like::expand(input, trait_name));
     }
-    let trait_ident = Ident::new(trait_name, Span::call_site());
-    let trait_path = &quote!(::core::ops::#trait_ident);
-    let method_ident = Ident::new(&method_name, Span::call_site());
-    let input_type = &input.ident;
-
-    let (exprs, fields) = match input.data {
-        Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => {
-                let field_vec = unnamed_to_vec(fields);
-                (tuple_exprs(&field_vec, &method_ident), field_vec)
-            }
-            Fields::Named(ref fields) => {
-                let field_vec = named_to_vec(fields);
-                (struct_exprs(&field_vec, &method_ident), field_vec)
-            }
-            _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
-        },
-
-        _ => panic!(format!("Only structs can use derive({})", trait_name)),
-    };
-
     let scalar_ident = &Ident::new("__RhsT", Span::call_site());
-    let tys = get_field_types_iter(&fields).collect::<HashSet<_>>();
+    state.add_trait_path_type_param(quote!(#scalar_ident));
+    let multi_field_data = state.enabled_fields_data();
+    let MultiFieldData {
+        input_type,
+        field_types,
+        ty_generics,
+        trait_path,
+        trait_path_with_params,
+        method_ident,
+        ..
+    } = multi_field_data.clone();
+
+    let tys = field_types.iter().collect::<HashSet<_>>();
     let tys = tys.iter();
-    let scalar_iter = iter::repeat(scalar_ident);
-    let trait_path_iter = iter::repeat(trait_path);
+    let trait_path_iter = iter::repeat(trait_path_with_params);
 
     let type_where_clauses = quote! {
-        where #(#tys: #trait_path_iter<#scalar_iter>),*
+        where #(#tys: #trait_path_iter),*
     };
 
-    let new_generics = add_where_clauses_for_new_ident(
-        &input.generics,
-        &fields,
+    let (generics, exprs) = generics_and_exprs(
+        multi_field_data.clone(),
         scalar_ident,
         type_where_clauses,
-        true,
+        RefType::Mut,
     );
-    let (impl_generics, _, where_clause) = new_generics.split_for_impl();
-    let (_, ty_generics, _) = input.generics.split_for_impl();
+    let (impl_generics, _, where_clause) = generics.split_for_impl();
 
     Ok(quote!(
         impl#impl_generics #trait_path<#scalar_ident> for #input_type#ty_generics #where_clause{

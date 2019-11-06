@@ -71,10 +71,6 @@ pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
         .collect()
 }
 
-pub fn number_idents(count: usize) -> Vec<Index> {
-    (0..count).map(Index::from).collect()
-}
-
 pub fn field_idents<'a>(fields: &'a [&'a Field]) -> Vec<&'a Ident> {
     fields
         .iter()
@@ -224,8 +220,11 @@ pub enum DeriveType {
 pub struct State<'input> {
     pub input: &'input DeriveInput,
     pub trait_name: &'static str,
+    pub trait_ident: Ident,
+    pub method_ident: Ident,
     pub trait_module: TokenStream,
     pub trait_path: TokenStream,
+    pub trait_path_params: Vec<TokenStream>,
     pub trait_attr: String,
     pub derive_type: DeriveType,
     pub fields: Vec<&'input Field>,
@@ -246,6 +245,7 @@ impl<'input> State<'input> {
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
+        let method_ident = Ident::new(&trait_attr, Span::call_site());
         let trait_path = quote!(#trait_module::#trait_ident);
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
@@ -329,8 +329,11 @@ impl<'input> State<'input> {
         Ok(State {
             input,
             trait_name,
+            trait_ident,
+            method_ident,
             trait_module,
             trait_path,
+            trait_path_params: vec![],
             trait_attr,
             // input,
             fields,
@@ -354,6 +357,7 @@ impl<'input> State<'input> {
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
+        let method_ident = Ident::new(&trait_attr, Span::call_site());
         let trait_path = quote!(#trait_module::#trait_ident);
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {
@@ -382,7 +386,10 @@ impl<'input> State<'input> {
             trait_name,
             trait_module,
             trait_path,
+            trait_path_params: vec![],
             trait_attr,
+            trait_ident,
+            method_ident,
             // input,
             fields,
             variants: vec![],
@@ -394,9 +401,8 @@ impl<'input> State<'input> {
             default_info,
         })
     }
-    pub fn add_trait_path_type_param(&mut self, params: TokenStream) {
-        let trait_path = &self.trait_path;
-        self.trait_path = quote!(#trait_path<#params>)
+    pub fn add_trait_path_type_param(&mut self, param: TokenStream) {
+        self.trait_path_params.push(param);
     }
 
     pub fn assert_single_enabled_field<'state>(
@@ -417,6 +423,7 @@ impl<'input> State<'input> {
             info: data.infos[0],
             field_ident: data.field_idents[0].clone(),
             trait_path: data.trait_path,
+            trait_path_with_params: data.trait_path_with_params.clone(),
             casted_trait: data.casted_traits[0].clone(),
             impl_generics: data.impl_generics.clone(),
             ty_generics: data.ty_generics.clone(),
@@ -437,9 +444,16 @@ impl<'input> State<'input> {
             .map(|ident| quote!(self.#ident))
             .collect();
         let trait_path = &self.trait_path;
+        let trait_path_with_params = if !self.trait_path_params.is_empty() {
+            let params = self.trait_path_params.iter();
+            quote!(#trait_path<#(#params),*>)
+        } else {
+            self.trait_path.clone()
+        };
+
         let casted_traits: Vec<_> = field_types
             .iter()
-            .map(|field_type| quote!(<#field_type as #trait_path>))
+            .map(|field_type| quote!(<#field_type as #trait_path_with_params>))
             .collect();
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
         let input_type = &self.input.ident;
@@ -460,7 +474,9 @@ impl<'input> State<'input> {
             members,
             infos: self.enabled_infos(),
             field_idents,
+            method_ident: &self.method_ident,
             trait_path,
+            trait_path_with_params,
             casted_traits,
             impl_generics,
             ty_generics,
@@ -562,6 +578,7 @@ pub struct SingleFieldData<'input, 'state> {
     pub member: TokenStream,
     pub info: FullMetaInfo,
     pub trait_path: &'state TokenStream,
+    pub trait_path_with_params: TokenStream,
     pub casted_trait: TokenStream,
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
@@ -580,7 +597,9 @@ pub struct MultiFieldData<'input, 'state> {
     pub field_idents: Vec<TokenStream>,
     pub members: Vec<TokenStream>,
     pub infos: Vec<FullMetaInfo>,
+    pub method_ident: &'state Ident,
     pub trait_path: &'state TokenStream,
+    pub trait_path_with_params: TokenStream,
     pub casted_traits: Vec<TokenStream>,
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
