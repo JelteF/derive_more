@@ -143,6 +143,7 @@
 //! extern crate core;
 //! #[macro_use]
 //! extern crate derive_more;
+//! # fn main(){}
 //! ```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
@@ -184,11 +185,7 @@ mod utils;
 
 #[cfg(feature = "add_assign")]
 mod add_assign_like;
-#[cfg(any(
-    feature = "add",
-    feature = "add_assign",
-    feature = "mul"
-))]
+#[cfg(any(feature = "add", feature = "add_assign", feature = "mul"))]
 mod add_helpers;
 #[cfg(any(feature = "add", feature = "mul"))]
 mod add_like;
@@ -291,18 +288,8 @@ create_derive!("mul", mul_like, Rem, rem_derive, rem);
 create_derive!("mul", mul_like, Shr, shr_derive, shr);
 create_derive!("mul", mul_like, Shl, shl_derive, shl);
 
-create_derive!(
-    "add_assign",
-    add_assign_like,
-    AddAssign,
-    add_assign_derive,
-);
-create_derive!(
-    "add_assign",
-    add_assign_like,
-    SubAssign,
-    sub_assign_derive,
-);
+create_derive!("add_assign", add_assign_like, AddAssign, add_assign_derive,);
+create_derive!("add_assign", add_assign_like, SubAssign, sub_assign_derive,);
 create_derive!(
     "add_assign",
     add_assign_like,
