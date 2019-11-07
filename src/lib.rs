@@ -182,15 +182,15 @@ use syn::parse::Error as ParseError;
 
 mod utils;
 
-#[cfg(feature = "add_assign_like")]
+#[cfg(feature = "add_assign")]
 mod add_assign_like;
 #[cfg(any(
-    feature = "add_like",
-    feature = "add_assign_like",
-    feature = "mul_like"
+    feature = "add",
+    feature = "add_assign",
+    feature = "mul"
 ))]
 mod add_helpers;
-#[cfg(any(feature = "add_like", feature = "mul_like"))]
+#[cfg(any(feature = "add", feature = "mul"))]
 mod add_like;
 #[cfg(feature = "as_mut")]
 mod as_mut;
@@ -218,19 +218,19 @@ mod into;
 mod into_iterator;
 #[cfg(feature = "iterator")]
 mod iterator;
-#[cfg(feature = "mul_assign_like")]
+#[cfg(feature = "mul_assign")]
 mod mul_assign_like;
-#[cfg(any(feature = "mul_like", feature = "mul_assign_like"))]
+#[cfg(any(feature = "mul", feature = "mul_assign"))]
 mod mul_helpers;
-#[cfg(feature = "mul_like")]
+#[cfg(feature = "mul")]
 mod mul_like;
-#[cfg(feature = "not_like")]
+#[cfg(feature = "not")]
 mod not_like;
 #[cfg(feature = "display")]
 #[allow(ellipsis_inclusive_range_patterns)]
 #[allow(clippy::all)]
 mod parsing;
-#[cfg(feature = "sum_like")]
+#[cfg(feature = "sum")]
 mod sum_like;
 #[cfg(feature = "try_into")]
 mod try_into;
@@ -276,90 +276,90 @@ create_derive!("into", into, Into, into_derive, into);
 
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 
-create_derive!("not_like", not_like, Not, not_derive);
-create_derive!("not_like", not_like, Neg, neg_derive);
+create_derive!("not", not_like, Not, not_derive);
+create_derive!("not", not_like, Neg, neg_derive);
 
-create_derive!("add_like", add_like, Add, add_derive);
-create_derive!("add_like", add_like, Sub, sub_derive);
-create_derive!("add_like", add_like, BitAnd, bit_and_derive);
-create_derive!("add_like", add_like, BitOr, bit_or_derive);
-create_derive!("add_like", add_like, BitXor, bit_xor_derive);
+create_derive!("add", add_like, Add, add_derive);
+create_derive!("add", add_like, Sub, sub_derive);
+create_derive!("add", add_like, BitAnd, bit_and_derive);
+create_derive!("add", add_like, BitOr, bit_or_derive);
+create_derive!("add", add_like, BitXor, bit_xor_derive);
 
-create_derive!("mul_like", mul_like, Mul, mul_derive, mul);
-create_derive!("mul_like", mul_like, Div, div_derive, div);
-create_derive!("mul_like", mul_like, Rem, rem_derive, rem);
-create_derive!("mul_like", mul_like, Shr, shr_derive, shr);
-create_derive!("mul_like", mul_like, Shl, shl_derive, shl);
+create_derive!("mul", mul_like, Mul, mul_derive, mul);
+create_derive!("mul", mul_like, Div, div_derive, div);
+create_derive!("mul", mul_like, Rem, rem_derive, rem);
+create_derive!("mul", mul_like, Shr, shr_derive, shr);
+create_derive!("mul", mul_like, Shl, shl_derive, shl);
 
 create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     AddAssign,
     add_assign_derive,
 );
 create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     SubAssign,
     sub_assign_derive,
 );
 create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     BitAndAssign,
     bit_and_assign_derive,
 );
 create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     BitOrAssign,
     bit_or_assign_derive,
 );
 create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     BitXorAssign,
     bit_xor_assign_derive,
 );
 
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     MulAssign,
     mul_assign_derive,
     mul_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     DivAssign,
     div_assign_derive,
     div_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     RemAssign,
     rem_assign_derive,
     rem_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     ShrAssign,
     shr_assign_derive,
     shr_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     ShlAssign,
     shl_assign_derive,
     shl_assign,
 );
 
-create_derive!("sum_like", sum_like, Sum, sum_derive);
-create_derive!("sum_like", sum_like, Product, product_derive);
+create_derive!("sum", sum_like, Sum, sum_derive);
+create_derive!("sum", sum_like, Product, product_derive);
 
 create_derive!("from_str", from_str, FromStr, from_str_derive);
 

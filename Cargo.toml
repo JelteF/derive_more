@@ -40,8 +40,8 @@ appveyor = { repository = "JelteF/derive_more" }
 
 [features]
 nightly = []
-add_assign_like = []
-add_like = []
+add_assign = []
+add = []
 as_mut = []
 as_ref = []
 constructor = []
@@ -55,16 +55,16 @@ index_mut = []
 into = []
 into_iterator = []
 iterator = []
-mul_assign_like = []
-mul_like = []
-not_like = []
-sum_like = []
+mul_assign = []
+mul = []
+not = []
+sum = []
 try_into = []
 generate-parsing-rs = ["peg"]
 
 default = [
-    "add_assign_like",
-    "add_like",
+    "add_assign",
+    "add",
     "as_mut",
     "as_ref",
     "constructor",
@@ -78,22 +78,22 @@ default = [
     "into",
     "into_iterator",
     "iterator",
-    "mul_assign_like",
-    "mul_like",
-    "not_like",
-    "sum_like",
+    "mul_assign",
+    "mul",
+    "not",
+    "sum",
     "try_into",
 ]
 
 [[test]]
 name = "add_assign"
 path = "tests/add_assign.rs"
-required-features = ["add_assign_like"]
+required-features = ["add_assign"]
 
 [[test]]
 name = "add"
 path = "tests/add.rs"
-required-features = ["add_like"]
+required-features = ["add"]
 
 [[test]]
 name = "as_mut"
@@ -163,22 +163,22 @@ required-features = ["into_iterator"]
 [[test]]
 name = "mul_assign"
 path = "tests/mul_assign.rs"
-required-features = ["mul_assign_like"]
+required-features = ["mul_assign"]
 
 [[test]]
 name = "mul"
 path = "tests/mul.rs"
-required-features = ["mul_like"]
+required-features = ["mul"]
 
 [[test]]
 name = "not"
 path = "tests/not.rs"
-required-features = ["not_like"]
+required-features = ["not"]
 
 [[test]]
 name = "sum"
 path = "tests/sum.rs"
-required-features = ["sum_like"]
+required-features = ["sum"]
 
 [[test]]
 name = "try_into"
@@ -189,8 +189,8 @@ required-features = ["try_into"]
 name = "no_std"
 path = "tests/no_std.rs"
 required-features = [
-    "add_assign_like",
-    "add_like",
+    "add_assign",
+    "add",
     "as_mut",
     "as_ref",
     "constructor",
@@ -202,10 +202,10 @@ required-features = [
     "index",
     "index_mut",
     "into",
-    "mul_assign_like",
-    "mul_like",
-    "not_like",
-    "sum_like",
+    "mul_assign",
+    "mul",
+    "not",
+    "sum",
     "try_into",
 ]
 
@@ -213,8 +213,8 @@ required-features = [
 name = "generics"
 path = "tests/generics.rs"
 required-features = [
-    "add_assign_like",
-    "add_like",
+    "add_assign",
+    "add",
     "as_mut",
     "as_ref",
     "constructor",
@@ -226,9 +226,9 @@ required-features = [
     "index",
     "index_mut",
     "into",
-    "mul_assign_like",
-    "mul_like",
-    "not_like",
+    "mul_assign",
+    "mul",
+    "not",
     "try_into",
 ]
 
@@ -236,8 +236,8 @@ required-features = [
 name = "lib"
 path = "tests/lib.rs"
 required-features = [
-    "add_assign_like",
-    "add_like",
+    "add_assign",
+    "add",
     "as_mut",
     "as_ref",
     "constructor",
@@ -249,9 +249,9 @@ required-features = [
     "index",
     "index_mut",
     "into",
-    "mul_assign_like",
-    "mul_like",
-    "not_like",
+    "mul_assign",
+    "mul",
+    "not",
     "try_into",
 ]
 
@@ -259,8 +259,8 @@ required-features = [
 name = "deny_missing_docs"
 path = "examples/deny_missing_docs.rs"
 required-features = [
-    "add_assign_like",
-    "add_like",
+    "add_assign",
+    "add",
     "as_mut",
     "as_ref",
     "constructor",
@@ -272,8 +272,8 @@ required-features = [
     "index",
     "index_mut",
     "into",
-    "mul_assign_like",
-    "mul_like",
-    "not_like",
+    "mul_assign",
+    "mul",
+    "not",
     "try_into",
 ]
