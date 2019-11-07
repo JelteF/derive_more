@@ -8,11 +8,7 @@ use std::{
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    Error,
-    Result,
-    punctuated::Punctuated,
-    parse::Parser as _,
-    spanned::Spanned as _,
+    parse::Parser as _, punctuated::Punctuated, spanned::Spanned as _, Error, Result,
 };
 
 use crate::utils;
@@ -569,18 +565,19 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .enumerate()
             .filter_map(|(i, field)| {
-                utils::get_if_type_parameter_used_in_type(&self.type_params, &field.ty).map(|ty| {
-                    (
-                        field
-                            .ident
-                            .clone()
-                            .unwrap_or_else(|| {
-                                Ident::new(&format!("_{}", i), Span::call_site())
-                            })
-                            .into(),
-                        ty,
-                    )
-                })
+                utils::get_if_type_parameter_used_in_type(&self.type_params, &field.ty)
+                    .map(|ty| {
+                        (
+                            field
+                                .ident
+                                .clone()
+                                .unwrap_or_else(|| {
+                                    Ident::new(&format!("_{}", i), Span::call_site())
+                                })
+                                .into(),
+                            ty,
+                        )
+                    })
             })
             .collect();
         if fields_type_params.is_empty() {
@@ -657,17 +654,18 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .take(1)
             .filter_map(|field| {
-                utils::get_if_type_parameter_used_in_type(&self.type_params, &field.ty).map(|ty| {
-                    (
-                        ty,
-                        [trait_name_to_trait_bound(attribute_name_to_trait_name(
-                            self.trait_attr,
-                        ))]
-                        .iter()
-                        .cloned()
-                        .collect(),
-                    )
-                })
+                utils::get_if_type_parameter_used_in_type(&self.type_params, &field.ty)
+                    .map(|ty| {
+                        (
+                            ty,
+                            [trait_name_to_trait_bound(attribute_name_to_trait_name(
+                                self.trait_attr,
+                            ))]
+                            .iter()
+                            .cloned()
+                            .collect(),
+                        )
+                    })
             })
             .collect()
     }

@@ -1,24 +1,17 @@
 use std::collections::HashSet;
 
 use proc_macro2::TokenStream;
-use syn::{
-    Error,
-    Result,
-    spanned::Spanned as _,
-};
 use quote::quote;
+use syn::{spanned::Spanned as _, Error, Result};
 
-use crate::utils::{self, DeriveType, MetaInfo, State, FullMetaInfo};
-
+use crate::utils::{self, DeriveType, FullMetaInfo, MetaInfo, State};
 
 pub fn expand(
     input: &syn::DeriveInput,
     trait_name: &'static str,
 ) -> Result<TokenStream> {
     let syn::DeriveInput {
-        ident,
-        generics,
-        ..
+        ident, generics, ..
     } = input;
 
     let state = State::new(
@@ -28,7 +21,9 @@ pub fn expand(
         trait_name.to_lowercase(),
     )?;
 
-    let type_params: HashSet<_> = generics.params.iter()
+    let type_params: HashSet<_> = generics
+        .params
+        .iter()
         .filter_map(|generic| match generic {
             syn::GenericParam::Type(ty) => Some(ty.ident.clone()),
             _ => None,
@@ -49,7 +44,7 @@ pub fn expand(
             quote! {
                 where
                     #ident<#(#generic_parameters),*>: ::std::fmt::Debug + ::std::fmt::Display
-            }
+            },
         );
     }
 
@@ -60,7 +55,7 @@ pub fn expand(
             quote! {
                 where
                     #(#bounds: ::std::fmt::Debug + ::std::fmt::Display + ::std::error::Error + 'static),*
-            }
+            },
         );
     }
 
@@ -79,7 +74,7 @@ pub fn expand(
 
 fn render_struct(
     type_params: &HashSet<syn::Ident>,
-    state: &State
+    state: &State,
 ) -> Result<(HashSet<syn::Type>, TokenStream)> {
     let parsed_fields = parse_fields(&type_params, &state)?;
 
@@ -91,7 +86,7 @@ fn render_struct(
 
 fn render_enum(
     type_params: &HashSet<syn::Ident>,
-    state: &State
+    state: &State,
 ) -> Result<(HashSet<syn::Type>, TokenStream)> {
     let mut bounds = HashSet::new();
     let mut match_arms = Vec::new();
@@ -145,7 +140,6 @@ fn render_enum(
     Ok((bounds, render))
 }
 
-
 #[derive(Debug)]
 struct ParsedFields<'a> {
     derive_type: DeriveType,
@@ -160,7 +154,6 @@ struct ParsedField<'a> {
     index: usize,
     info: MetaInfo,
 }
-
 
 impl<'a> ParsedFields<'a> {
     fn new(derive_type: DeriveType, len: usize) -> Self {
@@ -183,11 +176,7 @@ impl<'a> ParsedFields<'a> {
 
 impl<'a> ParsedField<'a> {
     fn new(field: &'a syn::Field, index: usize, info: MetaInfo) -> Self {
-        Self {
-            field,
-            index,
-            info,
-        }
+        Self { field, index, info }
     }
 
     fn is_source_explicitly_set(&self) -> bool {
@@ -197,7 +186,6 @@ impl<'a> ParsedField<'a> {
         }
     }
 }
-
 
 impl<'a> ParsedFields<'a> {
     fn render_as_struct(&self) -> TokenStream {
@@ -211,13 +199,15 @@ impl<'a> ParsedFields<'a> {
     }
 
     fn render_as_enum_variant_match_arm_tail(&self) -> Option<TokenStream> {
-        self.source
-            .as_ref()
-            .map(|source| match self.derive_type {
-                DeriveType::Named => source.render_as_enum_variant_struct_match_arm_tail(self.len),
-                DeriveType::Unnamed => source.render_as_enum_variant_tuple_match_arm_tail(self.len),
-                _ => unreachable!(), // TODO
-            })
+        self.source.as_ref().map(|source| match self.derive_type {
+            DeriveType::Named => {
+                source.render_as_enum_variant_struct_match_arm_tail(self.len)
+            }
+            DeriveType::Unnamed => {
+                source.render_as_enum_variant_tuple_match_arm_tail(self.len)
+            }
+            _ => unreachable!(), // TODO
+        })
     }
 }
 
@@ -233,7 +223,10 @@ impl<'a> ParsedField<'a> {
     }
 
     fn render_as_enum_variant_struct_match_arm_tail(&self, len: usize) -> TokenStream {
-        let ident = self.field.ident.as_ref()
+        let ident = self
+            .field
+            .ident
+            .as_ref()
             .expect("Internal error in macro implementation"); // TODO
 
         let mut bindings = quote!(#ident);
@@ -269,15 +262,15 @@ impl<'a> ParsedField<'a> {
 }
 
 fn render_some<T>(expr: T) -> TokenStream
-    where T: quote::ToTokens
+where
+    T: quote::ToTokens,
 {
     quote!(Some(#expr as &(dyn ::std::error::Error + 'static)))
 }
 
-
 fn parse_fields<'a>(
     type_params: &HashSet<syn::Ident>,
-    state: &'a State
+    state: &'a State,
 ) -> Result<ParsedFields<'a>> {
     match state.derive_type {
         DeriveType::Named => {
@@ -286,7 +279,9 @@ fn parse_fields<'a>(
                 type_params,
                 state,
                 |field, _| {
-                    let ident = field.ident.as_ref()
+                    let ident = field
+                        .ident
+                        .as_ref()
                         .expect("Internal error in macro implementation"); // TODO
 
                     ident == "source"
@@ -294,14 +289,12 @@ fn parse_fields<'a>(
             )
         }
 
-        DeriveType::Unnamed => {
-            parse_fields_impl(
-                ParsedFields::unnamed(state.fields.len()),
-                type_params,
-                state,
-                |_, len| len == 1,
-            )
-        }
+        DeriveType::Unnamed => parse_fields_impl(
+            ParsedFields::unnamed(state.fields.len()),
+            type_params,
+            state,
+            |_, len| len == 1,
+        ),
 
         _ => unreachable!(), // TODO
     }
@@ -313,11 +306,17 @@ fn parse_fields_impl<'a, P>(
     state: &'a State,
     is_valid_default_field_for_attr: P,
 ) -> Result<ParsedFields<'a>>
-    where P: Fn(&syn::Field, usize) -> bool,
+where
+    P: Fn(&syn::Field, usize) -> bool,
 {
     let fields = state.enabled_fields_data();
 
-    for (index, (field, info)) in fields.fields.into_iter().zip(fields.infos.into_iter().map(|info| info.info)).enumerate() {
+    for (index, (field, info)) in fields
+        .fields
+        .into_iter()
+        .zip(fields.infos.into_iter().map(|info| info.info))
+        .enumerate()
+    {
         match info.source {
             Some(true) => process_explicitly_set_attr(
                 &mut parsed_fields,
@@ -350,9 +349,9 @@ fn process_explicitly_set_attr<'a>(
     index: usize,
     info: MetaInfo,
 ) -> Result<()> {
-    let prev_parsed_field = parsed_fields.source.replace(
-        ParsedField::new(field, index, info)
-    );
+    let prev_parsed_field = parsed_fields
+        .source
+        .replace(ParsedField::new(field, index, info));
 
     match &prev_parsed_field {
         Some(prev_parsed_field) if prev_parsed_field.is_source_explicitly_set() => {
@@ -364,7 +363,11 @@ fn process_explicitly_set_attr<'a>(
         _ => (),
     };
 
-    add_bound_if_type_parameter_used_in_type(&mut parsed_fields.bounds, type_params, &field.ty);
+    add_bound_if_type_parameter_used_in_type(
+        &mut parsed_fields.bounds,
+        type_params,
+        &field.ty,
+    );
 
     Ok(())
 }
@@ -377,7 +380,8 @@ fn process_if_valid_default_field_for_attr<'a, P>(
     info: MetaInfo,
     is_valid_default_field_for_attr: &P,
 ) -> Result<()>
-    where P: Fn(&syn::Field, usize) -> bool,
+where
+    P: Fn(&syn::Field, usize) -> bool,
 {
     if !is_valid_default_field_for_attr(field, parsed_fields.len) {
         return Ok(());
@@ -386,15 +390,19 @@ fn process_if_valid_default_field_for_attr<'a, P>(
     if let Some(parsed_field) = &mut parsed_fields.source {
         if !parsed_field.is_source_explicitly_set() {
             return Err(Error::new(
-                    parsed_field.field.span(),
+                parsed_field.field.span(),
                 "Conflicting fields found. Consider specifying some \
-                     `#[error(...)]` attributes to resolve conflict.",
+                 `#[error(...)]` attributes to resolve conflict.",
             ));
         }
     } else {
         eprintln!("PING");
         parsed_fields.source = Some(ParsedField::new(field, index, info));
-        add_bound_if_type_parameter_used_in_type(&mut parsed_fields.bounds, type_params, &field.ty);
+        add_bound_if_type_parameter_used_in_type(
+            &mut parsed_fields.bounds,
+            type_params,
+            &field.ty,
+        );
     }
 
     Ok(())

@@ -158,7 +158,7 @@ mod derives_for_enum {
         NamedExplicitNoSource {
             #[error(not(source))]
             source: S,
-            field: i32
+            field: i32,
         },
         NamedExplicitSource {
             #[error(source)]
@@ -178,7 +178,10 @@ mod derives_for_enum {
         UnnamedImplicitSource(S),
         UnnamedExplicitNoSource(#[error(not(source))] S),
         UnnamedExplicitSource(#[error(source)] S, i32),
-        UnnamedExplicitNoSourceRedundant(#[error(not(source))] i32, #[error(not(source))] i32),
+        UnnamedExplicitNoSourceRedundant(
+            #[error(not(source))] i32,
+            #[error(not(source))] i32,
+        ),
         UnnamedExplicitSourceRedundant(#[error(source)] S),
     }
 
@@ -189,32 +192,54 @@ mod derives_for_enum {
 
     #[test]
     fn named_implicit_no_source() {
-        assert!(E::NamedImplicitNoSource{field: 0}.source().is_none());
+        assert!(E::NamedImplicitNoSource { field: 0 }.source().is_none());
     }
 
     #[test]
     fn named_implicit_source() {
-        assert!(E::NamedImplicitSource{source: S::default(), field: 0}.source().is_some());
+        assert!(E::NamedImplicitSource {
+            source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_some());
     }
 
     #[test]
     fn named_explicit_no_source() {
-        assert!(E::NamedExplicitNoSource{source: S::default(), field: 0}.source().is_none());
+        assert!(E::NamedExplicitNoSource {
+            source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_none());
     }
 
     #[test]
     fn named_explicit_source() {
-        assert!(E::NamedExplicitSource{explicit_source: S::default(), field: 0}.source().is_some());
+        assert!(E::NamedExplicitSource {
+            explicit_source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_some());
     }
 
     #[test]
     fn named_explicit_no_source_redundant() {
-        assert!(E::NamedExplicitNoSourceRedundant{field: 0}.source().is_none());
+        assert!(E::NamedExplicitNoSourceRedundant { field: 0 }
+            .source()
+            .is_none());
     }
 
     #[test]
     fn named_explicit_source_redundant() {
-        assert!(E::NamedExplicitSourceRedundant{source: S::default(), field: 0}.source().is_some());
+        assert!(E::NamedExplicitSourceRedundant {
+            source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_some());
     }
 
     #[test]
@@ -244,7 +269,9 @@ mod derives_for_enum {
 
     #[test]
     fn unnamed_explicit_source_redundant() {
-        assert!(E::UnnamedExplicitSourceRedundant(S::default()).source().is_some());
+        assert!(E::UnnamedExplicitSourceRedundant(S::default())
+            .source()
+            .is_some());
     }
 }
 
@@ -398,7 +425,7 @@ mod derives_for_generic_enum {
         NamedExplicitNoSource {
             #[error(not(source))]
             source: S,
-            field: T
+            field: T,
         },
         NamedExplicitSource {
             #[error(source)]
@@ -418,7 +445,10 @@ mod derives_for_generic_enum {
         UnnamedImplicitSource(S),
         UnnamedExplicitNoSource(#[error(not(source))] S),
         UnnamedExplicitSource(#[error(source)] S, T),
-        UnnamedExplicitNoSourceRedundant(#[error(not(source))] T, #[error(not(source))] T),
+        UnnamedExplicitNoSourceRedundant(
+            #[error(not(source))] T,
+            #[error(not(source))] T,
+        ),
         UnnamedExplicitSourceRedundant(#[error(source)] S),
     }
 
@@ -429,32 +459,56 @@ mod derives_for_generic_enum {
 
     #[test]
     fn named_implicit_no_source() {
-        assert!(E::<S, _>::NamedImplicitNoSource{field: 0}.source().is_none());
+        assert!(E::<S, _>::NamedImplicitNoSource { field: 0 }
+            .source()
+            .is_none());
     }
 
     #[test]
     fn named_implicit_source() {
-        assert!(E::NamedImplicitSource{source: S::default(), field: 0}.source().is_some());
+        assert!(E::NamedImplicitSource {
+            source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_some());
     }
 
     #[test]
     fn named_explicit_no_source() {
-        assert!(E::NamedExplicitNoSource{source: S::default(), field: 0}.source().is_none());
+        assert!(E::NamedExplicitNoSource {
+            source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_none());
     }
 
     #[test]
     fn named_explicit_source() {
-        assert!(E::NamedExplicitSource{explicit_source: S::default(), field: 0}.source().is_some());
+        assert!(E::NamedExplicitSource {
+            explicit_source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_some());
     }
 
     #[test]
     fn named_explicit_no_source_redundant() {
-        assert!(E::<S, _>::NamedExplicitNoSourceRedundant{field: 0}.source().is_none());
+        assert!(E::<S, _>::NamedExplicitNoSourceRedundant { field: 0 }
+            .source()
+            .is_none());
     }
 
     #[test]
     fn named_explicit_source_redundant() {
-        assert!(E::NamedExplicitSourceRedundant{source: S::default(), field: 0}.source().is_some());
+        assert!(E::NamedExplicitSourceRedundant {
+            source: S::default(),
+            field: 0
+        }
+        .source()
+        .is_some());
     }
 
     #[test]
@@ -464,12 +518,16 @@ mod derives_for_generic_enum {
 
     #[test]
     fn unnamed_implicit_source() {
-        assert!(E::<_, i32>::UnnamedImplicitSource(S::default()).source().is_some());
+        assert!(E::<_, i32>::UnnamedImplicitSource(S::default())
+            .source()
+            .is_some());
     }
 
     #[test]
     fn unnamed_explicit_no_source() {
-        assert!(E::<_, i32>::UnnamedExplicitNoSource(S::default()).source().is_none());
+        assert!(E::<_, i32>::UnnamedExplicitNoSource(S::default())
+            .source()
+            .is_none());
     }
 
     #[test]
@@ -479,11 +537,15 @@ mod derives_for_generic_enum {
 
     #[test]
     fn unnamed_explicit_no_source_redundant() {
-        assert!(E::<S, _>::UnnamedExplicitNoSourceRedundant(0, 0).source().is_none());
+        assert!(E::<S, _>::UnnamedExplicitNoSourceRedundant(0, 0)
+            .source()
+            .is_none());
     }
 
     #[test]
     fn unnamed_explicit_source_redundant() {
-        assert!(E::<_, i32>::UnnamedExplicitSourceRedundant(S::default()).source().is_some());
+        assert!(E::<_, i32>::UnnamedExplicitSourceRedundant(S::default())
+            .source()
+            .is_some());
     }
 }

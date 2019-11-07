@@ -2,19 +2,12 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-    Error,
-    Result,
-    parse_str,
-    spanned::Spanned,
-    Attribute, Data, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed,
-    GenericParam, Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Type,
-    TypeGenerics, TypeParamBound, Variant, WhereClause,
+    parse_str, spanned::Spanned, Attribute, Data, DeriveInput, Error, Field, Fields,
+    FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, ImplGenerics, Index,
+    Meta, NestedMeta, Result, Type, TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
 
-use std::{
-    collections::HashSet,
-    ops::Deref as _,
-};
+use std::{collections::HashSet, ops::Deref as _};
 use syn::punctuated::Punctuated;
 use syn::Token;
 
@@ -668,11 +661,17 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
     Ok(info)
 }
 
-fn parse_punctuated_nested_meta(info: &mut MetaInfo, meta: &Punctuated<NestedMeta, Token![,]>, value: bool) -> Result<()> {
+fn parse_punctuated_nested_meta(
+    info: &mut MetaInfo,
+    meta: &Punctuated<NestedMeta, Token![,]>,
+    value: bool,
+) -> Result<()> {
     for meta in meta.iter() {
         let meta = match meta {
             NestedMeta::Meta(meta) => meta,
-            _ => return Err(Error::new(meta.span(), "Attribute format not supported2")),
+            _ => {
+                return Err(Error::new(meta.span(), "Attribute format not supported2"))
+            }
         };
 
         match meta {
@@ -680,12 +679,16 @@ fn parse_punctuated_nested_meta(info: &mut MetaInfo, meta: &Punctuated<NestedMet
                 if value {
                     parse_punctuated_nested_meta(info, &list.nested, false)?;
                 } else {
-                    return Err(Error::new(meta.span(), "Attribute format not supported3"));
+                    return Err(Error::new(
+                        meta.span(),
+                        "Attribute format not supported3",
+                    ));
                 }
-            },
+            }
 
             Meta::Path(path) => {
-                if path.is_ident("ignore") && value { // not(ignore) does not make much sense
+                if path.is_ident("ignore") && value {
+                    // not(ignore) does not make much sense
                     info.enabled = Some(false);
                 } else if path.is_ident("forward") {
                     info.forward = Some(value);
@@ -698,11 +701,16 @@ fn parse_punctuated_nested_meta(info: &mut MetaInfo, meta: &Punctuated<NestedMet
                 } else if path.is_ident("source") {
                     info.source = Some(value);
                 } else {
-                    return Err(Error::new(meta.span(), "Attribute format not supported4"));
+                    return Err(Error::new(
+                        meta.span(),
+                        "Attribute format not supported4",
+                    ));
                 };
-            },
+            }
 
-            _ => return Err(Error::new(meta.span(), "Attribute format not supported5")),
+            _ => {
+                return Err(Error::new(meta.span(), "Attribute format not supported5"))
+            }
         }
     }
 
@@ -760,18 +768,26 @@ impl FullMetaInfo {
     }
 }
 
-pub fn get_if_type_parameter_used_in_type(type_parameters: &HashSet<syn::Ident>, ty: &syn::Type) -> Option<syn::Type> {
+pub fn get_if_type_parameter_used_in_type(
+    type_parameters: &HashSet<syn::Ident>,
+    ty: &syn::Type,
+) -> Option<syn::Type> {
     if is_type_parameter_used_in_type(type_parameters, ty) {
         match ty {
-            syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => Some(ty.deref().clone()),
-            ty => Some(ty.clone())
+            syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => {
+                Some(ty.deref().clone())
+            }
+            ty => Some(ty.clone()),
         }
     } else {
         None
     }
 }
 
-pub fn is_type_parameter_used_in_type(type_parameters: &HashSet<syn::Ident>, ty: &syn::Type) -> bool {
+pub fn is_type_parameter_used_in_type(
+    type_parameters: &HashSet<syn::Ident>,
+    ty: &syn::Type,
+) -> bool {
     match ty {
         syn::Type::Path(ty) => {
             if let Some(qself) = &ty.qself {
@@ -786,29 +802,28 @@ pub fn is_type_parameter_used_in_type(type_parameters: &HashSet<syn::Ident>, ty:
                 }
             }
 
-            ty.path.segments.iter()
-                .any(|segment| {
-                    if let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments {
-                        arguments.args.iter().any(|argument| {
-                            match argument {
-                                syn::GenericArgument::Type(ty) => {
-                                    is_type_parameter_used_in_type(type_parameters, ty)
-                                },
-                                syn::GenericArgument::Constraint(constraint) => {
-                                    type_parameters.contains(&constraint.ident)
-                                },
-                                _ => false,
-                            }
-                        })
-                    } else {
-                        false
-                    }
-                })
-        },
+            ty.path.segments.iter().any(|segment| {
+                if let syn::PathArguments::AngleBracketed(arguments) =
+                    &segment.arguments
+                {
+                    arguments.args.iter().any(|argument| match argument {
+                        syn::GenericArgument::Type(ty) => {
+                            is_type_parameter_used_in_type(type_parameters, ty)
+                        }
+                        syn::GenericArgument::Constraint(constraint) => {
+                            type_parameters.contains(&constraint.ident)
+                        }
+                        _ => false,
+                    })
+                } else {
+                    false
+                }
+            })
+        }
 
         syn::Type::Reference(ty) => {
-            is_type_parameter_used_in_type(type_parameters,&ty.elem)
-        },
+            is_type_parameter_used_in_type(type_parameters, &ty.elem)
+        }
 
         _ => false,
     }
