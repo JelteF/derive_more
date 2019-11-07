@@ -119,23 +119,31 @@
 //!
 //! ## Installation
 //!
-//! This library requires Rust 1.15 or higher, so this needs to be installed.
+//! This library requires Rust 1.32 or higher and it supports `no_std` out of the box.
 //! Then add the following to `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! derive_more = "0.15.0"
+//! derive_more = "0.99.0"
+//! # You can specifiy the types of derives that you need for less time spent
+//! # compiling. For the full list of features see this crate its Cargo.toml.
+//! default-features = false
+//! features = ["from", "add", "iterator"]
 //! ```
 //!
-//! And this to the top of your Rust file:
+//! And this to the top of your Rust file for Rust 2018:
 //!
 //! ```rust
 //! extern crate derive_more;
-//! // Only needed when using the Rust 2015, for 2018 you can skip this line
-//! extern crate core;
+//! // use the derives that you want in the file
+//! use derive_more::{Add, Display, From};
 //! ```
-//!
-//! This crate supports `no_std` out of the box.
+//! If you're still using Rust 2015 you should add this instead:
+//! ```rust
+//! extern crate core;
+//! #[macro_use]
+//! extern crate derive_more;
+//! ```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 //! [`derive-new`]: https://github.com/nrc/derive-new
