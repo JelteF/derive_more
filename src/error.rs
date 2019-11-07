@@ -405,10 +405,7 @@ fn add_bound_if_type_parameter_used_in_type(
     type_params: &HashSet<syn::Ident>,
     ty: &syn::Type,
 ) {
-    match utils::get_if_type_parameter_used_in_type(type_params, ty) {
-        Some(ty) => {
-            bounds.insert(ty);
-        }
-        _ => (),
+    if let Some(ty) = utils::get_if_type_parameter_used_in_type(type_params, ty) {
+        bounds.insert(ty);
     }
 }
