@@ -15,6 +15,8 @@ use std::{
     collections::HashSet,
     ops::Deref as _,
 };
+use syn::punctuated::Punctuated;
+use syn::Token;
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub enum RefType {
@@ -220,7 +222,7 @@ fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     ))
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DeriveType {
     Unnamed,
     Named,
@@ -305,6 +307,7 @@ impl<'input> State<'input> {
             }),
             ref_: false,
             ref_mut: false,
+            info: MetaInfo::default(),
         });
 
         let full_meta_infos: Vec<_> = meta_infos
@@ -637,13 +640,8 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
                 false
             }
         });
-    let mut info = MetaInfo {
-        enabled: None,
-        forward: None,
-        owned: None,
-        ref_: None,
-        ref_mut: None,
-    };
+
+    let mut info = MetaInfo::default();
 
     let meta = if let Some(meta) = it.next() {
         meta
@@ -656,6 +654,7 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
     if let Some(meta2) = it.next() {
         return Err(Error::new(meta2.span(), "Too many formats given"));
     }
+
     let list = match meta.clone() {
         Meta::Path(_) => return Ok(info),
         Meta::List(list) => list,
@@ -663,66 +662,84 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
             return Err(Error::new(meta.span(), "Attribute format not supported1"));
         }
     };
-    for element in list.nested.into_iter() {
-        let nested_meta = if let NestedMeta::Meta(meta) = element {
-            meta
-        } else {
-            return Err(Error::new(meta.span(), "Attribute format not supported3"));
-        };
-        if let Meta::Path(_) = nested_meta {
-        } else {
-            return Err(Error::new(meta.span(), "Attribute format not supported4"));
-        }
-        let ident = if let Some(ident) =
-            nested_meta.path().segments.first().map(|p| &p.ident)
-        {
-            ident
-        } else {
-            return Err(Error::new(meta.span(), "Attribute format not supported5"));
-        };
-        if ident == "ignore" {
-            info.enabled = Some(false);
-        } else if ident == "forward" {
-            info.forward = Some(true);
-        } else if ident == "owned" {
-            info.owned = Some(true);
-        } else if ident == "ref" {
-            info.ref_ = Some(true);
-        } else if ident == "ref_mut" {
-            info.ref_mut = Some(true);
-        } else {
-            return Err(Error::new(meta.span(), "Attribute format not supported6"));
-        };
-    }
+
+    parse_punctuated_nested_meta(&mut info, &list.nested, true)?;
+
     Ok(info)
 }
 
-#[derive(Copy, Clone, Debug)]
+fn parse_punctuated_nested_meta(info: &mut MetaInfo, meta: &Punctuated<NestedMeta, Token![,]>, value: bool) -> Result<()> {
+    for meta in meta.iter() {
+        let meta = match meta {
+            NestedMeta::Meta(meta) => meta,
+            _ => return Err(Error::new(meta.span(), "Attribute format not supported2")),
+        };
+
+        match meta {
+            Meta::List(list) if list.path.is_ident("not") => {
+                if value {
+                    parse_punctuated_nested_meta(info, &list.nested, false)?;
+                } else {
+                    return Err(Error::new(meta.span(), "Attribute format not supported3"));
+                }
+            },
+
+            Meta::Path(path) => {
+                if path.is_ident("ignore") && value { // not(ignore) does not make much sense
+                    info.enabled = Some(false);
+                } else if path.is_ident("forward") {
+                    info.forward = Some(value);
+                } else if path.is_ident("owned") {
+                    info.owned = Some(value);
+                } else if path.is_ident("ref") {
+                    info.ref_ = Some(value);
+                } else if path.is_ident("ref_mut") {
+                    info.ref_mut = Some(value);
+                } else if path.is_ident("source") {
+                    info.source = Some(value);
+                } else {
+                    return Err(Error::new(meta.span(), "Attribute format not supported4"));
+                };
+            },
+
+            _ => return Err(Error::new(meta.span(), "Attribute format not supported5")),
+        }
+    }
+
+    Ok(())
+}
+
+#[derive(Copy, Clone, Debug, Default)]
 pub struct FullMetaInfo {
     pub enabled: bool,
     pub forward: bool,
     pub owned: bool,
     pub ref_: bool,
     pub ref_mut: bool,
+    pub info: MetaInfo,
 }
 
-#[derive(Copy, Clone)]
-struct MetaInfo {
-    enabled: Option<bool>,
-    forward: Option<bool>,
-    owned: Option<bool>,
-    ref_: Option<bool>,
-    ref_mut: Option<bool>,
+#[derive(Copy, Clone, Debug, Default)]
+pub struct MetaInfo {
+    pub enabled: Option<bool>,
+    pub forward: Option<bool>,
+    pub owned: Option<bool>,
+    pub ref_: Option<bool>,
+    pub ref_mut: Option<bool>,
+    pub source: Option<bool>,
 }
 
 impl MetaInfo {
     fn to_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
+        let info = self;
+
         FullMetaInfo {
             enabled: self.enabled.unwrap_or(defaults.enabled),
             forward: self.forward.unwrap_or(defaults.forward),
             owned: self.owned.unwrap_or(defaults.owned),
             ref_: self.ref_.unwrap_or(defaults.ref_),
             ref_mut: self.ref_mut.unwrap_or(defaults.ref_mut),
+            info,
         }
     }
 }
