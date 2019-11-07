@@ -9,6 +9,11 @@ struct MyInt(i32);
 struct MyInts(i32, i32);
 
 #[derive(MulAssign)]
+#[mul_assign(forward)]
+struct MyInt2(i32);
+
+
+#[derive(MulAssign)]
 struct Point1D {
     x: i32,
 }

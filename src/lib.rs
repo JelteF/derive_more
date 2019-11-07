@@ -183,9 +183,14 @@ use syn::parse::Error as ParseError;
 
 mod utils;
 
-#[cfg(feature = "add_assign")]
+#[cfg(any(feature = "add_assign", feature = "mul_assign"))]
 mod add_assign_like;
-#[cfg(any(feature = "add", feature = "add_assign", feature = "mul"))]
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "mul",
+    feature = "mul_assign",
+))]
 mod add_helpers;
 #[cfg(any(feature = "add", feature = "mul"))]
 mod add_like;
