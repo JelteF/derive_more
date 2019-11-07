@@ -32,7 +32,6 @@ quote = "1"
 syn = { version = "1", features = ["extra-traits"] }
 
 [build-dependencies]
-rustc_version = "0.2"
 peg = { version = "0.5", optional = true }
 
 [badges]
