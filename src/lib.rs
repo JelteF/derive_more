@@ -124,23 +124,32 @@
 //!
 //! ## Installation
 //!
-//! This library requires Rust 1.15 or higher, so this needs to be installed.
+//! This library requires Rust 1.32 or higher and it supports `no_std` out of the box.
 //! Then add the following to `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! derive_more = "0.15.0"
+//! derive_more = "0.99.0"
+//! # You can specifiy the types of derives that you need for less time spent
+//! # compiling. For the full list of features see this crate its Cargo.toml.
+//! default-features = false
+//! features = ["from", "add", "iterator"]
 //! ```
 //!
-//! And this to the top of your Rust file:
+//! And this to the top of your Rust file for Rust 2018:
 //!
 //! ```rust
 //! extern crate derive_more;
-//! // Only needed when using the Rust 2015, for 2018 you can skip this line
-//! extern crate core;
+//! // use the derives that you want in the file
+//! use derive_more::{Add, Display, From};
 //! ```
-//!
-//! This crate supports `no_std` out of the box.
+//! If you're still using Rust 2015 you should add this instead:
+//! ```rust
+//! extern crate core;
+//! #[macro_use]
+//! extern crate derive_more;
+//! # fn main(){}
+//! ```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 //! [`derive-new`]: https://github.com/nrc/derive-new
@@ -179,11 +188,16 @@ use syn::parse::Error as ParseError;
 
 mod utils;
 
-#[cfg(feature = "add_assign_like")]
+#[cfg(any(feature = "add_assign", feature = "mul_assign"))]
 mod add_assign_like;
-#[cfg(any(feature = "add_like", feature = "add_assign_like"))]
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "mul",
+    feature = "mul_assign",
+))]
 mod add_helpers;
-#[cfg(feature = "add_like")]
+#[cfg(any(feature = "add", feature = "mul"))]
 mod add_like;
 #[cfg(feature = "as_mut")]
 mod as_mut;
@@ -213,19 +227,19 @@ mod into;
 mod into_iterator;
 #[cfg(feature = "iterator")]
 mod iterator;
-#[cfg(feature = "mul_assign_like")]
+#[cfg(feature = "mul_assign")]
 mod mul_assign_like;
-#[cfg(any(feature = "mul_like", feature = "mul_assign_like"))]
+#[cfg(any(feature = "mul", feature = "mul_assign"))]
 mod mul_helpers;
-#[cfg(feature = "mul_like")]
+#[cfg(feature = "mul")]
 mod mul_like;
-#[cfg(feature = "not_like")]
+#[cfg(feature = "not")]
 mod not_like;
 #[cfg(feature = "display")]
 #[allow(ellipsis_inclusive_range_patterns)]
 #[allow(clippy::all)]
 mod parsing;
-#[cfg(feature = "sum_like")]
+#[cfg(feature = "sum")]
 mod sum_like;
 #[cfg(feature = "try_into")]
 mod try_into;
@@ -254,7 +268,7 @@ impl Output for Result<proc_macro2::TokenStream, ParseError> {
 }
 
 macro_rules! create_derive(
-    ($feature:literal, $mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)*) => {
+    ($feature:literal, $mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
         #[cfg(feature = $feature)]
         #[proc_macro_derive($trait_, attributes($($attribute),*))]
         #[doc(hidden)]
@@ -271,90 +285,80 @@ create_derive!("into", into, Into, into_derive, into);
 
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 
-create_derive!("not_like", not_like, Not, not_derive);
-create_derive!("not_like", not_like, Neg, neg_derive);
+create_derive!("not", not_like, Not, not_derive);
+create_derive!("not", not_like, Neg, neg_derive);
 
-create_derive!("add_like", add_like, Add, add_derive);
-create_derive!("add_like", add_like, Sub, sub_derive);
-create_derive!("add_like", add_like, BitAnd, bit_and_derive);
-create_derive!("add_like", add_like, BitOr, bit_or_derive);
-create_derive!("add_like", add_like, BitXor, bit_xor_derive);
-create_derive!("add_like", add_like, MulSelf, mul_self_derive);
-create_derive!("add_like", add_like, DivSelf, div_self_derive);
-create_derive!("add_like", add_like, RemSelf, rem_self_derive);
-create_derive!("add_like", add_like, ShrSelf, shr_self_derive);
-create_derive!("add_like", add_like, ShlSelf, shl_self_derive);
+create_derive!("add", add_like, Add, add_derive);
+create_derive!("add", add_like, Sub, sub_derive);
+create_derive!("add", add_like, BitAnd, bit_and_derive);
+create_derive!("add", add_like, BitOr, bit_or_derive);
+create_derive!("add", add_like, BitXor, bit_xor_derive);
 
-create_derive!("mul_like", mul_like, Mul, mul_derive);
-create_derive!("mul_like", mul_like, Div, div_derive);
-create_derive!("mul_like", mul_like, Rem, rem_derive);
-create_derive!("mul_like", mul_like, Shr, shr_derive);
-create_derive!("mul_like", mul_like, Shl, shl_derive);
+create_derive!("mul", mul_like, Mul, mul_derive, mul);
+create_derive!("mul", mul_like, Div, div_derive, div);
+create_derive!("mul", mul_like, Rem, rem_derive, rem);
+create_derive!("mul", mul_like, Shr, shr_derive, shr);
+create_derive!("mul", mul_like, Shl, shl_derive, shl);
 
+create_derive!("add_assign", add_assign_like, AddAssign, add_assign_derive,);
+create_derive!("add_assign", add_assign_like, SubAssign, sub_assign_derive,);
 create_derive!(
-    "add_assign_like",
-    add_assign_like,
-    AddAssign,
-    add_assign_derive
-);
-create_derive!(
-    "add_assign_like",
-    add_assign_like,
-    SubAssign,
-    sub_assign_derive
-);
-create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     BitAndAssign,
-    bit_and_assign_derive
+    bit_and_assign_derive,
 );
 create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     BitOrAssign,
-    bit_or_assign_derive
+    bit_or_assign_derive,
 );
 create_derive!(
-    "add_assign_like",
+    "add_assign",
     add_assign_like,
     BitXorAssign,
-    bit_xor_assign_derive
+    bit_xor_assign_derive,
 );
 
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     MulAssign,
-    mul_assign_derive
+    mul_assign_derive,
+    mul_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     DivAssign,
-    div_assign_derive
+    div_assign_derive,
+    div_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     RemAssign,
-    rem_assign_derive
+    rem_assign_derive,
+    rem_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     ShrAssign,
-    shr_assign_derive
+    shr_assign_derive,
+    shr_assign,
 );
 create_derive!(
-    "mul_assign_like",
+    "mul_assign",
     mul_assign_like,
     ShlAssign,
-    shl_assign_derive
+    shl_assign_derive,
+    shl_assign,
 );
 
-create_derive!("sum_like", sum_like, Sum, sum_derive);
-create_derive!("sum_like", sum_like, Product, product_derive);
+create_derive!("sum", sum_like, Sum, sum_derive);
+create_derive!("sum", sum_like, Product, product_derive);
 
 create_derive!("error", error, Error, error_derive, error);
 
@@ -376,7 +380,7 @@ create_derive!(
     index_mut,
     IndexMut,
     index_mut_derive,
-    index_mut
+    index_mut,
 );
 
 create_derive!(
@@ -384,7 +388,7 @@ create_derive!(
     into_iterator,
     IntoIterator,
     into_iterator_derive,
-    into_iterator
+    into_iterator,
 );
 create_derive!("iterator", iterator, Iterator, iterator_derive, iterator);
 
@@ -396,7 +400,7 @@ create_derive!(
     deref_mut,
     DerefMut,
     deref_mut_derive,
-    deref_mut
+    deref_mut,
 );
 
 create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);

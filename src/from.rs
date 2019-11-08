@@ -1,5 +1,5 @@
 use crate::utils::{
-    add_where_clauses_for_new_ident, DeriveType, MultiFieldData, State,
+    add_where_clauses_for_new_ident, AttrParams, DeriveType, MultiFieldData, State,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -7,11 +7,17 @@ use syn::{parse::Result, DeriveInput, Ident, Index};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::new(
+    let state = State::with_attr_params(
         input,
         trait_name,
         quote!(::core::convert),
         trait_name.to_lowercase(),
+        AttrParams {
+            enum_: vec!["forward", "ignore"],
+            variant: vec!["forward", "ignore"],
+            struct_: vec!["forward"],
+            field: vec!["forward"],
+        },
     )?;
     if state.derive_type == DeriveType::Enum {
         Ok(enum_from(input, state))

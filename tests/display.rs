@@ -41,7 +41,6 @@ enum E {
     Binary {
         i: i8,
     },
-    #[cfg(feature = "nightly")]
     #[display(fmt = "I am C {}", "_0.display()")]
     Path(PathBuf),
 }
@@ -104,7 +103,6 @@ fn check_display() {
     assert_eq!(Error::new("Error").to_string(), "Error");
     assert_eq!(E::Uint(2).to_string(), "2");
     assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
-    #[cfg(feature = "nightly")]
     assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
     assert_eq!(EE::A.to_string(), "Java EE");
     assert_eq!(EE::B.to_string(), "Java EE");

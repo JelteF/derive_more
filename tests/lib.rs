@@ -15,11 +15,18 @@ extern crate derive_more;
 #[derive(Octal)]
 #[derive(Binary)]
 #[derive(Deref, DerefMut)]
-#[derive(Sum)]
-#[derive(MulSelf)]
-#[derive(Product)]
 #[into(owned, ref, ref_mut)]
 struct MyInt(i32);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Add)]
+#[derive(Sum)]
+#[derive(Mul)]
+#[derive(MulAssign)]
+#[derive(Product)]
+#[mul(forward)]
+#[mul_assign(forward)]
+struct MyInt2(i32);
 
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Index, IndexMut)]
@@ -245,9 +252,12 @@ fn main() {
     assert_eq!((&mut my_vec).into_iter().next(), Some(&mut 20));
     assert_eq!(my_vec.into_iter().next(), Some(20));
 
-    let int_vec = vec![MyInt(2), MyInt(3)];
-    assert_eq!(MyInt(5), int_vec.clone().into_iter().sum());
-    assert_eq!(MyInt(6), int_vec.clone().into_iter().product());
+    let int_vec = vec![MyInt2(2), MyInt2(3)];
+    assert_eq!(MyInt2(5), int_vec.clone().into_iter().sum());
+    assert_eq!(MyInt2(6), int_vec.clone().into_iter().product());
+    let mut myint2 = MyInt2(8);
+    myint2 *= MyInt2(4);
+    assert_eq!(MyInt2(32), myint2);
 
     let mut boxed = MyBoxedInt(Box::new(5));
     assert_eq!(5, *boxed);

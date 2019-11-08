@@ -6,7 +6,7 @@ use syn::{parse::Result, DeriveInput, Ident};
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let index_type = &Ident::new("__IdxT", Span::call_site());
-    let mut state = State::new(
+    let mut state = State::with_field_ignore(
         input,
         trait_name,
         quote!(::core::ops),
@@ -17,14 +17,14 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         field,
         field_type,
         input_type,
-        trait_path,
+        trait_path_with_params,
         casted_trait,
         member,
         ..
     } = state.assert_single_enabled_field();
 
     let type_where_clauses = quote! {
-        where #field_type: #trait_path
+        where #field_type: #trait_path_with_params
     };
 
     let new_generics = add_where_clauses_for_new_ident(
@@ -38,7 +38,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
     Ok(quote! {
-        impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
+        impl#impl_generics #trait_path_with_params for #input_type#ty_generics #where_clause
         {
             #[inline]
             fn index_mut(&mut self, idx: #index_type) -> &mut Self::Output {

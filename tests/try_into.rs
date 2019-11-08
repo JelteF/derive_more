@@ -16,6 +16,12 @@ enum MixedInts {
     NamedBigInt {
         int: i64,
     },
+    UnsignedWithIgnoredField(#[try_into(ignore)] bool, i64),
+    NamedUnsignedWithIgnnoredField {
+        #[try_into(ignore)]
+        useless: bool,
+        x: i64,
+    },
     TwoSmallInts(i32, i32),
     NamedBigInts {
         x: i64,
@@ -38,7 +44,7 @@ fn test_try_into() {
     assert_eq!(Ok(&mut 42i32), (&mut i).try_into());
     assert_eq!(
         i64::try_from(i),
-        Err("Only NamedBigInt can be converted to i64")
+        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
     );
     assert_eq!(
         <(i32, i32)>::try_from(i),
@@ -83,7 +89,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i),
-        Err("Only NamedBigInt can be converted to i64")
+        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
     );
     assert_eq!(Ok((42i32, 64i32)), i.try_into());
     assert_eq!(Ok((&42i32, &64i32)), (&i).try_into());
@@ -105,7 +111,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i),
-        Err("Only NamedBigInt can be converted to i64")
+        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
     );
     assert_eq!(
         <(i32, i32)>::try_from(i),
@@ -127,7 +133,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i),
-        Err("Only NamedBigInt can be converted to i64")
+        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
     );
     assert_eq!(
         <(i32, i32)>::try_from(i),
@@ -149,11 +155,11 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i),
-        Err("Only NamedBigInt can be converted to i64")
+        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
     );
     assert_eq!(
         i64::try_from(i),
-        Err("Only NamedBigInt can be converted to i64")
+        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
     );
     assert_eq!(
         <(i32, i32)>::try_from(i),
@@ -175,7 +181,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i),
-        Err("Only NamedBigInt can be converted to i64")
+        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
     );
     assert_eq!(
         <(i32, i32)>::try_from(i),

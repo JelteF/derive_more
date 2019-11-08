@@ -72,10 +72,6 @@ pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
         .collect()
 }
 
-pub fn number_idents(count: usize) -> Vec<Index> {
-    (0..count).map(Index::from).collect()
-}
-
 pub fn field_idents<'a>(fields: &'a [&'a Field]) -> Vec<&'a Ident> {
     fields
         .iter()
@@ -225,8 +221,11 @@ pub enum DeriveType {
 pub struct State<'input> {
     pub input: &'input DeriveInput,
     pub trait_name: &'static str,
+    pub trait_ident: Ident,
+    pub method_ident: Ident,
     pub trait_module: TokenStream,
     pub trait_path: TokenStream,
+    pub trait_path_params: Vec<TokenStream>,
     pub trait_attr: String,
     pub derive_type: DeriveType,
     pub fields: Vec<&'input Field>,
@@ -234,8 +233,35 @@ pub struct State<'input> {
     pub variant_states: Vec<State<'input>>,
     pub variant: Option<&'input Variant>,
     pub generics: Generics,
-    default_info: FullMetaInfo,
+    pub default_info: FullMetaInfo,
     full_meta_infos: Vec<FullMetaInfo>,
+}
+
+#[derive(Default, Clone)]
+pub struct AttrParams {
+    pub enum_: Vec<&'static str>,
+    pub variant: Vec<&'static str>,
+    pub struct_: Vec<&'static str>,
+    pub field: Vec<&'static str>,
+}
+
+impl AttrParams {
+    pub fn new(params: Vec<&'static str>) -> AttrParams {
+        AttrParams {
+            enum_: params.clone(),
+            struct_: params.clone(),
+            variant: params.clone(),
+            field: params,
+        }
+    }
+    pub fn struct_(params: Vec<&'static str>) -> AttrParams {
+        AttrParams {
+            enum_: vec![],
+            struct_: params,
+            variant: vec![],
+            field: vec![],
+        }
+    }
 }
 
 impl<'input> State<'input> {
@@ -245,8 +271,70 @@ impl<'input> State<'input> {
         trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::default(),
+        )
+    }
+
+    pub fn with_field_ignore<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+    ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::new(vec!["ignore"]),
+        )
+    }
+
+    pub fn with_field_ignore_and_forward<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+    ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::new(vec!["ignore", "forward"]),
+        )
+    }
+
+    pub fn with_field_ignore_and_refs<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+    ) -> Result<State<'arg_input>> {
+        State::with_attr_params(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            AttrParams::new(vec!["ignore", "owned", "ref", "ref_mut"]),
+        )
+    }
+
+    pub fn with_attr_params<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+        allowed_attr_params: AttrParams,
+    ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
+        let method_ident = Ident::new(&trait_attr, Span::call_site());
         let trait_path = quote!(#trait_module::#trait_ident);
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
@@ -274,10 +362,18 @@ impl<'input> State<'input> {
             fields.iter().map(|f| &f.attrs).collect()
         };
 
-        let struct_meta_info = get_meta_info(&trait_attr, &input.attrs)?;
+        let (allowed_attr_params_outer, allowed_attr_params_inner) =
+            if derive_type == DeriveType::Enum {
+                (&allowed_attr_params.enum_, &allowed_attr_params.variant)
+            } else {
+                (&allowed_attr_params.struct_, &allowed_attr_params.field)
+            };
+
+        let struct_meta_info =
+            get_meta_info(&trait_attr, &input.attrs, allowed_attr_params_outer)?;
         let meta_infos: Result<Vec<_>> = attrs
             .iter()
-            .map(|attrs| get_meta_info(&trait_attr, attrs))
+            .map(|attrs| get_meta_info(&trait_attr, attrs, allowed_attr_params_inner))
             .collect();
         let meta_infos = meta_infos?;
         let first_match = meta_infos
@@ -318,6 +414,7 @@ impl<'input> State<'input> {
                         trait_name,
                         trait_module.clone(),
                         trait_attr.clone(),
+                        allowed_attr_params.clone(),
                         variant,
                         info,
                     )
@@ -331,8 +428,11 @@ impl<'input> State<'input> {
         Ok(State {
             input,
             trait_name,
+            trait_ident,
+            method_ident,
             trait_module,
             trait_path,
+            trait_path_params: vec![],
             trait_attr,
             // input,
             fields,
@@ -351,11 +451,13 @@ impl<'input> State<'input> {
         trait_name: &'static str,
         trait_module: TokenStream,
         trait_attr: String,
+        allowed_attr_params: AttrParams,
         variant: &'arg_input Variant,
         default_info: FullMetaInfo,
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
+        let method_ident = Ident::new(&trait_attr, Span::call_site());
         let trait_path = quote!(#trait_module::#trait_ident);
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {
@@ -369,7 +471,7 @@ impl<'input> State<'input> {
         let meta_infos: Result<Vec<_>> = fields
             .iter()
             .map(|f| &f.attrs)
-            .map(|attrs| get_meta_info(&trait_attr, attrs))
+            .map(|attrs| get_meta_info(&trait_attr, attrs, &allowed_attr_params.field))
             .collect();
         let meta_infos = meta_infos?;
         let full_meta_infos: Vec<_> = meta_infos
@@ -384,7 +486,10 @@ impl<'input> State<'input> {
             trait_name,
             trait_module,
             trait_path,
+            trait_path_params: vec![],
             trait_attr,
+            trait_ident,
+            method_ident,
             // input,
             fields,
             variants: vec![],
@@ -396,9 +501,8 @@ impl<'input> State<'input> {
             default_info,
         })
     }
-    pub fn add_trait_path_type_param(&mut self, params: TokenStream) {
-        let trait_path = &self.trait_path;
-        self.trait_path = quote!(#trait_path<#params>)
+    pub fn add_trait_path_type_param(&mut self, param: TokenStream) {
+        self.trait_path_params.push(param);
     }
 
     pub fn assert_single_enabled_field<'state>(
@@ -419,6 +523,7 @@ impl<'input> State<'input> {
             info: data.infos[0],
             field_ident: data.field_idents[0].clone(),
             trait_path: data.trait_path,
+            trait_path_with_params: data.trait_path_with_params.clone(),
             casted_trait: data.casted_traits[0].clone(),
             impl_generics: data.impl_generics.clone(),
             ty_generics: data.ty_generics.clone(),
@@ -433,15 +538,23 @@ impl<'input> State<'input> {
         }
         let fields = self.enabled_fields();
         let field_idents = self.enabled_fields_idents();
+        let field_indexes = self.enabled_fields_indexes();
         let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
         let members: Vec<_> = field_idents
             .iter()
             .map(|ident| quote!(self.#ident))
             .collect();
         let trait_path = &self.trait_path;
+        let trait_path_with_params = if !self.trait_path_params.is_empty() {
+            let params = self.trait_path_params.iter();
+            quote!(#trait_path<#(#params),*>)
+        } else {
+            self.trait_path.clone()
+        };
+
         let casted_traits: Vec<_> = field_types
             .iter()
-            .map(|field_type| quote!(<#field_type as #trait_path>))
+            .map(|field_type| quote!(<#field_type as #trait_path_with_params>))
             .collect();
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
         let input_type = &self.input.ident;
@@ -459,10 +572,13 @@ impl<'input> State<'input> {
             variant_info: self.default_info,
             fields,
             field_types,
+            field_indexes,
             members,
             infos: self.enabled_infos(),
             field_idents,
+            method_ident: &self.method_ident,
             trait_path,
+            trait_path_with_params,
             casted_traits,
             impl_generics,
             ty_generics,
@@ -546,6 +662,16 @@ impl<'input> State<'input> {
             .map(|(f, _)| f)
             .collect()
     }
+
+    fn enabled_fields_indexes(&self) -> Vec<usize> {
+        self.full_meta_infos
+            .iter()
+            .map(|info| info.enabled)
+            .enumerate()
+            .filter(|(_, ig)| *ig)
+            .map(|(i, _)| i)
+            .collect()
+    }
     fn enabled_infos(&self) -> Vec<FullMetaInfo> {
         self.full_meta_infos
             .iter()
@@ -564,6 +690,7 @@ pub struct SingleFieldData<'input, 'state> {
     pub member: TokenStream,
     pub info: FullMetaInfo,
     pub trait_path: &'state TokenStream,
+    pub trait_path_with_params: TokenStream,
     pub casted_trait: TokenStream,
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
@@ -580,9 +707,12 @@ pub struct MultiFieldData<'input, 'state> {
     pub fields: Vec<&'input Field>,
     pub field_types: Vec<&'input Type>,
     pub field_idents: Vec<TokenStream>,
+    pub field_indexes: Vec<usize>,
     pub members: Vec<TokenStream>,
     pub infos: Vec<FullMetaInfo>,
+    pub method_ident: &'state Ident,
     pub trait_path: &'state TokenStream,
+    pub trait_path_with_params: TokenStream,
     pub casted_traits: Vec<TokenStream>,
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
@@ -614,6 +744,25 @@ impl<'input, 'state> MultiFieldData<'input, 'state> {
             quote!(#variant_type(#(#initializers),*))
         }
     }
+    pub fn matcher<T: ToTokens>(
+        &self,
+        indexes: &[usize],
+        bindings: &[T],
+    ) -> TokenStream {
+        let MultiFieldData { variant_type, .. } = self;
+        let full_bindings = (0..self.state.fields.len()).map(|i| {
+            indexes.iter().position(|index| i == *index).map_or_else(
+                || quote!(_),
+                |found_index| bindings[found_index].to_token_stream(),
+            )
+        });
+        if self.state.derive_type == DeriveType::Named {
+            let field_idents = self.state.field_idents();
+            quote!(#variant_type{#(#field_idents: #full_bindings),*})
+        } else {
+            quote!(#variant_type(#(#full_bindings),*))
+        }
+    }
 }
 
 impl<'input, 'state> SingleFieldData<'input, 'state> {
@@ -622,7 +771,11 @@ impl<'input, 'state> SingleFieldData<'input, 'state> {
     }
 }
 
-fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
+fn get_meta_info(
+    trait_attr: &str,
+    attrs: &[Attribute],
+    allowed_attr_params: &[&str],
+) -> Result<MetaInfo> {
     let mut it = attrs
         .iter()
         .filter_map(|m| m.parse_meta().ok())
@@ -642,21 +795,36 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
         return Ok(info);
     };
 
+    if allowed_attr_params.is_empty() {
+        return Err(Error::new(meta.span(), "Attribute is not allowed here"));
+    }
+
     info.enabled = Some(true);
 
     if let Some(meta2) = it.next() {
-        return Err(Error::new(meta2.span(), "Too many formats given"));
+        return Err(Error::new(
+            meta2.span(),
+            "Only a single attribute is allowed",
+        ));
     }
 
     let list = match meta.clone() {
-        Meta::Path(_) => return Ok(info),
+        Meta::Path(_) => {
+            if allowed_attr_params.contains(&"ignore") {
+                return Ok(info);
+            } else {
+                return Err(Error::new(meta.span(), format!("Empty attribute is not allowed, add one of the following parameters: {}",
+                    allowed_attr_params.join(", ")
+                    )));
+            }
+        }
         Meta::List(list) => list,
         _ => {
             return Err(Error::new(meta.span(), "Attribute format not supported1"));
         }
     };
 
-    parse_punctuated_nested_meta(&mut info, &list.nested, true)?;
+    parse_punctuated_nested_meta(&mut info, &list.nested, allowed_attr_params, true)?;
 
     Ok(info)
 }
@@ -664,6 +832,7 @@ fn get_meta_info(trait_attr: &str, attrs: &[Attribute]) -> Result<MetaInfo> {
 fn parse_punctuated_nested_meta(
     info: &mut MetaInfo,
     meta: &Punctuated<NestedMeta, Token![,]>,
+    allowed_attr_params: &[&str],
     value: bool,
 ) -> Result<()> {
     for meta in meta.iter() {
@@ -677,7 +846,7 @@ fn parse_punctuated_nested_meta(
         match meta {
             Meta::List(list) if list.path.is_ident("not") => {
                 if value {
-                    parse_punctuated_nested_meta(info, &list.nested, false)?;
+                    parse_punctuated_nested_meta(info, &list.nested, allowed_attr_params, false)?;
                 } else {
                     return Err(Error::new(
                         meta.span(),
@@ -687,8 +856,18 @@ fn parse_punctuated_nested_meta(
             }
 
             Meta::Path(path) => {
+                if !allowed_attr_params.iter().any(|param| path.is_ident(param)) {
+                    return Err(Error::new(
+                        meta.span(),
+                        format!(
+                            "Empty attribute is not allowed, add one of the following parameters: {}",
+                            allowed_attr_params.join(", "),
+                        ),
+                    ));
+                }
+
+                // not(ignore) does not make much sense
                 if path.is_ident("ignore") && value {
-                    // not(ignore) does not make much sense
                     info.enabled = Some(false);
                 } else if path.is_ident("forward") {
                     info.forward = Some(value);

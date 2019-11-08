@@ -5,7 +5,7 @@ use syn::{parse::Result, DeriveInput, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let as_mut_type = &Ident::new("__AsMutT", Span::call_site());
-    let state = State::new(
+    let state = State::with_field_ignore_and_forward(
         input,
         trait_name,
         quote!(::core::convert),

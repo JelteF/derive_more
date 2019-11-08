@@ -34,3 +34,12 @@ struct Point2D {
     x: i32,
     y: i32,
 }
+
+#[derive(Into)]
+#[into(owned, ref, ref_mut)]
+struct Point2DWithIgnored {
+    x: i32,
+    y: i32,
+    #[into(ignore)]
+    useless: bool,
+}

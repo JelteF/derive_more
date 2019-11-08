@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
-use crate::utils::{self, DeriveType, FullMetaInfo, MetaInfo, MultiFieldData, State};
+use crate::utils::{self, AttrParams, DeriveType, FullMetaInfo, MetaInfo, MultiFieldData, State};
 
 pub fn expand(
     input: &syn::DeriveInput,
@@ -14,11 +14,12 @@ pub fn expand(
         ident, generics, ..
     } = input;
 
-    let state = State::new(
+    let state = State::with_attr_params(
         input,
         trait_name,
         quote!(::std::error),
         trait_name.to_lowercase(),
+        allowed_attr_params(),
     )?;
 
     let type_params: HashSet<_> = generics
@@ -101,6 +102,7 @@ fn render_enum(
             state.trait_name,
             state.trait_module.clone(),
             state.trait_attr.clone(),
+            allowed_attr_params(),
             variant,
             default_info,
         )?;
@@ -137,6 +139,15 @@ fn render_enum(
     Ok((bounds, render))
 }
 
+fn allowed_attr_params() -> AttrParams {
+    AttrParams {
+        enum_: vec!["ignore"],
+        struct_: vec!["ignore"],
+        variant: vec!["ignore"],
+        field: vec!["ignore", "source"],
+    }
+}
+
 struct ParsedFields<'input, 'state> {
     data: MultiFieldData<'input, 'state>,
     source: Option<usize>,
@@ -166,19 +177,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
 
     fn render_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         self.source.map(|source| {
-            let len = self.data.fields.len();
-
-            let bindings: Vec<_> = (0..len)
-                .map(|index| {
-                    if index == source {
-                        quote!(source)
-                    } else {
-                        quote!(_)
-                    }
-                })
-                .collect();
-
-            let pattern = self.data.initializer(&bindings);
+            let pattern = self.data.matcher(&[source], &[quote!(source)]);
             let expr = render_some(quote!(source));
 
             quote!(#pattern => #expr)
