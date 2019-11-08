@@ -4,7 +4,14 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
-use crate::utils::{self, DeriveType, FullMetaInfo, MetaInfo, State};
+use crate::utils::{
+    self,
+    DeriveType,
+    FullMetaInfo,
+    MetaInfo,
+    MultiFieldData,
+    State,
+};
 
 pub fn expand(
     input: &syn::DeriveInput,
@@ -105,14 +112,11 @@ fn render_enum(
             default_info,
         )?;
 
-        eprintln!("{} {:?}", state.variant.unwrap().ident, state.derive_type);
-
         let parsed_fields = parse_fields(&type_params, &state)?;
 
-        match parsed_fields.render_as_enum_variant_match_arm_tail() {
-            Some(match_arm_part_render) => {
-                let ident = &variant.ident;
-                match_arms.push(quote!(Self::#ident#match_arm_part_render));
+        match parsed_fields.render_as_enum_variant_match_arm() {
+            Some(match_arm) => {
+                match_arms.push(match_arm);
             }
 
             None => {
@@ -140,124 +144,52 @@ fn render_enum(
     Ok((bounds, render))
 }
 
-#[derive(Debug)]
-struct ParsedFields<'a> {
-    derive_type: DeriveType,
-    len: usize,
-    source: Option<ParsedField<'a>>,
+struct ParsedFields<'input, 'state> {
+    data: MultiFieldData<'input, 'state>,
+    source: Option<usize>,
     bounds: HashSet<syn::Type>,
 }
 
-#[derive(Debug)]
-struct ParsedField<'a> {
-    field: &'a syn::Field,
-    index: usize,
-    info: MetaInfo,
-}
-
-impl<'a> ParsedFields<'a> {
-    fn new(derive_type: DeriveType, len: usize) -> Self {
+impl<'input, 'state> ParsedFields<'input, 'state> {
+    fn new(data: MultiFieldData<'input, 'state>) -> Self {
         Self {
-            derive_type,
-            len,
+            data,
             source: None,
             bounds: HashSet::new(),
         }
     }
-
-    fn named(len: usize) -> Self {
-        Self::new(DeriveType::Named, len)
-    }
-
-    fn unnamed(len: usize) -> Self {
-        Self::new(DeriveType::Unnamed, len)
-    }
 }
 
-impl<'a> ParsedField<'a> {
-    fn new(field: &'a syn::Field, index: usize, info: MetaInfo) -> Self {
-        Self { field, index, info }
-    }
-
-    fn is_source_explicitly_set(&self) -> bool {
-        match self.info.source {
-            Some(true) => true,
-            _ => false,
-        }
-    }
-}
-
-impl<'a> ParsedFields<'a> {
+impl<'input, 'state> ParsedFields<'input, 'state> {
     fn render_as_struct(&self) -> TokenStream {
-        match &self.source {
+        match self.source {
             Some(source) => {
-                let ident = source.render_as_struct_field_ident();
-                render_some(quote!(&self.#ident))
+                let ident = &self.data.members[source];
+                render_some(quote!(&#ident))
             }
             None => quote!(None),
         }
     }
 
-    fn render_as_enum_variant_match_arm_tail(&self) -> Option<TokenStream> {
-        self.source.as_ref().map(|source| match self.derive_type {
-            DeriveType::Named => {
-                source.render_as_enum_variant_struct_match_arm_tail(self.len)
-            }
-            DeriveType::Unnamed => {
-                source.render_as_enum_variant_tuple_match_arm_tail(self.len)
-            }
-            _ => unreachable!(), // TODO
+    fn render_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
+        self.source.map(|source| {
+            let len = self.data.fields.len();
+
+            let bindings: Vec<_> = (0..len)
+                .map(|index| {
+                    if index == source {
+                        quote!(source)
+                    } else {
+                        quote!(_)
+                    }
+                })
+                .collect();
+
+            let pattern = self.data.initializer(&bindings);
+            let expr = render_some(quote!(source));
+
+            quote!(#pattern => #expr)
         })
-    }
-}
-
-impl<'a> ParsedField<'a> {
-    fn render_as_struct_field_ident(&self) -> TokenStream {
-        match &self.field.ident {
-            Some(ident) => quote!(#ident),
-            None => {
-                let index = syn::Index::from(self.index);
-                quote!(#index)
-            }
-        }
-    }
-
-    fn render_as_enum_variant_struct_match_arm_tail(&self, len: usize) -> TokenStream {
-        let ident = self
-            .field
-            .ident
-            .as_ref()
-            .expect("Internal error in macro implementation"); // TODO
-
-        let mut bindings = quote!(#ident);
-
-        if len > 1 {
-            bindings = quote!(#bindings, ..);
-        }
-
-        let some = render_some(ident);
-
-        quote! {
-            {#bindings} => #some
-        }
-    }
-
-    fn render_as_enum_variant_tuple_match_arm_tail(&self, len: usize) -> TokenStream {
-        assert_ne!(len, 0, "Internal error in macro implementation"); // TODO
-
-        let bindings = (0..len).map(|index| {
-            if index == self.index {
-                quote!(source)
-            } else {
-                quote!(_)
-            }
-        });
-
-        let some = render_some(quote!(source));
-
-        quote! {
-            (#(#bindings),*) => #some
-        }
     }
 }
 
@@ -268,14 +200,13 @@ where
     quote!(Some(#expr as &(dyn ::std::error::Error + 'static)))
 }
 
-fn parse_fields<'a>(
+fn parse_fields<'input, 'state>(
     type_params: &HashSet<syn::Ident>,
-    state: &'a State,
-) -> Result<ParsedFields<'a>> {
+    state: &'state State<'input>,
+) -> Result<ParsedFields<'input, 'state>> {
     match state.derive_type {
         DeriveType::Named => {
             parse_fields_impl(
-                ParsedFields::named(state.fields.len()),
                 type_params,
                 state,
                 |field, _| {
@@ -290,7 +221,6 @@ fn parse_fields<'a>(
         }
 
         DeriveType::Unnamed => parse_fields_impl(
-            ParsedFields::unnamed(state.fields.len()),
             type_params,
             state,
             |_, len| len == 1,
@@ -300,104 +230,58 @@ fn parse_fields<'a>(
     }
 }
 
-fn parse_fields_impl<'a, P>(
-    mut parsed_fields: ParsedFields<'a>,
+fn parse_fields_impl<'input, 'state, P>(
     type_params: &HashSet<syn::Ident>,
-    state: &'a State,
+    state: &'state State<'input>,
     is_valid_default_field_for_attr: P,
-) -> Result<ParsedFields<'a>>
+) -> Result<ParsedFields<'input, 'state>>
 where
     P: Fn(&syn::Field, usize) -> bool,
 {
-    let fields = state.enabled_fields_data();
+    let MultiFieldData {
+        fields,
+        infos,
+        ..
+    } = state.enabled_fields_data();
 
-    for (index, (field, info)) in fields
-        .fields
-        .into_iter()
-        .zip(fields.infos.into_iter().map(|info| info.info))
+    let iter = fields
+        .iter()
+        .zip(infos.iter().map(|info| &info.info))
         .enumerate()
-    {
-        match info.source {
-            Some(true) => process_explicitly_set_attr(
-                &mut parsed_fields,
-                type_params,
-                field,
-                index,
-                info,
-            )?,
+        .map(|(index, (field, info))| (index, *field, info));
 
-            None => process_if_valid_default_field_for_attr(
-                &mut parsed_fields,
-                type_params,
-                field,
-                index,
-                info,
-                &is_valid_default_field_for_attr,
-            )?,
+    let explicit_sources = iter
+        .clone()
+        .filter(|(_, _, info)| match info.source {
+            Some(true) => true,
+            _ => false,
+        });
 
-            _ => (),
-        }
-    }
+    let inferred_sources = iter
+        .filter(|(_, field, info)| match info.source {
+            None => is_valid_default_field_for_attr(field, fields.len()),
+            _ => false,
+        });
 
-    Ok(parsed_fields)
-}
+    let source = process(
+        explicit_sources,
+        "Multiple `source` attributes specified. \
+        Single attribute per struct/enum variant allowed.",
+    )?;
 
-fn process_explicitly_set_attr<'a>(
-    parsed_fields: &mut ParsedFields<'a>,
-    type_params: &HashSet<syn::Ident>,
-    field: &'a syn::Field,
-    index: usize,
-    info: MetaInfo,
-) -> Result<()> {
-    let prev_parsed_field = parsed_fields
-        .source
-        .replace(ParsedField::new(field, index, info));
-
-    match &prev_parsed_field {
-        Some(prev_parsed_field) if prev_parsed_field.is_source_explicitly_set() => {
-            return Err(Error::new(
-                prev_parsed_field.field.span(),
-                "Multiple `source` attributes specified. Single attribute per struct/enum variant allowed."
-            ));
-        }
-        _ => (),
+    let source = match source {
+        source @ Some(_) => source,
+        None => process(
+            inferred_sources,
+            "Conflicting fields found. Consider specifying some \
+            `#[error(...)]` attributes to resolve conflict.",
+        )?,
     };
 
-    add_bound_if_type_parameter_used_in_type(
-        &mut parsed_fields.bounds,
-        type_params,
-        &field.ty,
-    );
+    let mut parsed_fields = ParsedFields::new(state.enabled_fields_data());
 
-    Ok(())
-}
-
-fn process_if_valid_default_field_for_attr<'a, P>(
-    parsed_fields: &mut ParsedFields<'a>,
-    type_params: &HashSet<syn::Ident>,
-    field: &'a syn::Field,
-    index: usize,
-    info: MetaInfo,
-    is_valid_default_field_for_attr: &P,
-) -> Result<()>
-where
-    P: Fn(&syn::Field, usize) -> bool,
-{
-    if !is_valid_default_field_for_attr(field, parsed_fields.len) {
-        return Ok(());
-    }
-
-    if let Some(parsed_field) = &mut parsed_fields.source {
-        if !parsed_field.is_source_explicitly_set() {
-            return Err(Error::new(
-                parsed_field.field.span(),
-                "Conflicting fields found. Consider specifying some \
-                 `#[error(...)]` attributes to resolve conflict.",
-            ));
-        }
-    } else {
-        eprintln!("PING");
-        parsed_fields.source = Some(ParsedField::new(field, index, info));
+    if let Some((index, field, _)) = source {
+        parsed_fields.source = Some(index);
         add_bound_if_type_parameter_used_in_type(
             &mut parsed_fields.bounds,
             type_params,
@@ -405,7 +289,26 @@ where
         );
     }
 
-    Ok(())
+    Ok(parsed_fields)
+}
+
+fn process<'a>(
+    mut iter: impl Iterator<Item = (usize, &'a syn::Field, &'a MetaInfo)>,
+    error_msg: &str,
+) -> Result<Option<(usize, &'a syn::Field, &'a MetaInfo)>> {
+    let item = match iter.next() {
+        Some(item) => item,
+        None => return Ok(None),
+    };
+
+    if let Some((_, field, _)) = iter.next() {
+        return Err(Error::new(
+            field.span(),
+            error_msg,
+        ));
+    }
+
+    Ok(Some(item))
 }
 
 fn add_bound_if_type_parameter_used_in_type(
