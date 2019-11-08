@@ -1,15 +1,21 @@
-use crate::utils::{add_extra_generic_param, MultiFieldData, State};
+use crate::utils::{add_extra_generic_param, MultiFieldData, State, AttrParams};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(Into)]` into an implementation of `Into`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::with_field_ignore_and_refs(
+    let state = State::with_attr_params(
         input,
         trait_name,
         quote!(::core::convert),
         trait_name.to_lowercase(),
+        AttrParams {
+            enum_: vec!["ignore", "owned", "ref", "ref_mut"],
+            variant: vec!["ignore", "owned", "ref", "ref_mut"],
+            struct_: vec!["ignore", "owned", "ref", "ref_mut"],
+            field: vec!["ignore"],
+        },
     )?;
     let MultiFieldData {
         variant_info,

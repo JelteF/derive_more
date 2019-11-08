@@ -1,5 +1,6 @@
 use crate::utils::{
-    add_extra_generic_param, numbered_vars, DeriveType, MultiFieldData, State,
+    add_extra_generic_param, numbered_vars, AttrParams, DeriveType, MultiFieldData,
+    State,
 };
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -9,11 +10,17 @@ use syn::{DeriveInput, Result};
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
 #[allow(clippy::cognitive_complexity)]
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::with_field_ignore_and_refs(
+    let state = State::with_attr_params(
         input,
         trait_name,
         quote!(::core::convert),
         String::from("try_into"),
+        AttrParams {
+            enum_: vec!["ignore", "owned", "ref", "ref_mut"],
+            variant: vec!["ignore", "owned", "ref", "ref_mut"],
+            struct_: vec!["ignore", "owned", "ref", "ref_mut"],
+            field: vec!["ignore"],
+        },
     )?;
     if state.derive_type != DeriveType::Enum {
         panic!("Only enums can derive TryInto");
@@ -50,7 +57,9 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         for multi_field_data in multi_field_datas {
             let patterns: Vec<_> =
                 vars.iter().map(|var| quote!(#pattern_ref #var)).collect();
-            matchers.push(multi_field_data.initializer(&patterns));
+            matchers.push(
+                multi_field_data.matcher(&multi_field_data.field_indexes, &patterns),
+            );
         }
 
         let vars = if vars.len() == 1 {

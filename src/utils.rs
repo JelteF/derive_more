@@ -536,6 +536,7 @@ impl<'input> State<'input> {
         }
         let fields = self.enabled_fields();
         let field_idents = self.enabled_fields_idents();
+        let field_indexes = self.enabled_fields_indexes();
         let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
         let members: Vec<_> = field_idents
             .iter()
@@ -569,6 +570,7 @@ impl<'input> State<'input> {
             variant_info: self.default_info,
             fields,
             field_types,
+            field_indexes,
             members,
             infos: self.enabled_infos(),
             field_idents,
@@ -658,6 +660,16 @@ impl<'input> State<'input> {
             .map(|(f, _)| f)
             .collect()
     }
+
+    fn enabled_fields_indexes(&self) -> Vec<usize> {
+        self.full_meta_infos
+            .iter()
+            .map(|info| info.enabled)
+            .enumerate()
+            .filter(|(_, ig)| *ig)
+            .map(|(i, _)| i)
+            .collect()
+    }
     fn enabled_infos(&self) -> Vec<FullMetaInfo> {
         self.full_meta_infos
             .iter()
@@ -693,6 +705,7 @@ pub struct MultiFieldData<'input, 'state> {
     pub fields: Vec<&'input Field>,
     pub field_types: Vec<&'input Type>,
     pub field_idents: Vec<TokenStream>,
+    pub field_indexes: Vec<usize>,
     pub members: Vec<TokenStream>,
     pub infos: Vec<FullMetaInfo>,
     pub method_ident: &'state Ident,
@@ -727,6 +740,25 @@ impl<'input, 'state> MultiFieldData<'input, 'state> {
             quote!(#variant_type{#(#field_idents: #initializers),*})
         } else {
             quote!(#variant_type(#(#initializers),*))
+        }
+    }
+    pub fn matcher<T: ToTokens>(
+        &self,
+        indexes: &[usize],
+        bindings: &[T],
+    ) -> TokenStream {
+        let MultiFieldData { variant_type, .. } = self;
+        let full_bindings = (0..self.state.fields.len()).map(|i| {
+            indexes.iter().position(|index| i == *index).map_or_else(
+                || quote!(_),
+                |found_index| bindings[found_index].to_token_stream(),
+            )
+        });
+        if self.state.derive_type == DeriveType::Named {
+            let field_idents = self.state.field_idents();
+            quote!(#variant_type{#(#field_idents: #full_bindings),*})
+        } else {
+            quote!(#variant_type(#(#full_bindings),*))
         }
     }
 }
