@@ -242,7 +242,7 @@ where
         _ => false,
     });
 
-    let source = process(
+    let source = assert_iter_contains_zero_or_one_item(
         explicit_sources,
         "Multiple `source` attributes specified. \
          Single attribute per struct/enum variant allowed.",
@@ -250,7 +250,7 @@ where
 
     let source = match source {
         source @ Some(_) => source,
-        None => process(
+        None => assert_iter_contains_zero_or_one_item(
             inferred_sources,
             "Conflicting fields found. Consider specifying some \
              `#[error(...)]` attributes to resolve conflict.",
@@ -271,7 +271,7 @@ where
     Ok(parsed_fields)
 }
 
-fn process<'a>(
+fn assert_iter_contains_zero_or_one_item<'a>(
     mut iter: impl Iterator<Item = (usize, &'a syn::Field, &'a MetaInfo)>,
     error_msg: &str,
 ) -> Result<Option<(usize, &'a syn::Field, &'a MetaInfo)>> {
