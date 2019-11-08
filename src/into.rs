@@ -1,7 +1,8 @@
-use crate::utils::{add_extra_generic_param, AttrParams, MultiFieldData, State};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse::Result, DeriveInput};
+
+use crate::utils::{add_extra_generic_param, AttrParams, MultiFieldData, State};
 
 /// Provides the hook to expand `#[derive(Into)]` into an implementation of `Into`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {

@@ -1,15 +1,15 @@
 #![cfg_attr(not(feature = "default"), allow(dead_code))]
+
+use std::{collections::HashSet, ops::Deref as _};
+
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-    parse_str, spanned::Spanned, Attribute, Data, DeriveInput, Error, Field, Fields,
-    FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident, ImplGenerics, Index,
-    Meta, NestedMeta, Result, Type, TypeGenerics, TypeParamBound, Variant, WhereClause,
+    parse_str, punctuated::Punctuated, spanned::Spanned,
+    Attribute, Data, DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed,
+    GenericParam, Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Result,
+    Token, Type, TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
-
-use std::{collections::HashSet, ops::Deref as _};
-use syn::punctuated::Punctuated;
-use syn::Token;
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub enum RefType {
@@ -924,7 +924,6 @@ pub struct MetaInfo {
 impl MetaInfo {
     fn to_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
         let info = self;
-
         FullMetaInfo {
             enabled: self.enabled.unwrap_or(defaults.enabled),
             forward: self.forward.unwrap_or(defaults.forward),
