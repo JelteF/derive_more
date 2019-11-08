@@ -7,134 +7,154 @@ mod derives_for_struct {
     use super::*;
 
     #[derive(Default, Debug, Display, Error)]
-    struct SE; // SE - Simple Error
+    struct SimpleErr;
 
     #[test]
     fn unit() {
-        assert!(SE.source().is_none());
+        assert!(SimpleErr.source().is_none());
     }
 
     #[test]
     fn named_implicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test {
+        struct TestErr {
             field: i32,
         }
 
-        assert!(Test::default().source().is_none());
+        assert!(TestErr::default().source().is_none());
     }
 
     #[test]
     fn named_implicit_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test {
-            source: SE,
+        struct TestErr {
+            source: SimpleErr,
             field: i32,
         }
 
-        assert!(Test::default().source().is_some());
+        assert!(TestErr::default().source().is_some());
+        assert!(TestErr::default().source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test {
+        struct TestErr {
             #[error(not(source))]
-            source: SE,
+            source: SimpleErr,
             field: i32,
         }
 
-        assert!(Test::default().source().is_none());
+        assert!(TestErr::default().source().is_none());
     }
 
     #[test]
     fn named_explicit_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test {
+        struct TestErr {
             #[error(source)]
-            explicit_source: SE,
+            explicit_source: SimpleErr,
             field: i32,
         }
 
-        assert!(Test::default().source().is_some());
+        assert!(TestErr::default().source().is_some());
+        assert!(TestErr::default().source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test {
+        struct TestErr {
             #[error(not(source))]
             field: i32,
         }
 
-        assert!(Test::default().source().is_none());
+        assert!(TestErr::default().source().is_none());
     }
 
     #[test]
     fn named_explicit_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test {
+        struct TestErr {
             #[error(source)]
-            source: SE,
+            source: SimpleErr,
             field: i32,
         }
 
-        assert!(Test::default().source().is_some());
+        assert!(TestErr::default().source().is_some());
+        assert!(TestErr::default().source().unwrap().is::<SimpleErr>());
+    }
+
+    #[test]
+    fn named_explicit_suppresses_implicit() {
+        #[derive(Default, Debug, Display, Error)]
+        #[display(fmt = "")]
+        struct TestErr {
+            source: i32,
+            #[error(source)]
+            field: SimpleErr,
+        }
+
+        assert!(TestErr::default().source().is_some());
+        assert!(TestErr::default().source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_implicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test(i32, i32);
+        struct TestErr(i32, i32);
 
-        assert!(Test::default().source().is_none());
+        assert!(TestErr::default().source().is_none());
     }
 
     #[test]
     fn unnamed_implicit_source() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test(SE);
+        struct TestErr(SimpleErr);
 
-        assert!(Test::default().source().is_some());
+        assert!(TestErr::default().source().is_some());
+        assert!(TestErr::default().source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test(#[error(not(source))] SE);
+        struct TestErr(#[error(not(source))] SimpleErr);
 
-        assert!(Test::default().source().is_none());
+        assert!(TestErr::default().source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test(#[error(source)] SE, i32);
+        struct TestErr(#[error(source)] SimpleErr, i32);
 
-        assert!(Test::default().source().is_some());
+        assert!(TestErr::default().source().is_some());
+        assert!(TestErr::default().source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test(#[error(not(source))] i32, #[error(not(source))] i32);
+        struct TestErr(#[error(not(source))] i32, #[error(not(source))] i32);
 
-        assert!(Test::default().source().is_none());
+        assert!(TestErr::default().source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test(#[error(source)] SE);
+        struct TestErr(#[error(source)] SimpleErr);
 
-        assert!(Test::default().source().is_some());
+        assert!(TestErr::default().source().is_some());
+        assert!(TestErr::default().source().unwrap().is::<SimpleErr>());
     }
 }
 
@@ -142,27 +162,27 @@ mod derives_for_enum {
     use super::*;
 
     #[derive(Default, Debug, Display, Error)]
-    struct SE; // SE - Simple Error
+    struct SimpleErr;
 
     #[derive(Debug, Display, Error)]
     #[display(fmt = "")]
-    enum Test {
+    enum TestErr {
         Unit,
         NamedImplicitNoSource {
             field: i32,
         },
         NamedImplicitSource {
-            source: SE,
+            source: SimpleErr,
             field: i32,
         },
         NamedExplicitNoSource {
             #[error(not(source))]
-            source: SE,
+            source: SimpleErr,
             field: i32,
         },
         NamedExplicitSource {
             #[error(source)]
-            explicit_source: SE,
+            explicit_source: SimpleErr,
             field: i32,
         },
         NamedExplicitNoSourceRedundant {
@@ -171,115 +191,139 @@ mod derives_for_enum {
         },
         NamedExplicitSourceRedundant {
             #[error(source)]
-            source: SE,
+            source: SimpleErr,
             field: i32,
         },
+        NamedExplicitSuppressesImplicit {
+            source: i32,
+            #[error(source)]
+            field: SimpleErr,
+        },
         UnnamedImplicitNoSource(i32, i32),
-        UnnamedImplicitSource(SE),
-        UnnamedExplicitNoSource(#[error(not(source))] SE),
-        UnnamedExplicitSource(#[error(source)] SE, i32),
+        UnnamedImplicitSource(SimpleErr),
+        UnnamedExplicitNoSource(#[error(not(source))] SimpleErr),
+        UnnamedExplicitSource(#[error(source)] SimpleErr, i32),
         UnnamedExplicitNoSourceRedundant(
             #[error(not(source))] i32,
             #[error(not(source))] i32,
         ),
-        UnnamedExplicitSourceRedundant(#[error(source)] SE),
+        UnnamedExplicitSourceRedundant(#[error(source)] SimpleErr),
     }
 
     #[test]
     fn unit() {
-        assert!(Test::Unit.source().is_none());
+        assert!(TestErr::Unit.source().is_none());
     }
 
     #[test]
     fn named_implicit_no_source() {
-        assert!(Test::NamedImplicitNoSource { field: 0 }.source().is_none());
+        let err = TestErr::NamedImplicitNoSource { field: 0 };
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn named_implicit_source() {
-        assert!(Test::NamedImplicitSource {
-            source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_some());
+        let err = TestErr::NamedImplicitSource {
+            source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source() {
-        assert!(Test::NamedExplicitNoSource {
-            source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_none());
+        let err = TestErr::NamedExplicitNoSource {
+            source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn named_explicit_source() {
-        assert!(Test::NamedExplicitSource {
-            explicit_source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_some());
+        let err = TestErr::NamedExplicitSource {
+            explicit_source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source_redundant() {
-        assert!(Test::NamedExplicitNoSourceRedundant { field: 0 }
-            .source()
-            .is_none());
+        let err = TestErr::NamedExplicitNoSourceRedundant { field: 0 };
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn named_explicit_source_redundant() {
-        assert!(Test::NamedExplicitSourceRedundant {
-            source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_some());
+        let err = TestErr::NamedExplicitSourceRedundant {
+            source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
+    }
+
+    #[test]
+    fn named_explicit_suppresses_implicit() {
+        let err = TestErr::NamedExplicitSuppressesImplicit {
+            source: 0,
+            field: SimpleErr::default(),
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_implicit_no_source() {
-        assert!(Test::UnnamedImplicitNoSource(0, 0).source().is_none());
+        assert!(TestErr::UnnamedImplicitNoSource(0, 0).source().is_none());
     }
 
     #[test]
     fn unnamed_implicit_source() {
-        assert!(Test::UnnamedImplicitSource(SE::default())
-            .source()
-            .is_some());
+        let err = TestErr::UnnamedImplicitSource(SimpleErr::default());
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source() {
-        assert!(Test::UnnamedExplicitNoSource(SE::default())
-            .source()
-            .is_none());
+        let err = TestErr::UnnamedExplicitNoSource(SimpleErr::default());
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source() {
-        assert!(Test::UnnamedExplicitSource(SE::default(), 0)
-            .source()
-            .is_some());
+        let err = TestErr::UnnamedExplicitSource(SimpleErr::default(), 0);
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source_redundant() {
-        assert!(Test::UnnamedExplicitNoSourceRedundant(0, 0)
-            .source()
-            .is_none());
+        let err = TestErr::UnnamedExplicitNoSourceRedundant(0, 0);
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source_redundant() {
-        assert!(Test::UnnamedExplicitSourceRedundant(SE::default())
-            .source()
-            .is_some());
+        let err = TestErr::UnnamedExplicitSourceRedundant(SimpleErr::default());
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 }
 
@@ -287,129 +331,165 @@ mod derives_for_generic_struct {
     use super::*;
 
     #[derive(Default, Debug, Display, Error)]
-    struct SE; // SE - Simple Error
+    struct SimpleErr;
 
     #[test]
     fn named_implicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test<T> {
+        struct TestErr<T> {
             field: T,
         }
 
-        assert!(Test::<i32>::default().source().is_none());
+        assert!(TestErr::<i32>::default().source().is_none());
     }
 
     #[test]
     fn named_implicit_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test<E, T> {
+        struct TestErr<E, T> {
             source: E,
             field: T,
         }
 
-        assert!(Test::<SE, i32>::default().source().is_some());
+        let err = TestErr::<SimpleErr, i32>::default();
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test<E, T> {
+        struct TestErr<E, T> {
             #[error(not(source))]
             source: E,
             field: T,
         }
 
-        assert!(Test::<SE, i32>::default().source().is_none());
+        let err = TestErr::<SimpleErr, i32>::default();
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn named_explicit_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test<E, T> {
+        struct TestErr<E, T> {
             #[error(source)]
             explicit_source: E,
             field: T,
         }
 
-        assert!(Test::<SE, i32>::default().source().is_some());
+        let err = TestErr::<SimpleErr, i32>::default();
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test<T> {
+        struct TestErr<T> {
             #[error(not(source))]
             field: T,
         }
 
-        assert!(Test::<i32>::default().source().is_none());
+        assert!(TestErr::<i32>::default().source().is_none());
     }
 
     #[test]
     fn named_explicit_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test<E, T> {
+        struct TestErr<E, T> {
             #[error(source)]
             source: E,
             field: T,
         }
 
-        assert!(Test::<SE, i32>::default().source().is_some());
+        let err = TestErr::<SimpleErr, i32>::default();
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
+    }
+
+    #[test]
+    fn named_explicit_suppresses_implicit() {
+        #[derive(Default, Debug, Display, Error)]
+        #[display(fmt = "")]
+        struct TestErr<E, T> {
+            source: E,
+            #[error(source)]
+            field: T,
+        }
+
+        let err = TestErr::<i32, SimpleErr>::default();
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_implicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test<T>(T, T);
+        struct TestErr<T>(T, T);
 
-        assert!(Test::<i32>::default().source().is_none());
+        assert!(TestErr::<i32>::default().source().is_none());
     }
 
     #[test]
     fn unnamed_implicit_source() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test<E>(E);
+        struct TestErr<E>(E);
 
-        assert!(Test::<SE>::default().source().is_some());
+        let err = TestErr::<SimpleErr>::default();
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test<E>(#[error(not(source))] E);
+        struct TestErr<E>(#[error(not(source))] E);
 
-        assert!(Test::<SE>::default().source().is_none());
+        assert!(TestErr::<SimpleErr>::default().source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test<E, T>(#[error(source)] E, T);
+        struct TestErr<E, T>(#[error(source)] E, T);
 
-        assert!(Test::<SE, i32>::default().source().is_some());
+        let err = TestErr::<SimpleErr, i32>::default();
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
         #[display(fmt = "")]
-        struct Test<T>(#[error(not(source))] T, #[error(not(source))] T);
+        struct TestErr<T>(#[error(not(source))] T, #[error(not(source))] T);
 
-        assert!(Test::<i32>::default().source().is_none());
+        assert!(TestErr::<i32>::default().source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source_redundant() {
         #[derive(Default, Debug, Display, Error)]
-        struct Test<E>(#[error(source)] E);
+        struct TestErr<E>(#[error(source)] E);
 
-        assert!(Test::<SE>::default().source().is_some());
+        let err = TestErr::<SimpleErr>::default();
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 }
 
@@ -417,11 +497,11 @@ mod derives_for_generic_enum {
     use super::*;
 
     #[derive(Default, Debug, Display, Error)]
-    struct SE; // SE - Simple Error
+    struct SimpleErr;
 
     #[derive(Debug, Display, Error)]
     #[display(fmt = "")]
-    enum Test<E, T> {
+    enum TestErr<E, T> {
         Unit,
         NamedImplicitNoSource {
             field: T,
@@ -448,6 +528,11 @@ mod derives_for_generic_enum {
             #[error(source)]
             source: E,
             field: T,
+        },
+        NamedExplicitSuppressesImplicit {
+            source: T,
+            #[error(source)]
+            field: E,
         },
         UnnamedImplicitNoSource(T, T),
         UnnamedImplicitSource(E),
@@ -462,104 +547,120 @@ mod derives_for_generic_enum {
 
     #[test]
     fn unit() {
-        assert!(Test::<SE, i32>::Unit.source().is_none());
+        assert!(TestErr::<SimpleErr, i32>::Unit.source().is_none());
     }
 
     #[test]
     fn named_implicit_no_source() {
-        assert!(Test::<SE, _>::NamedImplicitNoSource { field: 0 }
-            .source()
-            .is_none());
+        let err = TestErr::<SimpleErr, _>::NamedImplicitNoSource { field: 0 };
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn named_implicit_source() {
-        assert!(Test::NamedImplicitSource {
-            source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_some());
+        let err = TestErr::NamedImplicitSource {
+            source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source() {
-        assert!(Test::NamedExplicitNoSource {
-            source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_none());
+        let err = TestErr::NamedExplicitNoSource {
+            source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn named_explicit_source() {
-        assert!(Test::NamedExplicitSource {
-            explicit_source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_some());
+        let err = TestErr::NamedExplicitSource {
+            explicit_source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn named_explicit_no_source_redundant() {
-        assert!(Test::<SE, _>::NamedExplicitNoSourceRedundant { field: 0 }
-            .source()
-            .is_none());
+        let err = TestErr::<SimpleErr, _>::NamedExplicitNoSourceRedundant { field: 0 };
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn named_explicit_source_redundant() {
-        assert!(Test::NamedExplicitSourceRedundant {
-            source: SE::default(),
-            field: 0
-        }
-        .source()
-        .is_some());
+        let err = TestErr::NamedExplicitSourceRedundant {
+            source: SimpleErr::default(),
+            field: 0,
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
+    }
+
+    #[test]
+    fn named_explicit_suppresses_implicit() {
+        let err = TestErr::NamedExplicitSuppressesImplicit {
+            source: 0,
+            field: SimpleErr::default(),
+        };
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_implicit_no_source() {
-        assert!(Test::<SE, _>::UnnamedImplicitNoSource(0, 0)
-            .source()
-            .is_none());
+        let err = TestErr::<SimpleErr, _>::UnnamedImplicitNoSource(0, 0);
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn unnamed_implicit_source() {
-        assert!(Test::<_, i32>::UnnamedImplicitSource(SE::default())
-            .source()
-            .is_some());
+        let err = TestErr::<_, i32>::UnnamedImplicitSource(SimpleErr::default());
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source() {
-        assert!(Test::<_, i32>::UnnamedExplicitNoSource(SE::default())
-            .source()
-            .is_none());
+        let err = TestErr::<_, i32>::UnnamedExplicitNoSource(SimpleErr::default());
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source() {
-        assert!(Test::UnnamedExplicitSource(SE::default(), 0)
-            .source()
-            .is_some());
+        let err = TestErr::UnnamedExplicitSource(SimpleErr::default(), 0);
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 
     #[test]
     fn unnamed_explicit_no_source_redundant() {
-        assert!(Test::<SE, _>::UnnamedExplicitNoSourceRedundant(0, 0)
-            .source()
-            .is_none());
+        let err = TestErr::<SimpleErr, _>::UnnamedExplicitNoSourceRedundant(0, 0);
+
+        assert!(err.source().is_none());
     }
 
     #[test]
     fn unnamed_explicit_source_redundant() {
-        assert!(
-            Test::<_, i32>::UnnamedExplicitSourceRedundant(SE::default())
-                .source()
-                .is_some()
-        );
+        let err =
+            TestErr::<_, i32>::UnnamedExplicitSourceRedundant(SimpleErr::default());
+
+        assert!(err.source().is_some());
+        assert!(err.source().unwrap().is::<SimpleErr>());
     }
 }

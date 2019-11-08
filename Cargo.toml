@@ -133,6 +133,11 @@ path = "tests/display.rs"
 required-features = ["display"]
 
 [[test]]
+name = "error"
+path = "tests/error.rs"
+required-features = ["error"]
+
+[[test]]
 name = "from"
 path = "tests/from.rs"
 required-features = ["from"]
