@@ -4,14 +4,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
-use crate::utils::{
-    self,
-    DeriveType,
-    FullMetaInfo,
-    MetaInfo,
-    MultiFieldData,
-    State,
-};
+use crate::utils::{self, DeriveType, FullMetaInfo, MetaInfo, MultiFieldData, State};
 
 pub fn expand(
     input: &syn::DeriveInput,
@@ -206,25 +199,17 @@ fn parse_fields<'input, 'state>(
 ) -> Result<ParsedFields<'input, 'state>> {
     match state.derive_type {
         DeriveType::Named => {
-            parse_fields_impl(
-                type_params,
-                state,
-                |field, _| {
-                    let ident = field
-                        .ident
-                        .as_ref()
-                        .expect("Internal error in macro implementation"); // TODO
+            parse_fields_impl(type_params, state, |field, _| {
+                let ident = field
+                    .ident
+                    .as_ref()
+                    .expect("Internal error in macro implementation"); // TODO
 
-                    ident == "source"
-                },
-            )
+                ident == "source"
+            })
         }
 
-        DeriveType::Unnamed => parse_fields_impl(
-            type_params,
-            state,
-            |_, len| len == 1,
-        ),
+        DeriveType::Unnamed => parse_fields_impl(type_params, state, |_, len| len == 1),
 
         _ => unreachable!(), // TODO
     }
@@ -238,11 +223,7 @@ fn parse_fields_impl<'input, 'state, P>(
 where
     P: Fn(&syn::Field, usize) -> bool,
 {
-    let MultiFieldData {
-        fields,
-        infos,
-        ..
-    } = state.enabled_fields_data();
+    let MultiFieldData { fields, infos, .. } = state.enabled_fields_data();
 
     let iter = fields
         .iter()
@@ -250,23 +231,20 @@ where
         .enumerate()
         .map(|(index, (field, info))| (index, *field, info));
 
-    let explicit_sources = iter
-        .clone()
-        .filter(|(_, _, info)| match info.source {
-            Some(true) => true,
-            _ => false,
-        });
+    let explicit_sources = iter.clone().filter(|(_, _, info)| match info.source {
+        Some(true) => true,
+        _ => false,
+    });
 
-    let inferred_sources = iter
-        .filter(|(_, field, info)| match info.source {
-            None => is_valid_default_field_for_attr(field, fields.len()),
-            _ => false,
-        });
+    let inferred_sources = iter.filter(|(_, field, info)| match info.source {
+        None => is_valid_default_field_for_attr(field, fields.len()),
+        _ => false,
+    });
 
     let source = process(
         explicit_sources,
         "Multiple `source` attributes specified. \
-        Single attribute per struct/enum variant allowed.",
+         Single attribute per struct/enum variant allowed.",
     )?;
 
     let source = match source {
@@ -274,7 +252,7 @@ where
         None => process(
             inferred_sources,
             "Conflicting fields found. Consider specifying some \
-            `#[error(...)]` attributes to resolve conflict.",
+             `#[error(...)]` attributes to resolve conflict.",
         )?,
     };
 
@@ -302,10 +280,7 @@ fn process<'a>(
     };
 
     if let Some((_, field, _)) = iter.next() {
-        return Err(Error::new(
-            field.span(),
-            error_msg,
-        ));
+        return Err(Error::new(field.span(), error_msg));
     }
 
     Ok(Some(item))

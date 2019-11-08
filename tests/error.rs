@@ -249,22 +249,30 @@ mod derives_for_enum {
 
     #[test]
     fn unnamed_implicit_source() {
-        assert!(Test::UnnamedImplicitSource(SE::default()).source().is_some());
+        assert!(Test::UnnamedImplicitSource(SE::default())
+            .source()
+            .is_some());
     }
 
     #[test]
     fn unnamed_explicit_no_source() {
-        assert!(Test::UnnamedExplicitNoSource(SE::default()).source().is_none());
+        assert!(Test::UnnamedExplicitNoSource(SE::default())
+            .source()
+            .is_none());
     }
 
     #[test]
     fn unnamed_explicit_source() {
-        assert!(Test::UnnamedExplicitSource(SE::default(), 0).source().is_some());
+        assert!(Test::UnnamedExplicitSource(SE::default(), 0)
+            .source()
+            .is_some());
     }
 
     #[test]
     fn unnamed_explicit_no_source_redundant() {
-        assert!(Test::UnnamedExplicitNoSourceRedundant(0, 0).source().is_none());
+        assert!(Test::UnnamedExplicitNoSourceRedundant(0, 0)
+            .source()
+            .is_none());
     }
 
     #[test]
@@ -513,7 +521,9 @@ mod derives_for_generic_enum {
 
     #[test]
     fn unnamed_implicit_no_source() {
-        assert!(Test::<SE, _>::UnnamedImplicitNoSource(0, 0).source().is_none());
+        assert!(Test::<SE, _>::UnnamedImplicitNoSource(0, 0)
+            .source()
+            .is_none());
     }
 
     #[test]
@@ -532,7 +542,9 @@ mod derives_for_generic_enum {
 
     #[test]
     fn unnamed_explicit_source() {
-        assert!(Test::UnnamedExplicitSource(SE::default(), 0).source().is_some());
+        assert!(Test::UnnamedExplicitSource(SE::default(), 0)
+            .source()
+            .is_some());
     }
 
     #[test]
@@ -544,8 +556,10 @@ mod derives_for_generic_enum {
 
     #[test]
     fn unnamed_explicit_source_redundant() {
-        assert!(Test::<_, i32>::UnnamedExplicitSourceRedundant(SE::default())
-            .source()
-            .is_some());
+        assert!(
+            Test::<_, i32>::UnnamedExplicitSourceRedundant(SE::default())
+                .source()
+                .is_some()
+        );
     }
 }
