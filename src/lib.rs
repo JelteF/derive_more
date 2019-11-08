@@ -164,6 +164,8 @@
 //!
 //! [`Display`-like]: display.html
 //!
+//! [`Error`]: error.html
+//!
 //! [`Index`]: index_op.html
 //! [`Deref`]: deref.html
 //! [`Not`-like]: not.html

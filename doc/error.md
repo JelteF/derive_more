@@ -1,10 +1,8 @@
-% What #[derive(Display)] generates
+% What #[derive(Error)] generates
 
 Deriving `Error` will generate an `Error` implementation, with a `source`
 method that matches `self` and each of its variants. In the case of a struct, only
-a single variant is available, and it is thus equivalent to a simple `let` statement.
-
-In the case of an enum, each of its variants is matched.
+a single variant is available. In the case of an enum, each of its variants is matched.
 
 For each matched variant, a *source-field* is returned, if present. This field can
 either be inferred, or explicitly specified via `#[error(source)]` attribute.
@@ -26,7 +24,7 @@ explicitly specified as a non-source-field via `#[error(not(source))]` attribute
 
 // std::error::Error requires std::fmt::Debug and std::fmt::Display,
 // so we can also use derive_more::Display for fully declarative
-// error-type definitions
+// error-type definitions.
 
 #[derive(Default, Debug, Display, Error)]
 struct Simple;
@@ -50,7 +48,6 @@ struct WithoutSource(#[error(not(source))] i32);
 
 // derive_more::From fits nicely into this pattern as well
 #[derive(Debug, Display, Error, From)]
-
 enum CompoundError {
     Simple,
     WithSource {
