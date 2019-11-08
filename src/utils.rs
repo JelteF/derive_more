@@ -5,10 +5,10 @@ use std::{collections::HashSet, ops::Deref as _};
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-    parse_str, punctuated::Punctuated, spanned::Spanned,
-    Attribute, Data, DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed,
-    GenericParam, Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Result,
-    Token, Type, TypeGenerics, TypeParamBound, Variant, WhereClause,
+    parse_str, punctuated::Punctuated, spanned::Spanned, Attribute, Data, DeriveInput,
+    Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident,
+    ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type, TypeGenerics,
+    TypeParamBound, Variant, WhereClause,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
