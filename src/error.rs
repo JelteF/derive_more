@@ -4,7 +4,9 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
-use crate::utils::{self, AttrParams, DeriveType, FullMetaInfo, MetaInfo, MultiFieldData, State};
+use crate::utils::{
+    self, AttrParams, DeriveType, FullMetaInfo, MetaInfo, MultiFieldData, State,
+};
 
 pub fn expand(
     input: &syn::DeriveInput,

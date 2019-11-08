@@ -846,7 +846,12 @@ fn parse_punctuated_nested_meta(
         match meta {
             Meta::List(list) if list.path.is_ident("not") => {
                 if value {
-                    parse_punctuated_nested_meta(info, &list.nested, allowed_attr_params, false)?;
+                    parse_punctuated_nested_meta(
+                        info,
+                        &list.nested,
+                        allowed_attr_params,
+                        false,
+                    )?;
                 } else {
                     return Err(Error::new(
                         meta.span(),
