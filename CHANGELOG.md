@@ -18,8 +18,8 @@ backwards compatibility.
 
 - Requires Rust edition 2018
 - Use `syn` 1.0
-- `no_std` feature is removed, it now supports `no_std` without having to
-  configure any features.
+- `no_std` feature is removed, the library now supports `no_std` without having
+  to configure any features.
 - `Deref` derives now dereference to the type in the newtype. So if you have
   `MyBox(Box<i32>)`, dereferencing it will result in a `Box<i32>` not an `i32`.
   To get the old behaviour of forwarding the dereference you can add the
@@ -27,22 +27,23 @@ backwards compatibility.
 
 ### New features
 
+- Derives for `AsRef`, `AsMut`, `Sum`, `Product`, `IntoIterator`, `Iterator`.
 - Choosing the field of a struct for which to derive the newtype derive.
-- Ignoring variants of enums when deriving `From`.
-- Add `#[from(forward)]` attribute this forwards the from calls to the fields
-  themselves. So if your field is an `i64` you can call from on an `i32` and it
-  will work.
+- Ignoring variants of enums when deriving `From`, by using `#[from(ignore)]`.
+- Add `#[from(forward)]` attribute for `From` derives. This forwards the `from`
+  calls to the fields themselves. So if your field is an `i64` you can call from
+  on an `i32` and it will work.
+- Add `#[mul(forward)]` and `#[mul_assign(forward)]`, which implement `Mul` and
+  `MulAssign` with the semantics as if they were `Add`/`AddAssign`.
 - You can use features to cut down compile time of the crate by only compiling
   the code needed for the derives that you use. (see Cargo.toml for the
   features, by default they are all on)
 - Add `#[into(owned, ref, ref_mut)]` and `#[try_into(owned, ref, ref_mut)]`
   attributes. These cause the `Into` and `TryInto` derives to also implement
   derives that return references to the inner fields.
-- Derives for `AsRef`, `AsMut`, `Sum`, `Product`, `IntoIterator`.
-- Add `MulSelf`, `DivSelf`, `RemSelf`, `ShrSelf` and `ShlSelf`
 - Make `no_std` work out of the box
-- Allow `#[display(fmt="some shared display text for the enum {}")]` attribute
-  on enum.
+- Allow `#[display(fmt="some shared display text for all enum variants {}")]`
+  attribute on enum.
 
 ### Other things
 - Remove dependency on `regex` to cut down compile time.
