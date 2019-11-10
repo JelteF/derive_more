@@ -107,6 +107,10 @@
 //! 9. [`MulAssign`-like], contains `MulAssign`, `DivAssign`, `RemAssign`,
 //!    `ShrAssign` and `ShlAssign`
 //!
+//! ### Other traits
+//!
+//! 1. ['Iterator']
+//!
 //! ### Static methods
 //!
 //! These don't derive traits, but derive static methods instead.
@@ -169,6 +173,8 @@
 //! [`DerefMut`]: deref_mut.html
 //! [`AddAssign`-like]: add_assign.html
 //! [`MulAssign`-like]: mul_assign.html
+//!
+//! [`Iterator`]: iterator.html
 //!
 //! [`Constructor`]: constructor.html
 
