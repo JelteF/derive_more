@@ -161,6 +161,11 @@ path = "tests/into_iterator.rs"
 required-features = ["into_iterator"]
 
 [[test]]
+name = "iterator"
+path = "tests/iterator.rs"
+required-features = ["iterator"]
+
+[[test]]
 name = "mul_assign"
 path = "tests/mul_assign.rs"
 required-features = ["mul_assign"]
