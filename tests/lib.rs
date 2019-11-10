@@ -37,9 +37,6 @@ struct MyInt2(i32);
 #[into_iterator(owned, ref, ref_mut)]
 struct MyVec(Vec<i32>);
 
-#[derive(Iterator)]
-struct MyIter<'a>(::core::slice::Iter<'a, i32>);
-
 #[derive(Eq, PartialEq, Debug)]
 #[derive(Deref, DerefMut)]
 #[deref(forward)]
@@ -246,8 +243,6 @@ fn main() {
     assert_eq!(8, my_vec[1]);
     my_vec[0] = 20;
     assert_eq!(20, my_vec[0]);
-    let mut my_iter = MyIter(my_vec.iter());
-    assert_eq!(my_iter.next(), Some(&20));
     assert_eq!((&my_vec).into_iter().next(), Some(&20));
     assert_eq!((&mut my_vec).into_iter().next(), Some(&mut 20));
     assert_eq!(my_vec.into_iter().next(), Some(20));

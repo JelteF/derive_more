@@ -29,9 +29,6 @@ struct MyInts(u64);
 #[deref_mut(forward)]
 struct MyBoxedInt<'a>(&'a mut u64);
 
-#[derive(Iterator)]
-struct MyVec<'a>(::core::slice::Iter<'a, i32>);
-
 #[derive(
     From,
     FromStr,
@@ -53,7 +50,7 @@ struct MyVec<'a>(::core::slice::Iter<'a, i32>);
 #[into_iterator(owned, ref, ref_mut)]
 struct Wrapped<T: Clone>(T);
 
-#[derive(Iterator, Deref, DerefMut)]
+#[derive(Deref, DerefMut)]
 struct Wrapped2<T: Clone>(T);
 
 #[derive(From, Not, Add, Mul, AddAssign, Constructor, Sum)]

@@ -218,8 +218,6 @@ mod index_mut;
 mod into;
 #[cfg(feature = "into_iterator")]
 mod into_iterator;
-#[cfg(feature = "iterator")]
-mod iterator;
 #[cfg(feature = "mul_assign")]
 mod mul_assign_like;
 #[cfg(any(feature = "mul", feature = "mul_assign"))]
@@ -381,7 +379,6 @@ create_derive!(
     into_iterator_derive,
     into_iterator,
 );
-create_derive!("iterator", iterator, Iterator, iterator_derive, iterator);
 
 create_derive!("try_into", try_into, TryInto, try_into_derive, try_into);
 
