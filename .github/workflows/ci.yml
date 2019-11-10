@@ -4,11 +4,11 @@ name: CI
 
 jobs:
   test:
-    name: Test ${{matrix.os}} ${{matrix.toolchain}}
+    name: Test Rust ${{matrix.toolchain}} on ${{matrix.os}}
     runs-on: ${{matrix.os}}-latest
     strategy:
       matrix:
-        toolchain: [stable, nightly]
+        toolchain: [stable, nightly, 1.36.0]
         os: [ubuntu, macOS, windows]
     steps:
       - uses: actions/checkout@master
