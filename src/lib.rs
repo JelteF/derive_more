@@ -119,7 +119,7 @@
 //!
 //! ## Installation
 //!
-//! This library requires Rust 1.32 or higher and it supports `no_std` out of the box.
+//! This library requires Rust 1.36 or higher and it supports `no_std` out of the box.
 //! Then add the following to `Cargo.toml`:
 //!
 //! ```toml
