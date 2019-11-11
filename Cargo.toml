@@ -9,7 +9,7 @@ documentation = "https://jeltef.github.io/derive_more/derive_more/"
 edition = "2018"
 
 readme = "README.md"
-keywords = ["derive", "Add", "From", "Constructor", "implementation"]
+keywords = ["derive", "Add", "From", "Display", "IntoIterator"]
 categories = ["development-tools", "development-tools::procedural-macro-helpers", "no-std"]
 
 include = [
@@ -35,8 +35,7 @@ syn = { version = "1", features = ["extra-traits"] }
 peg = { version = "0.5", optional = true }
 
 [badges]
-travis-ci = { repository = "JelteF/derive_more" }
-appveyor = { repository = "JelteF/derive_more" }
+github = { repository = "JelteF/derive_more", workflow = "CI" }
 
 [features]
 nightly = []
