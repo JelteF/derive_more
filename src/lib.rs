@@ -149,28 +149,28 @@
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 //! [`derive-new`]: https://github.com/nrc/derive-new
 //!
-//! [`From`]: from.html
-//! [`Into`]: into.html
-//! [`FromStr`]: from_str.html
-//! [`TryInto`]: try_into.html
-//! [`IntoIterator`]: into_iterator.html
-//! [`AsRef`]: as_ref.html
-//! [`AsMut`]: as_mut.html
+//! [`From`]: https://jeltef.github.io/derive_more/derive_more/from.html
+//! [`Into`]: https://jeltef.github.io/derive_more/derive_more/into.html
+//! [`FromStr`]: https://jeltef.github.io/derive_more/derive_more/from_str.html
+//! [`TryInto`]: https://jeltef.github.io/derive_more/derive_more/try_into.html
+//! [`IntoIterator`]: https://jeltef.github.io/derive_more/derive_more/into_iterator.html
+//! [`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
+//! [`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
 //!
-//! [`Display`-like]: display.html
+//! [`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
 //!
-//! [`Index`]: index_op.html
-//! [`Deref`]: deref.html
-//! [`Not`-like]: not.html
-//! [`Add`-like]: add.html
-//! [`Mul`-like]: mul.html
-//! [`Sum`-like]: sum.html
-//! [`IndexMut`]: index_mut.html
-//! [`DerefMut`]: deref_mut.html
-//! [`AddAssign`-like]: add_assign.html
-//! [`MulAssign`-like]: mul_assign.html
+//! [`Index`]: https://jeltef.github.io/derive_more/derive_more/index_op.html
+//! [`Deref`]: https://jeltef.github.io/derive_more/derive_more/deref.html
+//! [`Not`-like]: https://jeltef.github.io/derive_more/derive_more/not.html
+//! [`Add`-like]: https://jeltef.github.io/derive_more/derive_more/add.html
+//! [`Mul`-like]: https://jeltef.github.io/derive_more/derive_more/mul.html
+//! [`Sum`-like]: https://jeltef.github.io/derive_more/derive_more/sum.html
+//! [`IndexMut`]: https://jeltef.github.io/derive_more/derive_more/index_mut.html
+//! [`DerefMut`]: https://jeltef.github.io/derive_more/derive_more/deref_mut.html
+//! [`AddAssign`-like]: https://jeltef.github.io/derive_more/derive_more/add_assign.html
+//! [`MulAssign`-like]: https://jeltef.github.io/derive_more/derive_more/mul_assign.html
 //!
-//! [`Constructor`]: constructor.html
+//! [`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
 
 #![recursion_limit = "128"]
 
