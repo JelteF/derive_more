@@ -17,8 +17,9 @@ backwards compatibility.
 
 ### Breaking changes
 
-- Requires Rust edition 2018
-- Use `syn` 1.0
+- Requires Rust 1.36+
+- When using in a Rust 2015 crate, you should add `extern crate core` to your
+  code.
 - `no_std` feature is removed, the library now supports `no_std` without having
   to configure any features.
 - `Deref` derives now dereference to the type in the newtype. So if you have
@@ -48,6 +49,7 @@ backwards compatibility.
 
 ### Other things
 - Remove dependency on `regex` to cut down compile time.
+- Use `syn` 1.0
 
 ## 0.15.0 - 2019-06-08
 
