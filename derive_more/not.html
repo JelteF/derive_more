@@ -6,10 +6,23 @@
     <meta name="generator" content="rustdoc">
     <title>What #[derive(Not)] generates</title>
 
-    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
-<link rel="stylesheet" type="text/css" href="../main.css">
-
     
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+<link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle">
+<link rel="stylesheet" type="text/css" href="../dark.css">
+<link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle">
+<script src="../storage.js"></script>
+<noscript>
+    <link rel="stylesheet" href="../noscript.css">
+</noscript>
+<link rel="shortcut icon" href="../favicon.ico">
+<style type="text/css">
+    #crate-search {
+        background-image: url("../down-arrow.svg");
+    }
+</style>
+
+
 </head>
 <body class="rustdoc">
     <!--[if lte IE 8]>
@@ -19,36 +32,46 @@
     </div>
     <![endif]-->
 
-    <style>
-.content a {
-  color: #3873AD;
-}
-.content .section-header a,
-.content .search-results a {
-  color: #000;
-}
-</style>
-
-<nav class="sidebar">
-
-  <p class='location'><a href='index.html'>derive_more</a></p>
-    <script defer src="../sidebar-items.js"></script>
+    <nav class="sidebar">
+    <div class="sidebar-menu">&#9776;</div>
+    <a href='../derive_more/index.html'>
+        <div class='logo-container'><img src='../rust-logo.png' alt='logo'></div>
+    </a>
+    <p class='location'>Crate derive_more</p>
+    <div class="sidebar-elems">
+        <a id='all-types' href='all.html'>
+            <p>See all derive_more's items</p>
+        </a>
+        <p class='location'></p>
+        <script>
+            window.sidebarCurrent = {
+                name: 'derive_more',
+                ty: 'mod',
+                relpath: '../'
+            };
+        </script>
+    </div>
 </nav>
-
+<div class="theme-picker">
+    <button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button>
+    <div id="theme-choices"></div>
+</div>
+<script src="../theme.js"></script>
 <nav class="sub">
-		<form class="search-form js-only">
-				<div class="search-container">
-						<input class="search-input" name="search"
-									 autocomplete="off"
-									 placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
-									 type="search">
-				</div>
-		</form>
+    <form class="search-form js-only">
+        <div class="search-container">
+            <div>
+                <select id="crate-search">
+                    <option value="All crates">All crates</option>
+                </select>
+                <input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search">
+            </div>
+            <a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a>
+        </div>
+    </form>
 </nav>
-
-<section id='main' class="content fn">
-
-
+<section id="main" class="content">
+    <div class='docblock'>
 
 
     <h1 class="title">What #[derive(Not)] generates</h1>
@@ -62,47 +85,47 @@ instance of the same variant with these negated fields is returned.</p>
 <h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">1 Tuple structs</a></h1>
 <p>When deriving for a tuple struct with two fields like this:</p>
 
-<pre class="rust rust-example-rendered">
+<div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Not</span>)]</span>
-<span class="kw">struct</span> <span class="ident">MyInts</span>(<span class="ident">i32</span>, <span class="ident">i32</span>);</pre>
+<span class="kw">struct</span> <span class="ident">MyInts</span>(<span class="ident">i32</span>, <span class="ident">i32</span>);</pre></div>
 <p>Code like this will be generated:</p>
 
-<pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MyInts</span>;
-    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">MyInts</span> {
+    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MyInts</span> {
         <span class="ident">MyInts</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">not</span>(), <span class="self">self</span>.<span class="number">1</span>.<span class="ident">not</span>())
     }
-}</pre>
+}</pre></div>
 <p>The behaviour is similar with more or less fields.</p>
 <h1 id="regular-structs" class="section-header"><a href="#regular-structs">2 Regular structs</a></h1>
 <p>When deriving for a regular struct with two fields like this:</p>
 
-<pre class="rust rust-example-rendered">
+<div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Not</span>)]</span>
 <span class="kw">struct</span> <span class="ident">Point2D</span> {
     <span class="ident">x</span>: <span class="ident">i32</span>,
     <span class="ident">y</span>: <span class="ident">i32</span>,
-}</pre>
+}</pre></div>
 <p>Code like this will be generated:</p>
 
-<pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">Point2D</span>;
-    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Point2D</span> {
+    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point2D</span> {
         <span class="ident">Point2D</span> {
             <span class="ident">x</span>: <span class="self">self</span>.<span class="ident">x</span>.<span class="ident">not</span>(),
             <span class="ident">y</span>: <span class="self">self</span>.<span class="ident">y</span>.<span class="ident">not</span>(),
         }
     }
-}</pre>
+}</pre></div>
 <p>The behaviour is similar with more or less fields.</p>
 <h1 id="enums" class="section-header"><a href="#enums">3 Enums</a></h1>
 <p>For each enum variant <code>Not</code> is derived in a similar way as it would be derived
 if it would be its own type.
 For instance when deriving <code>Not</code> for an enum like this:</p>
 
-<pre class="rust rust-example-rendered">
+<div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Not</span>)]</span>
 <span class="kw">enum</span> <span class="ident">MixedInts</span> {
     <span class="ident">SmallInt</span>(<span class="ident">i32</span>),
@@ -111,112 +134,93 @@ For instance when deriving <code>Not</code> for an enum like this:</p>
     <span class="ident">NamedSmallInts</span> { <span class="ident">x</span>: <span class="ident">i32</span>, <span class="ident">y</span>: <span class="ident">i32</span> },
     <span class="ident">UnsignedOne</span>(<span class="ident">u32</span>),
     <span class="ident">UnsignedTwo</span>(<span class="ident">u32</span>),
-}</pre>
+}</pre></div>
 <p>Code like this will be generated:</p>
 
-<pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MixedInts</span>;
-    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">MixedInts</span> {
+    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MixedInts</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>) <span class="op">=&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">BigInt</span>(<span class="ident">__0</span>) <span class="op">=&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">BigInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">__0</span>, <span class="ident">__1</span>) <span class="op">=&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">__0</span>.<span class="ident">not</span>(), <span class="ident">__1</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">NamedSmallInts</span> { <span class="ident">x</span>: <span class="ident">__0</span>, <span class="ident">y</span>: <span class="ident">__1</span> } <span class="op">=&gt;</span> {
+            <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts</span>::<span class="ident">BigInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">BigInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">__0</span>, <span class="ident">__1</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">__0</span>.<span class="ident">not</span>(), <span class="ident">__1</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts</span>::<span class="ident">NamedSmallInts</span> { <span class="ident">x</span>: <span class="ident">__0</span>, <span class="ident">y</span>: <span class="ident">__1</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="ident">MixedInts</span>::<span class="ident">NamedSmallInts</span> {
                     <span class="ident">x</span>: <span class="ident">__0</span>.<span class="ident">not</span>(),
                     <span class="ident">y</span>: <span class="ident">__1</span>.<span class="ident">not</span>(),
                 }
             }
-            <span class="ident">MixedInts</span>::<span class="ident">UnsignedOne</span>(<span class="ident">__0</span>) <span class="op">=&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">UnsignedOne</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">UnsignedTwo</span>(<span class="ident">__0</span>) <span class="op">=&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">UnsignedTwo</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts</span>::<span class="ident">UnsignedOne</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">UnsignedOne</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts</span>::<span class="ident">UnsignedTwo</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">UnsignedTwo</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
         }
     }
-}</pre>
+}</pre></div>
 <p>There is one important thing to remember though.
 If you add a unit variant to the enum its return type will change from
 <code>EnumType</code> to <code>Result&lt;EnumType&gt;</code>.
 This is because Unit cannot have <code>Not</code> implemented.
 So, when deriving <code>Not</code> for an enum like this:</p>
 
-<pre class="rust rust-example-rendered">
+<div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Not</span>)]</span>
 <span class="kw">enum</span> <span class="ident">EnumWithUnit</span> {
     <span class="ident">SmallInt</span>(<span class="ident">i32</span>),
     <span class="ident">Unit</span>,
-}</pre>
+}</pre></div>
 <p>Code like this will be generated:</p>
 
-<pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">EnumWithUnit</span> {
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">EnumWithUnit</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EnumWithUnit</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span>;
-    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EnumWithUnit</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EnumWithUnit</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">EnumWithUnit</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>) <span class="op">=&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">EnumWithUnit</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>())),
-            <span class="ident">EnumWithUnit</span>::<span class="ident">Unit</span> <span class="op">=&gt;</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Cannot not() unit variants&quot;</span>),
+            <span class="ident">EnumWithUnit</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">EnumWithUnit</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>())),
+            <span class="ident">EnumWithUnit</span>::<span class="ident">Unit</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Cannot not() unit variants&quot;</span>),
         }
     }
-}</pre>
+}</pre></div>
 
-    </section>
-<section id='search' class="content hidden"></section>
-
+    <!--copied from otput -->
+</div>
+</section>
+<section id="search" class="content hidden"></section>
 <section class="footer"></section>
-
 <aside id="help" class="hidden">
-        <div>
-            <h1 class="hidden">Help</h1>
-
-            <div class="shortcuts">
-                <h2>Keyboard Shortcuts</h2>
-
-                <dl>
-                    <dt>?</dt>
-                    <dd>Show this help dialog</dd>
-                    <dt>S</dt>
-                    <dd>Focus the search field</dd>
-                    <dt>&larrb;</dt>
-                    <dd>Move up in search results</dd>
-                    <dt>&rarrb;</dt>
-                    <dd>Move down in search results</dd>
-                    <dt>&#9166;</dt>
-                    <dd>Go to active search result</dd>
-                    <dt>+</dt>
-                    <dd>Collapse/expand all sections</dd>
-                </dl>
-            </div>
-
-            <div class="infos">
-                <h2>Search Tricks</h2>
-
-                <p>
-                    Prefix searches with a type followed by a colon (e.g.
-                    <code>fn:</code>) to restrict the search to a given type.
-                </p>
-
-                <p>
-                    Accepted types are: <code>fn</code>, <code>mod</code>,
-                    <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>type</code>, <code>macro</code>,
-                    and <code>const</code>.
-                </p>
-<p>
-                    Search functions by type signature (e.g.
-                    <code>vec -> usize</code> or <code>* -> vec</code>)
-                </p>
-            </div>
+    <div>
+        <h1 class="hidden">Help</h1>
+        <div class="shortcuts">
+            <h2>Keyboard Shortcuts</h2>
+            <dl><dt><kbd>?</kbd></dt>
+                <dd>Show this help dialog</dd><dt><kbd>S</kbd></dt>
+                <dd>Focus the search field</dd><dt><kbd>↑</kbd></dt>
+                <dd>Move up in search results</dd><dt><kbd>↓</kbd></dt>
+                <dd>Move down in search results</dd><dt><kbd>↹</kbd></dt>
+                <dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt>
+                <dd>Go to active search result</dd><dt><kbd>+</kbd></dt>
+                <dd>Expand all sections</dd><dt><kbd>-</kbd></dt>
+                <dd>Collapse all sections</dd>
+            </dl>
         </div>
-    </aside>
+        <div class="infos">
+            <h2>Search Tricks</h2>
+            <p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p>
+            <p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p>
+            <p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p>
+            <p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p>
+        </div>
+    </div>
+</aside>
+<script>
+    window.rootPath = "../";
+    window.currentCrate = "derive_more";
+</script>
+<script src="../aliases.js"></script>
+<script src="../main.js"></script>
+<script defer src="../search-index.js"></script>
+</body>
 
-
-
-    <script>
-        window.rootPath = "../../";
-        window.currentCrate = "derive_more";
-    </script>
-    <script src="../jquery.js"></script>
-    <script src="../main.js"></script>
-    <script defer src="../search-index.js"></script>
+</html>
 
 
 </body>
