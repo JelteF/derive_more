@@ -5,12 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## 0.99.0 - 2019-11-11
 
-This is a huge milestone for this library lot's of new derives are implemented
-and a ton of attributes are added for configuration purposes.
-This release is planned to be one of the last release before 1.0 of this
-library. It adds a lot of configuration to the derives by using attributes.
+This is a huge milestone for this library.
+Lot's of new derives are implemented and a ton of attributes are added for
+configuration purposes.
+The next release with breaking changes is planned 1.0.0.
+It adds a lot of configuration to the derives by using attributes.
 This will allow future releases to add features/options without breaking
 backwards compatibility.
 
@@ -27,7 +28,7 @@ backwards compatibility.
 
 ### New features
 
-- Derives for `AsRef`, `AsMut`, `Sum`, `Product`, `IntoIterator`, `Iterator`.
+- Derives for `AsRef`, `AsMut`, `Sum`, `Product`, `IntoIterator`.
 - Choosing the field of a struct for which to derive the newtype derive.
 - Ignoring variants of enums when deriving `From`, by using `#[from(ignore)]`.
 - Add `#[from(forward)]` attribute for `From` derives. This forwards the `from`
