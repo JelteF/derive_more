@@ -865,7 +865,7 @@ fn parse_punctuated_nested_meta(
                     return Err(Error::new(
                         meta.span(),
                         format!(
-                            "Empty attribute is not allowed, add one of the following parameters: {}",
+                            "Attribute parameter not supported. Supported attribute parameters are: {}",
                             allowed_attr_params.join(", "),
                         ),
                     ));
