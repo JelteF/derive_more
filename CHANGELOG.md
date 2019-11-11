@@ -7,13 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.99.0 - 2019-11-11
 
-This is a huge milestone for this library.
+This release is a huge milestone for this library.
 Lot's of new derives are implemented and a ton of attributes are added for
 configuration purposes.
-The next release with breaking changes is planned 1.0.0.
-It adds a lot of configuration to the derives by using attributes.
-This will allow future releases to add features/options without breaking
-backwards compatibility.
+These attributes will allow future releases to add features/options without
+breaking backwards compatibility.
+This is why the next release with breaking changes is planned to be 1.0.0.
 
 ### Breaking changes
 
@@ -48,6 +47,7 @@ backwards compatibility.
   attribute on enum.
 
 ### Other things
+
 - Remove dependency on `regex` to cut down compile time.
 - Use `syn` 1.0
 
