@@ -395,6 +395,7 @@ impl<'input> State<'input> {
             }),
             ref_: false,
             ref_mut: false,
+            info: MetaInfo::default(),
         });
 
         let full_meta_infos: Vec<_> = meta_infos
@@ -878,32 +879,35 @@ fn get_meta_info(
     Ok(info)
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct FullMetaInfo {
     pub enabled: bool,
     pub forward: bool,
     pub owned: bool,
     pub ref_: bool,
     pub ref_mut: bool,
+    pub info: MetaInfo,
 }
 
-#[derive(Copy, Clone)]
-struct MetaInfo {
-    enabled: Option<bool>,
-    forward: Option<bool>,
-    owned: Option<bool>,
-    ref_: Option<bool>,
-    ref_mut: Option<bool>,
+#[derive(Copy, Clone, Debug, Default)]
+pub struct MetaInfo {
+    pub enabled: Option<bool>,
+    pub forward: Option<bool>,
+    pub owned: Option<bool>,
+    pub ref_: Option<bool>,
+    pub ref_mut: Option<bool>,
 }
 
 impl MetaInfo {
     fn to_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
+        let info = self;
         FullMetaInfo {
             enabled: self.enabled.unwrap_or(defaults.enabled),
             forward: self.forward.unwrap_or(defaults.forward),
             owned: self.owned.unwrap_or(defaults.owned),
             ref_: self.ref_.unwrap_or(defaults.ref_),
             ref_mut: self.ref_mut.unwrap_or(defaults.ref_mut),
+            info,
         }
     }
 }

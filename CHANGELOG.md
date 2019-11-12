@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.99.1 - 2019-11-12
+
+### Fixes
+
+- Hotfix for a regression in allowed `From` derives
+    ([#105](https://github.com/JelteF/derive_more/issues/105))
+
 ## 0.99.0 - 2019-11-11
 
 This release is a huge milestone for this library.
@@ -45,6 +52,7 @@ This is why the next release with breaking changes is planned to be 1.0.0.
 - Make `no_std` work out of the box
 - Allow `#[display(fmt="some shared display text for all enum variants {}")]`
   attribute on enum.
+- Better bounds inference of `Display` trait.
 
 ### Other things
 

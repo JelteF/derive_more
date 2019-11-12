@@ -73,3 +73,48 @@ fn forward_enum() {
     assert_eq!(MixedIntsForward::SmallInt(42), 42i32.into());
     assert_eq!(MixedIntsForward::SmallInt(42), 42i16.into());
 }
+
+#[derive(From, PartialEq)]
+enum AutoIgnore {
+    SmallInt(i32),
+    Uninteresting,
+    Uninteresting2,
+}
+
+#[test]
+fn auto_ignore_variants() {
+    assert!(AutoIgnore::SmallInt(42) == 42i32.into());
+}
+
+#[derive(From, PartialEq)]
+enum AutoIgnoreWithDefaultTrue {
+    #[from(ignore)]
+    SmallInt(i32),
+    Uninteresting,
+    Uninteresting2,
+}
+
+#[derive(From, PartialEq)]
+enum AutoIgnoreWithForwardFields {
+    SmallInt(#[from(forward)] i32),
+    SmallIntIgnore(i32),
+}
+
+#[test]
+fn auto_ignore_with_forward_field() {
+    assert!(AutoIgnoreWithForwardFields::SmallInt(42) == 42i32.into());
+    assert!(AutoIgnoreWithForwardFields::SmallInt(42) == 42i16.into());
+}
+
+#[derive(From, PartialEq)]
+enum AutoIgnoreWithForwardFields2 {
+    #[from(forward)]
+    SmallInt(i32),
+    SmallIntIgnore(i32),
+}
+
+#[test]
+fn auto_ignore_with_forward_field2() {
+    assert!(AutoIgnoreWithForwardFields2::SmallInt(42) == 42i32.into());
+    assert!(AutoIgnoreWithForwardFields2::SmallInt(42) == 42i16.into());
+}
