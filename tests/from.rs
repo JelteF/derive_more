@@ -95,18 +95,6 @@ enum AutoIgnoreWithDefaultTrue {
 }
 
 #[derive(From, PartialEq)]
-enum AutoIgnoreWithForwardFields {
-    SmallInt(#[from(forward)] i32),
-    SmallIntIgnore(i32),
-}
-
-#[test]
-fn auto_ignore_with_forward_field() {
-    assert!(AutoIgnoreWithForwardFields::SmallInt(42) == 42i32.into());
-    assert!(AutoIgnoreWithForwardFields::SmallInt(42) == 42i16.into());
-}
-
-#[derive(From, PartialEq)]
 enum AutoIgnoreWithForwardFields2 {
     #[from(forward)]
     SmallInt(i32),

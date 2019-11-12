@@ -103,7 +103,7 @@ fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
             .or_insert_with(Vec::new)
             .push(variant_state);
     }
-    for (_, ref variant_states) in variants_per_types {
+    for (ref field_types, ref variant_states) in variants_per_types {
         for variant_state in variant_states {
             let multi_field_data = variant_state.enabled_fields_data();
             let MultiFieldData {
@@ -111,9 +111,11 @@ fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
                 infos,
                 ..
             } = multi_field_data.clone();
-            // If there would be a conflict ignore the variants that are not
-            // explicitely enabled or have explicitely enabled or disabled fields
-            if variant_states.len() > 1
+            // If there would be a conflict on a empty tuple derive, ignore the
+            // variants that are not explicitely enabled or have explicitely enabled
+            // or disabled fields
+            if field_types.is_empty()
+                && variant_states.len() > 1
                 && !std::iter::once(variant_info)
                     .chain(infos)
                     .any(|info| info.info.enabled.is_some())
