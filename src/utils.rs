@@ -845,6 +845,10 @@ fn parse_punctuated_nested_meta(
 
         match meta {
             Meta::List(list) if list.path.is_ident("not") => {
+                // `value == true` means we're parsing top-level attributes (i.e., not under "not").
+                // `value == false` means we're parsing attributes under "not" attribute.
+                // Only single top-level "not" attribute allowed, so `value == false` here
+                // means we've found "not(not(...))" attribute, so we return error.
                 if value {
                     parse_punctuated_nested_meta(
                         info,
