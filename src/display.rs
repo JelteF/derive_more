@@ -27,7 +27,11 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
         .map(|t| t.ident.clone())
         .collect();
 
-    let (arms, bounds) = State {
+    let ParseResult {
+        arms,
+        bounds,
+        requires_helper,
+    } = State {
         trait_path,
         trait_attr,
         input,
@@ -54,7 +58,11 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let name = &input.ident;
 
-    let helper_struct = display_as_helper_struct();
+    let helper_struct = if requires_helper {
+        display_as_helper_struct()
+    } else {
+        TokenStream::new()
+    };
 
     Ok(quote! {
         impl #impl_generics #trait_path for #name #ty_generics #where_clause
@@ -155,6 +163,17 @@ fn display_as_helper_struct() -> TokenStream {
             }
         };
     }
+}
+
+/// Result type of `State::get_match_arms_and_extra_bounds()`.
+#[derive(Default)]
+struct ParseResult {
+    /// The match arms destructuring `self`.
+    arms: TokenStream,
+    /// Any trait bounds that may be required.
+    bounds: HashMap<syn::Type, HashSet<syn::TraitBound>>,
+    /// `true` if the Display impl requires the `DisplayAs` helper struct.
+    requires_helper: bool,
 }
 
 struct State<'a, 'b> {
@@ -439,9 +458,7 @@ impl<'a, 'b> State<'a, 'b> {
             Ok(quote!(#trait_path::fmt(_0, _derive_more_display_formatter)))
         }
     }
-    fn get_match_arms_and_extra_bounds(
-        &self,
-    ) -> Result<(TokenStream, HashMap<syn::Type, HashSet<syn::TraitBound>>)> {
+    fn get_match_arms_and_extra_bounds(&self) -> Result<ParseResult> {
         let result: Result<_> = match &self.input.data {
             syn::Data::Enum(e) => {
                 match self
@@ -461,10 +478,11 @@ impl<'a, 'b> State<'a, 'b> {
                             }
                         })?;
 
-                        Ok((
-                            quote_spanned!(self.input.span()=> _ => #fmt,),
-                            HashMap::new(),
-                        ))
+                        Ok(ParseResult {
+                            arms: quote_spanned!(self.input.span()=> _ => #fmt,),
+                            bounds: HashMap::new(),
+                            requires_helper: false,
+                        })
                     }
                     // #[display(fmt = "one placeholder: {}")] on whole enum.
                     Some((outer_fmt, true)) => {
@@ -484,36 +502,36 @@ impl<'a, 'b> State<'a, 'b> {
                             ),))
                         });
                         let fmt = fmt?;
-                        Ok((
-                            quote_spanned!(self.input.span()=> #fmt),
-                            HashMap::new(),
-                        ))
+                        Ok(ParseResult {
+                            arms: quote_spanned!(self.input.span()=> #fmt),
+                            bounds: HashMap::new(),
+                            requires_helper: true,
+                        })
                     }
                     // No format attribute on whole enum.
-                    None => e.variants.iter().try_fold((TokenStream::new(), HashMap::new()), |(arms, mut all_bounds), v| {
+                    None => e.variants.iter().try_fold(ParseResult::default(), |result, v| {
+                        let ParseResult{ arms, mut bounds, requires_helper } = result;
                         let matcher = self.get_matcher(&v.fields);
                         let name = &self.input.ident;
                         let v_name = &v.ident;
                         let fmt: TokenStream;
-                        let bounds: HashMap<_, _>;
+                        let these_bounds: HashMap<_, _>;
 
                         if let Some(meta) = self.find_meta(&v.attrs, "fmt")? {
                             fmt = self.parse_meta_fmt(&meta, false)?.0;
-                            bounds = self.get_used_type_params_bounds(&v.fields, &meta);
+                            these_bounds = self.get_used_type_params_bounds(&v.fields, &meta);
                         } else {
                             fmt = self.infer_fmt(&v.fields, v_name)?;
-                            bounds = self.infer_type_params_bounds(&v.fields);
+                            these_bounds = self.infer_type_params_bounds(&v.fields);
                         };
-                        all_bounds = bounds.into_iter()
-                            .fold(all_bounds, |mut bounds, (ty, trait_names)| {
+                        bounds = these_bounds.into_iter()
+                            .fold(bounds, |mut bounds, (ty, trait_names)| {
                                 bounds.entry(ty).or_insert_with(HashSet::new).extend(trait_names);
                                 bounds
                             });
+                        let arms = quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,);
 
-                        Ok((
-                            quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,),
-                            all_bounds,
-                        ))
+                        Ok(ParseResult{ arms, bounds, requires_helper })
                     }),
                 }
             }
@@ -531,10 +549,11 @@ impl<'a, 'b> State<'a, 'b> {
                     bounds = self.infer_type_params_bounds(&s.fields);
                 }
 
-                Ok((
-                    quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
-                    bounds,
-                ))
+                Ok(ParseResult {
+                    arms: quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
+                    bounds: bounds,
+                    requires_helper: false,
+                })
             }
             syn::Data::Union(_) => {
                 let meta =
@@ -546,18 +565,19 @@ impl<'a, 'b> State<'a, 'b> {
                     })?;
                 let fmt = self.parse_meta_fmt(&meta, false)?.0;
 
-                Ok((
-                    quote_spanned!(self.input.span()=> _ => #fmt,),
-                    HashMap::new(),
-                ))
+                Ok(ParseResult {
+                    arms: quote_spanned!(self.input.span()=> _ => #fmt,),
+                    bounds: HashMap::new(),
+                    requires_helper: false,
+                })
             }
         };
 
-        let (arms, mut bounds) = result?;
+        let mut result = result?;
 
         let meta = match self.find_meta(&self.input.attrs, "bound")? {
             Some(meta) => meta,
-            _ => return Ok((arms, bounds)),
+            _ => return Ok(result),
         };
 
         let span = meta.span();
@@ -584,13 +604,14 @@ impl<'a, 'b> State<'a, 'b> {
         let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
 
         for (ty, extra_bounds) in extra_bounds {
-            bounds
+            result
+                .bounds
                 .entry(ty)
                 .or_insert_with(HashSet::new)
                 .extend(extra_bounds);
         }
 
-        Ok((arms, bounds))
+        Ok(result)
     }
     fn get_used_type_params_bounds(
         &self,
