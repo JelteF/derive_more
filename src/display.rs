@@ -414,6 +414,7 @@ impl<'a, 'b> State<'a, 'b> {
                     .find_meta(&self.input.attrs, "fmt")
                     .and_then(|m| m.map(|m| self.parse_meta_fmt(&m, true)).transpose())?
                 {
+                    // #[display(fmt = "no placeholder")] on whole enum.
                     Some((fmt, false)) => {
                         e.variants.iter().try_for_each(|v| {
                             if let Some(meta) = self.find_meta(&v.attrs, "fmt")? {
@@ -431,6 +432,7 @@ impl<'a, 'b> State<'a, 'b> {
                             HashMap::new(),
                         ))
                     }
+                    // #[display(fmt = "one placeholder: {}")] on whole enum.
                     Some((outer_fmt, true)) => {
                         let fmt: Result<TokenStream> = e.variants.iter().try_fold(TokenStream::new(), |arms, v| {
                             let matcher = self.get_matcher(&v.fields);
@@ -449,6 +451,7 @@ impl<'a, 'b> State<'a, 'b> {
                             HashMap::new(),
                         ))
                     }
+                    // No format attribute on whole enum.
                     None => e.variants.iter().try_fold((TokenStream::new(), HashMap::new()), |(arms, mut all_bounds), v| {
                         let matcher = self.get_matcher(&v.fields);
                         let name = &self.input.ident;
