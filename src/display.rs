@@ -368,7 +368,7 @@ impl<'a, 'b> State<'a, 'b> {
                         })?;
 
                     Ok((
-                        quote_spanned!(meta.span()=> _derive_more_DisplayAs(|f| write!(f, #fmt, #args))),
+                        quote_spanned!(meta.span()=> write!(_derive_more_display_formatter, #fmt, #args)),
                         false,
                     ))
                 }
@@ -385,12 +385,18 @@ impl<'a, 'b> State<'a, 'b> {
     }
     fn infer_fmt(&self, fields: &syn::Fields, name: &Ident) -> Result<TokenStream> {
         let fields = match fields {
-            syn::Fields::Unit => return Ok(quote!(stringify!(#name))),
+            syn::Fields::Unit => {
+                return Ok(quote!(
+                    _derive_more_display_formatter.write_str(stringify!(#name))
+                ))
+            }
             syn::Fields::Named(fields) => &fields.named,
             syn::Fields::Unnamed(fields) => &fields.unnamed,
         };
         if fields.is_empty() {
-            return Ok(quote!(stringify!(#name)));
+            return Ok(quote!(
+                _derive_more_display_formatter.write_str(stringify!(#name))
+            ));
         } else if fields.len() > 1 {
             return Err(Error::new(
                 fields.span(),
@@ -400,9 +406,9 @@ impl<'a, 'b> State<'a, 'b> {
 
         let trait_path = self.trait_path;
         if let Some(ident) = &fields.iter().next().as_ref().unwrap().ident {
-            Ok(quote!(_derive_more_DisplayAs(|f| #trait_path::fmt(#ident, f))))
+            Ok(quote!(#trait_path::fmt(#ident, _derive_more_display_formatter)))
         } else {
-            Ok(quote!(_derive_more_DisplayAs(|f| #trait_path::fmt(_0, f))))
+            Ok(quote!(#trait_path::fmt(_0, _derive_more_display_formatter)))
         }
     }
     fn get_match_arms_and_extra_bounds(
@@ -428,7 +434,7 @@ impl<'a, 'b> State<'a, 'b> {
                         })?;
 
                         Ok((
-                            quote_spanned!(self.input.span()=> _ => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
+                            quote_spanned!(self.input.span()=> _ => #fmt,),
                             HashMap::new(),
                         ))
                     }
@@ -443,7 +449,11 @@ impl<'a, 'b> State<'a, 'b> {
                             };
                             let name = &self.input.ident;
                             let v_name = &v.ident;
-                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(_derive_more_display_formatter, #outer_fmt, #fmt),))
+                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(
+                                _derive_more_display_formatter,
+                                #outer_fmt,
+                                _derive_more_DisplayAs(|_derive_more_display_formatter| #fmt)
+                            ),))
                         });
                         let fmt = fmt?;
                         Ok((
@@ -473,7 +483,7 @@ impl<'a, 'b> State<'a, 'b> {
                             });
 
                         Ok((
-                            quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
+                            quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,),
                             all_bounds,
                         ))
                     }),
@@ -494,7 +504,7 @@ impl<'a, 'b> State<'a, 'b> {
                 }
 
                 Ok((
-                    quote_spanned!(self.input.span()=> #name #matcher => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
+                    quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
                     bounds,
                 ))
             }
@@ -509,7 +519,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let fmt = self.parse_meta_fmt(&meta, false)?.0;
 
                 Ok((
-                    quote_spanned!(self.input.span()=> _ => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
+                    quote_spanned!(self.input.span()=> _ => #fmt,),
                     HashMap::new(),
                 ))
             }
