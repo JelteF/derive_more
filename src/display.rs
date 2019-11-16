@@ -59,7 +59,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
         {
             #[allow(unused_variables)]
             #[inline]
-            fn fmt(&self, _derive_more_Display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+            fn fmt(&self, _derive_more_display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 struct _derive_more_DisplayAs<F>(F)
                 where
                     F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result;
@@ -428,7 +428,7 @@ impl<'a, 'b> State<'a, 'b> {
                         })?;
 
                         Ok((
-                            quote_spanned!(self.input.span()=> _ => ::core::fmt::Display::fmt(&#fmt, _derive_more_Display_formatter),),
+                            quote_spanned!(self.input.span()=> _ => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
                             HashMap::new(),
                         ))
                     }
@@ -443,7 +443,7 @@ impl<'a, 'b> State<'a, 'b> {
                             };
                             let name = &self.input.ident;
                             let v_name = &v.ident;
-                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(_derive_more_Display_formatter, #outer_fmt, #fmt),))
+                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(_derive_more_display_formatter, #outer_fmt, #fmt),))
                         });
                         let fmt = fmt?;
                         Ok((
@@ -473,7 +473,7 @@ impl<'a, 'b> State<'a, 'b> {
                             });
 
                         Ok((
-                            quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => ::core::fmt::Display::fmt(&#fmt, _derive_more_Display_formatter),),
+                            quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
                             all_bounds,
                         ))
                     }),
@@ -494,7 +494,7 @@ impl<'a, 'b> State<'a, 'b> {
                 }
 
                 Ok((
-                    quote_spanned!(self.input.span()=> #name #matcher => ::core::fmt::Display::fmt(&#fmt, _derive_more_Display_formatter),),
+                    quote_spanned!(self.input.span()=> #name #matcher => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
                     bounds,
                 ))
             }
@@ -509,7 +509,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let fmt = self.parse_meta_fmt(&meta, false)?.0;
 
                 Ok((
-                    quote_spanned!(self.input.span()=> _ => ::core::fmt::Display::fmt(&#fmt, _derive_more_Display_formatter),),
+                    quote_spanned!(self.input.span()=> _ => ::core::fmt::Display::fmt(&#fmt, _derive_more_display_formatter),),
                     HashMap::new(),
                 ))
             }
