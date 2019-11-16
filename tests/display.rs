@@ -11,6 +11,12 @@ use std::fmt::Binary;
 #[derive(Display, Octal, Binary)]
 struct MyInt(i32);
 
+#[derive(UpperHex)]
+enum IntEnum {
+    U8(u8),
+    I8(i8),
+}
+
 #[derive(Display)]
 #[display(fmt = "({}, {})", x, y)]
 struct Point2D {
@@ -98,7 +104,10 @@ enum Affix {
 fn check_display() {
     assert_eq!(MyInt(-2).to_string(), "-2");
     assert_eq!(format!("{:b}", MyInt(9)), "1001");
+    assert_eq!(format!("{:#b}", MyInt(9)), "0b1001");
     assert_eq!(format!("{:o}", MyInt(9)), "11");
+    assert_eq!(format!("{:X}", IntEnum::I8(-1)), "FF");
+    assert_eq!(format!("{:#X}", IntEnum::U8(255)), "0xFF");
     assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
     assert_eq!(Error::new("Error").to_string(), "Error");
     assert_eq!(E::Uint(2).to_string(), "2");
