@@ -60,19 +60,16 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             #[allow(unused_variables)]
             #[inline]
             fn fmt(&self, _derive_more_Display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                use core::fmt::{Display, Formatter, Result};
                 struct _derive_more_DisplayAs<F>(F)
                 where
-                    F: Fn(&mut Formatter) -> Result;
+                    F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result;
 
                 const _derive_more_DisplayAs_impl: () = {
-                    use core::fmt::{Display, Formatter, Result};
-
-                    impl <F> Display for _derive_more_DisplayAs<F>
+                    impl<F> ::core::fmt::Display for _derive_more_DisplayAs<F>
                     where
-                        F: Fn(&mut Formatter) -> Result
+                        F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result
                     {
-                        fn fmt(&self, f: &mut Formatter) -> Result {
+                        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                             (self.0)(f)
                         }
                     }
