@@ -524,11 +524,9 @@ impl<'a, 'b> State<'a, 'b> {
                             fmt = self.infer_fmt(&v.fields, v_name)?;
                             these_bounds = self.infer_type_params_bounds(&v.fields);
                         };
-                        bounds = these_bounds.into_iter()
-                            .fold(bounds, |mut bounds, (ty, trait_names)| {
-                                bounds.entry(ty).or_insert_with(HashSet::new).extend(trait_names);
-                                bounds
-                            });
+                        these_bounds.into_iter().for_each(|(ty, trait_names)| {
+                            bounds.entry(ty).or_default().extend(trait_names)
+                        });
                         let arms = quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,);
 
                         Ok(ParseResult{ arms, bounds, requires_helper })
@@ -603,13 +601,9 @@ impl<'a, 'b> State<'a, 'b> {
 
         let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
 
-        for (ty, extra_bounds) in extra_bounds {
-            result
-                .bounds
-                .entry(ty)
-                .or_insert_with(HashSet::new)
-                .extend(extra_bounds);
-        }
+        extra_bounds.into_iter().for_each(|(ty, trait_names)| {
+            result.bounds.entry(ty).or_default().extend(trait_names)
+        });
 
         Ok(result)
     }
