@@ -54,26 +54,15 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let name = &input.ident;
 
+    let helper_struct = display_as_helper_struct();
+
     Ok(quote! {
         impl #impl_generics #trait_path for #name #ty_generics #where_clause
         {
             #[allow(unused_variables)]
             #[inline]
             fn fmt(&self, _derive_more_display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                struct _derive_more_DisplayAs<F>(F)
-                where
-                    F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result;
-
-                const _derive_more_DisplayAs_impl: () = {
-                    impl<F> ::core::fmt::Display for _derive_more_DisplayAs<F>
-                    where
-                        F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result
-                    {
-                        fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                            (self.0)(f)
-                        }
-                    }
-                };
+                #helper_struct
 
                 match self {
                     #arms
@@ -126,6 +115,45 @@ fn trait_name_to_trait_bound(trait_name: &str) -> syn::TraitBound {
             leading_colon: Some(syn::Token![::](Span::call_site())),
             segments: syn::punctuated::Punctuated::from_iter(path_segments_iterator),
         },
+    }
+}
+
+/// Create a helper struct that is required by some `Display` impls.
+///
+/// The struct is necessary in cases where `Display` is derived for an enum
+/// with an outer `#[display(fmt = "...")]` attribute and if that outer
+/// format-string contains a single placeholder. In that case, we have to
+/// format twice:
+///
+/// - we need to format each variant according to its own, optional
+///   format-string,
+/// - we then need to insert this formatted variant into the outer
+///   format-string.
+///
+/// This helper struct solves this as follows:
+/// - formatting the whole object inserts the helper struct into the outer
+///   format string,
+/// - upon being formatted, the helper struct calls an inner closure to produce
+///   its formatted result,
+/// - the closure in turn uses the inner, optional format-string to produce its
+///   result. If there is no inner format-string, it falls back to plain
+///   `$trait::fmt()`.
+fn display_as_helper_struct() -> TokenStream {
+    quote! {
+        struct _derive_more_DisplayAs<F>(F)
+        where
+            F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result;
+
+        const _derive_more_DisplayAs_impl: () = {
+            impl<F> ::core::fmt::Display for _derive_more_DisplayAs<F>
+            where
+                F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result
+            {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+                    (self.0)(f)
+                }
+            }
+        };
     }
 }
 
