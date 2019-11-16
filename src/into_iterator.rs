@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse::Result, DeriveInput};
 
-/// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
+/// Provides the hook to expand `#[derive(IntoIterator)]` into an implementation of `IntoIterator`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_field_ignore_and_refs(
         input,

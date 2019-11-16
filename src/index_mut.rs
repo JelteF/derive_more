@@ -3,7 +3,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{parse::Result, DeriveInput, Ident};
 
-/// Provides the hook to expand `#[derive(Index)]` into an implementation of `From`
+/// Provides the hook to expand `#[derive(IndexMut)]` into an implementation of `IndexMut`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let index_type = &Ident::new("__IdxT", Span::call_site());
     let mut state = State::with_field_ignore(

@@ -15,7 +15,7 @@ use syn::{
     spanned::Spanned as _,
 };
 
-/// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
+/// Provides the hook to expand `#[derive(Display)]` into an implementation of `Display`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_name = trait_name.trim_end_matches("Custom");
     let trait_ident = syn::Ident::new(trait_name, Span::call_site());
