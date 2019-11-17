@@ -549,7 +549,7 @@ impl<'a, 'b> State<'a, 'b> {
 
                 Ok(ParseResult {
                     arms: quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
-                    bounds: bounds,
+                    bounds,
                     requires_helper: false,
                 })
             }
