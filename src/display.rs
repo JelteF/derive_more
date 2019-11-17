@@ -15,7 +15,7 @@ use syn::{
     spanned::Spanned as _,
 };
 
-/// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
+/// Provides the hook to expand `#[derive(Display)]` into an implementation of `Display`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_name = trait_name.trim_end_matches("Custom");
     let trait_ident = syn::Ident::new(trait_name, Span::call_site());
@@ -27,7 +27,11 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
         .map(|t| t.ident.clone())
         .collect();
 
-    let (arms, bounds) = State {
+    let ParseResult {
+        arms,
+        bounds,
+        requires_helper,
+    } = State {
         trait_path,
         trait_attr,
         input,
@@ -54,29 +58,19 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let name = &input.ident;
 
+    let helper_struct = if requires_helper {
+        display_as_helper_struct()
+    } else {
+        TokenStream::new()
+    };
+
     Ok(quote! {
         impl #impl_generics #trait_path for #name #ty_generics #where_clause
         {
             #[allow(unused_variables)]
             #[inline]
-            fn fmt(&self, _derive_more_Display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-                use core::fmt::{Display, Formatter, Result};
-                struct _derive_more_DisplayAs<F>(F)
-                where
-                    F: Fn(&mut Formatter) -> Result;
-
-                const _derive_more_DisplayAs_impl: () = {
-                    use core::fmt::{Display, Formatter, Result};
-
-                    impl <F> Display for _derive_more_DisplayAs<F>
-                    where
-                        F: Fn(&mut Formatter) -> Result
-                    {
-                        fn fmt(&self, f: &mut Formatter) -> Result {
-                            (self.0)(f)
-                        }
-                    }
-                };
+            fn fmt(&self, _derive_more_display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+                #helper_struct
 
                 match self {
                     #arms
@@ -130,6 +124,56 @@ fn trait_name_to_trait_bound(trait_name: &str) -> syn::TraitBound {
             segments: syn::punctuated::Punctuated::from_iter(path_segments_iterator),
         },
     }
+}
+
+/// Create a helper struct that is required by some `Display` impls.
+///
+/// The struct is necessary in cases where `Display` is derived for an enum
+/// with an outer `#[display(fmt = "...")]` attribute and if that outer
+/// format-string contains a single placeholder. In that case, we have to
+/// format twice:
+///
+/// - we need to format each variant according to its own, optional
+///   format-string,
+/// - we then need to insert this formatted variant into the outer
+///   format-string.
+///
+/// This helper struct solves this as follows:
+/// - formatting the whole object inserts the helper struct into the outer
+///   format string,
+/// - upon being formatted, the helper struct calls an inner closure to produce
+///   its formatted result,
+/// - the closure in turn uses the inner, optional format-string to produce its
+///   result. If there is no inner format-string, it falls back to plain
+///   `$trait::fmt()`.
+fn display_as_helper_struct() -> TokenStream {
+    quote! {
+        struct _derive_more_DisplayAs<F>(F)
+        where
+            F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result;
+
+        const _derive_more_DisplayAs_impl: () = {
+            impl<F> ::core::fmt::Display for _derive_more_DisplayAs<F>
+            where
+                F: ::core::ops::Fn(&mut ::core::fmt::Formatter) -> ::core::fmt::Result
+            {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+                    (self.0)(f)
+                }
+            }
+        };
+    }
+}
+
+/// Result type of `State::get_match_arms_and_extra_bounds()`.
+#[derive(Default)]
+struct ParseResult {
+    /// The match arms destructuring `self`.
+    arms: TokenStream,
+    /// Any trait bounds that may be required.
+    bounds: HashMap<syn::Type, HashSet<syn::TraitBound>>,
+    /// `true` if the Display impl requires the `DisplayAs` helper struct.
+    requires_helper: bool,
 }
 
 struct State<'a, 'b> {
@@ -371,7 +415,7 @@ impl<'a, 'b> State<'a, 'b> {
                         })?;
 
                     Ok((
-                        quote_spanned!(meta.span()=> _derive_more_DisplayAs(|f| write!(f, #fmt, #args))),
+                        quote_spanned!(meta.span()=> write!(_derive_more_display_formatter, #fmt, #args)),
                         false,
                     ))
                 }
@@ -388,12 +432,18 @@ impl<'a, 'b> State<'a, 'b> {
     }
     fn infer_fmt(&self, fields: &syn::Fields, name: &Ident) -> Result<TokenStream> {
         let fields = match fields {
-            syn::Fields::Unit => return Ok(quote!(stringify!(#name))),
+            syn::Fields::Unit => {
+                return Ok(quote!(
+                    _derive_more_display_formatter.write_str(stringify!(#name))
+                ))
+            }
             syn::Fields::Named(fields) => &fields.named,
             syn::Fields::Unnamed(fields) => &fields.unnamed,
         };
         if fields.is_empty() {
-            return Ok(quote!(stringify!(#name)));
+            return Ok(quote!(
+                _derive_more_display_formatter.write_str(stringify!(#name))
+            ));
         } else if fields.len() > 1 {
             return Err(Error::new(
                 fields.span(),
@@ -403,20 +453,19 @@ impl<'a, 'b> State<'a, 'b> {
 
         let trait_path = self.trait_path;
         if let Some(ident) = &fields.iter().next().as_ref().unwrap().ident {
-            Ok(quote!(_derive_more_DisplayAs(|f| #trait_path::fmt(#ident, f))))
+            Ok(quote!(#trait_path::fmt(#ident, _derive_more_display_formatter)))
         } else {
-            Ok(quote!(_derive_more_DisplayAs(|f| #trait_path::fmt(_0, f))))
+            Ok(quote!(#trait_path::fmt(_0, _derive_more_display_formatter)))
         }
     }
-    fn get_match_arms_and_extra_bounds(
-        &self,
-    ) -> Result<(TokenStream, HashMap<syn::Type, HashSet<syn::TraitBound>>)> {
+    fn get_match_arms_and_extra_bounds(&self) -> Result<ParseResult> {
         let result: Result<_> = match &self.input.data {
             syn::Data::Enum(e) => {
                 match self
                     .find_meta(&self.input.attrs, "fmt")
                     .and_then(|m| m.map(|m| self.parse_meta_fmt(&m, true)).transpose())?
                 {
+                    // #[display(fmt = "no placeholder")] on whole enum.
                     Some((fmt, false)) => {
                         e.variants.iter().try_for_each(|v| {
                             if let Some(meta) = self.find_meta(&v.attrs, "fmt")? {
@@ -429,11 +478,13 @@ impl<'a, 'b> State<'a, 'b> {
                             }
                         })?;
 
-                        Ok((
-                            quote_spanned!(self.input.span()=> _ => write!(_derive_more_Display_formatter, "{}", #fmt),),
-                            HashMap::new(),
-                        ))
+                        Ok(ParseResult {
+                            arms: quote_spanned!(self.input.span()=> _ => #fmt,),
+                            bounds: HashMap::new(),
+                            requires_helper: false,
+                        })
                     }
+                    // #[display(fmt = "one placeholder: {}")] on whole enum.
                     Some((outer_fmt, true)) => {
                         let fmt: Result<TokenStream> = e.variants.iter().try_fold(TokenStream::new(), |arms, v| {
                             let matcher = self.get_matcher(&v.fields);
@@ -444,38 +495,41 @@ impl<'a, 'b> State<'a, 'b> {
                             };
                             let name = &self.input.ident;
                             let v_name = &v.ident;
-                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(_derive_more_Display_formatter, #outer_fmt, #fmt),))
+                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(
+                                _derive_more_display_formatter,
+                                #outer_fmt,
+                                _derive_more_DisplayAs(|_derive_more_display_formatter| #fmt)
+                            ),))
                         });
                         let fmt = fmt?;
-                        Ok((
-                            quote_spanned!(self.input.span()=> #fmt),
-                            HashMap::new(),
-                        ))
+                        Ok(ParseResult {
+                            arms: quote_spanned!(self.input.span()=> #fmt),
+                            bounds: HashMap::new(),
+                            requires_helper: true,
+                        })
                     }
-                    None => e.variants.iter().try_fold((TokenStream::new(), HashMap::new()), |(arms, mut all_bounds), v| {
+                    // No format attribute on whole enum.
+                    None => e.variants.iter().try_fold(ParseResult::default(), |result, v| {
+                        let ParseResult{ arms, mut bounds, requires_helper } = result;
                         let matcher = self.get_matcher(&v.fields);
                         let name = &self.input.ident;
                         let v_name = &v.ident;
                         let fmt: TokenStream;
-                        let bounds: HashMap<_, _>;
+                        let these_bounds: HashMap<_, _>;
 
                         if let Some(meta) = self.find_meta(&v.attrs, "fmt")? {
                             fmt = self.parse_meta_fmt(&meta, false)?.0;
-                            bounds = self.get_used_type_params_bounds(&v.fields, &meta);
+                            these_bounds = self.get_used_type_params_bounds(&v.fields, &meta);
                         } else {
                             fmt = self.infer_fmt(&v.fields, v_name)?;
-                            bounds = self.infer_type_params_bounds(&v.fields);
+                            these_bounds = self.infer_type_params_bounds(&v.fields);
                         };
-                        all_bounds = bounds.into_iter()
-                            .fold(all_bounds, |mut bounds, (ty, trait_names)| {
-                                bounds.entry(ty).or_insert_with(HashSet::new).extend(trait_names);
-                                bounds
-                            });
+                        these_bounds.into_iter().for_each(|(ty, trait_names)| {
+                            bounds.entry(ty).or_default().extend(trait_names)
+                        });
+                        let arms = quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,);
 
-                        Ok((
-                            quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => write!(_derive_more_Display_formatter, "{}", #fmt),),
-                            all_bounds,
-                        ))
+                        Ok(ParseResult{ arms, bounds, requires_helper })
                     }),
                 }
             }
@@ -493,10 +547,11 @@ impl<'a, 'b> State<'a, 'b> {
                     bounds = self.infer_type_params_bounds(&s.fields);
                 }
 
-                Ok((
-                    quote_spanned!(self.input.span()=> #name #matcher => write!(_derive_more_Display_formatter, "{}", #fmt),),
+                Ok(ParseResult {
+                    arms: quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
                     bounds,
-                ))
+                    requires_helper: false,
+                })
             }
             syn::Data::Union(_) => {
                 let meta =
@@ -508,18 +563,19 @@ impl<'a, 'b> State<'a, 'b> {
                     })?;
                 let fmt = self.parse_meta_fmt(&meta, false)?.0;
 
-                Ok((
-                    quote_spanned!(self.input.span()=> _ => write!(_derive_more_Display_formatter, "{}", #fmt),),
-                    HashMap::new(),
-                ))
+                Ok(ParseResult {
+                    arms: quote_spanned!(self.input.span()=> _ => #fmt,),
+                    bounds: HashMap::new(),
+                    requires_helper: false,
+                })
             }
         };
 
-        let (arms, mut bounds) = result?;
+        let mut result = result?;
 
         let meta = match self.find_meta(&self.input.attrs, "bound")? {
             Some(meta) => meta,
-            _ => return Ok((arms, bounds)),
+            _ => return Ok(result),
         };
 
         let span = meta.span();
@@ -545,14 +601,11 @@ impl<'a, 'b> State<'a, 'b> {
 
         let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
 
-        for (ty, extra_bounds) in extra_bounds {
-            bounds
-                .entry(ty)
-                .or_insert_with(HashSet::new)
-                .extend(extra_bounds);
-        }
+        extra_bounds.into_iter().for_each(|(ty, trait_names)| {
+            result.bounds.entry(ty).or_default().extend(trait_names)
+        });
 
-        Ok((arms, bounds))
+        Ok(result)
     }
     fn get_used_type_params_bounds(
         &self,
