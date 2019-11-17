@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.99.2 - 2019-11-17
+
+### Fixes
+
+- Hotfix for a regression in allowed `Display` derives using `#` flag, such as
+    `{:#b}` ([#107](https://github.com/JelteF/derive_more/issues/105))
+
 ## 0.99.1 - 2019-11-12
 
 ### Fixes
