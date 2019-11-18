@@ -90,6 +90,11 @@
 //! 1. [`Display`-like], contains `Display`, `Binary`, `Octal`, `LowerHex`,
 //!    `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
 //!
+//! ### Error-handling traits
+//! These traits are used to define error-types.
+//!
+//! 1. [`Error`]
+//!
 //! ### Operators
 //!
 //! These are traits that can be used for operator overloading.
@@ -160,6 +165,8 @@
 //!
 //! [`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
 //!
+//! [`Error`]: https://jeltef.github.io/derive_more/derive_more/error.html
+//!
 //! [`Index`]: https://jeltef.github.io/derive_more/derive_more/index_op.html
 //! [`Deref`]: https://jeltef.github.io/derive_more/derive_more/deref.html
 //! [`Not`-like]: https://jeltef.github.io/derive_more/derive_more/not.html
@@ -205,6 +212,8 @@ mod deref;
 mod deref_mut;
 #[cfg(feature = "display")]
 mod display;
+#[cfg(feature = "error")]
+mod error;
 #[cfg(feature = "from")]
 mod from;
 #[cfg(feature = "from_str")]
@@ -349,6 +358,8 @@ create_derive!(
 
 create_derive!("sum", sum_like, Sum, sum_derive);
 create_derive!("sum", sum_like, Product, product_derive);
+
+create_derive!("error", error, Error, error_derive, error);
 
 create_derive!("from_str", from_str, FromStr, from_str_derive);
 
