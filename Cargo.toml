@@ -47,6 +47,7 @@ constructor = []
 deref = []
 deref_mut = []
 display = []
+error = []
 from = []
 from_str = []
 index = []
@@ -70,6 +71,7 @@ default = [
     "deref",
     "deref_mut",
     "display",
+    "error",
     "from",
     "from_str",
     "index",
@@ -128,6 +130,11 @@ required-features = ["deref_mut"]
 name = "display"
 path = "tests/display.rs"
 required-features = ["display"]
+
+[[test]]
+name = "error"
+path = "tests/error.rs"
+required-features = ["error"]
 
 [[test]]
 name = "from"

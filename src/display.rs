@@ -2,20 +2,18 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
     iter::FromIterator as _,
-    ops::Deref as _,
     str::FromStr as _,
 };
 
-use crate::utils::add_extra_where_clauses;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    parse::{Error, Parser as _, Result},
-    punctuated::Punctuated,
-    spanned::Spanned as _,
+    parse::Parser as _, punctuated::Punctuated, spanned::Spanned as _, Error, Result,
 };
 
-/// Provides the hook to expand `#[derive(Display)]` into an implementation of `Display`
+use crate::utils;
+
+/// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_name = trait_name.trim_end_matches("Custom");
     let trait_ident = syn::Ident::new(trait_name, Span::call_site());
@@ -51,7 +49,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             })
             .collect();
         let where_clause = quote_spanned!(input.span()=> where #(#bounds),*);
-        add_extra_where_clauses(&input.generics, where_clause)
+        utils::add_extra_where_clauses(&input.generics, where_clause)
     } else {
         input.generics.clone()
     };
@@ -620,18 +618,19 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .enumerate()
             .filter_map(|(i, field)| {
-                self.get_type_param(&field.ty).map(|ty| {
-                    (
-                        field
-                            .ident
-                            .clone()
-                            .unwrap_or_else(|| {
-                                Ident::new(&format!("_{}", i), Span::call_site())
-                            })
-                            .into(),
-                        ty,
-                    )
-                })
+                utils::get_if_type_parameter_used_in_type(&self.type_params, &field.ty)
+                    .map(|ty| {
+                        (
+                            field
+                                .ident
+                                .clone()
+                                .unwrap_or_else(|| {
+                                    Ident::new(&format!("_{}", i), Span::call_site())
+                                })
+                                .into(),
+                            ty,
+                        )
+                    })
             })
             .collect();
         if fields_type_params.is_empty() {
@@ -708,70 +707,20 @@ impl<'a, 'b> State<'a, 'b> {
             .iter()
             .take(1)
             .filter_map(|field| {
-                self.get_type_param(&field.ty).map(|ty| {
-                    (
-                        ty,
-                        [trait_name_to_trait_bound(attribute_name_to_trait_name(
-                            self.trait_attr,
-                        ))]
-                        .iter()
-                        .cloned()
-                        .collect(),
-                    )
-                })
+                utils::get_if_type_parameter_used_in_type(&self.type_params, &field.ty)
+                    .map(|ty| {
+                        (
+                            ty,
+                            [trait_name_to_trait_bound(attribute_name_to_trait_name(
+                                self.trait_attr,
+                            ))]
+                            .iter()
+                            .cloned()
+                            .collect(),
+                        )
+                    })
             })
             .collect()
-    }
-    fn get_type_param(&self, ty: &syn::Type) -> Option<syn::Type> {
-        if self.has_type_param_in(ty) {
-            match ty {
-                syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => {
-                    Some(ty.deref().clone())
-                }
-                ty => Some(ty.clone()),
-            }
-        } else {
-            None
-        }
-    }
-    fn has_type_param_in(&self, ty: &syn::Type) -> bool {
-        match ty {
-            syn::Type::Path(ty) => {
-                if let Some(qself) = &ty.qself {
-                    if self.has_type_param_in(&qself.ty) {
-                        return true;
-                    }
-                }
-
-                if let Some(segment) = ty.path.segments.first() {
-                    if self.type_params.contains(&segment.ident) {
-                        return true;
-                    }
-                }
-
-                ty.path.segments.iter().any(|segment| {
-                    if let syn::PathArguments::AngleBracketed(arguments) =
-                        &segment.arguments
-                    {
-                        arguments.args.iter().any(|argument| match argument {
-                            syn::GenericArgument::Type(ty) => {
-                                self.has_type_param_in(ty)
-                            }
-                            syn::GenericArgument::Constraint(constraint) => {
-                                self.type_params.contains(&constraint.ident)
-                            }
-                            _ => false,
-                        })
-                    } else {
-                        false
-                    }
-                })
-            }
-
-            syn::Type::Reference(ty) => self.has_type_param_in(&ty.elem),
-
-            _ => false,
-        }
     }
 }
 
