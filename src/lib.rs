@@ -1,9 +1,10 @@
 //! # `derive_more`
 //!
-//! [![Build Status](https://api.travis-ci.org/JelteF/derive_more.svg?branch=master)](https://travis-ci.org/JelteF/derive_more)
+//! [![Build Status](https://github.com/JelteF/derive_more/workflows/CI/badge.svg)](https://github.com/JelteF/derive_more/actions)
 //! [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
 //! [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://jeltef.github.io/derive_more/derive_more/)
 //! [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
+//! [![Rust 1.36+](https://img.shields.io/badge/rustc-1.36+-lightgray.svg)](https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html)
 //!
 //! Rust has lots of builtin traits that are implemented for its basic types, such
 //! as `Add`, `Not`, `From` or `Display`.
@@ -124,7 +125,7 @@
 //!
 //! ## Installation
 //!
-//! This library requires Rust 1.32 or higher and it supports `no_std` out of the box.
+//! This library requires Rust 1.36 or higher and it supports `no_std` out of the box.
 //! Then add the following to `Cargo.toml`:
 //!
 //! ```toml
@@ -154,30 +155,30 @@
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 //! [`derive-new`]: https://github.com/nrc/derive-new
 //!
-//! [`From`]: from.html
-//! [`Into`]: into.html
-//! [`FromStr`]: from_str.html
-//! [`TryInto`]: try_into.html
-//! [`IntoIterator`]: into_iterator.html
-//! [`AsRef`]: as_ref.html
-//! [`AsMut`]: as_mut.html
+//! [`From`]: https://jeltef.github.io/derive_more/derive_more/from.html
+//! [`Into`]: https://jeltef.github.io/derive_more/derive_more/into.html
+//! [`FromStr`]: https://jeltef.github.io/derive_more/derive_more/from_str.html
+//! [`TryInto`]: https://jeltef.github.io/derive_more/derive_more/try_into.html
+//! [`IntoIterator`]: https://jeltef.github.io/derive_more/derive_more/into_iterator.html
+//! [`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
+//! [`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
 //!
-//! [`Display`-like]: display.html
+//! [`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
 //!
-//! [`Error`]: error.html
+//! [`Error`]: https://jeltef.github.io/derive_more/derive_more/error.html
 //!
-//! [`Index`]: index_op.html
-//! [`Deref`]: deref.html
-//! [`Not`-like]: not.html
-//! [`Add`-like]: add.html
-//! [`Mul`-like]: mul.html
-//! [`Sum`-like]: sum.html
-//! [`IndexMut`]: index_mut.html
-//! [`DerefMut`]: deref_mut.html
-//! [`AddAssign`-like]: add_assign.html
-//! [`MulAssign`-like]: mul_assign.html
+//! [`Index`]: https://jeltef.github.io/derive_more/derive_more/index_op.html
+//! [`Deref`]: https://jeltef.github.io/derive_more/derive_more/deref.html
+//! [`Not`-like]: https://jeltef.github.io/derive_more/derive_more/not.html
+//! [`Add`-like]: https://jeltef.github.io/derive_more/derive_more/add.html
+//! [`Mul`-like]: https://jeltef.github.io/derive_more/derive_more/mul.html
+//! [`Sum`-like]: https://jeltef.github.io/derive_more/derive_more/sum.html
+//! [`IndexMut`]: https://jeltef.github.io/derive_more/derive_more/index_mut.html
+//! [`DerefMut`]: https://jeltef.github.io/derive_more/derive_more/deref_mut.html
+//! [`AddAssign`-like]: https://jeltef.github.io/derive_more/derive_more/add_assign.html
+//! [`MulAssign`-like]: https://jeltef.github.io/derive_more/derive_more/mul_assign.html
 //!
-//! [`Constructor`]: constructor.html
+//! [`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
 
 #![recursion_limit = "128"]
 
@@ -227,8 +228,6 @@ mod index_mut;
 mod into;
 #[cfg(feature = "into_iterator")]
 mod into_iterator;
-#[cfg(feature = "iterator")]
-mod iterator;
 #[cfg(feature = "mul_assign")]
 mod mul_assign_like;
 #[cfg(any(feature = "mul", feature = "mul_assign"))]
@@ -392,7 +391,6 @@ create_derive!(
     into_iterator_derive,
     into_iterator,
 );
-create_derive!("iterator", iterator, Iterator, iterator_derive, iterator);
 
 create_derive!("try_into", try_into, TryInto, try_into_derive, try_into);
 

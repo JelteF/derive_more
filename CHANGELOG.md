@@ -5,21 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## 0.99.2 - 2019-11-17
 
-This is a huge milestone for this library lot's of new derives are implemented
-and a ton of attributes are added for configuration purposes.
-This release is planned to be one of the last release before 1.0 of this
-library. It adds a lot of configuration to the derives by using attributes.
-This will allow future releases to add features/options without breaking
-backwards compatibility.
+### Fixes
+
+- Hotfix for a regression in allowed `Display` derives using `#` flag, such as
+    `{:#b}` ([#107](https://github.com/JelteF/derive_more/issues/105))
+
+## 0.99.1 - 2019-11-12
+
+### Fixes
+
+- Hotfix for a regression in allowed `From` derives
+    ([#105](https://github.com/JelteF/derive_more/issues/105))
+
+## 0.99.0 - 2019-11-11
+
+This release is a huge milestone for this library.
+Lot's of new derives are implemented and a ton of attributes are added for
+configuration purposes.
+These attributes will allow future releases to add features/options without
+breaking backwards compatibility.
+This is why the next release with breaking changes is planned to be 1.0.0.
 
 ### Breaking changes
 
-- Requires Rust edition 2018
-- Use `syn` 1.0
-- `no_std` feature is removed, it now supports `no_std` without having to
-  configure any features.
+- Requires Rust 1.36+
+- When using in a Rust 2015 crate, you should add `extern crate core` to your
+  code.
+- `no_std` feature is removed, the library now supports `no_std` without having
+  to configure any features.
 - `Deref` derives now dereference to the type in the newtype. So if you have
   `MyBox(Box<i32>)`, dereferencing it will result in a `Box<i32>` not an `i32`.
   To get the old behaviour of forwarding the dereference you can add the
@@ -27,25 +42,29 @@ backwards compatibility.
 
 ### New features
 
+- Derives for `AsRef`, `AsMut`, `Sum`, `Product`, `IntoIterator`.
 - Choosing the field of a struct for which to derive the newtype derive.
-- Ignoring variants of enums when deriving `From`.
-- Add `#[from(forward)]` attribute this forwards the from calls to the fields
-  themselves. So if your field is an `i64` you can call from on an `i32` and it
-  will work.
+- Ignoring variants of enums when deriving `From`, by using `#[from(ignore)]`.
+- Add `#[from(forward)]` attribute for `From` derives. This forwards the `from`
+  calls to the fields themselves. So if your field is an `i64` you can call from
+  on an `i32` and it will work.
+- Add `#[mul(forward)]` and `#[mul_assign(forward)]`, which implement `Mul` and
+  `MulAssign` with the semantics as if they were `Add`/`AddAssign`.
 - You can use features to cut down compile time of the crate by only compiling
   the code needed for the derives that you use. (see Cargo.toml for the
   features, by default they are all on)
 - Add `#[into(owned, ref, ref_mut)]` and `#[try_into(owned, ref, ref_mut)]`
   attributes. These cause the `Into` and `TryInto` derives to also implement
   derives that return references to the inner fields.
-- Derives for `AsRef`, `AsMut`, `Sum`, `Product`, `IntoIterator`.
-- Add `MulSelf`, `DivSelf`, `RemSelf`, `ShrSelf` and `ShlSelf`
 - Make `no_std` work out of the box
-- Allow `#[display(fmt="some shared display text for the enum {}")]` attribute
-  on enum.
+- Allow `#[display(fmt="some shared display text for all enum variants {}")]`
+  attribute on enum.
+- Better bounds inference of `Display` trait.
 
 ### Other things
+
 - Remove dependency on `regex` to cut down compile time.
+- Use `syn` 1.0
 
 ## 0.15.0 - 2019-06-08
 

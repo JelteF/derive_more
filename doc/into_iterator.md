@@ -1,4 +1,4 @@
-% Using #[derive(IntoIterator)] generates
+% Using #[derive(IntoIterator)]
 
 Deriving `IntoIterator` only works for a single field of a struct.
 The result is that you will call `.into_iter()` on this field directly.

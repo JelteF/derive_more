@@ -3,6 +3,7 @@ use crate::utils::{
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
+use std::collections::HashMap;
 use syn::{parse::Result, DeriveInput, Ident, Index};
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
@@ -93,8 +94,36 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
 fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
     let mut tokens = TokenStream::new();
 
+    let mut variants_per_types = HashMap::new();
     for variant_state in state.enabled_variant_data().variant_states {
-        struct_from(input, variant_state).to_tokens(&mut tokens);
+        let multi_field_data = variant_state.enabled_fields_data();
+        let MultiFieldData { field_types, .. } = multi_field_data.clone();
+        variants_per_types
+            .entry(field_types.clone())
+            .or_insert_with(Vec::new)
+            .push(variant_state);
+    }
+    for (ref field_types, ref variant_states) in variants_per_types {
+        for variant_state in variant_states {
+            let multi_field_data = variant_state.enabled_fields_data();
+            let MultiFieldData {
+                variant_info,
+                infos,
+                ..
+            } = multi_field_data.clone();
+            // If there would be a conflict on a empty tuple derive, ignore the
+            // variants that are not explicitely enabled or have explicitely enabled
+            // or disabled fields
+            if field_types.is_empty()
+                && variant_states.len() > 1
+                && !std::iter::once(variant_info)
+                    .chain(infos)
+                    .any(|info| info.info.enabled.is_some())
+            {
+                continue;
+            }
+            struct_from(input, variant_state).to_tokens(&mut tokens);
+        }
     }
     tokens
 }
