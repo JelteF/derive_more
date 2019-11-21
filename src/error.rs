@@ -238,6 +238,10 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
         S: Fn(&ParsedFields, usize) -> TokenStream,
         B: Fn(&ParsedFields, usize) -> TokenStream,
     {
+        if !cfg!(feature = "nightly") {
+            return None;
+        }
+
         // Disable proxying call to `backtrace` to `source` if
         // `source` explicitly marked with `#[error(not(backtrace))]`.
         let source = self.source.and_then(|source| {
@@ -331,7 +335,7 @@ fn parse_fields<'input, 'state>(
             })
         }
 
-        _ => unreachable!(), // TODO
+        _ => unreachable!(),
     }
 }
 
