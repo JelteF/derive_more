@@ -33,10 +33,26 @@ pub fn expand(
         })
         .collect();
 
-    let (bounds, body) = match state.derive_type {
+    let (bounds, source, backtrace) = match state.derive_type {
         DeriveType::Named | DeriveType::Unnamed => render_struct(&type_params, &state)?,
         DeriveType::Enum => render_enum(&type_params, &state)?,
     };
+
+    let source = source.map(|source| {
+        quote! {
+            fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
+                #source
+            }
+        }
+    });
+
+    let backtrace = backtrace.map(|backtrace| {
+        quote! {
+            fn backtrace(&self) -> Option<&::std::backtrace::Backtrace> {
+                #backtrace
+            }
+        }
+    });
 
     let mut generics = generics.clone();
 
@@ -66,9 +82,8 @@ pub fn expand(
 
     let render = quote! {
         impl#impl_generics ::std::error::Error for #ident#ty_generics #where_clause {
-            fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
-                #body
-            }
+            #source
+            #backtrace
         }
     };
 
@@ -78,22 +93,22 @@ pub fn expand(
 fn render_struct(
     type_params: &HashSet<syn::Ident>,
     state: &State,
-) -> Result<(HashSet<syn::Type>, TokenStream)> {
+) -> Result<(HashSet<syn::Type>, Option<TokenStream>, Option<TokenStream>)> {
     let parsed_fields = parse_fields(&type_params, &state)?;
 
-    let render = parsed_fields.render_as_struct();
-    let bounds = parsed_fields.bounds;
+    let source = parsed_fields.render_source_as_struct();
+    let backtrace = parsed_fields.render_backtrace_as_struct();
 
-    Ok((bounds, render))
+    Ok((parsed_fields.bounds, source, backtrace))
 }
 
 fn render_enum(
     type_params: &HashSet<syn::Ident>,
     state: &State,
-) -> Result<(HashSet<syn::Type>, TokenStream)> {
+) -> Result<(HashSet<syn::Type>, Option<TokenStream>, Option<TokenStream>)> {
     let mut bounds = HashSet::new();
-    let mut match_arms = Vec::new();
-    let mut render_default_wildcard = false;
+    let mut source_match_arms = Vec::new();
+    let mut backtrace_match_arms = Vec::new();
 
     for variant in state.enabled_variant_data().variants {
         let mut default_info = FullMetaInfo::default();
@@ -111,34 +126,39 @@ fn render_enum(
 
         let parsed_fields = parse_fields(&type_params, &state)?;
 
-        match parsed_fields.render_as_enum_variant_match_arm() {
-            Some(match_arm) => {
-                match_arms.push(match_arm);
-            }
+        if let Some(expr) = parsed_fields.render_source_as_enum_variant_match_arm() {
+            source_match_arms.push(expr);
+        }
 
-            None => {
-                render_default_wildcard = true;
-            }
+        if let Some(expr) = parsed_fields.render_backtrace_as_enum_variant_match_arm() {
+            backtrace_match_arms.push(expr);
         }
 
         bounds.extend(parsed_fields.bounds.into_iter());
     }
 
-    if !match_arms.is_empty() && render_default_wildcard {
-        match_arms.push(quote!(_ => None));
-    }
-
-    let render = if !match_arms.is_empty() {
-        quote! {
-            match self {
-                #(#match_arms),*
-            }
+    let render = |match_arms: &mut Vec<TokenStream>| {
+        if !match_arms.is_empty() && match_arms.len() < state.variants.len() {
+            match_arms.push(quote!(_ => None));
         }
-    } else {
-        quote!(None)
+
+        if !match_arms.is_empty() {
+            let expr = quote! {
+                match self {
+                    #(#match_arms),*
+                }
+            };
+
+            Some(expr)
+        } else {
+            None
+        }
     };
 
-    Ok((bounds, render))
+    let source = render(&mut source_match_arms);
+    let backtrace = render(&mut backtrace_match_arms);
+
+    Ok((bounds, source, backtrace))
 }
 
 fn allowed_attr_params() -> AttrParams {
@@ -146,13 +166,14 @@ fn allowed_attr_params() -> AttrParams {
         enum_: vec!["ignore"],
         struct_: vec!["ignore"],
         variant: vec!["ignore"],
-        field: vec!["ignore", "source"],
+        field: vec!["ignore", "source", "backtrace"],
     }
 }
 
 struct ParsedFields<'input, 'state> {
     data: MultiFieldData<'input, 'state>,
     source: Option<usize>,
+    backtrace: Option<usize>,
     bounds: HashSet<syn::Type>,
 }
 
@@ -161,29 +182,115 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
         Self {
             data,
             source: None,
+            backtrace: None,
             bounds: HashSet::new(),
         }
     }
 }
 
 impl<'input, 'state> ParsedFields<'input, 'state> {
-    fn render_as_struct(&self) -> TokenStream {
-        match self.source {
-            Some(source) => {
-                let ident = &self.data.members[source];
-                render_some(quote!(&#ident))
-            }
-            None => quote!(None),
-        }
+    fn render_source_as_struct(&self) -> Option<TokenStream> {
+        self.source.map(|source| {
+            let ident = &self.data.members[source];
+            render_some(quote!(&#ident))
+        })
     }
 
-    fn render_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
+    fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         self.source.map(|source| {
             let pattern = self.data.matcher(&[source], &[quote!(source)]);
             let expr = render_some(quote!(source));
-
             quote!(#pattern => #expr)
         })
+    }
+
+    fn render_backtrace_as_struct(&self) -> Option<TokenStream> {
+        self.render_backtrace_impl(
+            |fields, index| {
+                let expr = &fields.data.members[index];
+                quote!(#expr)
+            },
+            |fields, index| {
+                let expr = &fields.data.members[index];
+                quote!(&#expr)
+            },
+            false,
+        )
+        .map(|(_, expr)| expr)
+    }
+
+    fn render_backtrace_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
+        self.render_backtrace_impl(
+            |_, _| quote!(source),
+            |_, _| quote!(backtrace),
+            true,
+        )
+        .map(|(pattern, expr)| quote!(#pattern => #expr))
+    }
+
+    fn render_backtrace_impl<S, B>(
+        &self,
+        source_expr: S,
+        backtrace_expr: B,
+        is_rendering_enum_match_arm: bool,
+    ) -> Option<(TokenStream, TokenStream)>
+    where
+        S: Fn(&ParsedFields, usize) -> TokenStream,
+        B: Fn(&ParsedFields, usize) -> TokenStream,
+    {
+        // Disable proxying call to `backtrace` to `source` if
+        // `source` explicitly marked with `#[error(not(backtrace))]`.
+        let source = self.source.and_then(|source| {
+            match self.data.infos[source].info.backtrace {
+                Some(false) => None,
+                _ => Some(source),
+            }
+        });
+
+        let mut indices = Vec::new();
+        let mut bindings = Vec::new();
+
+        let mut bind = |index: usize, binding: &TokenStream| {
+            if is_rendering_enum_match_arm {
+                indices.push(index);
+                bindings.push(binding.clone());
+            }
+        };
+
+        let expr = match (source, self.backtrace) {
+            (Some(source), backtrace) => {
+                let source_expr = source_expr(self, source);
+                bind(source, &source_expr);
+
+                let backtrace_expr = backtrace
+                    .filter(|backtrace| source != *backtrace)
+                    .map(|backtrace| {
+                        let backtrace_expr = backtrace_expr(self, backtrace);
+                        bind(backtrace, &backtrace_expr);
+
+                        quote!(.or_else(|| Some(#backtrace_expr)))
+                    });
+
+                quote!(#source_expr.backtrace()#backtrace_expr)
+            }
+
+            (None, Some(backtrace)) => {
+                let backtrace_expr = backtrace_expr(self, backtrace);
+                bind(backtrace, &backtrace_expr);
+
+                quote!(Some(#backtrace_expr))
+            }
+
+            _ => return None,
+        };
+
+        let pattern = if is_rendering_enum_match_arm {
+            self.data.matcher(&indices, &bindings)
+        } else {
+            TokenStream::new()
+        };
+
+        Some((pattern, expr))
     }
 }
 
@@ -200,20 +307,50 @@ fn parse_fields<'input, 'state>(
 ) -> Result<ParsedFields<'input, 'state>> {
     match state.derive_type {
         DeriveType::Named => {
-            parse_fields_impl(type_params, state, |field, _| {
-                let ident = field
-                    .ident
-                    .as_ref()
-                    .expect("Internal error in macro implementation"); // TODO
+            parse_fields_impl(type_params, state, |attr, field, _| {
+                // Unwrapping is safe, cause fields in named struct
+                // always have an ident
+                let ident = field.ident.as_ref().unwrap();
 
-                ident == "source"
+                match attr {
+                    "source" => ident == "source",
+                    "backtrace" => {
+                        ident == "backtrace"
+                            || is_type_ends_with(&field.ty, "Backtrace")
+                    }
+                    _ => unreachable!(),
+                }
             })
         }
 
-        DeriveType::Unnamed => parse_fields_impl(type_params, state, |_, len| len == 1),
+        DeriveType::Unnamed => {
+            parse_fields_impl(type_params, state, |attr, field, len| match attr {
+                "source" => len == 1,
+                "backtrace" => is_type_ends_with(&field.ty, "Backtrace"),
+                _ => unreachable!(),
+            })
+        }
 
         _ => unreachable!(), // TODO
     }
+}
+
+fn is_type_ends_with(ty: &syn::Type, tail: &str) -> bool {
+    let ty = match ty {
+        syn::Type::Path(ty) => ty,
+        _ => return false,
+    };
+
+    // Unwrapping is safe, cause 'syn::TypePath.path.segments'
+    // have to have at least one segment
+    let ty = ty.path.segments.last().unwrap();
+
+    match ty.arguments {
+        syn::PathArguments::None => (),
+        _ => return false,
+    };
+
+    ty.ident == tail
 }
 
 fn parse_fields_impl<'input, 'state, P>(
@@ -222,7 +359,7 @@ fn parse_fields_impl<'input, 'state, P>(
     is_valid_default_field_for_attr: P,
 ) -> Result<ParsedFields<'input, 'state>>
 where
-    P: Fn(&syn::Field, usize) -> bool,
+    P: Fn(&str, &syn::Field, usize) -> bool,
 {
     let MultiFieldData { fields, infos, .. } = state.enabled_fields_data();
 
@@ -232,30 +369,25 @@ where
         .enumerate()
         .map(|(index, (field, info))| (index, *field, info));
 
-    let explicit_sources = iter.clone().filter(|(_, _, info)| match info.source {
-        Some(true) => true,
-        _ => false,
-    });
-
-    let inferred_sources = iter.filter(|(_, field, info)| match info.source {
-        None => is_valid_default_field_for_attr(field, fields.len()),
-        _ => false,
-    });
-
-    let source = assert_iter_contains_zero_or_one_item(
-        explicit_sources,
-        "Multiple `source` attributes specified. \
-         Single attribute per struct/enum variant allowed.",
+    let mut source = None;
+    parse_field_impl(
+        &is_valid_default_field_for_attr,
+        state.fields.len(),
+        iter.clone(),
+        "source",
+        |info| info.source,
+        &mut source,
     )?;
 
-    let source = match source {
-        source @ Some(_) => source,
-        None => assert_iter_contains_zero_or_one_item(
-            inferred_sources,
-            "Conflicting fields found. Consider specifying some \
-             `#[error(...)]` attributes to resolve conflict.",
-        )?,
-    };
+    let mut backtrace = None;
+    parse_field_impl(
+        &is_valid_default_field_for_attr,
+        state.fields.len(),
+        iter.clone(),
+        "backtrace",
+        |info| info.backtrace,
+        &mut backtrace,
+    )?;
 
     let mut parsed_fields = ParsedFields::new(state.enabled_fields_data());
 
@@ -268,7 +400,56 @@ where
         );
     }
 
+    if let Some((index, _, _)) = backtrace {
+        parsed_fields.backtrace = Some(index);
+    }
+
     Ok(parsed_fields)
+}
+
+fn parse_field_impl<'a, P, V>(
+    is_valid_default_field_for_attr: &P,
+    len: usize,
+    iter: impl Iterator<Item = (usize, &'a syn::Field, &'a MetaInfo)> + Clone,
+    attr: &str,
+    value: V,
+    out: &mut Option<(usize, &'a syn::Field, &'a MetaInfo)>,
+) -> Result<()>
+where
+    P: Fn(&str, &syn::Field, usize) -> bool,
+    V: Fn(&MetaInfo) -> Option<bool>,
+{
+    let explicit_fields = iter.clone().filter(|(_, _, info)| match value(info) {
+        Some(true) => true,
+        _ => false,
+    });
+
+    let inferred_fields = iter.filter(|(_, field, info)| match value(info) {
+        None => is_valid_default_field_for_attr(attr, field, len),
+        _ => false,
+    });
+
+    let field = assert_iter_contains_zero_or_one_item(
+        explicit_fields,
+        &format!(
+            "Multiple `{}` attributes specified. \
+             Single attribute per struct/enum variant allowed.",
+            attr
+        ),
+    )?;
+
+    let field = match field {
+        field @ Some(_) => field,
+        None => assert_iter_contains_zero_or_one_item(
+            inferred_fields,
+            "Conflicting fields found. Consider specifying some \
+             `#[error(...)]` attributes to resolve conflict.",
+        )?,
+    };
+
+    *out = field;
+
+    Ok(())
 }
 
 fn assert_iter_contains_zero_or_one_item<'a>(
