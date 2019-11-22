@@ -201,9 +201,9 @@ fn unnamed_implicit_no_backtrace() {
 fn unnamed_implicit_backtrace() {
     derive_display!(TestErr, T);
     #[derive(Debug, Error)]
-    struct TestErr<T>(Backtrace, T);
+    struct TestErr<T>(Backtrace, T, T);
 
-    let err = TestErr(Backtrace::force_capture(), 0);
+    let err = TestErr(Backtrace::force_capture(), 0, 0);
     assert!(err.backtrace().is_some());
     assert_bt!(==, err, 0);
 }
@@ -221,11 +221,11 @@ fn unnamed_explicit_no_backtrace() {
 fn unnamed_explicit_backtrace() {
     derive_display!(TestErr, T);
     #[derive(Debug, Error)]
-    struct TestErr<T>(#[error(backtrace)] MyBacktrace, T);
+    struct TestErr<T>(#[error(backtrace)] MyBacktrace, T, T);
 
     type MyBacktrace = Backtrace;
 
-    let err = TestErr(Backtrace::force_capture(), 0);
+    let err = TestErr(Backtrace::force_capture(), 0, 0);
     assert!(err.backtrace().is_some());
     assert_bt!(==, err, 0);
 }
@@ -248,9 +248,9 @@ fn unnamed_explicit_no_backtrace_redundant() {
 fn unnamed_explicit_backtrace_redundant() {
     derive_display!(TestErr, T);
     #[derive(Debug, Error)]
-    struct TestErr<T>(#[error(backtrace)] Backtrace, T);
+    struct TestErr<T>(#[error(backtrace)] Backtrace, T, T);
 
-    let err = TestErr(Backtrace::force_capture(), 0);
+    let err = TestErr(Backtrace::force_capture(), 0, 0);
     assert!(err.backtrace().is_some());
     assert_bt!(==, err, 0);
 }

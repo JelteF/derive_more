@@ -46,7 +46,7 @@ enum TestErr {
         i32,
     ),
     UnnamedNoBacktraceSourceWithBacktrace(#[error(source)] BacktraceErr, i32),
-    UnnamedBacktraceNoSource(Backtrace, i32),
+    UnnamedBacktraceNoSource(Backtrace, i32, i32),
     UnnamedBacktraceSourceWithoutBacktrace(#[error(source)] SimpleErr, Backtrace, i32),
     UnnamedBacktraceSourceWithBacktraceExplictilyDisabled(
         #[error(source, not(backtrace))] BacktraceErr,
@@ -54,28 +54,40 @@ enum TestErr {
         i32,
     ),
     UnnamedBacktraceSourceWithBacktrace(#[error(source)] BacktraceErr, Backtrace, i32),
+    UnnamedBacktraceImplicitSourceWithoutBacktrace(SimpleErr, Backtrace),
+    UnnamedBacktraceImplicitSourceWithBacktraceExplicitlyDisabled(
+        #[error(not(backtrace))] BacktraceErr,
+        Backtrace,
+    ),
+    UnnamedBacktraceImplicitSourceWithBacktrace(BacktraceErr, Backtrace),
 }
 
 impl TestErr {
     fn get_stored_backtrace(&self) -> &Backtrace {
         match self {
-            TestErr::NamedBacktraceSourceWithoutBacktrace { backtrace, .. } => {
-                backtrace
-            }
-            TestErr::NamedBacktraceSourceWithBacktraceExplicitlyDisabled {
+            Self::NamedBacktraceSourceWithoutBacktrace { backtrace, .. } => backtrace,
+            Self::NamedBacktraceSourceWithBacktraceExplicitlyDisabled {
                 backtrace,
                 ..
             } => backtrace,
-            TestErr::NamedBacktraceSourceWithBacktrace { backtrace, .. } => backtrace,
-            TestErr::UnnamedBacktraceSourceWithoutBacktrace(_, backtrace, _) => {
-                backtrace
-            }
-            TestErr::UnnamedBacktraceSourceWithBacktraceExplictilyDisabled(
+            Self::NamedBacktraceSourceWithBacktrace { backtrace, .. } => backtrace,
+            Self::UnnamedBacktraceSourceWithoutBacktrace(_, backtrace, _) => backtrace,
+            Self::UnnamedBacktraceSourceWithBacktraceExplictilyDisabled(
                 _,
                 backtrace,
                 _,
             ) => backtrace,
-            TestErr::UnnamedBacktraceSourceWithBacktrace(_, backtrace, _) => backtrace,
+            Self::UnnamedBacktraceSourceWithBacktrace(_, backtrace, _) => backtrace,
+            Self::UnnamedBacktraceImplicitSourceWithoutBacktrace(_, backtrace) => {
+                backtrace
+            }
+            Self::UnnamedBacktraceImplicitSourceWithBacktraceExplicitlyDisabled(
+                _,
+                backtrace,
+            ) => backtrace,
+            Self::UnnamedBacktraceImplicitSourceWithBacktrace(_, backtrace) => {
+                backtrace
+            }
             _ => panic!("ERROR IN TEST IMPLEMENTATION"),
         }
     }
@@ -198,7 +210,7 @@ fn unnamed_no_backtrace_source_with_backtrace() {
 
 #[test]
 fn unnamed_backtrace_no_source() {
-    let err = TestErr::UnnamedBacktraceNoSource(Backtrace::force_capture(), 0);
+    let err = TestErr::UnnamedBacktraceNoSource(Backtrace::force_capture(), 0, 0);
 
     assert!(err.backtrace().is_some());
 }
@@ -233,6 +245,39 @@ fn unnamed_backtrace_source_with_backtrace() {
         BacktraceErr::default(),
         Backtrace::force_capture(),
         0,
+    );
+
+    assert!(err.backtrace().is_some());
+    assert_bt!(!=, err, .get_stored_backtrace);
+}
+
+#[test]
+fn unnamed_backtrace_implicit_source_without_backtrace() {
+    let err = TestErr::UnnamedBacktraceImplicitSourceWithoutBacktrace(
+        SimpleErr,
+        Backtrace::force_capture(),
+    );
+
+    assert!(err.backtrace().is_some());
+    assert_bt!(==, err, .get_stored_backtrace);
+}
+
+#[test]
+fn unnamed_backtrace_implicit_source_with_backtrace_explicitly_disabled() {
+    let err = TestErr::UnnamedBacktraceImplicitSourceWithBacktraceExplicitlyDisabled(
+        BacktraceErr::default(),
+        Backtrace::force_capture(),
+    );
+
+    assert!(err.backtrace().is_some());
+    assert_bt!(==, err, .get_stored_backtrace);
+}
+
+#[test]
+fn unnamed_backtrace_implicit_source_with_backtrace() {
+    let err = TestErr::UnnamedBacktraceImplicitSourceWithBacktrace(
+        BacktraceErr::default(),
+        Backtrace::force_capture(),
     );
 
     assert!(err.backtrace().is_some());

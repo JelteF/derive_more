@@ -309,9 +309,9 @@ fn parse_fields<'input, 'state>(
     type_params: &HashSet<syn::Ident>,
     state: &'state State<'input>,
 ) -> Result<ParsedFields<'input, 'state>> {
-    match state.derive_type {
+    let parsed_fields = match state.derive_type {
         DeriveType::Named => {
-            parse_fields_impl(type_params, state, |attr, field, _| {
+            parse_fields_impl(state, |attr, field, _| {
                 // Unwrapping is safe, cause fields in named struct
                 // always have an ident
                 let ident = field.ident.as_ref().unwrap();
@@ -328,15 +328,44 @@ fn parse_fields<'input, 'state>(
         }
 
         DeriveType::Unnamed => {
-            parse_fields_impl(type_params, state, |attr, field, len| match attr {
-                "source" => len == 1,
+            let result = parse_fields_impl(state, |attr, field, len| match attr {
+                "source" => len == 1 && !is_type_ends_with(&field.ty, "Backtrace"),
                 "backtrace" => is_type_ends_with(&field.ty, "Backtrace"),
                 _ => unreachable!(),
+            });
+
+            result.map(|mut parsed_fields| {
+                let len_source_backtrace = (
+                    state.fields.len(),
+                    parsed_fields.source,
+                    parsed_fields.backtrace,
+                );
+
+                if let (2, None, Some(backtrace)) = len_source_backtrace {
+                    let source = (backtrace + 1) % 2;
+                    if parsed_fields.data.infos[source].info.source != Some(false) {
+                        parsed_fields.source = Some(source);
+                    }
+                }
+
+                parsed_fields
             })
         }
 
         _ => unreachable!(),
-    }
+    };
+
+    parsed_fields.map(|mut parsed_fields| {
+        if let Some(source) = parsed_fields.source {
+            add_bound_if_type_parameter_used_in_type(
+                &mut parsed_fields.bounds,
+                type_params,
+                &state.fields[source].ty,
+            );
+        }
+
+        parsed_fields
+    })
 }
 
 fn is_type_ends_with(ty: &syn::Type, tail: &str) -> bool {
@@ -358,7 +387,6 @@ fn is_type_ends_with(ty: &syn::Type, tail: &str) -> bool {
 }
 
 fn parse_fields_impl<'input, 'state, P>(
-    type_params: &HashSet<syn::Ident>,
     state: &'state State<'input>,
     is_valid_default_field_for_attr: P,
 ) -> Result<ParsedFields<'input, 'state>>
@@ -395,13 +423,8 @@ where
 
     let mut parsed_fields = ParsedFields::new(state.enabled_fields_data());
 
-    if let Some((index, field, _)) = source {
+    if let Some((index, _, _)) = source {
         parsed_fields.source = Some(index);
-        add_bound_if_type_parameter_used_in_type(
-            &mut parsed_fields.bounds,
-            type_params,
-            &field.ty,
-        );
     }
 
     if let Some((index, _, _)) = backtrace {

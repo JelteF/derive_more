@@ -171,9 +171,11 @@ fn unnamed_no_backtrace_source_with_backtrace() {
 fn unnamed_backtrace_no_source() {
     derive_display!(TestErr, T);
     #[derive(Debug, Error)]
-    struct TestErr<T>(Backtrace, T);
+    struct TestErr<T>(Backtrace, T, T);
 
-    assert!(TestErr(Backtrace::force_capture(), 0).backtrace().is_some());
+    assert!(TestErr(Backtrace::force_capture(), 0, 0)
+        .backtrace()
+        .is_some());
 }
 
 #[test]
@@ -205,6 +207,39 @@ fn unnamed_backtrace_source_with_backtrace() {
     struct TestErr<E, T>(#[error(source)] E, Backtrace, T);
 
     let err = TestErr(BacktraceErr::default(), Backtrace::force_capture(), 0);
+    assert!(err.backtrace().is_some());
+    assert_bt!(!=, err, 1);
+}
+
+#[test]
+fn unnamed_backtrace_implicit_source_without_backtrace() {
+    derive_display!(TestErr, E);
+    #[derive(Debug, Error)]
+    struct TestErr<E>(E, Backtrace);
+
+    let err = TestErr(SimpleErr, Backtrace::force_capture());
+    assert!(err.backtrace().is_some());
+    assert_bt!(==, err, 1);
+}
+
+#[test]
+fn unnamed_backtrace_implicit_source_with_backtrace_explicitly_disabled() {
+    derive_display!(TestErr, E);
+    #[derive(Debug, Error)]
+    struct TestErr<E>(#[error(not(backtrace))] E, Backtrace);
+
+    let err = TestErr(BacktraceErr::default(), Backtrace::force_capture());
+    assert!(err.backtrace().is_some());
+    assert_bt!(==, err, 1);
+}
+
+#[test]
+fn unnamed_backtrace_implicit_source_with_backtrace() {
+    derive_display!(TestErr, E);
+    #[derive(Debug, Error)]
+    struct TestErr<E>(E, Backtrace);
+
+    let err = TestErr(BacktraceErr::default(), Backtrace::force_capture());
     assert!(err.backtrace().is_some());
     assert_bt!(!=, err, 1);
 }

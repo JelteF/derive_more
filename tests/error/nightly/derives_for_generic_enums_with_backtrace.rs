@@ -53,14 +53,14 @@ enum TestErr<T> {
         field: T,
     },
     UnnamedImplicitNoBacktrace(T, T),
-    UnnamedImplicitBacktrace(Backtrace, T),
+    UnnamedImplicitBacktrace(Backtrace, T, T),
     UnnamedExplicitNoBacktrace(#[error(not(backtrace))] Backtrace, T),
-    UnnamedExplicitBacktrace(#[error(backtrace)] MyBacktrace, T),
+    UnnamedExplicitBacktrace(#[error(backtrace)] MyBacktrace, T, T),
     UnnamedExplicitNoBacktraceRedundant(
         #[error(not(backtrace))] MyBacktrace,
         #[error(not(backtrace))] T,
     ),
-    UnnamedExplicitBacktraceRedundant(#[error(backtrace)] Backtrace, T),
+    UnnamedExplicitBacktraceRedundant(#[error(backtrace)] Backtrace, T, T),
     UnnamedExplicitSupressesImplicit(#[error(backtrace)] MyBacktrace, Backtrace, T),
 }
 
@@ -82,9 +82,9 @@ impl<T> TestErr<T> {
                 ..
             } => implicit_backtrace,
             Self::NamedExplicitSupressesImplicit { not_backtrace, .. } => not_backtrace,
-            Self::UnnamedImplicitBacktrace(backtrace, _) => backtrace,
-            Self::UnnamedExplicitBacktrace(backtrace, _) => backtrace,
-            Self::UnnamedExplicitBacktraceRedundant(backtrace, _) => backtrace,
+            Self::UnnamedImplicitBacktrace(backtrace, _, _) => backtrace,
+            Self::UnnamedExplicitBacktrace(backtrace, _, _) => backtrace,
+            Self::UnnamedExplicitBacktraceRedundant(backtrace, _, _) => backtrace,
             Self::UnnamedExplicitSupressesImplicit(backtrace, _, _) => backtrace,
             _ => panic!("ERROR IN TEST IMPLEMENTATION"),
         }
@@ -220,7 +220,7 @@ fn unnamed_implicit_no_backtrace() {
 
 #[test]
 fn unnamed_implicit_backtrace() {
-    let err = TestErr::UnnamedImplicitBacktrace(Backtrace::force_capture(), 0);
+    let err = TestErr::UnnamedImplicitBacktrace(Backtrace::force_capture(), 0, 0);
 
     assert!(err.backtrace().is_some());
     assert_bt!(==, err, .get_stored_backtrace);
@@ -235,7 +235,7 @@ fn unnamed_explicit_no_backtrace() {
 
 #[test]
 fn unnamed_explicit_backtrace() {
-    let err = TestErr::UnnamedExplicitBacktrace(Backtrace::force_capture(), 0);
+    let err = TestErr::UnnamedExplicitBacktrace(Backtrace::force_capture(), 0, 0);
 
     assert!(err.backtrace().is_some());
     assert_bt!(==, err, .get_stored_backtrace);
@@ -251,7 +251,8 @@ fn unnamed_explicit_no_backtrace_redundant() {
 
 #[test]
 fn unnamed_explicit_backtrace_redundant() {
-    let err = TestErr::UnnamedExplicitBacktraceRedundant(Backtrace::force_capture(), 0);
+    let err =
+        TestErr::UnnamedExplicitBacktraceRedundant(Backtrace::force_capture(), 0, 0);
 
     assert!(err.backtrace().is_some());
     assert_bt!(==, err, .get_stored_backtrace);
