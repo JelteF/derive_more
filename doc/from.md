@@ -240,6 +240,7 @@ impl ::core::convert::From<(u32)> for MixedInts {
 }
 ```
 
-Notice that for `Unsigned` and `NamedUnsigned` no `impl` is generated.
-The reason for this is that it would be impossible for the compiler to know
-which implementation to choose, since they would both implement `From<u32>`.
+Without the `#[from(ignore)]` on `Unsigned`, no `impl` would be generated for
+`Unsigned` and `NamedUnsigned`. The reason for this is that it would be
+impossible for the compiler to know which implementation to choose, since they
+would both implement `From<u32>`.
