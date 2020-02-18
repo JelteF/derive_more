@@ -423,13 +423,7 @@ impl<'input> State<'input> {
             Ok(vec![])
         };
 
-        let generics = if (trait_name == "Deref" || trait_name == "DerefMut")
-            && !defaults.forward
-        {
-            input.generics.clone()
-        } else {
-            add_extra_ty_param_bound(&input.generics, &trait_path)
-        };
+        let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
 
         Ok(State {
             input,
