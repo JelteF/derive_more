@@ -176,8 +176,6 @@
 #![recursion_limit = "128"]
 
 extern crate proc_macro;
-use proc_macro2;
-use syn;
 
 use proc_macro::TokenStream;
 use syn::parse::Error as ParseError;
