@@ -422,6 +422,7 @@ impl<'input> State<'input> {
         } else {
             Ok(vec![])
         };
+
         let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
 
         Ok(State {
