@@ -264,9 +264,10 @@ For instance when deriving <code>From</code> for the following enum:</p>
         <span class="ident">MixedInts</span>::<span class="ident">NamedUnsigned</span> { <span class="ident">x</span>: <span class="ident">original</span> }
     }
 }</pre></div>
-<p>Notice that for <code>Unsigned</code> and <code>NamedUnsigned</code> no <code>impl</code> is generated.
-The reason for this is that it would be impossible for the compiler to know
-which implementation to choose, since they would both implement <code>From&lt;u32&gt;</code>.</p>
+<p>Without the <code>#[from(ignore)]</code> on <code>Unsigned</code>, no <code>impl</code> would be generated for
+<code>Unsigned</code> and <code>NamedUnsigned</code>. The reason for this is that it would be
+impossible for the compiler to know which implementation to choose, since they
+would both implement <code>From&lt;u32&gt;</code>.</p>
 
     <!--copied from otput -->
 </div>
