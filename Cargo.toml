@@ -18,7 +18,7 @@ include = [
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
-    "test/**/*.rs", # debian packaging wants this
+    "tests/**/*.rs", # debian packaging wants this
 ]
 autotests = true
 
