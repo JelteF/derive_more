@@ -205,96 +205,17 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
     }
 
     fn render_backtrace_as_struct(&self) -> Option<TokenStream> {
-        self.render_backtrace_impl(
-            |fields, index| {
-                let expr = &fields.data.members[index];
-                quote!(#expr)
-            },
-            |fields, index| {
-                let expr = &fields.data.members[index];
-                quote!(&#expr)
-            },
-            false,
-        )
-        .map(|(_, expr)| expr)
+        self.backtrace.map(|backtrace| {
+            let backtrace_expr = &self.data.members[backtrace];
+            quote!(Some(&#backtrace_expr))
+        })
     }
 
     fn render_backtrace_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
-        self.render_backtrace_impl(
-            |_, _| quote!(source),
-            |_, _| quote!(backtrace),
-            true,
-        )
-        .map(|(pattern, expr)| quote!(#pattern => #expr))
-    }
-
-    fn render_backtrace_impl<S, B>(
-        &self,
-        source_expr: S,
-        backtrace_expr: B,
-        is_rendering_enum_match_arm: bool,
-    ) -> Option<(TokenStream, TokenStream)>
-    where
-        S: Fn(&ParsedFields, usize) -> TokenStream,
-        B: Fn(&ParsedFields, usize) -> TokenStream,
-    {
-        if !cfg!(feature = "nightly") {
-            return None;
-        }
-
-        // Disable proxying call to `backtrace` to `source` if
-        // `source` explicitly marked with `#[error(not(backtrace))]`.
-        let source = self.source.and_then(|source| {
-            match self.data.infos[source].info.backtrace {
-                Some(false) => None,
-                _ => Some(source),
-            }
-        });
-
-        let mut indices = Vec::new();
-        let mut bindings = Vec::new();
-
-        let mut bind = |index: usize, binding: &TokenStream| {
-            if is_rendering_enum_match_arm {
-                indices.push(index);
-                bindings.push(binding.clone());
-            }
-        };
-
-        let expr = match (source, self.backtrace) {
-            (Some(source), backtrace) => {
-                let source_expr = source_expr(self, source);
-                bind(source, &source_expr);
-
-                let backtrace_expr = backtrace
-                    .filter(|backtrace| source != *backtrace)
-                    .map(|backtrace| {
-                        let backtrace_expr = backtrace_expr(self, backtrace);
-                        bind(backtrace, &backtrace_expr);
-
-                        quote!(.or_else(|| Some(#backtrace_expr)))
-                    });
-
-                quote!(#source_expr.backtrace()#backtrace_expr)
-            }
-
-            (None, Some(backtrace)) => {
-                let backtrace_expr = backtrace_expr(self, backtrace);
-                bind(backtrace, &backtrace_expr);
-
-                quote!(Some(#backtrace_expr))
-            }
-
-            _ => return None,
-        };
-
-        let pattern = if is_rendering_enum_match_arm {
-            self.data.matcher(&indices, &bindings)
-        } else {
-            TokenStream::new()
-        };
-
-        Some((pattern, expr))
+        self.backtrace.map(|backtrace| {
+            let pattern = self.data.matcher(&[backtrace], &[quote!(backtrace)]);
+            quote!(#pattern => Some(backtrace))
+        })
     }
 }
 

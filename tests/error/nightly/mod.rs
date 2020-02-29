@@ -60,13 +60,9 @@ macro_rules! assert_bt {
 }
 
 mod derives_for_enums_with_backtrace;
-mod derives_for_enums_with_source_backtrace_chaining;
 mod derives_for_generic_enums_with_backtrace;
-mod derives_for_generic_enums_with_source_backtrace_chaining;
 mod derives_for_generic_structs_with_backtrace;
-mod derives_for_generic_structs_with_source_backtrace_chaining;
 mod derives_for_structs_with_backtrace;
-mod derives_for_structs_with_source_backtrace_chaining;
 
 derive_display!(BacktraceErr);
 #[derive(Debug)]
