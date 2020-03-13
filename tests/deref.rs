@@ -49,17 +49,11 @@ struct CoolVec {
     vec: Vec<i32>,
 }
 
-#[derive(Deref, DerefMut)]
+#[derive(Deref)]
 struct GenericVec<T>(Vec<T>);
 
 #[test]
 fn deref_generic() {
     let gv = GenericVec(Vec::<i32>::new());
     assert!(gv.is_empty())
-}
-
-#[test]
-fn deref_mut_generic() {
-    let mut gv = GenericVec::<i32>(vec![42]);
-    assert!(gv.get_mut(0).is_some());
 }

@@ -84,3 +84,20 @@ impl ::core::ops::Deref for CoolVec {
         &self.vec
     }
 }
+
+#[derive(DerefMut)]
+struct GenericVec<T>(Vec<T>);
+
+impl<T> ::core::ops::Deref for GenericVec<T> {
+    type Target = Vec<T>;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[test]
+fn deref_mut_generic() {
+    let mut gv = GenericVec::<i32>(vec![42]);
+    assert!(gv.get_mut(0).is_some());
+}

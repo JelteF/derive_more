@@ -30,7 +30,10 @@ jobs:
       - name: Install tomljson
         run: go get github.com/pelletier/go-toml/cmd/tomljson
       - name: Test
-        run: ci/test_all_features.sh
+        run: |
+          export GOBIN=$HOME/go/bin
+          export PATH=$PATH:$GOBIN
+          ci/test_all_features.sh
 
   doc_test:
     name: Doc tests
