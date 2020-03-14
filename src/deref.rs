@@ -1,4 +1,4 @@
-use crate::utils::{add_extra_ty_param_bound, SingleFieldData, State};
+use crate::utils::{add_extra_where_clauses, SingleFieldData, State};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse::Result, DeriveInput};
@@ -26,7 +26,12 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         (
             quote!(#casted_trait::Target),
             quote!(#casted_trait::deref(&#member)),
-            add_extra_ty_param_bound(&input.generics, &trait_path),
+            add_extra_where_clauses(
+                &input.generics,
+                quote! {
+                    where #field_type: #trait_path
+                },
+            ),
         )
     } else {
         (

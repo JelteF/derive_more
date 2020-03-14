@@ -101,3 +101,24 @@ fn deref_mut_generic() {
     let mut gv = GenericVec::<i32>(vec![42]);
     assert!(gv.get_mut(0).is_some());
 }
+
+#[derive(DerefMut)]
+struct GenericBox<T>(#[deref_mut(forward)] Box<T>);
+
+impl<T> ::core::ops::Deref for GenericBox<T>
+where
+    Box<T>: ::core::ops::Deref,
+{
+    type Target = <Box<T> as ::core::ops::Deref>::Target;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        <Box<T> as ::core::ops::Deref>::deref(&self.0)
+    }
+}
+
+#[test]
+fn deref_mut_generic_forward() {
+    let mut boxed = GenericBox(Box::new(1i32));
+    *boxed = 3;
+    assert_eq!(*boxed, 3i32);
+}

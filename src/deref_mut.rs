@@ -1,4 +1,4 @@
-use crate::utils::{add_extra_ty_param_bound, SingleFieldData, State};
+use crate::utils::{add_extra_where_clauses, SingleFieldData, State};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse::Result, DeriveInput};
@@ -16,6 +16,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         trait_path,
         casted_trait,
         ty_generics,
+        field_type,
         member,
         info,
         ..
@@ -23,7 +24,12 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let (body, generics) = if info.forward {
         (
             quote!(#casted_trait::deref_mut(&mut #member)),
-            add_extra_ty_param_bound(&input.generics, &trait_path),
+            add_extra_where_clauses(
+                &input.generics,
+                quote! {
+                    where #field_type: #trait_path
+                },
+            ),
         )
     } else {
         (quote!(&mut #member), input.generics.clone())

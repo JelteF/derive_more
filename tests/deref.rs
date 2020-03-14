@@ -57,3 +57,12 @@ fn deref_generic() {
     let gv = GenericVec(Vec::<i32>::new());
     assert!(gv.is_empty())
 }
+
+#[derive(Deref)]
+struct GenericBox<T>(#[deref(forward)] Box<T>);
+
+#[test]
+fn deref_generic_forward() {
+    let boxed = GenericBox(Box::new(1i32));
+    assert_eq!(*boxed, 1i32);
+}
