@@ -241,7 +241,7 @@ fn parse_fields<'input, 'state>(
                     "source" => ident == "source",
                     "backtrace" => {
                         ident == "backtrace"
-                            || is_type_ends_with(&field.ty, "Backtrace")
+                            || is_type_path_ends_with_segment(&field.ty, "Backtrace")
                     }
                     _ => unreachable!(),
                 }
@@ -249,28 +249,23 @@ fn parse_fields<'input, 'state>(
         }
 
         DeriveType::Unnamed => {
-            let result = parse_fields_impl(state, |attr, field, len| match attr {
-                "source" => len == 1 && !is_type_ends_with(&field.ty, "Backtrace"),
-                "backtrace" => is_type_ends_with(&field.ty, "Backtrace"),
-                _ => unreachable!(),
-            });
-
-            result.map(|mut parsed_fields| {
-                let len_source_backtrace = (
-                    state.fields.len(),
-                    parsed_fields.source,
-                    parsed_fields.backtrace,
-                );
-
-                if let (2, None, Some(backtrace)) = len_source_backtrace {
-                    let source = (backtrace + 1) % 2;
-                    if parsed_fields.data.infos[source].info.source != Some(false) {
-                        parsed_fields.source = Some(source);
+            let mut parsed_fields =
+                parse_fields_impl(state, |attr, field, len| match attr {
+                    "source" => {
+                        len == 1
+                            && !is_type_path_ends_with_segment(&field.ty, "Backtrace")
                     }
-                }
+                    "backtrace" => {
+                        is_type_path_ends_with_segment(&field.ty, "Backtrace")
+                    }
+                    _ => unreachable!(),
+                })?;
 
-                parsed_fields
-            })
+            parsed_fields.source = parsed_fields
+                .source
+                .or_else(|| infer_source_field(state, &parsed_fields));
+
+            Ok(parsed_fields)
         }
 
         _ => unreachable!(),
@@ -289,7 +284,9 @@ fn parse_fields<'input, 'state>(
     })
 }
 
-fn is_type_ends_with(ty: &syn::Type, tail: &str) -> bool {
+/// Checks if `ty` is [`syn::Type::Path`] and ends with segment matching `tail`
+/// and doesn't contain any generic parameters.
+fn is_type_path_ends_with_segment(ty: &syn::Type, tail: &str) -> bool {
     let ty = match ty {
         syn::Type::Path(ty) => ty,
         _ => return false,
@@ -297,14 +294,35 @@ fn is_type_ends_with(ty: &syn::Type, tail: &str) -> bool {
 
     // Unwrapping is safe, cause 'syn::TypePath.path.segments'
     // have to have at least one segment
-    let ty = ty.path.segments.last().unwrap();
+    let segment = ty.path.segments.last().unwrap();
 
-    match ty.arguments {
+    match segment.arguments {
         syn::PathArguments::None => (),
         _ => return false,
     };
 
-    ty.ident == tail
+    segment.ident == tail
+}
+
+fn infer_source_field(state: &State, parsed_fields: &ParsedFields) -> Option<usize> {
+    let len_source_backtrace = (
+        state.fields.len(),
+        parsed_fields.source,
+        parsed_fields.backtrace,
+    );
+
+    // If we have exactly two fields, one of the fields was specified/inferred as backtrace field,
+    // but no source field was specified/inferred...
+    if let (2, None, Some(backtrace)) = len_source_backtrace {
+        // ...then infer other field as source field...
+        let source = (backtrace + 1) % 2;
+        // ...unless it was explicitly marked as non-source.
+        if parsed_fields.data.infos[source].info.source != Some(false) {
+            return Some(source);
+        }
+    }
+
+    None
 }
 
 fn parse_fields_impl<'input, 'state, P>(
@@ -322,24 +340,20 @@ where
         .enumerate()
         .map(|(index, (field, info))| (index, *field, info));
 
-    let mut source = None;
-    parse_field_impl(
+    let source = parse_field_impl(
         &is_valid_default_field_for_attr,
         state.fields.len(),
         iter.clone(),
         "source",
         |info| info.source,
-        &mut source,
     )?;
 
-    let mut backtrace = None;
-    parse_field_impl(
+    let backtrace = parse_field_impl(
         &is_valid_default_field_for_attr,
         state.fields.len(),
         iter.clone(),
         "backtrace",
         |info| info.backtrace,
-        &mut backtrace,
     )?;
 
     let mut parsed_fields = ParsedFields::new(state.enabled_fields_data());
@@ -361,8 +375,7 @@ fn parse_field_impl<'a, P, V>(
     iter: impl Iterator<Item = (usize, &'a syn::Field, &'a MetaInfo)> + Clone,
     attr: &str,
     value: V,
-    out: &mut Option<(usize, &'a syn::Field, &'a MetaInfo)>,
-) -> Result<()>
+) -> Result<Option<(usize, &'a syn::Field, &'a MetaInfo)>>
 where
     P: Fn(&str, &syn::Field, usize) -> bool,
     V: Fn(&MetaInfo) -> Option<bool>,
@@ -395,9 +408,7 @@ where
         )?,
     };
 
-    *out = field;
-
-    Ok(())
+    Ok(field)
 }
 
 fn assert_iter_contains_zero_or_one_item<'a>(

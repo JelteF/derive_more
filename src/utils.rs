@@ -381,6 +381,20 @@ impl<'input> State<'input> {
             .filter_map(|info| info.enabled.map(|_| info))
             .next();
 
+        // Default to enabled true, except when first attribute has explicit
+        // enabling.
+        //
+        // Except for derive Error.
+        //
+        // The way `else` case works is that if any field have any valid
+        // attribute specified, then all fields without any attributes
+        // specified are filtered out from `State::enabled_fields`.
+        //
+        // However, derive Error *infers* fields and there are cases when
+        // one of the fields may have an attribute specified, but another field
+        // would be inferred. So, for derive Error macro we default enabled
+        // to true unconditionally (i.e., even if some fields have attributes
+        // specified).
         let default_enabled = if trait_name == "Error" {
             true
         } else {
@@ -388,8 +402,6 @@ impl<'input> State<'input> {
         };
 
         let defaults = struct_meta_info.to_full(FullMetaInfo {
-            // Default to enabled true, except when first attribute has explicit
-            // enabling
             enabled: default_enabled,
             forward: false,
             // Default to owned true, except when first attribute has one of owned,
