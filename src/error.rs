@@ -263,7 +263,7 @@ fn parse_fields<'input, 'state>(
 
             parsed_fields.source = parsed_fields
                 .source
-                .or_else(|| infer_source_field(state, &parsed_fields));
+                .or_else(|| infer_source_field(&state.fields, &parsed_fields));
 
             Ok(parsed_fields)
         }
@@ -304,19 +304,25 @@ fn is_type_path_ends_with_segment(ty: &syn::Type, tail: &str) -> bool {
     segment.ident == tail
 }
 
-fn infer_source_field(state: &State, parsed_fields: &ParsedFields) -> Option<usize> {
-    let len_source_backtrace = (
-        state.fields.len(),
-        parsed_fields.source,
-        parsed_fields.backtrace,
-    );
+fn infer_source_field(
+    fields: &[&syn::Field],
+    parsed_fields: &ParsedFields,
+) -> Option<usize> {
+    // if we have exactly two fields
+    if fields.len() != 2 {
+        return None;
+    }
 
-    // If we have exactly two fields, one of the fields was specified/inferred as backtrace field,
-    // but no source field was specified/inferred...
-    if let (2, None, Some(backtrace)) = len_source_backtrace {
-        // ...then infer other field as source field...
+    // no source field was specified/inferred
+    if parsed_fields.source.is_some() {
+        return None;
+    }
+
+    // but one of the fields was specified/inferred as backtrace field
+    if let Some(backtrace) = parsed_fields.backtrace {
+        // then infer *other field* as source field
         let source = (backtrace + 1) % 2;
-        // ...unless it was explicitly marked as non-source.
+        // unless it was explicitly marked as non-source
         if parsed_fields.data.infos[source].info.source != Some(false) {
             return Some(source);
         }
