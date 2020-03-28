@@ -49,7 +49,7 @@ jobs:
       - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{matrix.toolchain}}
+          toolchain: nightly
           override: true
       - name: Install cargo-external-doc
         uses: actions-rs/cargo@v1
