@@ -381,10 +381,28 @@ impl<'input> State<'input> {
             .filter_map(|info| info.enabled.map(|_| info))
             .next();
 
+        // Default to enabled true, except when first attribute has explicit
+        // enabling.
+        //
+        // Except for derive Error.
+        //
+        // The way `else` case works is that if any field have any valid
+        // attribute specified, then all fields without any attributes
+        // specified are filtered out from `State::enabled_fields`.
+        //
+        // However, derive Error *infers* fields and there are cases when
+        // one of the fields may have an attribute specified, but another field
+        // would be inferred. So, for derive Error macro we default enabled
+        // to true unconditionally (i.e., even if some fields have attributes
+        // specified).
+        let default_enabled = if trait_name == "Error" {
+            true
+        } else {
+            first_match.map_or(true, |info| !info.enabled.unwrap())
+        };
+
         let defaults = struct_meta_info.to_full(FullMetaInfo {
-            // Default to enabled true, except when first attribute has explicit
-            // enabling
-            enabled: first_match.map_or(true, |info| !info.enabled.unwrap()),
+            enabled: default_enabled,
             forward: false,
             // Default to owned true, except when first attribute has one of owned,
             // ref or ref_mut
@@ -889,6 +907,8 @@ fn parse_punctuated_nested_meta(
                     info.ref_mut = Some(value);
                 } else if path.is_ident("source") {
                     info.source = Some(value);
+                } else if path.is_ident("backtrace") {
+                    info.backtrace = Some(value);
                 } else {
                     return Err(Error::new(
                         meta.span(),
@@ -924,6 +944,7 @@ pub struct MetaInfo {
     pub ref_: Option<bool>,
     pub ref_mut: Option<bool>,
     pub source: Option<bool>,
+    pub backtrace: Option<bool>,
 }
 
 impl MetaInfo {
