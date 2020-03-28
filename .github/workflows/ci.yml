@@ -20,7 +20,8 @@ jobs:
       - name: Test
         uses: actions-rs/cargo@v1
         with:
-          command: test --features testing-helpers
+          command: test
+          args: --features testing-helpers
 
   test_features_separate:
     name: Test features
@@ -45,6 +46,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{matrix.toolchain}}
+          override: true
       - name: Install cargo-external-doc
         uses: actions-rs/cargo@v1
         with:
