@@ -133,7 +133,7 @@ required-features = ["display"]
 
 [[test]]
 name = "error"
-path = "tests/error.rs"
+path = "tests/error_tests.rs"
 required-features = ["error"]
 
 [[test]]
