@@ -20,7 +20,7 @@ jobs:
       - name: Test
         uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: test --features testing-helpers
 
   test_features_separate:
     name: Test features
@@ -29,6 +29,11 @@ jobs:
       - uses: actions/checkout@master
       - name: Install tomljson
         run: go get github.com/pelletier/go-toml/cmd/tomljson
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
       - name: Test
         run: |
           export GOBIN=$HOME/go/bin
