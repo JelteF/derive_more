@@ -33,6 +33,7 @@ syn = { version = "1", features = ["extra-traits"] }
 
 [build-dependencies]
 peg = { version = "0.5", optional = true }
+rustc_version = "0.2"
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
