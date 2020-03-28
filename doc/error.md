@@ -1,5 +1,6 @@
-% What #[derive(Error)] generates
+% Using #[derive(Error)]
 
+# Using #[derive(Error)]
 Deriving `Error` will generate an `Error` implementation, that contains
 (depending on the type) a `source()` and a `backtrace()` method. Please note,
 at the time of writing `backtrace` is only supported on nightly rust. So you
@@ -9,6 +10,12 @@ For a struct, these methods always do the same. For an `enum` they have separate
 behaviour for each of the variants. The variant is first matched and then the
 implementation will do the same as it would have done if the variant was a
 struct.
+
+Usually when you derive `Error` you will also want to derive [`Display`] and
+often [`From`] as well.
+
+[`Display`]: display.html
+[`From`]: from.html
 
 ## When and how does it derive `backtrace()`?
 
