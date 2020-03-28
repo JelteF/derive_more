@@ -4,7 +4,6 @@ extern crate rustc_version;
 #[cfg(feature = "generate-parsing-rs")]
 extern crate peg;
 
-
 #[cfg(not(feature = "generate-parsing-rs"))]
 fn generate_peg() {}
 #[cfg(feature = "generate-parsing-rs")]
