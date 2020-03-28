@@ -190,32 +190,28 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
 
 impl<'input, 'state> ParsedFields<'input, 'state> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
-        self.source.map(|source| {
-            let ident = &self.data.members[source];
-            render_some(quote!(&#ident))
-        })
+        let source = self.source?;
+        let ident = &self.data.members[source];
+        Some(render_some(quote!(&#ident)))
     }
 
     fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
-        self.source.map(|source| {
-            let pattern = self.data.matcher(&[source], &[quote!(source)]);
-            let expr = render_some(quote!(source));
-            quote!(#pattern => #expr)
-        })
+        let source = self.source?;
+        let pattern = self.data.matcher(&[source], &[quote!(source)]);
+        let expr = render_some(quote!(source));
+        Some(quote!(#pattern => #expr))
     }
 
     fn render_backtrace_as_struct(&self) -> Option<TokenStream> {
-        self.backtrace.map(|backtrace| {
-            let backtrace_expr = &self.data.members[backtrace];
-            quote!(Some(&#backtrace_expr))
-        })
+        let backtrace = self.backtrace?;
+        let backtrace_expr = &self.data.members[backtrace];
+        Some(quote!(Some(&#backtrace_expr)))
     }
 
     fn render_backtrace_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
-        self.backtrace.map(|backtrace| {
-            let pattern = self.data.matcher(&[backtrace], &[quote!(backtrace)]);
-            quote!(#pattern => Some(backtrace))
-        })
+        let backtrace = self.backtrace?;
+        let pattern = self.data.matcher(&[backtrace], &[quote!(backtrace)]);
+        Some(quote!(#pattern => Some(backtrace)))
     }
 }
 
@@ -230,7 +226,7 @@ fn parse_fields<'input, 'state>(
     type_params: &HashSet<syn::Ident>,
     state: &'state State<'input>,
 ) -> Result<ParsedFields<'input, 'state>> {
-    let parsed_fields = match state.derive_type {
+    let mut parsed_fields = match state.derive_type {
         DeriveType::Named => {
             parse_fields_impl(state, |attr, field, _| {
                 // Unwrapping is safe, cause fields in named struct
@@ -269,19 +265,17 @@ fn parse_fields<'input, 'state>(
         }
 
         _ => unreachable!(),
-    };
+    }?;
 
-    parsed_fields.map(|mut parsed_fields| {
-        if let Some(source) = parsed_fields.source {
-            add_bound_if_type_parameter_used_in_type(
-                &mut parsed_fields.bounds,
-                type_params,
-                &state.fields[source].ty,
-            );
-        }
+    if let Some(source) = parsed_fields.source {
+        add_bound_if_type_parameter_used_in_type(
+            &mut parsed_fields.bounds,
+            type_params,
+            &state.fields[source].ty,
+        );
+    }
 
-        parsed_fields
-    })
+    Ok(parsed_fields)
 }
 
 /// Checks if `ty` is [`syn::Type::Path`] and ends with segment matching `tail`
