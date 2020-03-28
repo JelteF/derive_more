@@ -1,26 +1,49 @@
 % What #[derive(Error)] generates
 
-Deriving `Error` will generate an `Error` implementation, with a `source`
-method that matches `self` and each of its variants. In the case of a struct, only
-a single variant is available. In the case of an enum, each of its variants is matched.
+Deriving `Error` will generate an `Error` implementation, that contains
+(depending on the type) a `source()` and a `backtrace()` method. Please note,
+at the time of writing `backtrace` is only supported on nightly rust. So you
+have to use that to make use of it.
 
-For each matched variant, a *source-field* is returned, if present. This field can
-either be inferred, or explicitly specified via `#[error(source)]` attribute.
+For a struct, these methods always do the same. For an `enum` they have separate
+behaviour for each of the variants. The variant is first matched and then the
+implementation will do the same as it would have done if the variant was a
+struct.
 
-**For struct-variants** any field named `source` is inferred as a source-field.
+## When and how does it derive `backtrace()`?
 
-**For tuple-variants** source-field is inferred only if its the only field in the variant.
+1. It's a struct/variant with named fields and one is the fields is
+   called `backtrace`. Then it would return that field as the `backtrace`.
+2. It's a tuple struct/variant and the type of exactly one of the fields is
+   called `Backtrace`. Then it would return that field as the `backtrace`.
+3. One of the fields is annotated with `#[error(backtrace)]`. Then it would
+   return that field as the `backtrace`.
 
-Any field can be explicitly specified as a source-field via `#[error(source)]` attribute.
-And any field, that would have been inferred as a source-field otherwise, can be
-explicitly specified as a non-source-field via `#[error(not(source))]` attribute.
+## When and how does it derive `source()`?
+
+1. It's a struct/variant with named fields and one is the fields is
+   called `source`. Then it would return that field as the `source`.
+2. It's a tuple struct/variant and there's exactly one field that is not used as
+   the `backtrace`. So either a tuple struct with one field, or one with two where one
+   is the `backtrace`. Then it returns this field as the `source`.
+3. One of the fields is annotated with `#[error(backtrace)]`. Then it would
+   return that field as the `backtrace`.
+
+## Ignoring fields for derives
+
+It's possible to ignore a field or a whole enum variant completely for this this
+derive using the `#[error(ignore)]` attribute. This will ignore it both for
+detecting `backtrace` and `source`. It's also possible to mark a field only
+ignored for one of these methods by using `#[error(not(backtrace))]` or
+`#[error(not(source))]`.
 
 # Example usage
 
 ```rust
+#![feature(backtrace)]
 # #[macro_use] extern crate derive_more;
-
 # use std::error::Error as _;
+use std::backtrace::Backtrace;
 
 // std::error::Error requires std::fmt::Debug and std::fmt::Display,
 // so we can also use derive_more::Display for fully declarative
@@ -33,7 +56,6 @@ struct Simple;
 struct WithSource {
     source: Simple,
 }
-
 #[derive(Default, Debug, Display, Error)]
 struct WithExplicitSource {
     #[error(source)]
@@ -45,6 +67,14 @@ struct Tuple(Simple);
 
 #[derive(Default, Debug, Display, Error)]
 struct WithoutSource(#[error(not(source))] i32);
+
+#[derive(Debug, Display, Error)]
+#[display(fmt="An error with a backtrace")]
+struct WithSourceAndBacktrace {
+    source: Simple,
+    backtrace: Backtrace,
+}
+
 
 // derive_more::From fits nicely into this pattern as well
 #[derive(Debug, Display, Error, From)]
@@ -63,10 +93,17 @@ enum CompoundError {
 
 fn main() {
     assert!(Simple.source().is_none());
+    assert!(Simple.backtrace().is_none());
     assert!(WithSource::default().source().is_some());
     assert!(WithExplicitSource::default().source().is_some());
     assert!(Tuple::default().source().is_some());
     assert!(WithoutSource::default().source().is_none());
+    let without_source_and_backtrace = WithSourceAndBacktrace{
+        source: Simple,
+        backtrace: Backtrace::capture(),
+    };
+    assert!(without_source_and_backtrace.source().is_some());
+    assert!(without_source_and_backtrace.backtrace().is_some());
 
     assert!(CompoundError::Simple.source().is_none());
     assert!(CompoundError::from(Simple).source().is_some());
