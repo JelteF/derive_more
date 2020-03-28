@@ -4,9 +4,9 @@
 }</pre></div>
 </div><div class='docblock'><p>The whole point.</p>
 <p>Performs variable interpolation against the input and produces it as
-[<code>proc_macro2::TokenStream</code>].</p>
+<a href="../proc_macro2/struct.TokenStream.html" title="`proc_macro2::TokenStream`"><code>proc_macro2::TokenStream</code></a>.</p>
 <p>Note: for returning tokens to the compiler in a procedural macro, use
-<code>.into()</code> on the result to convert to [<code>proc_macro::TokenStream</code>].</p>
+<code>.into()</code> on the result to convert to <a href="https://doc.rust-lang.org/nightly/proc_macro/struct.TokenStream.html" title="`proc_macro::TokenStream`"><code>proc_macro::TokenStream</code></a>.</p>
 <br>
 <h1 id="interpolation" class="section-header"><a href="#interpolation">Interpolation</a></h1>
 <p>Variable interpolation is done with <code>#var</code> (similar to <code>$var</code> in
@@ -116,7 +116,7 @@ by Syn and proc-macro2.</p>
     <span class="kw">let</span> <span class="kw-2">mut</span> #<span class="ident">varname</span> <span class="op">=</span> <span class="number">0</span>;
 }</pre></div>
 <p>For identifier concatenation specifically, since this is such a common case,
-the [<code>format_ident!</code>] macro provides a more concise equivalent of the above.</p>
+the <a href="../quote/macro.format_ident.html" title="`format_ident!`"><code>format_ident!</code></a> macro provides a more concise equivalent of the above.</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="kw">let</span> <span class="ident">varname</span> <span class="op">=</span> <span class="macro">format_ident</span><span class="macro">!</span>(<span class="string">&quot;_{}&quot;</span>, <span class="ident">ident</span>);

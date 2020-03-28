@@ -392,6 +392,17 @@
 <span id="392">392</span>
 <span id="393">393</span>
 <span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! # `derive_more`</span>
 <span class="doccomment">//!</span>
@@ -485,6 +496,11 @@
 <span class="doccomment">//! 1. [`Display`-like], contains `Display`, `Binary`, `Octal`, `LowerHex`,</span>
 <span class="doccomment">//!    `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! ### Error-handling traits</span>
+<span class="doccomment">//! These traits are used to define error-types.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! 1. [`Error`]</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//! ### Operators</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! These are traits that can be used for operator overloading.</span>
@@ -555,6 +571,8 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! [`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! [`Error`]: https://jeltef.github.io/derive_more/derive_more/error.html</span>
+<span class="doccomment">//!</span>
 <span class="doccomment">//! [`Index`]: https://jeltef.github.io/derive_more/derive_more/index_op.html</span>
 <span class="doccomment">//! [`Deref`]: https://jeltef.github.io/derive_more/derive_more/deref.html</span>
 <span class="doccomment">//! [`Not`-like]: https://jeltef.github.io/derive_more/derive_more/not.html</span>
@@ -600,6 +618,8 @@
 <span class="kw">mod</span> <span class="ident">deref_mut</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;display&quot;</span>)]</span>
 <span class="kw">mod</span> <span class="ident">display</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;error&quot;</span>)]</span>
+<span class="kw">mod</span> <span class="ident">error</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;from&quot;</span>)]</span>
 <span class="kw">mod</span> <span class="ident">from</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;from_str&quot;</span>)]</span>
@@ -744,6 +764,8 @@
 
 <span class="macro">create_derive</span><span class="macro">!</span>(<span class="string">&quot;sum&quot;</span>, <span class="ident">sum_like</span>, <span class="ident">Sum</span>, <span class="ident">sum_derive</span>);
 <span class="macro">create_derive</span><span class="macro">!</span>(<span class="string">&quot;sum&quot;</span>, <span class="ident">sum_like</span>, <span class="ident">Product</span>, <span class="ident">product_derive</span>);
+
+<span class="macro">create_derive</span><span class="macro">!</span>(<span class="string">&quot;error&quot;</span>, <span class="ident">error</span>, <span class="ident">Error</span>, <span class="ident">error_derive</span>, <span class="ident">error</span>);
 
 <span class="macro">create_derive</span><span class="macro">!</span>(<span class="string">&quot;from_str&quot;</span>, <span class="ident">from_str</span>, <span class="ident">FromStr</span>, <span class="ident">from_str_derive</span>);
 

@@ -17,16 +17,16 @@ with a <code>kw::</code> or <code>keyword::</code> prefix.</p>
 any built-in keyword token.</p>
 <ul>
 <li>
-<p><a href="parse::ParseBuffer::peek">Peeking</a> — <code>input.peek(kw::whatever)</code></p>
+<p><a href="../syn/parse/struct.ParseBuffer.html#method.peek">Peeking</a> — <code>input.peek(kw::whatever)</code></p>
 </li>
 <li>
-<p><a href="parse::ParseBuffer::parse">Parsing</a> — <code>input.parse::&lt;kw::whatever&gt;()?</code></p>
+<p><a href="../syn/parse/struct.ParseBuffer.html#method.parse">Parsing</a> — <code>input.parse::&lt;kw::whatever&gt;()?</code></p>
 </li>
 <li>
-<p><a href="quote::ToTokens">Printing</a> — <code>quote!( ... #whatever_token ... )</code></p>
+<p><a href="../quote/to_tokens/trait.ToTokens.html">Printing</a> — <code>quote!( ... #whatever_token ... )</code></p>
 </li>
 <li>
-<p>Construction from a <a href="proc_macro2::Span"><code>Span</code></a> — <code>let whatever_token = kw::whatever(sp)</code></p>
+<p>Construction from a <a href="../proc_macro2/struct.Span.html"><code>Span</code></a> — <code>let whatever_token = kw::whatever(sp)</code></p>
 </li>
 <li>
 <p>Field access to its span — <code>let sp = whatever_token.span</code></p>

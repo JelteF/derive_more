@@ -3,7 +3,7 @@
 }</pre></div><div class='docblock'><p>Extensions to the <code>ParseStream</code> API to support speculative parsing.</p>
 </div>
             <h2 id='required-methods' class='small-section-header'>Required methods<a href='#required-methods' class='anchor'></a></h2><div class='methods'><h3 id='tymethod.advance_to' class='method'><code id='advance_to.v'>fn <a href='#tymethod.advance_to' class='fnname'>advance_to</a>(&amp;self, fork: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></h3><div class='docblock'><p>Advance this parse stream to the position of a forked parse stream.</p>
-<p>This is the opposite operation to <a href="ParseBuffer::fork"><code>ParseStream::fork</code></a>. You can fork a
+<p>This is the opposite operation to <a href="../../../syn/parse/struct.ParseBuffer.html#method.fork"><code>ParseStream::fork</code></a>. You can fork a
 parse stream, perform some speculative parsing, then join the original
 stream to the fork to &quot;commit&quot; the parsing from the fork to the main
 stream.</p>
@@ -22,11 +22,11 @@ speculative parsing.</p>
 <p>There has been chatter about the possibility of making the colons in the
 turbofish syntax like <code>path::to::&lt;T&gt;</code> no longer required by accepting
 <code>path::to&lt;T&gt;</code> in expression position. Specifically, according to <a href="https://github.com/rust-lang/rfcs/pull/2544">RFC
-2544</a>, <a href="crate::PathSegment"><code>PathSegment</code></a> parsing should always try to consume a following
+2544</a>, <a href="../../../syn/struct.PathSegment.html"><code>PathSegment</code></a> parsing should always try to consume a following
 <code>&lt;</code> token as the start of generic arguments, and reset to the <code>&lt;</code> if
 that fails (e.g. the token is acting as a less-than operator).</p>
 <p>This is the exact kind of parsing behavior which requires the &quot;fork,
-try, commit&quot; behavior that <a href="ParseBuffer::fork"><code>ParseStream::fork</code></a> discourages. With
+try, commit&quot; behavior that <a href="../../../syn/parse/struct.ParseBuffer.html#method.fork"><code>ParseStream::fork</code></a> discourages. With
 <code>advance_to</code>, we can avoid having to parse the speculatively parsed
 content a second time.</p>
 <p>This change in behavior can be implemented in syn by replacing just the
@@ -110,6 +110,4 @@ on how far apart the two streams are positioned.</p>
 obtained by forking <code>self</code>. Attempting to advance to any other stream
 will cause a panic.</p>
 </div></div><span class='loading-content'>Loading content...</span>
-            <h2 id='implementors' class='small-section-header'>Implementors<a href='#implementors' class='anchor'></a></h2><div class='item-list' id='implementors-list'><h3 id='impl-Speculative' class='impl'><code class='in-band'>impl&lt;'a&gt; Speculative for <a class="struct" href="../../../syn/parse/struct.ParseBuffer.html" title="struct syn::parse::ParseBuffer">ParseBuffer</a>&lt;'a&gt;</code><a href='#impl-Speculative' class='anchor'></a><a class='srclink' href='../../../src/syn/discouraged.rs.html#161-171' title='goto source code'>[src]</a></h3><div class='impl-items'><h4 id='method.advance_to' class="method hidden"><code id='advance_to.v-1'>fn <a href='#method.advance_to' class='fnname'>advance_to</a>(&amp;self, fork: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a class='srclink' href='../../../src/syn/discouraged.rs.html#162-170' title='goto source code'>[src]</a></h4></div></div><span class='loading-content'>Loading content...</span><script type="text/javascript">window.inlined_types=new Set([]);</script><script type="text/javascript" async
-                         src="../../../implementors/syn/parse/discouraged/trait.Speculative.js">
-                 </script></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../";window.currentCrate = "syn";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script defer src="../../../search-index.js"></script></body></html>
+            <h2 id='implementors' class='small-section-header'>Implementors<a href='#implementors' class='anchor'></a></h2><div class='item-list' id='implementors-list'><h3 id='impl-Speculative' class='impl'><code class='in-band'>impl&lt;'a&gt; Speculative for <a class="struct" href="../../../syn/parse/struct.ParseBuffer.html" title="struct syn::parse::ParseBuffer">ParseBuffer</a>&lt;'a&gt;</code><a href='#impl-Speculative' class='anchor'></a><a class='srclink' href='../../../src/syn/discouraged.rs.html#161-171' title='goto source code'>[src]</a></h3><div class='impl-items'><h4 id='method.advance_to' class="method hidden"><code id='advance_to.v-1'>fn <a href='#method.advance_to' class='fnname'>advance_to</a>(&amp;self, fork: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code><a class='srclink' href='../../../src/syn/discouraged.rs.html#162-170' title='goto source code'>[src]</a></h4></div></div><span class='loading-content'>Loading content...</span><script type="text/javascript" src="../../../implementors/syn/parse/discouraged/trait.Speculative.js" async></script></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../";window.currentCrate = "syn";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script defer src="../../../search-index.js"></script></body></html>

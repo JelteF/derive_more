@@ -11,19 +11,19 @@ as if it were a punctuation token.</p>
 any built-in punctuation token.</p>
 <ul>
 <li>
-<p><a href="parse::ParseBuffer::peek">Peeking</a> — <code>input.peek(LeftRightArrow)</code></p>
+<p><a href="../syn/parse/struct.ParseBuffer.html#method.peek">Peeking</a> — <code>input.peek(LeftRightArrow)</code></p>
 </li>
 <li>
-<p><a href="parse::ParseBuffer::parse">Parsing</a> — <code>input.parse::&lt;LeftRightArrow&gt;()?</code></p>
+<p><a href="../syn/parse/struct.ParseBuffer.html#method.parse">Parsing</a> — <code>input.parse::&lt;LeftRightArrow&gt;()?</code></p>
 </li>
 <li>
-<p><a href="quote::ToTokens">Printing</a> — <code>quote!( ... #lrarrow ... )</code></p>
+<p><a href="../quote/to_tokens/trait.ToTokens.html">Printing</a> — <code>quote!( ... #lrarrow ... )</code></p>
 </li>
 <li>
-<p>Construction from a <a href="proc_macro2::Span"><code>Span</code></a> — <code>let lrarrow = LeftRightArrow(sp)</code></p>
+<p>Construction from a <a href="../proc_macro2/struct.Span.html"><code>Span</code></a> — <code>let lrarrow = LeftRightArrow(sp)</code></p>
 </li>
 <li>
-<p>Construction from multiple <a href="proc_macro2::Span"><code>Span</code></a> — <code>let lrarrow = LeftRightArrow([sp, sp, sp])</code></p>
+<p>Construction from multiple <a href="../proc_macro2/struct.Span.html"><code>Span</code></a> — <code>let lrarrow = LeftRightArrow([sp, sp, sp])</code></p>
 </li>
 <li>
 <p>Field access to its spans — <code>let spans = lrarrow.spans</code></p>
