@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## 0.99.4 - 2020-03-28
+## 0.99.5 - 2020-03-28
 
 ### New features
 
@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `tests` directory is now correctly included in the crate (requested by
     Debian package maintainers)
 
+## 0.99.4 - 2020-03-28
+
+Note: This version is yanked, because quickly after release it was found out
+tests did not run in CI.
 
 ## 0.99.3 - 2020-02-19
 
