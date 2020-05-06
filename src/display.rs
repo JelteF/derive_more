@@ -1,5 +1,4 @@
 use std::{
-    collections::{HashMap, HashSet},
     fmt::Display,
     iter::FromIterator as _,
     str::FromStr as _,
@@ -12,6 +11,7 @@ use syn::{
 };
 
 use crate::utils;
+use utils::{HashMap, HashSet};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
@@ -276,7 +276,7 @@ impl<'a, 'b> State<'a, 'b> {
             return Err(Error::new(span, "No bounds specified"));
         }
 
-        let mut bounds = HashMap::new();
+        let mut bounds = HashMap::default();
 
         for generic_param in generic_params {
             let type_param = match generic_param {
@@ -301,7 +301,7 @@ impl<'a, 'b> State<'a, 'b> {
                 qself: None,
                 path: type_param.ident.into(),
             });
-            let bounds = bounds.entry(ty).or_insert_with(HashSet::new);
+            let bounds = bounds.entry(ty).or_insert_with(HashSet::default);
 
             for bound in type_param.bounds {
                 let bound = match bound {
@@ -478,7 +478,7 @@ impl<'a, 'b> State<'a, 'b> {
 
                         Ok(ParseResult {
                             arms: quote_spanned!(self.input.span()=> _ => #fmt,),
-                            bounds: HashMap::new(),
+                            bounds: HashMap::default(),
                             requires_helper: false,
                         })
                     }
@@ -502,7 +502,7 @@ impl<'a, 'b> State<'a, 'b> {
                         let fmt = fmt?;
                         Ok(ParseResult {
                             arms: quote_spanned!(self.input.span()=> #fmt),
-                            bounds: HashMap::new(),
+                            bounds: HashMap::default(),
                             requires_helper: true,
                         })
                     }
@@ -563,7 +563,7 @@ impl<'a, 'b> State<'a, 'b> {
 
                 Ok(ParseResult {
                     arms: quote_spanned!(self.input.span()=> _ => #fmt,),
-                    bounds: HashMap::new(),
+                    bounds: HashMap::default(),
                     requires_helper: false,
                 })
             }
@@ -611,7 +611,7 @@ impl<'a, 'b> State<'a, 'b> {
         meta: &syn::Meta,
     ) -> HashMap<syn::Type, HashSet<syn::TraitBound>> {
         if self.type_params.is_empty() {
-            return HashMap::new();
+            return HashMap::default();
         }
 
         let fields_type_params: HashMap<syn::Path, _> = fields
@@ -634,7 +634,7 @@ impl<'a, 'b> State<'a, 'b> {
             })
             .collect();
         if fields_type_params.is_empty() {
-            return HashMap::new();
+            return HashMap::default();
         }
 
         let list = match meta {
@@ -657,7 +657,7 @@ impl<'a, 'b> State<'a, 'b> {
             })
             .collect();
         if fmt_args.is_empty() {
-            return HashMap::new();
+            return HashMap::default();
         }
         let fmt_string = match &list.nested[0] {
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
@@ -678,13 +678,13 @@ impl<'a, 'b> State<'a, 'b> {
         };
 
         Placeholder::parse_fmt_string(&fmt_string).into_iter().fold(
-            HashMap::new(),
+            HashMap::default(),
             |mut bounds, pl| {
                 if let Some(arg) = fmt_args.get(&pl.position) {
                     if fields_type_params.contains_key(arg) {
                         bounds
                             .entry(fields_type_params[arg].clone())
-                            .or_insert_with(HashSet::new)
+                            .or_insert_with(HashSet::default)
                             .insert(trait_name_to_trait_bound(pl.trait_name));
                     }
                 }
@@ -697,10 +697,10 @@ impl<'a, 'b> State<'a, 'b> {
         fields: &syn::Fields,
     ) -> HashMap<syn::Type, HashSet<syn::TraitBound>> {
         if self.type_params.is_empty() {
-            return HashMap::new();
+            return HashMap::default();
         }
         if let syn::Fields::Unit = fields {
-            return HashMap::new();
+            return HashMap::default();
         }
         // infer_fmt() uses only first field.
         fields
