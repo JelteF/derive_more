@@ -1,8 +1,4 @@
-use std::{
-    fmt::Display,
-    iter::FromIterator as _,
-    str::FromStr as _,
-};
+use std::{fmt::Display, iter::FromIterator as _, str::FromStr as _};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};

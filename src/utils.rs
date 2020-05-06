@@ -14,7 +14,7 @@ use syn::{
 #[derive(Default)]
 pub struct DeterministicState {}
 
-impl std::hash::BuildHasher for  DeterministicState {
+impl std::hash::BuildHasher for DeterministicState {
     type Hasher = std::collections::hash_map::DefaultHasher;
 
     fn build_hasher(&self) -> Self::Hasher {
@@ -22,8 +22,8 @@ impl std::hash::BuildHasher for  DeterministicState {
     }
 }
 
-pub type HashMap<K,V> = std::collections::HashMap<K,V,DeterministicState>;
-pub type HashSet<K> = std::collections::HashSet<K,DeterministicState>;
+pub type HashMap<K, V> = std::collections::HashMap<K, V, DeterministicState>;
+pub type HashSet<K> = std::collections::HashSet<K, DeterministicState>;
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub enum RefType {

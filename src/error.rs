@@ -3,7 +3,8 @@ use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
 use crate::utils::{
-    self, AttrParams, DeriveType, FullMetaInfo, MetaInfo, MultiFieldData, State, HashSet
+    self, AttrParams, DeriveType, FullMetaInfo, HashSet, MetaInfo, MultiFieldData,
+    State,
 };
 
 pub fn expand(
