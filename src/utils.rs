@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "default"), allow(dead_code))]
 
-use std::{collections::HashSet, ops::Deref as _};
+use std::ops::Deref as _;
 
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -10,6 +10,20 @@ use syn::{
     ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type, TypeGenerics,
     TypeParamBound, Variant, WhereClause,
 };
+
+#[derive(Default)]
+pub struct DeterministicState {}
+
+impl std::hash::BuildHasher for DeterministicState {
+    type Hasher = std::collections::hash_map::DefaultHasher;
+
+    fn build_hasher(&self) -> Self::Hasher {
+        std::collections::hash_map::DefaultHasher::default()
+    }
+}
+
+pub type HashMap<K, V> = std::collections::HashMap<K, V, DeterministicState>;
+pub type HashSet<K> = std::collections::HashSet<K, DeterministicState>;
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub enum RefType {

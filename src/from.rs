@@ -3,8 +3,9 @@ use crate::utils::{
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use std::collections::HashMap;
 use syn::{parse::Result, DeriveInput, Ident, Index};
+
+use crate::utils::HashMap;
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
@@ -94,7 +95,7 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
 fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
     let mut tokens = TokenStream::new();
 
-    let mut variants_per_types = HashMap::new();
+    let mut variants_per_types = HashMap::default();
     for variant_state in state.enabled_variant_data().variant_states {
         let multi_field_data = variant_state.enabled_fields_data();
         let MultiFieldData { field_types, .. } = multi_field_data.clone();

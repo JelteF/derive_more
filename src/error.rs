@@ -1,11 +1,10 @@
-use std::collections::HashSet;
-
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
 use crate::utils::{
-    self, AttrParams, DeriveType, FullMetaInfo, MetaInfo, MultiFieldData, State,
+    self, AttrParams, DeriveType, FullMetaInfo, HashSet, MetaInfo, MultiFieldData,
+    State,
 };
 
 pub fn expand(
@@ -106,7 +105,7 @@ fn render_enum(
     type_params: &HashSet<syn::Ident>,
     state: &State,
 ) -> Result<(HashSet<syn::Type>, Option<TokenStream>, Option<TokenStream>)> {
-    let mut bounds = HashSet::new();
+    let mut bounds = HashSet::default();
     let mut source_match_arms = Vec::new();
     let mut backtrace_match_arms = Vec::new();
 
@@ -183,7 +182,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
             data,
             source: None,
             backtrace: None,
-            bounds: HashSet::new(),
+            bounds: HashSet::default(),
         }
     }
 }
