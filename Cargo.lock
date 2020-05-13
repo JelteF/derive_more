@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "derive_more"
-version = "0.99.6-alpha.0"
+version = "0.99.6"
 dependencies = [
  "peg 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro2 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
