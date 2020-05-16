@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## 0.99.7 - 2020-05-16
+
+## Improvements
+
+- When specifying specific features of the crate to only enable specific
+    derives, the `extra-traits` feature of  `syn` is not always enabled
+    when those the specified features do not require it. This should speed up
+    compile time of `syn` when this feature is not needed.
+
+
+## 0.99.6 - 2020-05-13
+
+## Improvements
+
+- Make sure output of derives is deterministic, for better support in
+    rust-analyzer
+
+
 ## 0.99.5 - 2020-03-28
 
 ### New features
