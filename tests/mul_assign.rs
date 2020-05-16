@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use std::marker::PhantomData;
+
 #[macro_use]
 extern crate derive_more;
 
@@ -21,4 +23,10 @@ struct Point1D {
 struct Point2D {
     x: i32,
     y: i32,
+}
+
+#[derive(MulAssign)]
+struct MyInt2<T> {
+    x: i32,
+    ph: PhantomData<T>,
 }
