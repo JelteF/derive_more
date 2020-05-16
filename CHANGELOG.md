@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.99.7 - 2020-05-16
 
-## Improvements
+### Fixes
+
+- Fix generic derives for `MulAssign`
+
+### Improvements
 
 - When specifying specific features of the crate to only enable specific
     derives, the `extra-traits` feature of  `syn` is not always enabled
@@ -18,7 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.99.6 - 2020-05-13
 
-## Improvements
+### Improvements
 
 - Make sure output of derives is deterministic, for better support in
     rust-analyzer
