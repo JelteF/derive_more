@@ -276,6 +276,10 @@ impl AttrParams {
             field: vec![],
         }
     }
+
+    pub fn ignore_and_forward() -> AttrParams {
+        AttrParams::new(vec!["ignore", "forward"])
+    }
 }
 
 impl<'input> State<'input> {
@@ -285,12 +289,13 @@ impl<'input> State<'input> {
         trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
-        State::with_attr_params(
+        State::new_impl(
             input,
             trait_name,
             trait_module,
             trait_attr,
             AttrParams::default(),
+            true,
         )
     }
 
@@ -300,12 +305,13 @@ impl<'input> State<'input> {
         trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
-        State::with_attr_params(
+        State::new_impl(
             input,
             trait_name,
             trait_module,
             trait_attr,
             AttrParams::new(vec!["ignore"]),
+            true,
         )
     }
 
@@ -315,12 +321,13 @@ impl<'input> State<'input> {
         trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
-        State::with_attr_params(
+        State::new_impl(
             input,
             trait_name,
             trait_module,
             trait_attr,
             AttrParams::new(vec!["ignore", "forward"]),
+            true,
         )
     }
 
@@ -330,12 +337,13 @@ impl<'input> State<'input> {
         trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
-        State::with_attr_params(
+        State::new_impl(
             input,
             trait_name,
             trait_module,
             trait_attr,
             AttrParams::new(vec!["ignore", "owned", "ref", "ref_mut"]),
+            true,
         )
     }
 
@@ -345,6 +353,42 @@ impl<'input> State<'input> {
         trait_module: TokenStream,
         trait_attr: String,
         allowed_attr_params: AttrParams,
+    ) -> Result<State<'arg_input>> {
+        State::new_impl(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            allowed_attr_params,
+            true,
+        )
+    }
+
+    pub fn with_type_bound<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+        allowed_attr_params: AttrParams,
+        add_type_bound: bool,
+    ) -> Result<State<'arg_input>> {
+        Self::new_impl(
+            input,
+            trait_name,
+            trait_module,
+            trait_attr,
+            allowed_attr_params,
+            add_type_bound,
+        )
+    }
+
+    fn new_impl<'arg_input>(
+        input: &'arg_input DeriveInput,
+        trait_name: &'static str,
+        trait_module: TokenStream,
+        trait_attr: String,
+        allowed_attr_params: AttrParams,
+        add_type_bound: bool,
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
@@ -456,7 +500,11 @@ impl<'input> State<'input> {
             Ok(vec![])
         };
 
-        let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
+        let generics = if add_type_bound {
+            add_extra_ty_param_bound(&input.generics, &trait_path)
+        } else {
+            input.generics.clone()
+        };
 
         Ok(State {
             input,

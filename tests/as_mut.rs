@@ -71,3 +71,38 @@ fn multi_field_struct() {
     assert!(ptr::eq(&mut item.first, item.as_mut()));
     assert!(ptr::eq(&mut item.second, item.as_mut()));
 }
+
+#[derive(AsMut)]
+struct SingleFieldGenericStruct<T> {
+    first: T,
+}
+
+#[test]
+fn single_field_generic_struct() {
+    let mut item = SingleFieldGenericStruct {
+        first: String::from("test"),
+    };
+
+    assert!(ptr::eq(&mut item.first, item.as_mut()));
+}
+
+#[derive(AsMut)]
+struct MultiFieldGenericStruct<T> {
+    #[as_mut]
+    first: Vec<T>,
+    #[as_mut]
+    second: PathBuf,
+    third: Vec<usize>,
+}
+
+#[test]
+fn multi_field_generic_struct() {
+    let mut item = MultiFieldGenericStruct {
+        first: b"test".to_vec(),
+        second: PathBuf::new(),
+        third: vec![],
+    };
+
+    assert!(ptr::eq(&mut item.first, item.as_mut()));
+    assert!(ptr::eq(&mut item.second, item.as_mut()));
+}
