@@ -107,3 +107,69 @@ fn test_try_into() {
     assert_eq!(u32::try_from(i), Err(i));
     assert_eq!(Ok(()), i.try_into());
 }
+
+#[derive(TryInto, Debug)]
+#[try_into(owned, ref, ref_mut)]
+enum Something {
+    A(A),
+    B(B),
+}
+
+#[derive(Debug)]
+struct A {
+    value: u8,
+    valid: bool,
+}
+
+#[derive(Debug)]
+struct B {
+    value: u64,
+    valid: bool,
+}
+
+trait IsValid {
+    fn is_valid(self) -> bool;
+}
+
+impl IsValid for A {
+    fn is_valid(self) -> bool {
+        self.valid
+    }
+}
+
+impl IsValid for B {
+    fn is_valid(self) -> bool {
+        self.valid
+    }
+}
+
+impl IsValid for Something {
+    fn is_valid(self: Something) -> bool {
+        match A::try_from(self) {
+            Ok(a) => a.is_valid(),
+            Err(x) => match B::try_from(x) {
+                Ok(b) => b.is_valid(),
+                Err(_) => false,
+            },
+        }
+    }
+}
+
+#[test]
+fn test_try_from_chain() {
+    let a = Something::A(A {
+        value: 1,
+        valid: true,
+    });
+    let b = Something::B(B {
+        value: 2,
+        valid: true,
+    });
+    let c = Something::A(A {
+        value: 3,
+        valid: false,
+    });
+    assert!(a.is_valid());
+    assert!(b.is_valid());
+    assert!(!c.is_valid());
+}
