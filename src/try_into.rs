@@ -69,28 +69,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             quote!((#(#vars),*))
         };
 
-        let output_type = if original_types.len() == 1 {
-            format!("{}", quote!(#(#original_types)*))
-        } else {
-            let types = original_types
-                .iter()
-                .map(|t| format!("{}", quote!(#t)))
-                .collect::<Vec<_>>();
-            format!("({})", types.join(", "))
-        };
-        let variant_names = multi_field_datas
-            .iter()
-            .map(|d| {
-                format!(
-                    "{}",
-                    d.variant_name.expect("Somehow there was no variant name")
-                )
-            })
-            .collect::<Vec<_>>()
-            .join(", ");
-        let message =
-            format!("Only {} can be converted to {}", variant_names, output_type);
-
         let generics_impl;
         let (_, ty_generics, where_clause) = input.generics.split_for_impl();
         let (impl_generics, _, _) = if ref_type.is_ref() {
@@ -103,14 +81,14 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let try_from = quote! {
             impl#impl_generics ::core::convert::TryFrom<#reference_with_lifetime #input_type#ty_generics> for
                 (#(#reference_with_lifetime #original_types),*) #where_clause {
-                type Error = &'static str;
+                type Error = #reference_with_lifetime #input_type#ty_generics;
 
                 #[allow(unused_variables)]
                 #[inline]
                 fn try_from(value: #reference_with_lifetime #input_type#ty_generics) -> ::core::result::Result<Self, Self::Error> {
                     match value {
                         #(#matchers)|* => ::core::result::Result::Ok(#vars),
-                        _ => ::core::result::Result::Err(#message),
+                        _ => ::core::result::Result::Err(value),
                     }
                 }
             }
