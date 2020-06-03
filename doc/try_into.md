@@ -16,13 +16,16 @@ If that's not provided the default is `#[try_into(owned)]`.
 With `#[try_into]` or `#[try_into(ignore)]` it's possible to indicate which
 variants you want to derive `TryInto` for.
 
+In case of an error, the original value is not destructed but returned.
+This enables the chaining of several `try_from` (or `try_into`) calls.
+
 # Example usage
 
 ```rust
 # #[macro_use] extern crate derive_more;
 use core::convert::TryFrom;
 use core::convert::TryInto;
-#[derive(TryInto, Clone)]
+#[derive(TryInto, Clone, Eq, PartialEq, Debug)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedData {
     Int(u32),
@@ -81,47 +84,47 @@ Code like this will be generated:
 #     UnsignedTwo(u32),
 # }
 impl ::core::convert::TryFrom<MixedInts> for (i32) {
-    type Error = &'static str;
+    type Error = MixedInts;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
             MixedInts::SmallInt(__0) => Ok(__0),
-            _ => Err("Only SmallInt can be converted to i32"),
+            _ => Err(value),
         }
     }
 }
 impl ::core::convert::TryFrom<MixedInts> for (i64) {
-    type Error = &'static str;
+    type Error = MixedInts;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
             MixedInts::BigInt(__0) => Ok(__0),
-            _ => Err("Only BigInt can be converted to i64"),
+            _ => Err(value),
         }
     }
 }
 impl ::core::convert::TryFrom<MixedInts> for (i32, i32) {
-    type Error = &'static str;
+    type Error = MixedInts;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
             MixedInts::TwoSmallInts(__0, __1) => Ok((__0, __1)),
-            _ => Err("Only TwoSmallInts can be converted to (i32, i32)"),
+            _ => Err(value),
         }
     }
 }
 impl ::core::convert::TryFrom<MixedInts> for (i64, i64) {
-    type Error = &'static str;
+    type Error = MixedInts;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
             MixedInts::NamedSmallInts { x: __0, y: __1 } => Ok((__0, __1)),
-            _ => Err("Only NamedSmallInts can be converted to (i64, i64)"),
+            _  => Err(value),
         }
     }
 }
 impl ::core::convert::TryFrom<MixedInts> for (u32) {
-    type Error = &'static str;
+    type Error = MixedInts;
     fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
         match value {
             MixedInts::UnsignedOne(__0) | MixedInts::UnsignedTwo(__0) => Ok(__0),
-            _ => Err("Only UnsignedOne, UnsignedTwo can be converted to u32"),
+            _ => Err(value),
         }
     }
 }
@@ -147,20 +150,20 @@ Code like this will be generated:
 #     Unit,
 # }
 impl ::core::convert::TryFrom<EnumWithUnit> for (i32) {
-    type Error = &'static str;
+    type Error = EnumWithUnit;
     fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
         match value {
             EnumWithUnit::SmallInt(__0) => Ok(__0),
-            _ => Err("Only SmallInt can be converted to i32"),
+            _ => Err(value),
         }
     }
 }
 impl ::core::convert::TryFrom<EnumWithUnit> for () {
-    type Error = &'static str;
+    type Error = EnumWithUnit;
     fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
         match value {
             EnumWithUnit::Unit => Ok(()),
-            _ => Err("Only Unit can be converted to ()"),
+            _ => Err(value),
         }
     }
 }
