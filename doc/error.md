@@ -19,7 +19,7 @@ often [`From`] as well.
 
 ## When and how does it derive `backtrace()`?
 
-1. It's a struct/variant with named fields and one is the fields is
+1. It's a struct/variant with named fields and one of the fields is
    called `backtrace`. Then it would return that field as the `backtrace`.
 2. It's a tuple struct/variant and the type of exactly one of the fields is
    called `Backtrace`. Then it would return that field as the `backtrace`.
@@ -38,7 +38,7 @@ often [`From`] as well.
 
 ## Ignoring fields for derives
 
-It's possible to ignore a field or a whole enum variant completely for this this
+It's possible to ignore a field or a whole enum variant completely for this
 derive using the `#[error(ignore)]` attribute. This will ignore it both for
 detecting `backtrace` and `source`. It's also possible to mark a field only
 ignored for one of these methods by using `#[error(not(backtrace))]` or
@@ -105,12 +105,12 @@ fn main() {
     assert!(WithExplicitSource::default().source().is_some());
     assert!(Tuple::default().source().is_some());
     assert!(WithoutSource::default().source().is_none());
-    let without_source_and_backtrace = WithSourceAndBacktrace{
+    let with_source_and_backtrace = WithSourceAndBacktrace{
         source: Simple,
         backtrace: Backtrace::capture(),
     };
-    assert!(without_source_and_backtrace.source().is_some());
-    assert!(without_source_and_backtrace.backtrace().is_some());
+    assert!(with_source_and_backtrace.source().is_some());
+    assert!(with_source_and_backtrace.backtrace().is_some());
 
     assert!(CompoundError::Simple.source().is_none());
     assert!(CompoundError::from(Simple).source().is_some());
