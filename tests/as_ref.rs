@@ -71,3 +71,38 @@ fn multi_field_struct() {
     assert!(ptr::eq(&item.first, item.as_ref()));
     assert!(ptr::eq(&item.second, item.as_ref()));
 }
+
+#[derive(AsRef)]
+struct SingleFieldGenericStruct<T> {
+    first: T,
+}
+
+#[test]
+fn single_field_generic_struct() {
+    let item = SingleFieldGenericStruct {
+        first: String::from("test"),
+    };
+
+    assert!(ptr::eq(&item.first, item.as_ref()));
+}
+
+#[derive(AsRef)]
+struct MultiFieldGenericStruct<T, U> {
+    #[as_ref]
+    first: Vec<T>,
+    #[as_ref]
+    second: [U; 2],
+    third: Vec<usize>,
+}
+
+#[test]
+fn multi_field_generic_struct() {
+    let item = MultiFieldGenericStruct {
+        first: b"test".to_vec(),
+        second: [0i32, 1i32],
+        third: vec![],
+    };
+
+    assert!(ptr::eq(&item.first, item.as_ref()));
+    assert!(ptr::eq(&item.second, item.as_ref()));
+}
