@@ -30,6 +30,10 @@ struct Wrapped2<T: Clone>(T);
 #[derive(From, Not, Add, Mul, AddAssign, MulAssign, Constructor, Sum)]
 struct WrappedDouble<T: Clone, U: Clone>(T, U);
 
+#[derive(From)]
+#[from(forward)]
+struct WrappedDouble2<T: Clone, U: Clone>(T, U);
+
 #[derive(
     From,
     FromStr,

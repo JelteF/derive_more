@@ -59,7 +59,7 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
                     where #field_type: #sub_trait_path
                 };
                 new_generics = add_where_clauses_for_new_ident(
-                    &input.generics,
+                    &new_generics,
                     &[field],
                     type_param,
                     type_where_clauses,
