@@ -76,7 +76,6 @@ struct DoubleStruct2<T: Clone, U: Clone> {
     u: U,
 }
 
-
 #[derive(From, Not, Add)]
 enum TupleEnum<T: Clone, U: Clone> {
     Tuple(T),
