@@ -69,14 +69,36 @@ struct DoubleStruct<T: Clone, U: Clone> {
     u: U,
 }
 
+#[derive(From)]
+#[from(forward)]
+struct DoubleStruct2<T: Clone, U: Clone> {
+    t: T,
+    u: U,
+}
+
+
 #[derive(From, Not, Add)]
 enum TupleEnum<T: Clone, U: Clone> {
     Tuple(T),
     DoubleTuple(T, U),
 }
 
+#[derive(From)]
+#[from(forward)]
+enum TupleEnum2<T: Clone, U: Clone, X: Clone> {
+    DoubleTuple(T, U),
+    TripleTuple(T, U, X),
+}
+
 #[derive(From, Not, Add)]
 enum StructEnum<T: Clone, U: Clone> {
     Struct { t: T },
     DoubleStruct { t: T, u: U },
+}
+
+#[derive(From)]
+#[from(forward)]
+enum StructEnum2<T: Clone, U: Clone, X: Clone> {
+    DoubleStruct { t: T, u: U },
+    TripleStruct { t: T, u: U, x: X },
 }
