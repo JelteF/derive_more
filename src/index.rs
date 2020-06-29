@@ -1,9 +1,9 @@
 use crate::utils::{
-    add_extra_generic_param, add_extra_where_clauses,
-    DeriveType, MultiVariantData, SingleFieldData, State,
+    add_extra_generic_param, add_extra_where_clauses, DeriveType, MultiVariantData,
+    SingleFieldData, State,
 };
 use proc_macro2::{Span, TokenStream};
-use quote::{quote};
+use quote::quote;
 use syn::{parse::Result, DeriveInput, Generics, Ident};
 
 /// Provides the hook to expand `#[derive(Index)]` into an implementation of `Index`
@@ -19,16 +19,31 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let output_type = &Ident::new("__IdxOutputT", Span::call_site());
     let mut new_generics =
         add_extra_generic_param(&input.generics, quote!(#index_type));
-    new_generics = add_extra_generic_param(&new_generics, quote!(#output_type));
+    new_generics = add_extra_generic_param(
+        &new_generics,
+        quote!(#output_type: ?::core::marker::Sized),
+    );
 
     if state.derive_type == DeriveType::Enum {
-        Ok(enum_index(input, state, new_generics, index_type, output_type))
+        Ok(expand_enum(
+            input,
+            state,
+            new_generics,
+            index_type,
+            output_type,
+        ))
     } else {
-        Ok(struct_index(input, &mut state, new_generics, index_type, output_type))
+        Ok(expand_struct(
+            input,
+            state,
+            new_generics,
+            index_type,
+            output_type,
+        ))
     }
 }
 
-fn index_body(
+fn expand_body(
     single_field_data: &SingleFieldData,
     mut new_generics: Generics,
     index_type: &Ident,
@@ -50,9 +65,9 @@ fn index_body(
     (body, new_generics)
 }
 
-fn struct_index(
+fn expand_struct(
     input: &DeriveInput,
-    state: &State,
+    state: State,
     new_generics: Generics,
     index_type: &Ident,
     output_type: &Ident,
@@ -60,11 +75,10 @@ fn struct_index(
     let single_field_data = state.assert_single_enabled_field();
 
     let (body, new_generics) =
-        index_body(&single_field_data, new_generics, index_type, output_type);
+        expand_body(&single_field_data, new_generics, index_type, output_type);
     let SingleFieldData {
         input_type,
         trait_path_with_params,
-        casted_trait,
         member,
         ..
     } = single_field_data;
@@ -74,7 +88,7 @@ fn struct_index(
     quote! {
         impl#impl_generics #trait_path_with_params for #input_type#ty_generics #where_clause
         {
-            type Output = #casted_trait::Output;
+            type Output = #output_type;
             #[inline]
             fn index(&self, idx: #index_type) -> &Self::Output {
                 let indexable = &#member;
@@ -84,7 +98,7 @@ fn struct_index(
     }
 }
 
-fn enum_index(
+fn expand_enum(
     input: &DeriveInput,
     state: State,
     mut new_generics: Generics,
@@ -109,7 +123,7 @@ fn enum_index(
         let indexable = &quote!(indexable);
         patterns.push(single_field_data.matcher(&[0], &[indexable]));
         let (body, temp_new_generics) =
-            index_body(&single_field_data, new_generics, index_type, output_type);
+            expand_body(&single_field_data, new_generics, index_type, output_type);
         new_generics = temp_new_generics;
         bodies.push(body);
     }

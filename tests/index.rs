@@ -15,19 +15,20 @@ struct Numbers {
 }
 
 #[derive(Index)]
-enum SomeMap {
-    Hash(HashMap<i32, u64>),
-    BTree(BTreeMap<i32, u64>),
+enum MyVecs {
+    MyVecVariant(MyVec),
+    NumbersVariant(Numbers),
 }
 
 #[test]
 fn enum_index() {
-    let mut hmap = HashMap::new();
-    hmap.insert(123, 456);
-    assert_eq!(456, SomeMap::Hash(hmap)[&123]);
-    let mut bmap = BTreeMap::new();
-    bmap.insert(4, 8);
-    assert_eq!(8, SomeMap::BTree(bmap)[&4]);
+    let v = MyVecs::MyVecVariant(MyVec(vec![10, 20, 30]));
+    assert_eq!(10, v[0]);
+    let nums = MyVecs::NumbersVariant(Numbers {
+        numbers: vec![100, 200, 300],
+        useless: false,
+    });
+    assert_eq!(200, nums[1]);
 }
 
 #[derive(Index)]
