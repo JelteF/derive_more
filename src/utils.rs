@@ -527,7 +527,7 @@ impl<'input> State<'input> {
         trait_attr: String,
         allowed_attr_params: AttrParams,
         variant: &'arg_input Variant,
-        default_info: FullMetaInfo,
+        mut default_info: FullMetaInfo,
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = Ident::new(trait_name, Span::call_site());
@@ -548,6 +548,35 @@ impl<'input> State<'input> {
             .map(|attrs| get_meta_info(&trait_attr, attrs, &allowed_attr_params.field))
             .collect();
         let meta_infos = meta_infos?;
+        let first_match = meta_infos
+            .iter()
+            .filter_map(|info| info.enabled.map(|_| info))
+            .next();
+        // Default enabled to whatever it was, except when first attribute has
+        // explicit enabling.
+        //
+        // Except for derive Error.
+        //
+        // The way `else` case works is that if any field have any valid
+        // attribute specified, then all fields without any attributes
+        // specified are filtered out from `State::enabled_fields`.
+        //
+        // However, derive Error *infers* fields and there are cases when
+        // one of the fields may have an attribute specified, but another field
+        // would be inferred. So, for derive Error macro we default enabled
+        // to true unconditionally (i.e., even if some fields have attributes
+        // specified).
+        //
+        // NOTE: The Index/IndexMut thing will be removed for 1.0.0, this is to
+        // make sure this new behaviour does not break any use cases for other
+        // traits:
+        default_info.enabled = if trait_name == "Error" {
+            true
+        } else if trait_name != "Index" && trait_name != "IndexMut" {
+            default_info.enabled
+        } else {
+            first_match.map_or(default_info.enabled, |info| !info.enabled.unwrap())
+        };
         let full_meta_infos: Vec<_> = meta_infos
             .iter()
             .map(|info| info.to_full(default_info))

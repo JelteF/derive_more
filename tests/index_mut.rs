@@ -78,8 +78,8 @@ fn enum_index() {
 #[derive(IndexMut)]
 enum SomeMapNames {
     Hash {
+        #[index_mut]
         h: HashMap<i32, u64>,
-        #[index_mut(ignore)]
         useless: bool,
     },
     BTree {
