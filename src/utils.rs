@@ -594,9 +594,14 @@ impl<'input> State<'input> {
         self.panic_if_enum();
         let data = self.enabled_fields_data();
         if data.fields.len() != 1 {
+            let struct_or_variant = if self.variant.is_some() {
+                "variant"
+            } else {
+                "struct"
+            };
             panic!(format!(
-                "derive({}) only works when forwarding to a single field. Try putting #[{}] or #[{}(ignore)] on the fields in the struct",
-                self.trait_name, self.trait_attr, self.trait_attr,
+                "derive({}) only works when forwarding to a single field. Try putting #[{}] or #[{}(ignore)] on the fields in the {}",
+                self.trait_name, self.trait_attr, self.trait_attr, struct_or_variant
             ));
         };
         let input_type = &self.input.ident;
