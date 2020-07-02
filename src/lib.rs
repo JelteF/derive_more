@@ -238,6 +238,8 @@ mod not_like;
 #[allow(ellipsis_inclusive_range_patterns)]
 #[allow(clippy::all)]
 mod parsing;
+#[cfg(feature = "read")]
+mod read;
 #[cfg(feature = "sum")]
 mod sum_like;
 #[cfg(feature = "try_into")]
@@ -403,3 +405,5 @@ create_derive!(
 
 create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
 create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
+
+create_derive!("read", read, Read, read_derive, read);

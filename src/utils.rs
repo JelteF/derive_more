@@ -572,7 +572,11 @@ impl<'input> State<'input> {
         // traits:
         default_info.enabled = if trait_name == "Error" {
             true
-        } else if trait_name != "Index" && trait_name != "IndexMut" {
+        } else if trait_name != "Index"
+            && trait_name != "IndexMut"
+            && trait_name != "Read"
+            && trait_name != "Write"
+        {
             default_info.enabled
         } else {
             first_match.map_or(default_info.enabled, |info| !info.enabled.unwrap())

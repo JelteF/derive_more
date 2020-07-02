@@ -59,6 +59,7 @@ iterator = []
 mul_assign = ["syn/extra-traits"]
 mul = ["syn/extra-traits"]
 not = ["syn/extra-traits"]
+read = []
 sum = []
 try_into = ["syn/extra-traits"]
 generate-parsing-rs = ["peg"]
@@ -84,6 +85,7 @@ default = [
     "mul_assign",
     "mul",
     "not",
+    "read",
     "sum",
     "try_into",
 ]
@@ -182,6 +184,11 @@ required-features = ["mul"]
 name = "not"
 path = "tests/not.rs"
 required-features = ["not"]
+
+[[test]]
+name = "read"
+path = "tests/read.rs"
+required-features = ["read"]
 
 [[test]]
 name = "sum"
