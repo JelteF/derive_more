@@ -37,9 +37,8 @@ fn expand_body(
         where #field_type: #trait_path
     };
 
-    let body = quote!(#casted_trait::read(readable, buf));
     new_generics = add_extra_where_clauses(&new_generics, type_where_clauses);
-    (body, new_generics)
+    (casted_trait.clone(), new_generics)
 }
 
 fn expand_struct(
@@ -49,7 +48,7 @@ fn expand_struct(
 ) -> TokenStream {
     let single_field_data = state.assert_single_enabled_field();
 
-    let (body, new_generics) = expand_body(&single_field_data, new_generics);
+    let (casted_trait, new_generics) = expand_body(&single_field_data, new_generics);
     let SingleFieldData {
         input_type,
         trait_path_with_params,
@@ -65,7 +64,12 @@ fn expand_struct(
             #[inline]
             fn read(&mut self, buf: &mut [u8]) -> ::std::io::Result<usize> {
                 let readable = &mut #member;
-                #body
+                #casted_trait::read(readable, buf)
+            }
+            #[inline]
+            fn read_vectored(&mut self, bufs: &mut [::std::io::IoSliceMut]) -> ::std::io::Result<usize> {
+                let readable = &mut #member;
+                #casted_trait::read_vectored(readable, bufs)
             }
         }
     }
@@ -83,7 +87,7 @@ fn expand_enum(
         ..
     } = state.enabled_variant_data();
 
-    let mut bodies = vec![];
+    let mut casted_traits = vec![];
     let mut patterns = vec![];
     let mut first_single_field_data = None;
     for variant_state in variant_states {
@@ -95,7 +99,7 @@ fn expand_enum(
         patterns.push(single_field_data.matcher(&[0], &[readable]));
         let (body, temp_new_generics) = expand_body(&single_field_data, new_generics);
         new_generics = temp_new_generics;
-        bodies.push(body);
+        casted_traits.push(body);
     }
 
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
@@ -106,7 +110,11 @@ fn expand_enum(
         {
             #[inline]
             fn read(&mut self, buf: &mut [u8]) -> ::std::io::Result<usize> {
-                match self { #(#patterns => #bodies),* }
+                match self { #(#patterns => #casted_traits::read(readable, buf)),* }
+            }
+            #[inline]
+            fn read_vectored(&mut self, bufs: &mut [::std::io::IoSliceMut]) -> ::std::io::Result<usize> {
+                match self { #(#patterns => #casted_traits::read_vectored(readable, bufs)),* }
             }
         }
     }
