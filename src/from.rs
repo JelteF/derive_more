@@ -16,8 +16,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         trait_name.to_lowercase(),
         AttrParams {
             enum_: vec!["forward", "ignore"],
-            variant: vec!["forward", "ignore"],
-            struct_: vec!["forward"],
+            variant: vec!["forward", "ignore", "types"],
+            struct_: vec!["forward", "types"],
             field: vec!["forward"],
         },
     )?;
@@ -113,7 +113,7 @@ fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
                 ..
             } = multi_field_data.clone();
             // If there would be a conflict on a empty tuple derive, ignore the
-            // variants that are not explicitely enabled or have explicitely enabled
+            // variants that are not explicitly enabled or have explicitly enabled
             // or disabled fields
             if field_types.is_empty()
                 && variant_states.len() > 1
