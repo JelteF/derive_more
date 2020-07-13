@@ -457,7 +457,7 @@ impl<'input> State<'input> {
             first_match.map_or(true, |info| !info.enabled.unwrap())
         };
 
-        let defaults = struct_meta_info.to_full(FullMetaInfo {
+        let defaults = struct_meta_info.into_full(FullMetaInfo {
             enabled: default_enabled,
             forward: false,
             // Default to owned true, except when first attribute has one of owned,
@@ -475,7 +475,7 @@ impl<'input> State<'input> {
 
         let full_meta_infos: Vec<_> = meta_infos
             .into_iter()
-            .map(|info| info.to_full(defaults.clone()))
+            .map(|info| info.into_full(defaults.clone()))
             .collect();
 
         let variant_states: Result<Vec<_>> = if derive_type == DeriveType::Enum {
@@ -555,7 +555,7 @@ impl<'input> State<'input> {
         let meta_infos = meta_infos?;
         let full_meta_infos: Vec<_> = meta_infos
             .into_iter()
-            .map(|info| info.to_full(default_info.clone()))
+            .map(|info| info.into_full(default_info.clone()))
             .collect();
 
         let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
@@ -862,7 +862,7 @@ fn get_meta_info(
             m.path()
                 .segments
                 .first()
-                .map(|p| &p.ident == trait_attr)
+                .map(|p| p.ident == trait_attr)
                 .unwrap_or_default()
         });
 
@@ -1081,7 +1081,7 @@ pub struct MetaInfo {
 }
 
 impl MetaInfo {
-    fn to_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
+    fn into_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
         FullMetaInfo {
             enabled: self.enabled.unwrap_or(defaults.enabled),
             forward: self.forward.unwrap_or(defaults.forward),
