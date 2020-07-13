@@ -47,6 +47,15 @@ enum MyEnum2 {
     NoFromImpl(i64),
 }
 
+// And even specify additional conversions for them
+#[derive(From, PartialEq)]
+enum MyEnum3 {
+    #[from(types(i8))]
+    SmallInt(i32),
+    #[from(types(i16))]
+    NamedBigInt { int: i64 },
+    NoFromImpl(i64),
+}
 
 fn main() {
     assert!(MyInt(2) == 2.into());
@@ -54,6 +63,8 @@ fn main() {
     assert!(MyEnum::SmallInt(123) == 123i32.into());
     assert!(MyEnum::SmallInt(123) != 123i64.into());
     assert!(MyEnum::NamedBigInt{int: 123} == 123i64.into());
+    assert!(MyEnum3::SmallInt(123) == 123i8.into());
+    assert!(MyEnum3::NamedBigInt{int: 123} == 123i16.into());
 }
 ```
 
