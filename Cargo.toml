@@ -29,11 +29,11 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1"
 quote = "1"
-syn = { version = "1" }
+syn = { version = "1", features = ["extra-traits"] }
 
 [build-dependencies]
 peg = { version = "0.5", optional = true }
-rustc_version = {version = "0.2", optional = true }
+rustc_version = { version = "0.2", optional = true }
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
@@ -47,20 +47,20 @@ as_ref = []
 constructor = []
 deref = []
 deref_mut = []
-display = ["syn/extra-traits"]
-error = ["syn/extra-traits"]
-from = ["syn/extra-traits"]
+display = []
+error = []
+from = []
 from_str = []
 index = []
 index_mut = []
 into = []
 into_iterator = []
 iterator = []
-mul_assign = ["syn/extra-traits"]
-mul = ["syn/extra-traits"]
-not = ["syn/extra-traits"]
+mul_assign = []
+mul = []
+not = []
 sum = []
-try_into = ["syn/extra-traits"]
+try_into = []
 generate-parsing-rs = ["peg"]
 testing-helpers = ["rustc_version"]
 
