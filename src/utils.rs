@@ -71,10 +71,7 @@ impl RefType {
     }
 
     pub fn is_ref(self) -> bool {
-        match self {
-            RefType::No => false,
-            _ => true,
-        }
+        !matches!(self, RefType::No)
     }
 }
 
