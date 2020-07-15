@@ -368,6 +368,7 @@ where
     Ok(parsed_fields)
 }
 
+#[allow(clippy::match_like_matches_macro)]
 fn parse_field_impl<'a, P, V>(
     is_valid_default_field_for_attr: &P,
     len: usize,
@@ -379,9 +380,10 @@ where
     P: Fn(&str, &syn::Field, usize) -> bool,
     V: Fn(&MetaInfo) -> Option<bool>,
 {
-    let explicit_fields = iter
-        .clone()
-        .filter(|(_, _, info)| matches!(value(info), Some(true)));
+    let explicit_fields = iter.clone().filter(|(_, _, info)| match value(info) {
+        Some(true) => true,
+        _ => false,
+    });
 
     let inferred_fields = iter.filter(|(_, field, info)| match value(info) {
         None => is_valid_default_field_for_attr(attr, field, len),
