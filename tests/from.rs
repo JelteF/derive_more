@@ -122,6 +122,18 @@ fn explicit_types_struct() {
 
 #[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
+#[from(types(i8, i16))]
+struct MyIntsExplicit(i32, i32);
+
+#[test]
+fn explicit_types_struct_tupled() {
+    assert_eq!(MyIntsExplicit(42, 42), (42i32, 42i32).into());
+    assert_eq!(MyIntsExplicit(42, 42), (42i8, 42i8).into());
+    assert_eq!(MyIntsExplicit(42, 42), (42i16, 42i16).into());
+}
+
+#[derive(Debug, Eq, PartialEq)]
+#[derive(From)]
 enum MixedIntsExplicit {
     #[from(types(i8))]
     SmallInt(i32),
@@ -140,4 +152,20 @@ fn explicit_types_enum() {
     assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i128.into());
     assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i64.into());
     assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i16.into());
+}
+
+#[derive(Debug, Eq, PartialEq)]
+#[derive(From)]
+#[from(types(i8, i16))]
+struct Point2DExplicit {
+    x: i32,
+    y: i32,
+}
+
+#[test]
+fn explicit_types_point_2d() {
+    let expected = Point2DExplicit { x: 42, y: 42 };
+    assert_eq!(expected, (42i32, 42i32).into());
+    assert_eq!(expected, (42i8, 42i8).into());
+    assert_eq!(expected, (42i16, 42i16).into());
 }
