@@ -368,7 +368,6 @@ where
     Ok(parsed_fields)
 }
 
-#[allow(clippy::match_like_matches_macro)]
 fn parse_field_impl<'a, P, V>(
     is_valid_default_field_for_attr: &P,
     len: usize,

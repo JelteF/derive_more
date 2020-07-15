@@ -70,7 +70,6 @@ impl RefType {
         quote!(&#lifetime #mutability)
     }
 
-    #[allow(clippy::match_like_matches_macro)]
     pub fn is_ref(self) -> bool {
         match self {
             RefType::No => false,
