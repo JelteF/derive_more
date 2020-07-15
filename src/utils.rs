@@ -965,39 +965,7 @@ fn parse_punctuated_nested_meta(
                 }
 
                 // `not(types)` does not make any sense
-                if path.is_ident("types") && is_top_level {
-                    for meta in &list.nested {
-                        match meta {
-                            NestedMeta::Meta(meta) => {
-                                if let Meta::Path(p) = meta {
-                                    if info.types.replace(p.clone()).is_some() {
-                                        return Err(Error::new(
-                                            p.span(),
-                                            format!(
-                                                "Duplicate type `{}` specified",
-                                                quote! { #p }
-                                            ),
-                                        ));
-                                    }
-                                } else {
-                                    return Err(Error::new(
-                                        meta.span(),
-                                        format!(
-                                            "Attribute doesn't support type {}",
-                                            quote! { #meta },
-                                        ),
-                                    ));
-                                }
-                            }
-                            NestedMeta::Lit(lit) => {
-                                return Err(Error::new(
-                                    lit.span(),
-                                    "Attribute doesn't support nested literals here",
-                                ))
-                            }
-                        }
-                    }
-                } else {
+                if !path.is_ident("types") || !is_top_level {
                     return Err(Error::new(
                         list.span(),
                         format!(
@@ -1005,6 +973,40 @@ fn parse_punctuated_nested_meta(
                             quote! { #path }
                         ),
                     ));
+                }
+
+                #[cfg(feature = "from")]
+                for meta in &list.nested {
+                    match meta {
+                        NestedMeta::Meta(meta) => {
+                            let path = if let Meta::Path(p) = meta {
+                                p
+                            } else {
+                                return Err(Error::new(
+                                    meta.span(),
+                                    format!(
+                                        "Attribute doesn't support type {}",
+                                        quote! { #meta },
+                                    ),
+                                ));
+                            };
+                            if info.types.replace(path.clone()).is_some() {
+                                return Err(Error::new(
+                                    path.span(),
+                                    format!(
+                                        "Duplicate type `{}` specified",
+                                        quote! { #path },
+                                    ),
+                                ));
+                            }
+                        }
+                        NestedMeta::Lit(lit) => {
+                            return Err(Error::new(
+                                lit.span(),
+                                "Attribute doesn't support nested literals here",
+                            ))
+                        }
+                    }
                 }
             }
 
@@ -1077,6 +1079,7 @@ pub struct MetaInfo {
     pub ref_mut: Option<bool>,
     pub source: Option<bool>,
     pub backtrace: Option<bool>,
+    #[cfg(feature = "from")]
     pub types: HashSet<syn::Path>,
 }
 
