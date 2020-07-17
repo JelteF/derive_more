@@ -79,9 +79,9 @@ impl RefType {
 
     pub fn from_attr_name(name: &str) -> Self {
         match name {
-            "owned" => Self::No,
-            "ref" => Self::Ref,
-            "ref_mut" => Self::Mut,
+            "owned" => RefType::No,
+            "ref" => RefType::Ref,
+            "ref_mut" => RefType::Mut,
             _ => panic!("'{}' is not a RefType", name),
         }
     }

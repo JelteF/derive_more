@@ -33,16 +33,16 @@ struct MyInt8(i8);
 struct MyInt64Wrapped(MyInt64);
 
 fn main() {
-    assert!(MyInt(2).into() == 2i32);
-    assert!(MyInt64(6).into() == 6i64);
-    assert!((&MyInt64(6)).into() == &6i64);
-    assert!((&mut MyInt64(6)).into() == &mut 6i64);
-    assert!(MyInt8(7).into() == 7i8);
-    assert!(MyInt8(7).into() == 7i16);
-    assert!(MyInt8(7).into() == 7i32);
-    assert!(MyInt64Wrapped(MyInt64(1)).into() == MyInt64(1));
-    assert!((&MyInt64Wrapped(MyInt64(1))).into() == &MyInt64(1));
-    assert!((&MyInt64Wrapped(MyInt64(1))).into() == &1i64);
+    assert!(i32::from(MyInt(2)) == 2i32);
+    assert!(i64::from(MyInt64(6)) == 6i64);
+    assert!(<&i64>::from(&MyInt64(6)) == &6i64);
+    assert!(<&mut i64>::from(&mut MyInt64(6)) == &mut 6i64);
+    assert!(i8::from(MyInt8(7)) == 7i8);
+    assert!(i16::from(MyInt8(7)) == 7i16);
+    assert!(i32::from(MyInt8(7)) == 7i32);
+    assert!(MyInt64::from(MyInt64Wrapped(MyInt64(1))) == MyInt64(1));
+    assert!(<&MyInt64>::from(&MyInt64Wrapped(MyInt64(1))) == &MyInt64(1));
+    assert!(<&i64>::from(&MyInt64Wrapped(MyInt64(1))) == &1i64);
 }
 ```
 
