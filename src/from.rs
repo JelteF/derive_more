@@ -6,7 +6,7 @@ use syn::{parse::Result, DeriveInput, Ident, Index};
 
 use crate::utils::{
     add_where_clauses_for_new_ident, AttrParams, DeriveType, HashMap, MultiFieldData,
-    State,
+    RefType, State,
 };
 
 /// Provides the hook to expand `#[derive(From)]` into an implementation of `From`
@@ -41,10 +41,9 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
         ..
     } = multi_field_data.clone();
 
-    let mut impls = Vec::with_capacity(variant_info.info.types.len() + 1);
-    for explicit_type in
-        iter::once(None).chain(variant_info.info.types.iter().map(Some))
-    {
+    let additional_types = variant_info.additional_types(RefType::No);
+    let mut impls = Vec::with_capacity(additional_types.len() + 1);
+    for explicit_type in iter::once(None).chain(additional_types.iter().map(Some)) {
         let mut new_generics = input.generics.clone();
 
         let mut initializers = Vec::with_capacity(infos.len());
