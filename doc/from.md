@@ -77,7 +77,6 @@ When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 # fn main(){}
 #[derive(From)]
 struct MyInt(i32);
-
 ```
 
 Code like this will be generated:
