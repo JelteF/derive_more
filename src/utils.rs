@@ -999,22 +999,32 @@ fn parse_punctuated_nested_meta(
                                             ),
                                         ));
                                     };
-                                    if info
-                                        .types
-                                        .entry(RefType::from_attr_name(
-                                            wrapper_name.unwrap_or("owned"),
-                                        ))
-                                        .or_default()
-                                        .replace(path.clone())
-                                        .is_some()
+
+                                    for ref_type in wrapper_name
+                                        .map(|n| vec![RefType::from_attr_name(n)])
+                                        .unwrap_or_else(|| {
+                                            vec![
+                                                RefType::No,
+                                                RefType::Ref,
+                                                RefType::Mut,
+                                            ]
+                                        })
                                     {
-                                        return Err(Error::new(
-                                            path.span(),
-                                            format!(
-                                                "Duplicate type `{}` specified",
-                                                quote! { #path },
-                                            ),
-                                        ));
+                                        if info
+                                            .types
+                                            .entry(ref_type)
+                                            .or_default()
+                                            .replace(path.clone())
+                                            .is_some()
+                                        {
+                                            return Err(Error::new(
+                                                path.span(),
+                                                format!(
+                                                    "Duplicate type `{}` specified",
+                                                    quote! { #path },
+                                                ),
+                                            ));
+                                        }
                                     }
                                 }
                                 NestedMeta::Lit(lit) => return Err(Error::new(

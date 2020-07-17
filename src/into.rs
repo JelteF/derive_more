@@ -15,7 +15,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         trait_name.to_lowercase(),
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
-            variant: vec!["ignore", "owned", "ref", "ref_mut", "types"],
+            variant: vec!["ignore", "owned", "ref", "ref_mut"],
             struct_: vec!["ignore", "owned", "ref", "ref_mut", "types"],
             field: vec!["ignore"],
         },
@@ -71,7 +71,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                 impl#impl_generics ::core::convert::From<#reference_with_lifetime #input_type#ty_generics> for
                     (#(#into_types),*) #where_clause {
 
-                    #[allow(unused_variables)]
                     #[inline]
                     fn from(original: #reference_with_lifetime #input_type#ty_generics) -> (#(#into_types),*) {
                         (#(#initializers),*)
