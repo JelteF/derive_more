@@ -180,6 +180,9 @@
 //!
 //! [`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
 
+// Suppress Clippy tips to use `matches!` macro, because minimal supported Rust version is 1.36.0.
+// Remove this suppression once minimal supported Rust version is bumped up to 1.42.0 or above.
+#![cfg_attr(nightly, allow(clippy::match_like_matches_macro))]
 #![recursion_limit = "128"]
 
 extern crate proc_macro;

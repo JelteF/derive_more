@@ -1,7 +1,5 @@
 #![cfg_attr(not(feature = "default"), allow(dead_code))]
 
-use std::ops::Deref as _;
-
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
@@ -11,14 +9,14 @@ use syn::{
     TypeParamBound, Variant, WhereClause,
 };
 
-#[derive(Default)]
-pub struct DeterministicState {}
+#[derive(Clone, Copy, Default)]
+pub struct DeterministicState;
 
 impl std::hash::BuildHasher for DeterministicState {
     type Hasher = std::collections::hash_map::DefaultHasher;
 
     fn build_hasher(&self) -> Self::Hasher {
-        std::collections::hash_map::DefaultHasher::default()
+        Self::Hasher::default()
     }
 }
 
@@ -459,12 +457,12 @@ impl<'input> State<'input> {
             first_match.map_or(true, |info| !info.enabled.unwrap())
         };
 
-        let defaults = struct_meta_info.to_full(FullMetaInfo {
+        let defaults = struct_meta_info.into_full(FullMetaInfo {
             enabled: default_enabled,
             forward: false,
             // Default to owned true, except when first attribute has one of owned,
             // ref or ref_mut
-            // - not a single attibute means default true
+            // - not a single attribute means default true
             // - an attribute, but non of owned, ref or ref_mut means default true
             // - an attribute, and owned, ref or ref_mut means default false
             owned: first_match.map_or(true, |info| {
@@ -476,14 +474,14 @@ impl<'input> State<'input> {
         });
 
         let full_meta_infos: Vec<_> = meta_infos
-            .iter()
-            .map(|info| info.to_full(defaults))
+            .into_iter()
+            .map(|info| info.into_full(defaults.clone()))
             .collect();
 
         let variant_states: Result<Vec<_>> = if derive_type == DeriveType::Enum {
             variants
                 .iter()
-                .zip(full_meta_infos.iter().copied())
+                .zip(full_meta_infos.iter().cloned())
                 .map(|(variant, info)| {
                     State::from_variant(
                         input,
@@ -556,8 +554,8 @@ impl<'input> State<'input> {
             .collect();
         let meta_infos = meta_infos?;
         let full_meta_infos: Vec<_> = meta_infos
-            .iter()
-            .map(|info| info.to_full(default_info))
+            .into_iter()
+            .map(|info| info.into_full(default_info.clone()))
             .collect();
 
         let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
@@ -601,7 +599,7 @@ impl<'input> State<'input> {
             field: data.fields[0],
             field_type: data.field_types[0],
             member: data.members[0].clone(),
-            info: data.infos[0],
+            info: data.infos[0].clone(),
             field_ident: data.field_idents[0].clone(),
             trait_path: data.trait_path,
             trait_path_with_params: data.trait_path_with_params.clone(),
@@ -650,7 +648,7 @@ impl<'input> State<'input> {
             input_type,
             variant_type,
             variant_name,
-            variant_info: self.default_info,
+            variant_info: self.default_info.clone(),
             fields,
             field_types,
             field_indexes,
@@ -757,7 +755,7 @@ impl<'input> State<'input> {
         self.full_meta_infos
             .iter()
             .filter(|info| info.enabled)
-            .copied()
+            .cloned()
             .collect()
     }
 }
@@ -861,11 +859,11 @@ fn get_meta_info(
         .iter()
         .filter_map(|m| m.parse_meta().ok())
         .filter(|m| {
-            if let Some(ident) = m.path().segments.first().map(|p| &p.ident) {
-                ident == trait_attr
-            } else {
-                false
-            }
+            m.path()
+                .segments
+                .first()
+                .map(|p| p.ident == trait_attr)
+                .unwrap_or_default()
         });
 
     let mut info = MetaInfo::default();
@@ -882,9 +880,9 @@ fn get_meta_info(
 
     info.enabled = Some(true);
 
-    if let Some(meta2) = it.next() {
+    if let Some(another_meta) = it.next() {
         return Err(Error::new(
-            meta2.span(),
+            another_meta.span(),
             "Only a single attribute is allowed",
         ));
     }
@@ -894,14 +892,21 @@ fn get_meta_info(
             if allowed_attr_params.contains(&"ignore") {
                 return Ok(info);
             } else {
-                return Err(Error::new(meta.span(), format!("Empty attribute is not allowed, add one of the following parameters: {}",
-                    allowed_attr_params.join(", ")
-                    )));
+                return Err(Error::new(
+                    meta.span(),
+                    format!(
+                        "Empty attribute is not allowed, add one of the following parameters: {}",
+                        allowed_attr_params.join(", "),
+                    ),
+                ));
             }
         }
         Meta::List(list) => list,
-        _ => {
-            return Err(Error::new(meta.span(), "Attribute format not supported1"));
+        Meta::NameValue(val) => {
+            return Err(Error::new(
+                val.span(),
+                "Attribute doesn't support name-value format here",
+            ));
         }
     };
 
@@ -914,23 +919,22 @@ fn parse_punctuated_nested_meta(
     info: &mut MetaInfo,
     meta: &Punctuated<NestedMeta, Token![,]>,
     allowed_attr_params: &[&str],
-    value: bool,
+    is_top_level: bool,
 ) -> Result<()> {
     for meta in meta.iter() {
         let meta = match meta {
             NestedMeta::Meta(meta) => meta,
-            _ => {
-                return Err(Error::new(meta.span(), "Attribute format not supported2"))
+            NestedMeta::Lit(lit) => {
+                return Err(Error::new(
+                    lit.span(),
+                    "Attribute doesn't support literals here",
+                ))
             }
         };
 
         match meta {
             Meta::List(list) if list.path.is_ident("not") => {
-                // `value == true` means we're parsing top-level attributes (i.e., not under "not").
-                // `value == false` means we're parsing attributes under "not" attribute.
-                // Only single top-level "not" attribute allowed, so `value == false` here
-                // means we've found "not(not(...))" attribute, so we return error.
-                if value {
+                if is_top_level {
                     parse_punctuated_nested_meta(
                         info,
                         &list.nested,
@@ -938,10 +942,71 @@ fn parse_punctuated_nested_meta(
                         false,
                     )?;
                 } else {
+                    // Only single top-level `not` attribute allowed, so `false` here means
+                    // we've found `not(not(...))` attribute, so we return error.
+                    return Err(Error::new(
+                        list.span(),
+                        "Attribute doesn't support multiple `not` parameters",
+                    ));
+                }
+            }
+
+            Meta::List(list) => {
+                let path = &list.path;
+                if !allowed_attr_params.iter().any(|param| path.is_ident(param)) {
                     return Err(Error::new(
                         meta.span(),
-                        "Attribute format not supported3",
+                        format!(
+                            "Attribute nested parameter not supported. \
+                             Supported attribute parameters are: {}",
+                            allowed_attr_params.join(", "),
+                        ),
                     ));
+                }
+
+                // `not(types)` does not make any sense
+                if !path.is_ident("types") || !is_top_level {
+                    return Err(Error::new(
+                        list.span(),
+                        format!(
+                            "Attribute doesn't support nested parameter `{}` here",
+                            quote! { #path }
+                        ),
+                    ));
+                }
+
+                #[cfg(feature = "from")]
+                for meta in &list.nested {
+                    match meta {
+                        NestedMeta::Meta(meta) => {
+                            let path = if let Meta::Path(p) = meta {
+                                p
+                            } else {
+                                return Err(Error::new(
+                                    meta.span(),
+                                    format!(
+                                        "Attribute doesn't support type {}",
+                                        quote! { #meta },
+                                    ),
+                                ));
+                            };
+                            if info.types.replace(path.clone()).is_some() {
+                                return Err(Error::new(
+                                    path.span(),
+                                    format!(
+                                        "Duplicate type `{}` specified",
+                                        quote! { #path },
+                                    ),
+                                ));
+                            }
+                        }
+                        NestedMeta::Lit(lit) => {
+                            return Err(Error::new(
+                                lit.span(),
+                                "Attribute doesn't support nested literals here",
+                            ))
+                        }
+                    }
                 }
             }
 
@@ -950,37 +1015,44 @@ fn parse_punctuated_nested_meta(
                     return Err(Error::new(
                         meta.span(),
                         format!(
-                            "Attribute parameter not supported. Supported attribute parameters are: {}",
+                            "Attribute parameter not supported. \
+                             Supported attribute parameters are: {}",
                             allowed_attr_params.join(", "),
                         ),
                     ));
                 }
 
-                // not(ignore) does not make much sense
-                if path.is_ident("ignore") && value {
+                // `not(ignore)` does not make much sense
+                if path.is_ident("ignore") && is_top_level {
                     info.enabled = Some(false);
                 } else if path.is_ident("forward") {
-                    info.forward = Some(value);
+                    info.forward = Some(is_top_level);
                 } else if path.is_ident("owned") {
-                    info.owned = Some(value);
+                    info.owned = Some(is_top_level);
                 } else if path.is_ident("ref") {
-                    info.ref_ = Some(value);
+                    info.ref_ = Some(is_top_level);
                 } else if path.is_ident("ref_mut") {
-                    info.ref_mut = Some(value);
+                    info.ref_mut = Some(is_top_level);
                 } else if path.is_ident("source") {
-                    info.source = Some(value);
+                    info.source = Some(is_top_level);
                 } else if path.is_ident("backtrace") {
-                    info.backtrace = Some(value);
+                    info.backtrace = Some(is_top_level);
                 } else {
                     return Err(Error::new(
-                        meta.span(),
-                        "Attribute format not supported4",
+                        path.span(),
+                        format!(
+                            "Attribute doesn't support parameter `{}` here",
+                            quote! { #path }
+                        ),
                     ));
                 };
             }
 
-            _ => {
-                return Err(Error::new(meta.span(), "Attribute format not supported5"))
+            Meta::NameValue(val) => {
+                return Err(Error::new(
+                    val.span(),
+                    "Attribute doesn't support name-value parameters here",
+                ))
             }
         }
     }
@@ -988,7 +1060,7 @@ fn parse_punctuated_nested_meta(
     Ok(())
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct FullMetaInfo {
     pub enabled: bool,
     pub forward: bool,
@@ -998,7 +1070,7 @@ pub struct FullMetaInfo {
     pub info: MetaInfo,
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct MetaInfo {
     pub enabled: Option<bool>,
     pub forward: Option<bool>,
@@ -1007,18 +1079,19 @@ pub struct MetaInfo {
     pub ref_mut: Option<bool>,
     pub source: Option<bool>,
     pub backtrace: Option<bool>,
+    #[cfg(feature = "from")]
+    pub types: HashSet<syn::Path>,
 }
 
 impl MetaInfo {
-    fn to_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
-        let info = self;
+    fn into_full(self, defaults: FullMetaInfo) -> FullMetaInfo {
         FullMetaInfo {
             enabled: self.enabled.unwrap_or(defaults.enabled),
             forward: self.forward.unwrap_or(defaults.forward),
             owned: self.owned.unwrap_or(defaults.owned),
             ref_: self.ref_.unwrap_or(defaults.ref_),
             ref_mut: self.ref_mut.unwrap_or(defaults.ref_mut),
-            info,
+            info: self,
         }
     }
 }
@@ -1046,7 +1119,7 @@ pub fn get_if_type_parameter_used_in_type(
     if is_type_parameter_used_in_type(type_parameters, ty) {
         match ty {
             syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => {
-                Some(ty.deref().clone())
+                Some((&**ty).clone())
             }
             ty => Some(ty.clone()),
         }

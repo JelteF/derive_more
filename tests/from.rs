@@ -106,3 +106,66 @@ fn auto_ignore_with_forward_field2() {
     assert!(AutoIgnoreWithForwardFields2::SmallInt(42) == 42i32.into());
     assert!(AutoIgnoreWithForwardFields2::SmallInt(42) == 42i16.into());
 }
+
+#[derive(Debug, Eq, PartialEq)]
+#[derive(From)]
+#[from(types(u8, u16, u32))]
+struct MyIntExplicit(u64);
+
+#[test]
+fn explicit_types_struct() {
+    assert_eq!(MyIntExplicit(42), 42u8.into());
+    assert_eq!(MyIntExplicit(42), 42u16.into());
+    assert_eq!(MyIntExplicit(42), 42u32.into());
+    assert_eq!(MyIntExplicit(42), 42u64.into());
+}
+
+#[derive(Debug, Eq, PartialEq)]
+#[derive(From)]
+#[from(types(i8, i16))]
+struct MyIntsExplicit(i32, i32);
+
+#[test]
+fn explicit_types_struct_tupled() {
+    assert_eq!(MyIntsExplicit(42, 42), (42i32, 42i32).into());
+    assert_eq!(MyIntsExplicit(42, 42), (42i8, 42i8).into());
+    assert_eq!(MyIntsExplicit(42, 42), (42i16, 42i16).into());
+}
+
+#[derive(Debug, Eq, PartialEq)]
+#[derive(From)]
+enum MixedIntsExplicit {
+    #[from(types(i8))]
+    SmallInt(i32),
+    #[from(types(i16, i64))]
+    AnotherInt(i128),
+    NamedBigInt {
+        int: i64,
+    },
+}
+
+#[test]
+fn explicit_types_enum() {
+    assert_eq!(MixedIntsExplicit::SmallInt(42), 42i32.into());
+    assert_eq!(MixedIntsExplicit::SmallInt(42), 42i8.into());
+
+    assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i128.into());
+    assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i64.into());
+    assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i16.into());
+}
+
+#[derive(Debug, Eq, PartialEq)]
+#[derive(From)]
+#[from(types(i8, i16))]
+struct Point2DExplicit {
+    x: i32,
+    y: i32,
+}
+
+#[test]
+fn explicit_types_point_2d() {
+    let expected = Point2DExplicit { x: 42, y: 42 };
+    assert_eq!(expected, (42i32, 42i32).into());
+    assert_eq!(expected, (42i8, 42i8).into());
+    assert_eq!(expected, (42i16, 42i16).into());
+}
