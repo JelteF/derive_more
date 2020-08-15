@@ -409,7 +409,7 @@ impl<'input> State<'input> {
                 data_enum.variants.iter().collect(),
             ),
             Data::Union(_) => {
-                panic!(format!("can not derive({}) for union", trait_name))
+                panic!(format!("cannot derive({}) for union", trait_name))
             }
         };
         let attrs: Vec<_> = if derive_type == DeriveType::Enum {
@@ -613,7 +613,7 @@ impl<'input> State<'input> {
 
     pub fn enabled_fields_data<'state>(&'state self) -> MultiFieldData<'input, 'state> {
         if self.derive_type == DeriveType::Enum {
-            panic!(format!("can not derive({}) for enum", self.trait_name))
+            panic!(format!("cannot derive({}) for enum", self.trait_name))
         }
         let fields = self.enabled_fields();
         let field_idents = self.enabled_fields_idents();

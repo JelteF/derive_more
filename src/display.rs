@@ -441,7 +441,7 @@ impl<'a, 'b> State<'a, 'b> {
         } else if fields.len() > 1 {
             return Err(Error::new(
                 fields.span(),
-                "Can not automatically infer format for types with more than 1 field",
+                "Cannot automatically infer format for types with more than 1 field",
             ));
         }
 
@@ -552,7 +552,7 @@ impl<'a, 'b> State<'a, 'b> {
                     self.find_meta(&self.input.attrs, "fmt")?.ok_or_else(|| {
                         Error::new(
                             self.input.span(),
-                            "Can not automatically infer format for unions",
+                            "Cannot automatically infer format for unions",
                         )
                     })?;
                 let fmt = self.parse_meta_fmt(&meta, false)?.0;
