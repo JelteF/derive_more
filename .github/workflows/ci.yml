@@ -83,7 +83,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all -- -D clippy::all -D warnings
+          args: --all -- -D clippy::all -D warnings -A clippy::match_like_matches_macro
 
   rustfmt:
     name: rustfmt

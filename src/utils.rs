@@ -23,7 +23,7 @@ impl std::hash::BuildHasher for DeterministicState {
 pub type HashMap<K, V> = std::collections::HashMap<K, V, DeterministicState>;
 pub type HashSet<K> = std::collections::HashSet<K, DeterministicState>;
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum RefType {
     No,
     Ref,
@@ -74,6 +74,15 @@ impl RefType {
         match self {
             RefType::No => false,
             _ => true,
+        }
+    }
+
+    pub fn from_attr_name(name: &str) -> Self {
+        match name {
+            "owned" => RefType::No,
+            "ref" => RefType::Ref,
+            "ref_mut" => RefType::Mut,
+            _ => panic!("'{}' is not a RefType", name),
         }
     }
 }
@@ -910,7 +919,7 @@ fn get_meta_info(
         }
     };
 
-    parse_punctuated_nested_meta(&mut info, &list.nested, allowed_attr_params, true)?;
+    parse_punctuated_nested_meta(&mut info, &list.nested, allowed_attr_params, None)?;
 
     Ok(info)
 }
@@ -919,7 +928,7 @@ fn parse_punctuated_nested_meta(
     info: &mut MetaInfo,
     meta: &Punctuated<NestedMeta, Token![,]>,
     allowed_attr_params: &[&str],
-    is_top_level: bool,
+    wrapper_name: Option<&str>,
 ) -> Result<()> {
     for meta in meta.iter() {
         let meta = match meta {
@@ -934,21 +943,19 @@ fn parse_punctuated_nested_meta(
 
         match meta {
             Meta::List(list) if list.path.is_ident("not") => {
-                if is_top_level {
-                    parse_punctuated_nested_meta(
-                        info,
-                        &list.nested,
-                        allowed_attr_params,
-                        false,
-                    )?;
-                } else {
-                    // Only single top-level `not` attribute allowed, so `false` here means
-                    // we've found `not(not(...))` attribute, so we return error.
+                if wrapper_name.is_some() {
+                    // Only single top-level `not` attribute is allowed.
                     return Err(Error::new(
                         list.span(),
-                        "Attribute doesn't support multiple `not` parameters",
+                        "Attribute doesn't support multiple multiple or nested `not` parameters",
                     ));
                 }
+                parse_punctuated_nested_meta(
+                    info,
+                    &list.nested,
+                    allowed_attr_params,
+                    Some("not"),
+                )?;
             }
 
             Meta::List(list) => {
@@ -964,49 +971,88 @@ fn parse_punctuated_nested_meta(
                     ));
                 }
 
-                // `not(types)` does not make any sense
-                if !path.is_ident("types") || !is_top_level {
-                    return Err(Error::new(
-                        list.span(),
-                        format!(
-                            "Attribute doesn't support nested parameter `{}` here",
-                            quote! { #path }
-                        ),
-                    ));
-                }
+                let mut parse_nested = true;
 
-                #[cfg(feature = "from")]
-                for meta in &list.nested {
-                    match meta {
-                        NestedMeta::Meta(meta) => {
-                            let path = if let Meta::Path(p) = meta {
-                                p
-                            } else {
-                                return Err(Error::new(
-                                    meta.span(),
-                                    format!(
-                                        "Attribute doesn't support type {}",
-                                        quote! { #meta },
-                                    ),
-                                ));
-                            };
-                            if info.types.replace(path.clone()).is_some() {
-                                return Err(Error::new(
-                                    path.span(),
-                                    format!(
-                                        "Duplicate type `{}` specified",
-                                        quote! { #path },
-                                    ),
-                                ));
+                let attr_name = path.get_ident().unwrap().to_string();
+                match (wrapper_name, attr_name.as_str()) {
+                    (None, "owned") => info.owned = Some(true),
+                    (None, "ref") => info.ref_ = Some(true),
+                    (None, "ref_mut") => info.ref_mut = Some(true),
+
+                    #[cfg(any(feature = "from", feature = "into"))]
+                    (None, "types")
+                    | (Some("owned"), "types")
+                    | (Some("ref"), "types")
+                    | (Some("ref_mut"), "types") => {
+                        parse_nested = false;
+                        for meta in &list.nested {
+                            match meta {
+                                NestedMeta::Meta(meta) => {
+                                    let path = if let Meta::Path(p) = meta {
+                                        p
+                                    } else {
+                                        return Err(Error::new(
+                                            meta.span(),
+                                            format!(
+                                                "Attribute doesn't support type {}",
+                                                quote! { #meta },
+                                            ),
+                                        ));
+                                    };
+
+                                    for ref_type in wrapper_name
+                                        .map(|n| vec![RefType::from_attr_name(n)])
+                                        .unwrap_or_else(|| {
+                                            vec![
+                                                RefType::No,
+                                                RefType::Ref,
+                                                RefType::Mut,
+                                            ]
+                                        })
+                                    {
+                                        if info
+                                            .types
+                                            .entry(ref_type)
+                                            .or_default()
+                                            .replace(path.clone())
+                                            .is_some()
+                                        {
+                                            return Err(Error::new(
+                                                path.span(),
+                                                format!(
+                                                    "Duplicate type `{}` specified",
+                                                    quote! { #path },
+                                                ),
+                                            ));
+                                        }
+                                    }
+                                }
+                                NestedMeta::Lit(lit) => return Err(Error::new(
+                                    lit.span(),
+                                    "Attribute doesn't support nested literals here",
+                                )),
                             }
                         }
-                        NestedMeta::Lit(lit) => {
-                            return Err(Error::new(
-                                lit.span(),
-                                "Attribute doesn't support nested literals here",
-                            ))
-                        }
                     }
+
+                    _ => {
+                        return Err(Error::new(
+                            list.span(),
+                            format!(
+                                "Attribute doesn't support nested parameter `{}` here",
+                                quote! { #path },
+                            ),
+                        ))
+                    }
+                };
+
+                if parse_nested {
+                    parse_punctuated_nested_meta(
+                        info,
+                        &list.nested,
+                        allowed_attr_params,
+                        Some(&attr_name),
+                    )?;
                 }
             }
 
@@ -1022,30 +1068,28 @@ fn parse_punctuated_nested_meta(
                     ));
                 }
 
-                // `not(ignore)` does not make much sense
-                if path.is_ident("ignore") && is_top_level {
-                    info.enabled = Some(false);
-                } else if path.is_ident("forward") {
-                    info.forward = Some(is_top_level);
-                } else if path.is_ident("owned") {
-                    info.owned = Some(is_top_level);
-                } else if path.is_ident("ref") {
-                    info.ref_ = Some(is_top_level);
-                } else if path.is_ident("ref_mut") {
-                    info.ref_mut = Some(is_top_level);
-                } else if path.is_ident("source") {
-                    info.source = Some(is_top_level);
-                } else if path.is_ident("backtrace") {
-                    info.backtrace = Some(is_top_level);
-                } else {
-                    return Err(Error::new(
-                        path.span(),
-                        format!(
-                            "Attribute doesn't support parameter `{}` here",
-                            quote! { #path }
-                        ),
-                    ));
-                };
+                let attr_name = path.get_ident().unwrap().to_string();
+                match (wrapper_name, attr_name.as_str()) {
+                    (None, "ignore") => info.enabled = Some(false),
+                    (None, "forward") => info.forward = Some(true),
+                    (Some("not"), "forward") => info.forward = Some(false),
+                    (None, "owned") => info.owned = Some(true),
+                    (None, "ref") => info.ref_ = Some(true),
+                    (None, "ref_mut") => info.ref_mut = Some(true),
+                    (None, "source") => info.source = Some(true),
+                    (Some("not"), "source") => info.source = Some(false),
+                    (None, "backtrace") => info.backtrace = Some(true),
+                    (Some("not"), "backtrace") => info.backtrace = Some(false),
+                    _ => {
+                        return Err(Error::new(
+                            path.span(),
+                            format!(
+                                "Attribute doesn't support parameter `{}` here",
+                                quote! { #path }
+                            ),
+                        ))
+                    }
+                }
             }
 
             Meta::NameValue(val) => {
@@ -1079,8 +1123,8 @@ pub struct MetaInfo {
     pub ref_mut: Option<bool>,
     pub source: Option<bool>,
     pub backtrace: Option<bool>,
-    #[cfg(feature = "from")]
-    pub types: HashSet<syn::Path>,
+    #[cfg(any(feature = "from", feature = "into"))]
+    pub types: HashMap<RefType, HashSet<syn::Path>>,
 }
 
 impl MetaInfo {
@@ -1097,7 +1141,7 @@ impl MetaInfo {
 }
 
 impl FullMetaInfo {
-    pub fn ref_types(self) -> Vec<RefType> {
+    pub fn ref_types(&self) -> Vec<RefType> {
         let mut ref_types = vec![];
         if self.owned {
             ref_types.push(RefType::No);
@@ -1109,6 +1153,11 @@ impl FullMetaInfo {
             ref_types.push(RefType::Mut);
         }
         ref_types
+    }
+
+    #[cfg(any(feature = "from", feature = "into"))]
+    pub fn additional_types(&self, ref_type: RefType) -> HashSet<syn::Path> {
+        self.info.types.get(&ref_type).cloned().unwrap_or_default()
     }
 }
 

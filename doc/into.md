@@ -9,6 +9,43 @@ Instead it derives `From` for the values contained in the struct and thus has an
 indirect implementation of `Into` as recommended by the
 [docs](https://doc.rust-lang.org/core/convert/trait.Into.html).
 
+# Example usage
+```rust
+# #[macro_use] extern crate derive_more;
+
+// Allow converting into i32
+#[derive(Into, PartialEq)]
+struct MyInt(i32);
+
+// Additionally convert refs to the inner type refs
+#[derive(Into, PartialEq)]
+#[into(owned, ref, ref_mut)]
+struct MyInt64(i64);
+
+// Specify additional conversions
+#[derive(Into, PartialEq)]
+#[into(types(i16, i32))]
+struct MyInt8(i8);
+
+// Even for ref types
+#[derive(Into, PartialEq)]
+#[into(owned, ref(types(i64)))]
+struct MyInt64Wrapped(MyInt64);
+
+fn main() {
+    assert!(i32::from(MyInt(2)) == 2i32);
+    assert!(i64::from(MyInt64(6)) == 6i64);
+    assert!(<&i64>::from(&MyInt64(6)) == &6i64);
+    assert!(<&mut i64>::from(&mut MyInt64(6)) == &mut 6i64);
+    assert!(i8::from(MyInt8(7)) == 7i8);
+    assert!(i16::from(MyInt8(7)) == 7i16);
+    assert!(i32::from(MyInt8(7)) == 7i32);
+    assert!(MyInt64::from(MyInt64Wrapped(MyInt64(1))) == MyInt64(1));
+    assert!(<&MyInt64>::from(&MyInt64Wrapped(MyInt64(1))) == &MyInt64(1));
+    assert!(<&i64>::from(&MyInt64Wrapped(MyInt64(1))) == &1i64);
+}
+```
+
 # Tuple structs
 
 When deriving `Into` for a tuple struct with a single field (i.e. a newtype) like this:
