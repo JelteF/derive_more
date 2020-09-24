@@ -346,11 +346,12 @@ impl<'a, 'b> State<'a, 'b> {
                 op if op.segments.first().expect("path shouldn't be empty").ident
                     == "fmt" =>
                 {
+                    let expected_affix_usage = "outer `enum` `fmt` is an affix spec that expects no args and at most 1 placeholder for inner variant display";
                     if outer_enum {
                         if list.nested.iter().skip(1).count() != 0 {
                             return Err(Error::new(
                                 list.nested[1].span(),
-                                "`fmt` formatting requires a single `fmt` argument",
+                                expected_affix_usage,
                             ));
                         }
                         // TODO: Check for a single `Display` group?
@@ -379,7 +380,7 @@ impl<'a, 'b> State<'a, 'b> {
                         if num_placeholders > 1 {
                             return Err(Error::new(
                                 list.nested[1].span(),
-                                "fmt string for enum should have at at most 1 placeholder",
+                                expected_affix_usage,
                             ));
                         }
                         if num_placeholders == 1 {
