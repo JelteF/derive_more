@@ -414,6 +414,11 @@ impl<'a, 'b> State<'a, 'b> {
                         false,
                     ))
                 }
+                op if op.segments.first().expect("path shouldn't be empty").ident
+                    == "fmt" =>
+                {
+                    todo!()
+                }
                 _ => Err(Error::new(
                     list.nested[0].span(),
                     self.get_proper_fmt_syntax(),

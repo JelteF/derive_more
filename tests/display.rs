@@ -104,6 +104,12 @@ enum Affix {
 #[display(fmt = "{:?}", self)]
 struct DebugStructAsDisplay;
 
+#[derive(Debug, Display)]
+#[display(fmt = "{:?}", self)]
+enum DebugEnumAsDisplay {
+    Variant,
+}
+
 #[test]
 fn check_display() {
     assert_eq!(MyInt(-2).to_string(), "-2");
@@ -139,6 +145,7 @@ fn check_display() {
         "Here's a prefix for things -- false and a suffix"
     );
     assert_eq!(DebugStructAsDisplay.to_string(), "DebugStructAsDisplay");
+    assert_eq!(DebugEnumAsDisplay::Variant.to_string(), "Variant");
 }
 
 mod generic {
