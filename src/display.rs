@@ -344,7 +344,7 @@ impl<'a, 'b> State<'a, 'b> {
                 ..
             })) => match path {
                 op if op.segments.first().expect("path shouldn't be empty").ident
-                    == "fmt" =>
+                    == "affix" =>
                 {
                     let expected_affix_usage = "outer `enum` `fmt` is an affix spec that expects no args and at most 1 placeholder for inner variant display";
                     if outer_enum {
@@ -413,6 +413,11 @@ impl<'a, 'b> State<'a, 'b> {
                         quote_spanned!(meta.span()=> write!(_derive_more_display_formatter, #fmt, #args)),
                         false,
                     ))
+                }
+                op if op.segments.first().expect("path shouldn't be empty").ident
+                    == "fmt" =>
+                {
+                    todo!()
                 }
                 _ => Err(Error::new(
                     list.nested[0].span(),
