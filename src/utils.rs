@@ -3,10 +3,10 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-    parse_str, punctuated::Punctuated, spanned::Spanned, Attribute, Data, DeriveInput,
-    Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Ident,
-    ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type, TypeGenerics,
-    TypeParamBound, Variant, WhereClause,
+    parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
+    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
+    Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type,
+    TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
 
 #[derive(Clone, Copy, Default)]
@@ -121,10 +121,9 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     let mut generics = generics.clone();
     for type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
-        let bound: TypeParamBound = parse_str(
-            &quote!(::core::ops::#trait_ident<Output=#type_ident>).to_string(),
-        )
-        .unwrap();
+        let bound: TypeParamBound = parse_quote! {
+            ::core::ops::#trait_ident<Output=#type_ident>
+        };
         type_param.bounds.push(bound)
     }
 
@@ -143,7 +142,7 @@ pub fn add_extra_ty_param_bound<'a>(
     bound: &'a TokenStream,
 ) -> Generics {
     let mut generics = generics.clone();
-    let bound: TypeParamBound = parse_str(&bound.to_string()).unwrap();
+    let bound: TypeParamBound = parse_quote! { #bound };
     for type_param in &mut generics.type_params_mut() {
         type_param.bounds.push(bound.clone())
     }
@@ -176,7 +175,7 @@ pub fn add_extra_generic_param(
     generics: &Generics,
     generic_param: TokenStream,
 ) -> Generics {
-    let generic_param: GenericParam = parse_str(&generic_param.to_string()).unwrap();
+    let generic_param: GenericParam = parse_quote! { #generic_param };
     let mut generics = generics.clone();
     generics.params.push(generic_param);
 
@@ -187,8 +186,7 @@ pub fn add_extra_where_clauses(
     generics: &Generics,
     type_where_clauses: TokenStream,
 ) -> Generics {
-    let mut type_where_clauses: WhereClause =
-        parse_str(&type_where_clauses.to_string()).unwrap();
+    let mut type_where_clauses: WhereClause = parse_quote! { #type_where_clauses };
     let mut new_generics = generics.clone();
     if let Some(old_where) = new_generics.where_clause {
         type_where_clauses.predicates.extend(old_where.predicates)

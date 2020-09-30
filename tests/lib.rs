@@ -153,6 +153,20 @@ struct DoubleUIntStruct {
 #[derive(From, Into, Constructor)]
 struct Unit;
 
+// Tests that we can forward to a path
+// containing `$crate`
+macro_rules! use_dollar_crate {
+    () => {
+        struct Foo;
+        #[derive(From)]
+        enum Bar {
+            First(#[from(forward)] $crate::Foo),
+        }
+    };
+}
+
+use_dollar_crate!();
+
 #[test]
 fn main() {
     let mut myint: MyInt = 5.into();
