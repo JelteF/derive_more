@@ -6,7 +6,7 @@ use quote::quote;
 use syn::{parse::Result, DeriveInput, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let as_mut_type = &Ident::new("__BorrowMutT", Span::call_site());
+    let borrow_mut_type = &Ident::new("__BorrowMutT", Span::call_site());
     let state = State::with_type_bound(
         input,
         trait_name,
