@@ -11,6 +11,7 @@ When `Borrow` is derived for a newtype or struct with one field, a single
 implementation is generated to expose the underlying field.
 
 ```rust
+# use core::borrow::Borrow;
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Borrow)]
@@ -20,6 +21,7 @@ struct MyWrapper(String);
 Generates:
 
 ```rust
+# use core::borrow::Borrow;
 # struct MyWrapper(String);
 impl Borrow<String> for MyWrapper {
     fn borrow(&self) -> &String {
@@ -33,6 +35,7 @@ to the `borrow` implementation of the field. So here `SigleFieldForward`
 implements all `Borrow` for all types that `Vec<i32>` implements `Borrow` for.
 
 ```rust
+# use core::borrow::Borrow;
 # #[macro_use] extern crate derive_more;
 #[derive(Borrow)]
 #[borrow(forward)]
@@ -49,13 +52,13 @@ This generates:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<__BorrowT: ?::core::marker::Sized> ::core::convert::Borrow<__BorrowT> for SingleFieldForward
+impl<__BorrowT: ?::core::marker::Sized> ::core::borrow::Borrow<__BorrowT> for SingleFieldForward
 where
-    Vec<i32>: ::core::convert::Borrow<__BorrowT>,
+    Vec<i32>: ::core::borrow::Borrow<__BorrowT>,
 {
     #[inline]
     fn borrow(&self) -> &__BorrowT {
-        <Vec<i32> as ::core::convert::Borrow<__BorrowT>>::borrow(&self.0)
+        <Vec<i32> as ::core::borrow::Borrow<__BorrowT>>::borrow(&self.0)
     }
 }
 ```
@@ -68,6 +71,7 @@ An implementation will be generated for each indicated field.
 You can also exclude a specific field by using `#[borrow(ignore)]`.
 
 ```rust
+# use core::borrow::Borrow;
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 #[derive(Borrow)]
@@ -84,6 +88,7 @@ struct MyWrapper {
 Generates:
 
 ```rust
+# use core::borrow::Borrow;
 # struct MyWrapper {
 #     name: String,
 #     num: i32,
@@ -107,6 +112,7 @@ This means any attempt to mark more than one field of the same type with
 `#[borrow]` will result in a compilation error.
 
 ```compile_fail
+# use core::borrow::Borrow;
 # #[macro_use] extern crate derive_more;
 # fn main(){}
 // Error! Conflicting implementations of Borrow<String>
