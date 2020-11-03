@@ -416,4 +416,10 @@ create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
 create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
 
 create_derive!("borrow", borrow, Borrow, borrow_derive, borrow);
-create_derive!("borrow_mut", borrow_mut, BorrowMut, borrow_mut_derive, borrow_mut);
+create_derive!(
+    "borrow_mut",
+    borrow_mut,
+    BorrowMut,
+    borrow_mut_derive,
+    borrow_mut
+);
