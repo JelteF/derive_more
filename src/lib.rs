@@ -82,6 +82,8 @@
 //! 5. [`IntoIterator`]
 //! 6. [`AsRef`]
 //! 7. [`AsMut`]
+//! 8. [`Borrow`]
+//! 9. [`BorrowMut`]
 //!
 //! ### Formatting traits
 //!
@@ -162,6 +164,8 @@
 //! [`IntoIterator`]: https://jeltef.github.io/derive_more/derive_more/into_iterator.html
 //! [`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
 //! [`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
+//! [`Borrow`]: https://jeltef.github.io/derive_more/derive_more/borrow.html
+//! [`BorrowMut`]: https://jeltef.github.io/derive_more/derive_more/borrow_mut.html
 //!
 //! [`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
 //!
@@ -207,6 +211,10 @@ mod add_like;
 mod as_mut;
 #[cfg(feature = "as_ref")]
 mod as_ref;
+#[cfg(feature = "borrow")]
+mod borrow;
+#[cfg(feature = "borrow_mut")]
+mod borrow_mut;
 #[cfg(feature = "constructor")]
 mod constructor;
 #[cfg(feature = "deref")]
@@ -406,3 +414,6 @@ create_derive!(
 
 create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
 create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
+
+create_derive!("borrow", borrow, Borrow, borrow_derive, borrow);
+create_derive!("borrow_mut", borrow_mut, BorrowMut, borrow_mut_derive, borrow_mut);

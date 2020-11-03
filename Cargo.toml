@@ -44,6 +44,8 @@ add_assign = []
 add = []
 as_mut = []
 as_ref = []
+borrow = []
+borrow_mut = []
 constructor = []
 deref = []
 deref_mut = []
@@ -69,6 +71,8 @@ default = [
     "add",
     "as_mut",
     "as_ref",
+    "borrow",
+    "borrow_mut",
     "constructor",
     "deref",
     "deref_mut",
