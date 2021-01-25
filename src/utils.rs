@@ -984,7 +984,7 @@ fn parse_punctuated_nested_meta(
                     | (Some("ref_mut"), "types") => {
                         parse_nested = false;
                         for meta in &list.nested {
-                            match meta {
+                            let typ: syn::Type = match meta {
                                 NestedMeta::Meta(meta) => {
                                     let path = if let Meta::Path(p) = meta {
                                         p
@@ -997,38 +997,40 @@ fn parse_punctuated_nested_meta(
                                             ),
                                         ));
                                     };
-
-                                    for ref_type in wrapper_name
-                                        .map(|n| vec![RefType::from_attr_name(n)])
-                                        .unwrap_or_else(|| {
-                                            vec![
-                                                RefType::No,
-                                                RefType::Ref,
-                                                RefType::Mut,
-                                            ]
-                                        })
-                                    {
-                                        if info
-                                            .types
-                                            .entry(ref_type)
-                                            .or_default()
-                                            .replace(path.clone())
-                                            .is_some()
-                                        {
-                                            return Err(Error::new(
-                                                path.span(),
-                                                format!(
-                                                    "Duplicate type `{}` specified",
-                                                    quote! { #path },
-                                                ),
-                                            ));
-                                        }
+                                    syn::TypePath {
+                                        qself: None,
+                                        path: path.clone(),
                                     }
+                                    .into()
                                 }
+                                NestedMeta::Lit(syn::Lit::Str(s)) => s.parse()?,
                                 NestedMeta::Lit(lit) => return Err(Error::new(
                                     lit.span(),
                                     "Attribute doesn't support nested literals here",
                                 )),
+                            };
+
+                            for ref_type in wrapper_name
+                                .map(|n| vec![RefType::from_attr_name(n)])
+                                .unwrap_or_else(|| {
+                                    vec![RefType::No, RefType::Ref, RefType::Mut]
+                                })
+                            {
+                                if info
+                                    .types
+                                    .entry(ref_type)
+                                    .or_default()
+                                    .replace(typ.clone())
+                                    .is_some()
+                                {
+                                    return Err(Error::new(
+                                        typ.span(),
+                                        format!(
+                                            "Duplicate type `{}` specified",
+                                            quote! { #path },
+                                        ),
+                                    ));
+                                }
                             }
                         }
                     }
@@ -1122,7 +1124,7 @@ pub struct MetaInfo {
     pub source: Option<bool>,
     pub backtrace: Option<bool>,
     #[cfg(any(feature = "from", feature = "into"))]
-    pub types: HashMap<RefType, HashSet<syn::Path>>,
+    pub types: HashMap<RefType, HashSet<syn::Type>>,
 }
 
 impl MetaInfo {
@@ -1154,7 +1156,7 @@ impl FullMetaInfo {
     }
 
     #[cfg(any(feature = "from", feature = "into"))]
-    pub fn additional_types(&self, ref_type: RefType) -> HashSet<syn::Path> {
+    pub fn additional_types(&self, ref_type: RefType) -> HashSet<syn::Type> {
         self.info.types.get(&ref_type).cloned().unwrap_or_default()
     }
 }
