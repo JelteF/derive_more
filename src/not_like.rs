@@ -31,10 +31,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             enum_output_type_and_content(input, data_enum, method_ident)
         }
 
-        _ => panic!(
-            "Only structs and enums can use derive({})",
-            trait_name
-        ),
+        _ => panic!("Only structs and enums can use derive({})", trait_name),
     };
 
     quote!(
