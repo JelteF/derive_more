@@ -224,10 +224,10 @@ pub fn named_to_vec(fields: &FieldsNamed) -> Vec<&Field> {
 }
 
 fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
-    panic!(format!(
+    panic!(
         "derive({}) only works when forwarding to a single field. Try putting #[{}] or #[{}(ignore)] on the fields in the struct",
         trait_name, trait_attr, trait_attr,
-    ))
+    )
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -416,7 +416,7 @@ impl<'input> State<'input> {
                 data_enum.variants.iter().collect(),
             ),
             Data::Union(_) => {
-                panic!(format!("cannot derive({}) for union", trait_name))
+                panic!("cannot derive({}) for union", trait_name)
             }
         };
         let attrs: Vec<_> = if derive_type == DeriveType::Enum {
@@ -620,7 +620,7 @@ impl<'input> State<'input> {
 
     pub fn enabled_fields_data<'state>(&'state self) -> MultiFieldData<'input, 'state> {
         if self.derive_type == DeriveType::Enum {
-            panic!(format!("cannot derive({}) for enum", self.trait_name))
+            panic!("cannot derive({}) for enum", self.trait_name)
         }
         let fields = self.enabled_fields();
         let field_idents = self.enabled_fields_idents();
@@ -677,7 +677,7 @@ impl<'input> State<'input> {
         &'state self,
     ) -> MultiVariantData<'input, 'state> {
         if self.derive_type != DeriveType::Enum {
-            panic!(format!("can only derive({}) for enum", self.trait_name))
+            panic!("can only derive({}) for enum", self.trait_name)
         }
         let variants = self.enabled_variants();
         let trait_path = &self.trait_path;

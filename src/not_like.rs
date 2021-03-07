@@ -25,16 +25,16 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
                 quote!(#input_type#ty_generics),
                 struct_content(input_type, &named_to_vec(fields), method_ident),
             ),
-            _ => panic!(format!("Unit structs cannot use derive({})", trait_name)),
+            _ => panic!("Unit structs cannot use derive({})", trait_name),
         },
         Data::Enum(ref data_enum) => {
             enum_output_type_and_content(input, data_enum, method_ident)
         }
 
-        _ => panic!(format!(
+        _ => panic!(
             "Only structs and enums can use derive({})",
             trait_name
-        )),
+        ),
     };
 
     quote!(
