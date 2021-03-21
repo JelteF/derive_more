@@ -1,7 +1,9 @@
 % What #[derive(IsVariant)] generates
 
-When an enum is decorated with `#[derive(IsVariant)]`, for each variant `foo` in the enum,
-a public instance method `is_foo(&self) -> bool` is generated.
+When an enum is decorated with `#[derive(IsVariant)]`, for each variant `foo` in
+the enum, a public instance method `is_foo(&self) -> bool` is generated. If you
+don't want the `is_foo` method generated for a variant you can put the
+`#[is_variant(ignore)]` attribute on that variant.
 
 # Example usage
 
