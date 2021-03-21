@@ -97,7 +97,7 @@ implementation is generated to expose the underlying field.</p>
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="number">0</span>
     }
 }</pre></div>
-<p>It's also possible to use the <code>#[as_mut(forward)]</code> attribute to forward
+<p>It’s also possible to use the <code>#[as_mut(forward)]</code> attribute to forward
 to the <code>as_mut</code> implementation of the field. So here <code>SigleFieldForward</code>
 implements all <code>AsMut</code> for all types that <code>Vec&lt;i32&gt;</code> implements <code>AsMut</code> for.</p>
 
@@ -157,7 +157,7 @@ You can also exclude a specific field by using <code>#[as_mut(ignore)]</code>.</
 <p>Note that <code>AsMut&lt;T&gt;</code> may only be implemented once for any given type <code>T</code>. This means any attempt to
 mark more than one field of the same type with <code>#[as_mut]</code> will result in a compilation error.</p>
 
-<div class='information'><div class='tooltip compile_fail'>ⓘ<span class='tooltiptext'>This example deliberately fails to compile</span></div></div><div class="example-wrap"><pre class="rust rust-example-rendered compile_fail">
+<div class='information'><div class='tooltip compile_fail'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered compile_fail">
 <span class="comment">// Error! Conflicting implementations of AsMut&lt;String&gt;</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AsMut</span>)]</span>
 <span class="kw">struct</span> <span class="ident">MyWrapper</span> {

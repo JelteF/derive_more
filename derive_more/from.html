@@ -123,6 +123,15 @@ the type that <code>.into()</code> is called on.</p>
     <span class="ident">NoFromImpl</span>(<span class="ident">i64</span>),
 }
 
+<span class="comment">// And even specify additional conversions for them</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">From</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="kw">enum</span> <span class="ident">MyEnum3</span> {
+    <span class="attribute">#[<span class="ident">from</span>(<span class="ident">types</span>(<span class="ident">i8</span>))]</span>
+    <span class="ident">SmallInt</span>(<span class="ident">i32</span>),
+    <span class="attribute">#[<span class="ident">from</span>(<span class="ident">types</span>(<span class="ident">i16</span>))]</span>
+    <span class="ident">NamedBigInt</span> { <span class="ident">int</span>: <span class="ident">i64</span> },
+    <span class="ident">NoFromImpl</span>(<span class="ident">i64</span>),
+}
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyInt</span>(<span class="number">2</span>) <span class="op">=</span><span class="op">=</span> <span class="number">2</span>.<span class="ident">into</span>());
@@ -130,14 +139,15 @@ the type that <code>.into()</code> is called on.</p>
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum</span>::<span class="ident">SmallInt</span>(<span class="number">123</span>) <span class="op">=</span><span class="op">=</span> <span class="number">123i32</span>.<span class="ident">into</span>());
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum</span>::<span class="ident">SmallInt</span>(<span class="number">123</span>) <span class="op">!</span><span class="op">=</span> <span class="number">123i64</span>.<span class="ident">into</span>());
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum</span>::<span class="ident">NamedBigInt</span>{<span class="ident">int</span>: <span class="number">123</span>} <span class="op">=</span><span class="op">=</span> <span class="number">123i64</span>.<span class="ident">into</span>());
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum3</span>::<span class="ident">SmallInt</span>(<span class="number">123</span>) <span class="op">=</span><span class="op">=</span> <span class="number">123i8</span>.<span class="ident">into</span>());
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum3</span>::<span class="ident">NamedBigInt</span>{<span class="ident">int</span>: <span class="number">123</span>} <span class="op">=</span><span class="op">=</span> <span class="number">123i16</span>.<span class="ident">into</span>());
 }</pre></div>
 <h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">2 Tuple structs</a></h1>
 <p>When deriving for a tuple struct with a single field (i.e. a newtype) like this:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">From</span>)]</span>
-<span class="kw">struct</span> <span class="ident">MyInt</span>(<span class="ident">i32</span>);
-</pre></div>
+<span class="kw">struct</span> <span class="ident">MyInt</span>(<span class="ident">i32</span>);</pre></div>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
@@ -202,7 +212,7 @@ fields. For instance when deriving for a tuple struct with two fields like this:
 <h1 id="enums" class="section-header"><a href="#enums">4 Enums</a></h1>
 <p>When deriving <code>From</code> for enums a new <code>impl</code> will be generated for each of its
 variants.
-If you don't want this for a variant you can put the <code>#[from(ignore)]</code> attribute
+If you don’t want this for a variant you can put the <code>#[from(ignore)]</code> attribute
 on that variant. One case where this can be useful is when two variants would
 overlap.
 For instance when deriving <code>From</code> for the following enum:</p>

@@ -82,7 +82,7 @@
 added together. This done by adding their respective fields together and
 creating a new struct with those values.
 For enums each variant can be added in a similar way to another instance of that
-same variant. There's one big difference however, it returns a
+same variant. There’s one big difference however, it returns a
 <code>Result&lt;EnumType&gt;</code>, because an error is returned when to different variants are
 added together.</p>
 <h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">1 Tuple structs</a></h1>
@@ -124,7 +124,7 @@ added together.</p>
 }</pre></div>
 <p>The behaviour is similar for more or less fields.</p>
 <h1 id="enums" class="section-header"><a href="#enums">3 Enums</a></h1>
-<p>There's a big difference between the code that is generated for the two struct
+<p>There’s a big difference between the code that is generated for the two struct
 types and the one that is generated for enums. The code for enums returns
 <code>Result&lt;EnumType&gt;</code> instead of an <code>EnumType</code> itself. This is because adding an
 enum to another enum is only possible if both are the same variant. This makes

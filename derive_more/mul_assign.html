@@ -81,7 +81,7 @@
 <li><a href="#enums">3 Enums</a><ul></ul></li></ul></nav><p>This code is very similar to the code that is generated for <code>#[derive(Mul)]</code>.
 The difference is that it mutates the existing instance instead of creating a
 new one.</p>
-<p>You can add the <code>#[mul_assign(forward)]</code> attribute if you don't want the same
+<p>You can add the <code>#[mul_assign(forward)]</code> attribute if you don’t want the same
 semantics as <code>Mul</code>.
 This will instead generate a <code>MulAssign</code> implementation with the same semantics
 as <code>AddAssign</code>.</p>
@@ -125,7 +125,7 @@ as <code>AddAssign</code>.</p>
     }
 }</pre></div>
 <p>The behaviour is again similar with more or less fields, except that <code>Copy</code>
-doesn't have to be implemented for <code>__Rhst</code> when the struct has only a single
+doesn’t have to be implemented for <code>__Rhst</code> when the struct has only a single
 field.</p>
 <h1 id="enums" class="section-header"><a href="#enums">3 Enums</a></h1>
 <p>Deriving <code>MulAssign</code> for enums is not (yet) supported.

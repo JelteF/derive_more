@@ -89,7 +89,7 @@ In the case of an enum, each of its variants is matched.</p>
 the supplied format, or an automatically inferred one.</p>
 <p>You specify the format on each variant by writing e.g. <code>#[display(fmt = &quot;my val: {}&quot;, &quot;some_val * 2&quot;)]</code>.
 For enums, you can either specify it on each variant, or on the enum as a whole.</p>
-<p>For variants that don't have a format specified, it will simply defer to the format of the
+<p>For variants that don’t have a format specified, it will simply defer to the format of the
 inner variable. If there is no such variable, or there is more than 1, an error is generated.</p>
 <h1 id="the-format-of-the-format" class="section-header"><a href="#the-format-of-the-format">1 The format of the format</a></h1>
 <p>You supply a format by attaching an attribute of the syntax: <code>#[display(fmt = &quot;...&quot;, args...)]</code>.
@@ -132,8 +132,8 @@ used in angle bracket list: <code>T: MyTrait, U: Trait1 + Trait2</code>.</p>
 <p>Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
 by traits, i.e. no lifetime parameters or lifetime bounds allowed in bound-string.</p>
 <p>As double-quote <code>fmt</code> arguments are parsed as an arbitrary Rust expression and passed to generated
-<code>write!</code> as-is, it's impossible to meaningfully infer any kind of trait bounds for generic type parameters
-used this way. That means that you'll <strong>have to</strong> explicitly specify all trait bound used. Either in the
+<code>write!</code> as-is, it’s impossible to meaningfully infer any kind of trait bounds for generic type parameters
+used this way. That means that you’ll <strong>have to</strong> explicitly specify all trait bound used. Either in the
 struct/enum definition, or via <code>#[display(bound = &quot;...&quot;)]</code> attribute.</p>
 <p>Note how we have to bound <code>U</code> and <code>V</code> by <code>Display</code> in the following example, as no bound is inferred.
 Not even <code>Display</code>.</p>

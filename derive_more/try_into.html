@@ -80,16 +80,16 @@
 <li><a href="#structs">2 Structs</a><ul></ul></li>
 <li><a href="#enums">3 Enums</a><ul></ul></li></ul></nav><p>This derive allows you to convert enum variants into their corresponding
 variant types.
-One thing to note is that this derive doesn't actually generate an
+One thing to note is that this derive doesn’t actually generate an
 implementation for the <code>TryInto</code> trait.
 Instead it derives <code>TryFrom</code> for each variant in the enum and thus has an
 indirect implementation of <code>TryInto</code> as recommended by the
 <a href="https://doc.rust-lang.org/core/convert/trait.TryInto.html">docs</a>.</p>
-<p>By using <code>#[try_into(owned, ref, ref_mut)]</code> it's possible to derive a <code>TryInto</code>
+<p>By using <code>#[try_into(owned, ref, ref_mut)]</code> it’s possible to derive a <code>TryInto</code>
 implementation for reference types as well.
 You can pick any combination of <code>owned</code>, <code>ref</code> and <code>ref_mut</code>.
-If that's not provided the default is <code>#[try_into(owned)]</code>.</p>
-<p>With <code>#[try_into]</code> or <code>#[try_into(ignore)]</code> it's possible to indicate which
+If that’s not provided the default is <code>#[try_into(owned)]</code>.</p>
+<p>With <code>#[try_into]</code> or <code>#[try_into(ignore)]</code> it’s possible to indicate which
 variants you want to derive <code>TryInto</code> for.</p>
 <h1 id="example-usage" class="section-header"><a href="#example-usage">1 Example usage</a></h1>
 <div class="example-wrap"><pre class="rust rust-example-rendered">

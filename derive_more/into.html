@@ -82,7 +82,7 @@
 <li><a href="#enums">4 Enums</a><ul></ul></li></ul></nav><p>This derive creates the the exact oposite of <a href="from.html"><code>#[derive(From)]</code></a>.
 Instead of allowing you to create a new instance of the struct from the values
 it should contain, it allows you to extract the values from the struct.
-One thing to note is that this derive doesn't actually generate an
+One thing to note is that this derive doesn’t actually generate an
 implementation for the <code>Into</code> trait.
 Instead it derives <code>From</code> for the values contained in the struct and thus has an
 indirect implementation of <code>Into</code> as recommended by the

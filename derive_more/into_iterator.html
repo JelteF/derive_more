@@ -80,12 +80,12 @@
 <li><a href="#structs">2 Structs</a><ul></ul></li>
 <li><a href="#enums">3 Enums</a><ul></ul></li></ul></nav><p>Deriving <code>IntoIterator</code> only works for a single field of a struct.
 The result is that you will call <code>.into_iter()</code> on this field directly.</p>
-<p>With <code>#[into_iterator]</code> or <code>#[into_iterator(ignore)]</code> it's possible to indicate
+<p>With <code>#[into_iterator]</code> or <code>#[into_iterator(ignore)]</code> it’s possible to indicate
 the field that you want to derive <code>IntoIterator</code> for.</p>
-<p>By using <code>#[into_iterator(owned, ref, ref_mut)]</code> it's possible to derive an
+<p>By using <code>#[into_iterator(owned, ref, ref_mut)]</code> it’s possible to derive an
 <code>IntoIterator</code> implementation for reference types as well.
 You can pick any combination of <code>owned</code>, <code>ref</code> and <code>ref_mut</code>.
-If that's not provided the default is <code>#[IntoIterator(owned)]</code>.</p>
+If that’s not provided the default is <code>#[IntoIterator(owned)]</code>.</p>
 <h1 id="example-usage" class="section-header"><a href="#example-usage">1 Example usage</a></h1>
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">IntoIterator</span>)]</span>

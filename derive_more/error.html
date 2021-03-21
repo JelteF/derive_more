@@ -93,27 +93,27 @@ struct.</p>
 often <a href="from.html"><code>From</code></a> as well.</p>
 <h2 id="when-and-how-does-it-derive-backtrace" class="section-header"><a href="#when-and-how-does-it-derive-backtrace">1.1 When and how does it derive <code>backtrace()</code>?</a></h2>
 <ol>
-<li>It's a struct/variant with named fields and one is the fields is
+<li>It’s a struct/variant with named fields and one of the fields is
 called <code>backtrace</code>. Then it would return that field as the <code>backtrace</code>.</li>
-<li>It's a tuple struct/variant and the type of exactly one of the fields is
+<li>It’s a tuple struct/variant and the type of exactly one of the fields is
 called <code>Backtrace</code>. Then it would return that field as the <code>backtrace</code>.</li>
 <li>One of the fields is annotated with <code>#[error(backtrace)]</code>. Then it would
 return that field as the <code>backtrace</code>.</li>
 </ol>
 <h2 id="when-and-how-does-it-derive-source" class="section-header"><a href="#when-and-how-does-it-derive-source">1.2 When and how does it derive <code>source()</code>?</a></h2>
 <ol>
-<li>It's a struct/variant with named fields and one is the fields is
+<li>It’s a struct/variant with named fields and one is the fields is
 called <code>source</code>. Then it would return that field as the <code>source</code>.</li>
-<li>It's a tuple struct/variant and there's exactly one field that is not used as
+<li>It’s a tuple struct/variant and there’s exactly one field that is not used as
 the <code>backtrace</code>. So either a tuple struct with one field, or one with two where one
 is the <code>backtrace</code>. Then it returns this field as the <code>source</code>.</li>
 <li>One of the fields is annotated with <code>#[error(backtrace)]</code>. Then it would
 return that field as the <code>backtrace</code>.</li>
 </ol>
 <h2 id="ignoring-fields-for-derives" class="section-header"><a href="#ignoring-fields-for-derives">1.3 Ignoring fields for derives</a></h2>
-<p>It's possible to ignore a field or a whole enum variant completely for this this
+<p>It’s possible to ignore a field or a whole enum variant completely for this
 derive using the <code>#[error(ignore)]</code> attribute. This will ignore it both for
-detecting <code>backtrace</code> and <code>source</code>. It's also possible to mark a field only
+detecting <code>backtrace</code> and <code>source</code>. It’s also possible to mark a field only
 ignored for one of these methods by using <code>#[error(not(backtrace))]</code> or
 <code>#[error(not(source))]</code>.</p>
 <h1 id="example-usage" class="section-header"><a href="#example-usage">2 Example usage</a></h1>
@@ -174,12 +174,12 @@ ignored for one of these methods by using <code>#[error(not(backtrace))]</code> 
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">WithExplicitSource</span>::<span class="ident">default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">Tuple</span>::<span class="ident">default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">WithoutSource</span>::<span class="ident">default</span>().<span class="ident">source</span>().<span class="ident">is_none</span>());
-    <span class="kw">let</span> <span class="ident">without_source_and_backtrace</span> <span class="op">=</span> <span class="ident">WithSourceAndBacktrace</span>{
+    <span class="kw">let</span> <span class="ident">with_source_and_backtrace</span> <span class="op">=</span> <span class="ident">WithSourceAndBacktrace</span>{
         <span class="ident">source</span>: <span class="ident">Simple</span>,
         <span class="ident">backtrace</span>: <span class="ident">Backtrace</span>::<span class="ident">capture</span>(),
     };
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">without_source_and_backtrace</span>.<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">without_source_and_backtrace</span>.<span class="ident">backtrace</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">with_source_and_backtrace</span>.<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">with_source_and_backtrace</span>.<span class="ident">backtrace</span>().<span class="ident">is_some</span>());
 
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">CompoundError</span>::<span class="ident">Simple</span>.<span class="ident">source</span>().<span class="ident">is_none</span>());
     <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">CompoundError</span>::<span class="ident">from</span>(<span class="ident">Simple</span>).<span class="ident">source</span>().<span class="ident">is_some</span>());
