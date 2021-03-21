@@ -1,6 +1,4 @@
-use crate::utils::{
-    AttrParams, DeriveType, State,
-};
+use crate::utils::{AttrParams, DeriveType, State};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
