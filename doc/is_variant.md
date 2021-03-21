@@ -3,21 +3,25 @@
 When an enum is decorated with `#[derive(IsVariant)]`, for each variant `foo` in the enum,
 a public instance method `is_foo(&self) -> bool` is generated.
 
-## Example
+## Example usage
+
 ```rust
 # #[macro_use] extern crate derive_more;
-# fn main(){
-#   assert!(Maybe::<()>::Nothing.is_nothing());
-#   assert!(!Maybe::<()>::Nothing.is_just());
-# }
 #[derive(IsVariant)]
 enum Maybe<T> {
     Just(T),
     Nothing
 }
-```
-generates these methods:
 
+fn main(){
+  assert!(Maybe::<()>::Nothing.is_nothing());
+  assert!(!Maybe::<()>::Nothing.is_just());
+}
+```
+
+## What is generated?
+
+The derive in the above example code generates the following code:
 ```rust
 # enum Maybe<T> {
 #     Just(T),
