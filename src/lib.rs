@@ -411,4 +411,4 @@ create_derive!(
 create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
 create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
 
-create_derive!("is_variant", is_variant, IsVariant, is_variant_derive);
+create_derive!("is_variant", is_variant, IsVariant, is_variant_derive, is_variant);

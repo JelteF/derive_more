@@ -25,6 +25,8 @@ enum Color {
 enum Nonsense<'a, T> {
     Ref(&'a T),
     NoRef,
+    #[is_variant(ignore)]
+    NoRefIgnored,
 }
 
 #[derive(IsVariant)]

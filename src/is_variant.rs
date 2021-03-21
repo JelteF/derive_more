@@ -1,20 +1,34 @@
+use crate::utils::{
+    AttrParams, DeriveType, State,
+};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, Fields, Ident};
+use syn::{DeriveInput, Fields, Ident, Result};
 
-pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
-    let data = match input.data {
-        syn::Data::Enum(ref enum_data) => Some(enum_data),
-        _ => None,
+pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    let state = State::with_attr_params(
+        input,
+        trait_name,
+        quote!(),
+        String::from("is_variant"),
+        AttrParams {
+            enum_: vec!["ignore"],
+            variant: vec!["ignore"],
+            struct_: vec!["ignore"],
+            field: vec!["ignore"],
+        },
+    )?;
+    if state.derive_type != DeriveType::Enum {
+        panic!("IsVariant can only be derived for enums");
     }
-    .expect("IsVariant can only be derived for enums!");
 
     let enum_name = &input.ident;
     let (imp_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
     let mut funcs = vec![];
-    for variant in data.variants.iter() {
+    for variant_state in state.enabled_variant_data().variant_states {
+        let variant = variant_state.variant.unwrap();
         let fn_name = Ident::new(
             &format_ident!("is_{}", variant.ident)
                 .to_string()
@@ -45,5 +59,5 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
         }
     };
 
-    imp
+    Ok(imp)
 }
