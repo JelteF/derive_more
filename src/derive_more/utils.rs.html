@@ -1,4 +1,7 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `src/utils.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>utils.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../derive_more/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">   1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/utils.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>utils.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../derive_more/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">   1</span>
 <span id="2">   2</span>
 <span id="3">   3</span>
 <span id="4">   4</span>
@@ -1037,21 +1040,217 @@
 <span id="1037">1037</span>
 <span id="1038">1038</span>
 <span id="1039">1039</span>
+<span id="1040">1040</span>
+<span id="1041">1041</span>
+<span id="1042">1042</span>
+<span id="1043">1043</span>
+<span id="1044">1044</span>
+<span id="1045">1045</span>
+<span id="1046">1046</span>
+<span id="1047">1047</span>
+<span id="1048">1048</span>
+<span id="1049">1049</span>
+<span id="1050">1050</span>
+<span id="1051">1051</span>
+<span id="1052">1052</span>
+<span id="1053">1053</span>
+<span id="1054">1054</span>
+<span id="1055">1055</span>
+<span id="1056">1056</span>
+<span id="1057">1057</span>
+<span id="1058">1058</span>
+<span id="1059">1059</span>
+<span id="1060">1060</span>
+<span id="1061">1061</span>
+<span id="1062">1062</span>
+<span id="1063">1063</span>
+<span id="1064">1064</span>
+<span id="1065">1065</span>
+<span id="1066">1066</span>
+<span id="1067">1067</span>
+<span id="1068">1068</span>
+<span id="1069">1069</span>
+<span id="1070">1070</span>
+<span id="1071">1071</span>
+<span id="1072">1072</span>
+<span id="1073">1073</span>
+<span id="1074">1074</span>
+<span id="1075">1075</span>
+<span id="1076">1076</span>
+<span id="1077">1077</span>
+<span id="1078">1078</span>
+<span id="1079">1079</span>
+<span id="1080">1080</span>
+<span id="1081">1081</span>
+<span id="1082">1082</span>
+<span id="1083">1083</span>
+<span id="1084">1084</span>
+<span id="1085">1085</span>
+<span id="1086">1086</span>
+<span id="1087">1087</span>
+<span id="1088">1088</span>
+<span id="1089">1089</span>
+<span id="1090">1090</span>
+<span id="1091">1091</span>
+<span id="1092">1092</span>
+<span id="1093">1093</span>
+<span id="1094">1094</span>
+<span id="1095">1095</span>
+<span id="1096">1096</span>
+<span id="1097">1097</span>
+<span id="1098">1098</span>
+<span id="1099">1099</span>
+<span id="1100">1100</span>
+<span id="1101">1101</span>
+<span id="1102">1102</span>
+<span id="1103">1103</span>
+<span id="1104">1104</span>
+<span id="1105">1105</span>
+<span id="1106">1106</span>
+<span id="1107">1107</span>
+<span id="1108">1108</span>
+<span id="1109">1109</span>
+<span id="1110">1110</span>
+<span id="1111">1111</span>
+<span id="1112">1112</span>
+<span id="1113">1113</span>
+<span id="1114">1114</span>
+<span id="1115">1115</span>
+<span id="1116">1116</span>
+<span id="1117">1117</span>
+<span id="1118">1118</span>
+<span id="1119">1119</span>
+<span id="1120">1120</span>
+<span id="1121">1121</span>
+<span id="1122">1122</span>
+<span id="1123">1123</span>
+<span id="1124">1124</span>
+<span id="1125">1125</span>
+<span id="1126">1126</span>
+<span id="1127">1127</span>
+<span id="1128">1128</span>
+<span id="1129">1129</span>
+<span id="1130">1130</span>
+<span id="1131">1131</span>
+<span id="1132">1132</span>
+<span id="1133">1133</span>
+<span id="1134">1134</span>
+<span id="1135">1135</span>
+<span id="1136">1136</span>
+<span id="1137">1137</span>
+<span id="1138">1138</span>
+<span id="1139">1139</span>
+<span id="1140">1140</span>
+<span id="1141">1141</span>
+<span id="1142">1142</span>
+<span id="1143">1143</span>
+<span id="1144">1144</span>
+<span id="1145">1145</span>
+<span id="1146">1146</span>
+<span id="1147">1147</span>
+<span id="1148">1148</span>
+<span id="1149">1149</span>
+<span id="1150">1150</span>
+<span id="1151">1151</span>
+<span id="1152">1152</span>
+<span id="1153">1153</span>
+<span id="1154">1154</span>
+<span id="1155">1155</span>
+<span id="1156">1156</span>
+<span id="1157">1157</span>
+<span id="1158">1158</span>
+<span id="1159">1159</span>
+<span id="1160">1160</span>
+<span id="1161">1161</span>
+<span id="1162">1162</span>
+<span id="1163">1163</span>
+<span id="1164">1164</span>
+<span id="1165">1165</span>
+<span id="1166">1166</span>
+<span id="1167">1167</span>
+<span id="1168">1168</span>
+<span id="1169">1169</span>
+<span id="1170">1170</span>
+<span id="1171">1171</span>
+<span id="1172">1172</span>
+<span id="1173">1173</span>
+<span id="1174">1174</span>
+<span id="1175">1175</span>
+<span id="1176">1176</span>
+<span id="1177">1177</span>
+<span id="1178">1178</span>
+<span id="1179">1179</span>
+<span id="1180">1180</span>
+<span id="1181">1181</span>
+<span id="1182">1182</span>
+<span id="1183">1183</span>
+<span id="1184">1184</span>
+<span id="1185">1185</span>
+<span id="1186">1186</span>
+<span id="1187">1187</span>
+<span id="1188">1188</span>
+<span id="1189">1189</span>
+<span id="1190">1190</span>
+<span id="1191">1191</span>
+<span id="1192">1192</span>
+<span id="1193">1193</span>
+<span id="1194">1194</span>
+<span id="1195">1195</span>
+<span id="1196">1196</span>
+<span id="1197">1197</span>
+<span id="1198">1198</span>
+<span id="1199">1199</span>
+<span id="1200">1200</span>
+<span id="1201">1201</span>
+<span id="1202">1202</span>
+<span id="1203">1203</span>
+<span id="1204">1204</span>
+<span id="1205">1205</span>
+<span id="1206">1206</span>
+<span id="1207">1207</span>
+<span id="1208">1208</span>
+<span id="1209">1209</span>
+<span id="1210">1210</span>
+<span id="1211">1211</span>
+<span id="1212">1212</span>
+<span id="1213">1213</span>
+<span id="1214">1214</span>
+<span id="1215">1215</span>
+<span id="1216">1216</span>
+<span id="1217">1217</span>
+<span id="1218">1218</span>
+<span id="1219">1219</span>
+<span id="1220">1220</span>
+<span id="1221">1221</span>
+<span id="1222">1222</span>
+<span id="1223">1223</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;default&quot;</span>), <span class="ident">allow</span>(<span class="ident">dead_code</span>))]</span>
-
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections</span>::<span class="ident">HashSet</span>, <span class="ident">ops</span>::<span class="ident">Deref</span> <span class="kw">as</span> <span class="kw">_</span>};
+<span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;default&quot;</span>), <span class="ident">allow</span>(<span class="ident">dead_code</span>), <span class="ident">allow</span>(<span class="ident">unused_mut</span>))]</span>
 
 <span class="kw">use</span> <span class="ident">proc_macro2</span>::{<span class="ident">Span</span>, <span class="ident">TokenStream</span>};
 <span class="kw">use</span> <span class="ident">quote</span>::{<span class="ident">quote</span>, <span class="ident">ToTokens</span>};
 <span class="kw">use</span> <span class="ident">syn</span>::{
-    <span class="ident">parse_str</span>, <span class="ident">punctuated</span>::<span class="ident">Punctuated</span>, <span class="ident">spanned</span>::<span class="ident">Spanned</span>, <span class="ident">Attribute</span>, <span class="ident">Data</span>, <span class="ident">DeriveInput</span>,
-    <span class="ident">Error</span>, <span class="ident">Field</span>, <span class="ident">Fields</span>, <span class="ident">FieldsNamed</span>, <span class="ident">FieldsUnnamed</span>, <span class="ident">GenericParam</span>, <span class="ident">Generics</span>, <span class="ident">Ident</span>,
-    <span class="ident">ImplGenerics</span>, <span class="ident">Index</span>, <span class="ident">Meta</span>, <span class="ident">NestedMeta</span>, <span class="prelude-ty">Result</span>, <span class="ident">Token</span>, <span class="ident">Type</span>, <span class="ident">TypeGenerics</span>,
-    <span class="ident">TypeParamBound</span>, <span class="ident">Variant</span>, <span class="ident">WhereClause</span>,
+    <span class="ident">parse_quote</span>, <span class="ident">punctuated</span>::<span class="ident">Punctuated</span>, <span class="ident">spanned</span>::<span class="ident">Spanned</span>, <span class="ident">Attribute</span>, <span class="ident">Data</span>,
+    <span class="ident">DeriveInput</span>, <span class="ident">Error</span>, <span class="ident">Field</span>, <span class="ident">Fields</span>, <span class="ident">FieldsNamed</span>, <span class="ident">FieldsUnnamed</span>, <span class="ident">GenericParam</span>,
+    <span class="ident">Generics</span>, <span class="ident">Ident</span>, <span class="ident">ImplGenerics</span>, <span class="ident">Index</span>, <span class="ident">Meta</span>, <span class="ident">NestedMeta</span>, <span class="prelude-ty">Result</span>, <span class="ident">Token</span>, <span class="ident">Type</span>,
+    <span class="ident">TypeGenerics</span>, <span class="ident">TypeParamBound</span>, <span class="ident">Variant</span>, <span class="ident">WhereClause</span>,
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Hash</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Default</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DeterministicState</span>;
+
+<span class="kw">impl</span> <span class="ident">std</span>::<span class="ident">hash</span>::<span class="ident">BuildHasher</span> <span class="kw">for</span> <span class="ident">DeterministicState</span> {
+    <span class="kw">type</span> <span class="ident">Hasher</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">hash_map</span>::<span class="ident">DefaultHasher</span>;
+
+    <span class="kw">fn</span> <span class="ident">build_hasher</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Hasher</span> {
+        <span class="self">Self</span>::<span class="ident">Hasher</span>::<span class="ident">default</span>()
+    }
+}
+
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">DeterministicState</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">K</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">DeterministicState</span><span class="op">&gt;</span>;
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Hash</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RefType</span> {
     <span class="ident">No</span>,
     <span class="ident">Ref</span>,
@@ -1104,6 +1303,15 @@
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">true</span>,
         }
     }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_attr_name</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">match</span> <span class="ident">name</span> {
+            <span class="string">&quot;owned&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RefType</span>::<span class="ident">No</span>,
+            <span class="string">&quot;ref&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RefType</span>::<span class="ident">Ref</span>,
+            <span class="string">&quot;ref_mut&quot;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">RefType</span>::<span class="ident">Mut</span>,
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;&#39;{}&#39; is not a RefType&quot;</span>, <span class="ident">name</span>),
+        }
+    }
 }
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">numbered_vars</span>(<span class="ident">count</span>: <span class="ident">usize</span>, <span class="ident">prefix</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Ident</span><span class="op">&gt;</span> {
@@ -1140,10 +1348,9 @@
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">generics</span> <span class="op">=</span> <span class="ident">generics</span>.<span class="ident">clone</span>();
     <span class="kw">for</span> <span class="ident">type_param</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">generics</span>.<span class="ident">type_params_mut</span>() {
         <span class="kw">let</span> <span class="ident">type_ident</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">type_param</span>.<span class="ident">ident</span>;
-        <span class="kw">let</span> <span class="ident">bound</span>: <span class="ident">TypeParamBound</span> <span class="op">=</span> <span class="ident">parse_str</span>(
-            <span class="kw-2">&amp;</span><span class="macro">quote</span><span class="macro">!</span>(::<span class="ident">core</span>::<span class="ident">ops</span>::#<span class="ident">trait_ident</span><span class="op">&lt;</span><span class="ident">Output</span><span class="op">=</span>#<span class="ident">type_ident</span><span class="op">&gt;</span>).<span class="ident">to_string</span>(),
-        )
-        .<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">bound</span>: <span class="ident">TypeParamBound</span> <span class="op">=</span> <span class="macro">parse_quote</span><span class="macro">!</span> {
+            ::<span class="ident">core</span>::<span class="ident">ops</span>::#<span class="ident">trait_ident</span><span class="op">&lt;</span><span class="ident">Output</span><span class="op">=</span>#<span class="ident">type_ident</span><span class="op">&gt;</span>
+        };
         <span class="ident">type_param</span>.<span class="ident">bounds</span>.<span class="ident">push</span>(<span class="ident">bound</span>)
     }
 
@@ -1162,7 +1369,7 @@
     <span class="ident">bound</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">TokenStream</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Generics</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">generics</span> <span class="op">=</span> <span class="ident">generics</span>.<span class="ident">clone</span>();
-    <span class="kw">let</span> <span class="ident">bound</span>: <span class="ident">TypeParamBound</span> <span class="op">=</span> <span class="ident">parse_str</span>(<span class="kw-2">&amp;</span><span class="ident">bound</span>.<span class="ident">to_string</span>()).<span class="ident">unwrap</span>();
+    <span class="kw">let</span> <span class="ident">bound</span>: <span class="ident">TypeParamBound</span> <span class="op">=</span> <span class="macro">parse_quote</span><span class="macro">!</span> { #<span class="ident">bound</span> };
     <span class="kw">for</span> <span class="ident">type_param</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">generics</span>.<span class="ident">type_params_mut</span>() {
         <span class="ident">type_param</span>.<span class="ident">bounds</span>.<span class="ident">push</span>(<span class="ident">bound</span>.<span class="ident">clone</span>())
     }
@@ -1195,7 +1402,7 @@
     <span class="ident">generics</span>: <span class="kw-2">&amp;</span><span class="ident">Generics</span>,
     <span class="ident">generic_param</span>: <span class="ident">TokenStream</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Generics</span> {
-    <span class="kw">let</span> <span class="ident">generic_param</span>: <span class="ident">GenericParam</span> <span class="op">=</span> <span class="ident">parse_str</span>(<span class="kw-2">&amp;</span><span class="ident">generic_param</span>.<span class="ident">to_string</span>()).<span class="ident">unwrap</span>();
+    <span class="kw">let</span> <span class="ident">generic_param</span>: <span class="ident">GenericParam</span> <span class="op">=</span> <span class="macro">parse_quote</span><span class="macro">!</span> { #<span class="ident">generic_param</span> };
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">generics</span> <span class="op">=</span> <span class="ident">generics</span>.<span class="ident">clone</span>();
     <span class="ident">generics</span>.<span class="ident">params</span>.<span class="ident">push</span>(<span class="ident">generic_param</span>);
 
@@ -1206,8 +1413,7 @@
     <span class="ident">generics</span>: <span class="kw-2">&amp;</span><span class="ident">Generics</span>,
     <span class="ident">type_where_clauses</span>: <span class="ident">TokenStream</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Generics</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">type_where_clauses</span>: <span class="ident">WhereClause</span> <span class="op">=</span>
-        <span class="ident">parse_str</span>(<span class="kw-2">&amp;</span><span class="ident">type_where_clauses</span>.<span class="ident">to_string</span>()).<span class="ident">unwrap</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">type_where_clauses</span>: <span class="ident">WhereClause</span> <span class="op">=</span> <span class="macro">parse_quote</span><span class="macro">!</span> { #<span class="ident">type_where_clauses</span> };
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_generics</span> <span class="op">=</span> <span class="ident">generics</span>.<span class="ident">clone</span>();
     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">old_where</span>) <span class="op">=</span> <span class="ident">new_generics</span>.<span class="ident">where_clause</span> {
         <span class="ident">type_where_clauses</span>.<span class="ident">predicates</span>.<span class="ident">extend</span>(<span class="ident">old_where</span>.<span class="ident">predicates</span>)
@@ -1245,10 +1451,10 @@
 }
 
 <span class="kw">fn</span> <span class="ident">panic_one_field</span>(<span class="ident">trait_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">trait_attr</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="op">!</span> {
-    <span class="macro">panic</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(
+    <span class="macro">panic</span><span class="macro">!</span>(
         <span class="string">&quot;derive({}) only works when forwarding to a single field. Try putting #[{}] or #[{}(ignore)] on the fields in the struct&quot;</span>,
         <span class="ident">trait_name</span>, <span class="ident">trait_attr</span>, <span class="ident">trait_attr</span>,
-    ))
+    )
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
@@ -1302,6 +1508,10 @@
             <span class="ident">field</span>: <span class="macro">vec</span><span class="macro">!</span>[],
         }
     }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ignore_and_forward</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">AttrParams</span> {
+        <span class="ident">AttrParams</span>::<span class="ident">new</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;ignore&quot;</span>, <span class="string">&quot;forward&quot;</span>])
+    }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;input</span><span class="op">&gt;</span> <span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;input</span><span class="op">&gt;</span> {
@@ -1311,12 +1521,13 @@
         <span class="ident">trait_module</span>: <span class="ident">TokenStream</span>,
         <span class="ident">trait_attr</span>: <span class="ident">String</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">State</span>::<span class="ident">with_attr_params</span>(
+        <span class="ident">State</span>::<span class="ident">new_impl</span>(
             <span class="ident">input</span>,
             <span class="ident">trait_name</span>,
             <span class="ident">trait_module</span>,
             <span class="ident">trait_attr</span>,
             <span class="ident">AttrParams</span>::<span class="ident">default</span>(),
+            <span class="bool-val">true</span>,
         )
     }
 
@@ -1326,12 +1537,13 @@
         <span class="ident">trait_module</span>: <span class="ident">TokenStream</span>,
         <span class="ident">trait_attr</span>: <span class="ident">String</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">State</span>::<span class="ident">with_attr_params</span>(
+        <span class="ident">State</span>::<span class="ident">new_impl</span>(
             <span class="ident">input</span>,
             <span class="ident">trait_name</span>,
             <span class="ident">trait_module</span>,
             <span class="ident">trait_attr</span>,
             <span class="ident">AttrParams</span>::<span class="ident">new</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;ignore&quot;</span>]),
+            <span class="bool-val">true</span>,
         )
     }
 
@@ -1341,12 +1553,13 @@
         <span class="ident">trait_module</span>: <span class="ident">TokenStream</span>,
         <span class="ident">trait_attr</span>: <span class="ident">String</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">State</span>::<span class="ident">with_attr_params</span>(
+        <span class="ident">State</span>::<span class="ident">new_impl</span>(
             <span class="ident">input</span>,
             <span class="ident">trait_name</span>,
             <span class="ident">trait_module</span>,
             <span class="ident">trait_attr</span>,
             <span class="ident">AttrParams</span>::<span class="ident">new</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;ignore&quot;</span>, <span class="string">&quot;forward&quot;</span>]),
+            <span class="bool-val">true</span>,
         )
     }
 
@@ -1356,12 +1569,13 @@
         <span class="ident">trait_module</span>: <span class="ident">TokenStream</span>,
         <span class="ident">trait_attr</span>: <span class="ident">String</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">State</span>::<span class="ident">with_attr_params</span>(
+        <span class="ident">State</span>::<span class="ident">new_impl</span>(
             <span class="ident">input</span>,
             <span class="ident">trait_name</span>,
             <span class="ident">trait_module</span>,
             <span class="ident">trait_attr</span>,
             <span class="ident">AttrParams</span>::<span class="ident">new</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;ignore&quot;</span>, <span class="string">&quot;owned&quot;</span>, <span class="string">&quot;ref&quot;</span>, <span class="string">&quot;ref_mut&quot;</span>]),
+            <span class="bool-val">true</span>,
         )
     }
 
@@ -1371,6 +1585,42 @@
         <span class="ident">trait_module</span>: <span class="ident">TokenStream</span>,
         <span class="ident">trait_attr</span>: <span class="ident">String</span>,
         <span class="ident">allowed_attr_params</span>: <span class="ident">AttrParams</span>,
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">State</span>::<span class="ident">new_impl</span>(
+            <span class="ident">input</span>,
+            <span class="ident">trait_name</span>,
+            <span class="ident">trait_module</span>,
+            <span class="ident">trait_attr</span>,
+            <span class="ident">allowed_attr_params</span>,
+            <span class="bool-val">true</span>,
+        )
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_type_bound</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span>(
+        <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;arg_input</span> <span class="ident">DeriveInput</span>,
+        <span class="ident">trait_name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>,
+        <span class="ident">trait_module</span>: <span class="ident">TokenStream</span>,
+        <span class="ident">trait_attr</span>: <span class="ident">String</span>,
+        <span class="ident">allowed_attr_params</span>: <span class="ident">AttrParams</span>,
+        <span class="ident">add_type_bound</span>: <span class="ident">bool</span>,
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="self">Self</span>::<span class="ident">new_impl</span>(
+            <span class="ident">input</span>,
+            <span class="ident">trait_name</span>,
+            <span class="ident">trait_module</span>,
+            <span class="ident">trait_attr</span>,
+            <span class="ident">allowed_attr_params</span>,
+            <span class="ident">add_type_bound</span>,
+        )
+    }
+
+    <span class="kw">fn</span> <span class="ident">new_impl</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span>(
+        <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;arg_input</span> <span class="ident">DeriveInput</span>,
+        <span class="ident">trait_name</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span>,
+        <span class="ident">trait_module</span>: <span class="ident">TokenStream</span>,
+        <span class="ident">trait_attr</span>: <span class="ident">String</span>,
+        <span class="ident">allowed_attr_params</span>: <span class="ident">AttrParams</span>,
+        <span class="ident">add_type_bound</span>: <span class="ident">bool</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">State</span><span class="op">&lt;</span><span class="lifetime">&#39;arg_input</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">trait_name</span> <span class="op">=</span> <span class="ident">trait_name</span>.<span class="ident">trim_end_matches</span>(<span class="string">&quot;ToInner&quot;</span>);
         <span class="kw">let</span> <span class="ident">trait_ident</span> <span class="op">=</span> <span class="ident">Ident</span>::<span class="ident">new</span>(<span class="ident">trait_name</span>, <span class="ident">Span</span>::<span class="ident">call_site</span>());
@@ -1393,7 +1643,7 @@
                 <span class="ident">data_enum</span>.<span class="ident">variants</span>.<span class="ident">iter</span>().<span class="ident">collect</span>(),
             ),
             <span class="ident">Data</span>::<span class="ident">Union</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="macro">panic</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;can not derive({}) for union&quot;</span>, <span class="ident">trait_name</span>))
+                <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;cannot derive({}) for union&quot;</span>, <span class="ident">trait_name</span>)
             }
         };
         <span class="kw">let</span> <span class="ident">attrs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">derive_type</span> <span class="op">=</span><span class="op">=</span> <span class="ident">DeriveType</span>::<span class="ident">Enum</span> {
@@ -1441,16 +1691,16 @@
             <span class="ident">first_match</span>.<span class="ident">map_or</span>(<span class="bool-val">true</span>, <span class="op">|</span><span class="ident">info</span><span class="op">|</span> <span class="op">!</span><span class="ident">info</span>.<span class="ident">enabled</span>.<span class="ident">unwrap</span>())
         };
 
-        <span class="kw">let</span> <span class="ident">defaults</span> <span class="op">=</span> <span class="ident">struct_meta_info</span>.<span class="ident">to_full</span>(<span class="ident">FullMetaInfo</span> {
+        <span class="kw">let</span> <span class="ident">defaults</span> <span class="op">=</span> <span class="ident">struct_meta_info</span>.<span class="ident">into_full</span>(<span class="ident">FullMetaInfo</span> {
             <span class="ident">enabled</span>: <span class="ident">default_enabled</span>,
             <span class="ident">forward</span>: <span class="bool-val">false</span>,
             <span class="comment">// Default to owned true, except when first attribute has one of owned,</span>
             <span class="comment">// ref or ref_mut</span>
-            <span class="comment">// - not a single attibute means default true</span>
+            <span class="comment">// - not a single attribute means default true</span>
             <span class="comment">// - an attribute, but non of owned, ref or ref_mut means default true</span>
             <span class="comment">// - an attribute, and owned, ref or ref_mut means default false</span>
             <span class="ident">owned</span>: <span class="ident">first_match</span>.<span class="ident">map_or</span>(<span class="bool-val">true</span>, <span class="op">|</span><span class="ident">info</span><span class="op">|</span> {
-                <span class="ident">info</span>.<span class="ident">owned</span>.<span class="ident">is_none</span>() <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">info</span>.<span class="ident">ref_</span>.<span class="ident">is_none</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">ref_mut</span>.<span class="ident">is_none</span>()
+                <span class="ident">info</span>.<span class="ident">owned</span>.<span class="ident">is_none</span>() <span class="op">&amp;&amp;</span> <span class="ident">info</span>.<span class="ident">ref_</span>.<span class="ident">is_none</span>() <span class="op">|</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">ref_mut</span>.<span class="ident">is_none</span>()
             }),
             <span class="ident">ref_</span>: <span class="bool-val">false</span>,
             <span class="ident">ref_mut</span>: <span class="bool-val">false</span>,
@@ -1458,14 +1708,14 @@
         });
 
         <span class="kw">let</span> <span class="ident">full_meta_infos</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">meta_infos</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">info</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">to_full</span>(<span class="ident">defaults</span>))
+            .<span class="ident">into_iter</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">info</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">into_full</span>(<span class="ident">defaults</span>.<span class="ident">clone</span>()))
             .<span class="ident">collect</span>();
 
         <span class="kw">let</span> <span class="ident">variant_states</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">derive_type</span> <span class="op">=</span><span class="op">=</span> <span class="ident">DeriveType</span>::<span class="ident">Enum</span> {
             <span class="ident">variants</span>
                 .<span class="ident">iter</span>()
-                .<span class="ident">zip</span>(<span class="ident">full_meta_infos</span>.<span class="ident">iter</span>().<span class="ident">copied</span>())
+                .<span class="ident">zip</span>(<span class="ident">full_meta_infos</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>())
                 .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">variant</span>, <span class="ident">info</span>)<span class="op">|</span> {
                     <span class="ident">State</span>::<span class="ident">from_variant</span>(
                         <span class="ident">input</span>,
@@ -1482,7 +1732,11 @@
             <span class="prelude-val">Ok</span>(<span class="macro">vec</span><span class="macro">!</span>[])
         };
 
-        <span class="kw">let</span> <span class="ident">generics</span> <span class="op">=</span> <span class="ident">add_extra_ty_param_bound</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">generics</span>, <span class="kw-2">&amp;</span><span class="ident">trait_path</span>);
+        <span class="kw">let</span> <span class="ident">generics</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">add_type_bound</span> {
+            <span class="ident">add_extra_ty_param_bound</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">generics</span>, <span class="kw-2">&amp;</span><span class="ident">trait_path</span>)
+        } <span class="kw">else</span> {
+            <span class="ident">input</span>.<span class="ident">generics</span>.<span class="ident">clone</span>()
+        };
 
         <span class="prelude-val">Ok</span>(<span class="ident">State</span> {
             <span class="ident">input</span>,
@@ -1534,8 +1788,8 @@
             .<span class="ident">collect</span>();
         <span class="kw">let</span> <span class="ident">meta_infos</span> <span class="op">=</span> <span class="ident">meta_infos</span><span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">full_meta_infos</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">meta_infos</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">info</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">to_full</span>(<span class="ident">default_info</span>))
+            .<span class="ident">into_iter</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">info</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">into_full</span>(<span class="ident">default_info</span>.<span class="ident">clone</span>()))
             .<span class="ident">collect</span>();
 
         <span class="kw">let</span> <span class="ident">generics</span> <span class="op">=</span> <span class="ident">add_extra_ty_param_bound</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">generics</span>, <span class="kw-2">&amp;</span><span class="ident">trait_path</span>);
@@ -1579,7 +1833,7 @@
             <span class="ident">field</span>: <span class="ident">data</span>.<span class="ident">fields</span>[<span class="number">0</span>],
             <span class="ident">field_type</span>: <span class="ident">data</span>.<span class="ident">field_types</span>[<span class="number">0</span>],
             <span class="ident">member</span>: <span class="ident">data</span>.<span class="ident">members</span>[<span class="number">0</span>].<span class="ident">clone</span>(),
-            <span class="ident">info</span>: <span class="ident">data</span>.<span class="ident">infos</span>[<span class="number">0</span>],
+            <span class="ident">info</span>: <span class="ident">data</span>.<span class="ident">infos</span>[<span class="number">0</span>].<span class="ident">clone</span>(),
             <span class="ident">field_ident</span>: <span class="ident">data</span>.<span class="ident">field_idents</span>[<span class="number">0</span>].<span class="ident">clone</span>(),
             <span class="ident">trait_path</span>: <span class="ident">data</span>.<span class="ident">trait_path</span>,
             <span class="ident">trait_path_with_params</span>: <span class="ident">data</span>.<span class="ident">trait_path_with_params</span>.<span class="ident">clone</span>(),
@@ -1593,7 +1847,7 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">enabled_fields_data</span><span class="op">&lt;</span><span class="lifetime">&#39;state</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;state</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MultiFieldData</span><span class="op">&lt;</span><span class="lifetime">&#39;input</span>, <span class="lifetime">&#39;state</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">derive_type</span> <span class="op">=</span><span class="op">=</span> <span class="ident">DeriveType</span>::<span class="ident">Enum</span> {
-            <span class="macro">panic</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;can not derive({}) for enum&quot;</span>, <span class="self">self</span>.<span class="ident">trait_name</span>))
+            <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;cannot derive({}) for enum&quot;</span>, <span class="self">self</span>.<span class="ident">trait_name</span>)
         }
         <span class="kw">let</span> <span class="ident">fields</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">enabled_fields</span>();
         <span class="kw">let</span> <span class="ident">field_idents</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">enabled_fields_idents</span>();
@@ -1628,7 +1882,7 @@
             <span class="ident">input_type</span>,
             <span class="ident">variant_type</span>,
             <span class="ident">variant_name</span>,
-            <span class="ident">variant_info</span>: <span class="self">self</span>.<span class="ident">default_info</span>,
+            <span class="ident">variant_info</span>: <span class="self">self</span>.<span class="ident">default_info</span>.<span class="ident">clone</span>(),
             <span class="ident">fields</span>,
             <span class="ident">field_types</span>,
             <span class="ident">field_indexes</span>,
@@ -1650,7 +1904,7 @@
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;state</span> <span class="self">self</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MultiVariantData</span><span class="op">&lt;</span><span class="lifetime">&#39;input</span>, <span class="lifetime">&#39;state</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">derive_type</span> <span class="op">!</span><span class="op">=</span> <span class="ident">DeriveType</span>::<span class="ident">Enum</span> {
-            <span class="macro">panic</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;can only derive({}) for enum&quot;</span>, <span class="self">self</span>.<span class="ident">trait_name</span>))
+            <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;can only derive({}) for enum&quot;</span>, <span class="self">self</span>.<span class="ident">trait_name</span>)
         }
         <span class="kw">let</span> <span class="ident">variants</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">enabled_variants</span>();
         <span class="kw">let</span> <span class="ident">trait_path</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">trait_path</span>;
@@ -1735,7 +1989,7 @@
         <span class="self">self</span>.<span class="ident">full_meta_infos</span>
             .<span class="ident">iter</span>()
             .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">info</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">enabled</span>)
-            .<span class="ident">copied</span>()
+            .<span class="ident">cloned</span>()
             .<span class="ident">collect</span>()
     }
 }
@@ -1839,11 +2093,11 @@
         .<span class="ident">iter</span>()
         .<span class="ident">filter_map</span>(<span class="op">|</span><span class="ident">m</span><span class="op">|</span> <span class="ident">m</span>.<span class="ident">parse_meta</span>().<span class="ident">ok</span>())
         .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">m</span><span class="op">|</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">ident</span>) <span class="op">=</span> <span class="ident">m</span>.<span class="ident">path</span>().<span class="ident">segments</span>.<span class="ident">first</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">p</span>.<span class="ident">ident</span>) {
-                <span class="ident">ident</span> <span class="op">=</span><span class="op">=</span> <span class="ident">trait_attr</span>
-            } <span class="kw">else</span> {
-                <span class="bool-val">false</span>
-            }
+            <span class="ident">m</span>.<span class="ident">path</span>()
+                .<span class="ident">segments</span>
+                .<span class="ident">first</span>()
+                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">ident</span> <span class="op">=</span><span class="op">=</span> <span class="ident">trait_attr</span>)
+                .<span class="ident">unwrap_or_default</span>()
         });
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">info</span> <span class="op">=</span> <span class="ident">MetaInfo</span>::<span class="ident">default</span>();
@@ -1860,9 +2114,9 @@
 
     <span class="ident">info</span>.<span class="ident">enabled</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>);
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">meta2</span>) <span class="op">=</span> <span class="ident">it</span>.<span class="ident">next</span>() {
+    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">another_meta</span>) <span class="op">=</span> <span class="ident">it</span>.<span class="ident">next</span>() {
         <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
-            <span class="ident">meta2</span>.<span class="ident">span</span>(),
+            <span class="ident">another_meta</span>.<span class="ident">span</span>(),
             <span class="string">&quot;Only a single attribute is allowed&quot;</span>,
         ));
     }
@@ -1872,18 +2126,25 @@
             <span class="kw">if</span> <span class="ident">allowed_attr_params</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="string">&quot;ignore&quot;</span>) {
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">info</span>);
             } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">meta</span>.<span class="ident">span</span>(), <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Empty attribute is not allowed, add one of the following parameters: {}&quot;</span>,
-                    <span class="ident">allowed_attr_params</span>.<span class="ident">join</span>(<span class="string">&quot;, &quot;</span>)
-                    )));
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                    <span class="ident">meta</span>.<span class="ident">span</span>(),
+                    <span class="macro">format</span><span class="macro">!</span>(
+                        <span class="string">&quot;Empty attribute is not allowed, add one of the following parameters: {}&quot;</span>,
+                        <span class="ident">allowed_attr_params</span>.<span class="ident">join</span>(<span class="string">&quot;, &quot;</span>),
+                    ),
+                ));
             }
         }
         <span class="ident">Meta</span>::<span class="ident">List</span>(<span class="ident">list</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">list</span>,
-        <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">meta</span>.<span class="ident">span</span>(), <span class="string">&quot;Attribute format not supported1&quot;</span>));
+        <span class="ident">Meta</span>::<span class="ident">NameValue</span>(<span class="ident">val</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                <span class="ident">val</span>.<span class="ident">span</span>(),
+                <span class="string">&quot;Attribute doesn&#39;t support name-value format here&quot;</span>,
+            ));
         }
     };
 
-    <span class="ident">parse_punctuated_nested_meta</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">info</span>, <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">nested</span>, <span class="ident">allowed_attr_params</span>, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+    <span class="ident">parse_punctuated_nested_meta</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">info</span>, <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">nested</span>, <span class="ident">allowed_attr_params</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(<span class="ident">info</span>)
 }
@@ -1892,34 +2153,133 @@
     <span class="ident">info</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">MetaInfo</span>,
     <span class="ident">meta</span>: <span class="kw-2">&amp;</span><span class="ident">Punctuated</span><span class="op">&lt;</span><span class="ident">NestedMeta</span>, <span class="macro">Token</span><span class="macro">!</span>[,]<span class="op">&gt;</span>,
     <span class="ident">allowed_attr_params</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">str</span>],
-    <span class="ident">value</span>: <span class="ident">bool</span>,
+    <span class="ident">wrapper_name</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">for</span> <span class="ident">meta</span> <span class="kw">in</span> <span class="ident">meta</span>.<span class="ident">iter</span>() {
         <span class="kw">let</span> <span class="ident">meta</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">meta</span> {
             <span class="ident">NestedMeta</span>::<span class="ident">Meta</span>(<span class="ident">meta</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">meta</span>,
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">meta</span>.<span class="ident">span</span>(), <span class="string">&quot;Attribute format not supported2&quot;</span>))
+            <span class="ident">NestedMeta</span>::<span class="ident">Lit</span>(<span class="ident">lit</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                    <span class="ident">lit</span>.<span class="ident">span</span>(),
+                    <span class="string">&quot;Attribute doesn&#39;t support literals here&quot;</span>,
+                ))
             }
         };
 
         <span class="kw">match</span> <span class="ident">meta</span> {
             <span class="ident">Meta</span>::<span class="ident">List</span>(<span class="ident">list</span>) <span class="kw">if</span> <span class="ident">list</span>.<span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;not&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="comment">// `value == true` means we&#39;re parsing top-level attributes (i.e., not under &quot;not&quot;).</span>
-                <span class="comment">// `value == false` means we&#39;re parsing attributes under &quot;not&quot; attribute.</span>
-                <span class="comment">// Only single top-level &quot;not&quot; attribute allowed, so `value == false` here</span>
-                <span class="comment">// means we&#39;ve found &quot;not(not(...))&quot; attribute, so we return error.</span>
-                <span class="kw">if</span> <span class="ident">value</span> {
+                <span class="kw">if</span> <span class="ident">wrapper_name</span>.<span class="ident">is_some</span>() {
+                    <span class="comment">// Only single top-level `not` attribute is allowed.</span>
+                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                        <span class="ident">list</span>.<span class="ident">span</span>(),
+                        <span class="string">&quot;Attribute doesn&#39;t support multiple multiple or nested `not` parameters&quot;</span>,
+                    ));
+                }
+                <span class="ident">parse_punctuated_nested_meta</span>(
+                    <span class="ident">info</span>,
+                    <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">nested</span>,
+                    <span class="ident">allowed_attr_params</span>,
+                    <span class="prelude-val">Some</span>(<span class="string">&quot;not&quot;</span>),
+                )<span class="question-mark">?</span>;
+            }
+
+            <span class="ident">Meta</span>::<span class="ident">List</span>(<span class="ident">list</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">path</span>;
+                <span class="kw">if</span> <span class="op">!</span><span class="ident">allowed_attr_params</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">param</span><span class="op">|</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="ident">param</span>)) {
+                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                        <span class="ident">meta</span>.<span class="ident">span</span>(),
+                        <span class="macro">format</span><span class="macro">!</span>(
+                            <span class="string">&quot;Attribute nested parameter not supported. \
+                             Supported attribute parameters are: {}&quot;</span>,
+                            <span class="ident">allowed_attr_params</span>.<span class="ident">join</span>(<span class="string">&quot;, &quot;</span>),
+                        ),
+                    ));
+                }
+
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parse_nested</span> <span class="op">=</span> <span class="bool-val">true</span>;
+
+                <span class="kw">let</span> <span class="ident">attr_name</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">get_ident</span>().<span class="ident">unwrap</span>().<span class="ident">to_string</span>();
+                <span class="kw">match</span> (<span class="ident">wrapper_name</span>, <span class="ident">attr_name</span>.<span class="ident">as_str</span>()) {
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;owned&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">owned</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;ref&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">ref_</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;ref_mut&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">ref_mut</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;from&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;into&quot;</span>))]</span>
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;types&quot;</span>)
+                    <span class="op">|</span> (<span class="prelude-val">Some</span>(<span class="string">&quot;owned&quot;</span>), <span class="string">&quot;types&quot;</span>)
+                    <span class="op">|</span> (<span class="prelude-val">Some</span>(<span class="string">&quot;ref&quot;</span>), <span class="string">&quot;types&quot;</span>)
+                    <span class="op">|</span> (<span class="prelude-val">Some</span>(<span class="string">&quot;ref_mut&quot;</span>), <span class="string">&quot;types&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="ident">parse_nested</span> <span class="op">=</span> <span class="bool-val">false</span>;
+                        <span class="kw">for</span> <span class="ident">meta</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">nested</span> {
+                            <span class="kw">let</span> <span class="ident">typ</span>: <span class="ident">syn</span>::<span class="ident">Type</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">meta</span> {
+                                <span class="ident">NestedMeta</span>::<span class="ident">Meta</span>(<span class="ident">meta</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                                    <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Meta</span>::<span class="ident">Path</span>(<span class="ident">p</span>) <span class="op">=</span> <span class="ident">meta</span> {
+                                        <span class="ident">p</span>
+                                    } <span class="kw">else</span> {
+                                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                                            <span class="ident">meta</span>.<span class="ident">span</span>(),
+                                            <span class="macro">format</span><span class="macro">!</span>(
+                                                <span class="string">&quot;Attribute doesn&#39;t support type {}&quot;</span>,
+                                                <span class="macro">quote</span><span class="macro">!</span> { #<span class="ident">meta</span> },
+                                            ),
+                                        ));
+                                    };
+                                    <span class="ident">syn</span>::<span class="ident">TypePath</span> {
+                                        <span class="ident">qself</span>: <span class="prelude-val">None</span>,
+                                        <span class="ident">path</span>: <span class="ident">path</span>.<span class="ident">clone</span>(),
+                                    }
+                                    .<span class="ident">into</span>()
+                                }
+                                <span class="ident">NestedMeta</span>::<span class="ident">Lit</span>(<span class="ident">syn</span>::<span class="ident">Lit</span>::<span class="ident">Str</span>(<span class="ident">s</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">s</span>.<span class="ident">parse</span>()<span class="question-mark">?</span>,
+                                <span class="ident">NestedMeta</span>::<span class="ident">Lit</span>(<span class="ident">lit</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                                    <span class="ident">lit</span>.<span class="ident">span</span>(),
+                                    <span class="string">&quot;Attribute doesn&#39;t support nested literals here&quot;</span>,
+                                )),
+                            };
+
+                            <span class="kw">for</span> <span class="ident">ref_type</span> <span class="kw">in</span> <span class="ident">wrapper_name</span>
+                                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">n</span><span class="op">|</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="ident">RefType</span>::<span class="ident">from_attr_name</span>(<span class="ident">n</span>)])
+                                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                                    <span class="macro">vec</span><span class="macro">!</span>[<span class="ident">RefType</span>::<span class="ident">No</span>, <span class="ident">RefType</span>::<span class="ident">Ref</span>, <span class="ident">RefType</span>::<span class="ident">Mut</span>]
+                                })
+                            {
+                                <span class="kw">if</span> <span class="ident">info</span>
+                                    .<span class="ident">types</span>
+                                    .<span class="ident">entry</span>(<span class="ident">ref_type</span>)
+                                    .<span class="ident">or_default</span>()
+                                    .<span class="ident">replace</span>(<span class="ident">typ</span>.<span class="ident">clone</span>())
+                                    .<span class="ident">is_some</span>()
+                                {
+                                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                                        <span class="ident">typ</span>.<span class="ident">span</span>(),
+                                        <span class="macro">format</span><span class="macro">!</span>(
+                                            <span class="string">&quot;Duplicate type `{}` specified&quot;</span>,
+                                            <span class="macro">quote</span><span class="macro">!</span> { #<span class="ident">path</span> },
+                                        ),
+                                    ));
+                                }
+                            }
+                        }
+                    }
+
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                            <span class="ident">list</span>.<span class="ident">span</span>(),
+                            <span class="macro">format</span><span class="macro">!</span>(
+                                <span class="string">&quot;Attribute doesn&#39;t support nested parameter `{}` here&quot;</span>,
+                                <span class="macro">quote</span><span class="macro">!</span> { #<span class="ident">path</span> },
+                            ),
+                        ))
+                    }
+                };
+
+                <span class="kw">if</span> <span class="ident">parse_nested</span> {
                     <span class="ident">parse_punctuated_nested_meta</span>(
                         <span class="ident">info</span>,
                         <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">nested</span>,
                         <span class="ident">allowed_attr_params</span>,
-                        <span class="bool-val">false</span>,
+                        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">attr_name</span>),
                     )<span class="question-mark">?</span>;
-                } <span class="kw">else</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
-                        <span class="ident">meta</span>.<span class="ident">span</span>(),
-                        <span class="string">&quot;Attribute format not supported3&quot;</span>,
-                    ));
                 }
             }
 
@@ -1928,37 +2288,42 @@
                     <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
                         <span class="ident">meta</span>.<span class="ident">span</span>(),
                         <span class="macro">format</span><span class="macro">!</span>(
-                            <span class="string">&quot;Attribute parameter not supported. Supported attribute parameters are: {}&quot;</span>,
+                            <span class="string">&quot;Attribute parameter not supported. \
+                             Supported attribute parameters are: {}&quot;</span>,
                             <span class="ident">allowed_attr_params</span>.<span class="ident">join</span>(<span class="string">&quot;, &quot;</span>),
                         ),
                     ));
                 }
 
-                <span class="comment">// not(ignore) does not make much sense</span>
-                <span class="kw">if</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;ignore&quot;</span>) <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">value</span> {
-                    <span class="ident">info</span>.<span class="ident">enabled</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">false</span>);
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;forward&quot;</span>) {
-                    <span class="ident">info</span>.<span class="ident">forward</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>);
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;owned&quot;</span>) {
-                    <span class="ident">info</span>.<span class="ident">owned</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>);
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;ref&quot;</span>) {
-                    <span class="ident">info</span>.<span class="ident">ref_</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>);
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;ref_mut&quot;</span>) {
-                    <span class="ident">info</span>.<span class="ident">ref_mut</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>);
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;source&quot;</span>) {
-                    <span class="ident">info</span>.<span class="ident">source</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>);
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;backtrace&quot;</span>) {
-                    <span class="ident">info</span>.<span class="ident">backtrace</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>);
-                } <span class="kw">else</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
-                        <span class="ident">meta</span>.<span class="ident">span</span>(),
-                        <span class="string">&quot;Attribute format not supported4&quot;</span>,
-                    ));
-                };
+                <span class="kw">let</span> <span class="ident">attr_name</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">get_ident</span>().<span class="ident">unwrap</span>().<span class="ident">to_string</span>();
+                <span class="kw">match</span> (<span class="ident">wrapper_name</span>, <span class="ident">attr_name</span>.<span class="ident">as_str</span>()) {
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;ignore&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">enabled</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">false</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;forward&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">forward</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">Some</span>(<span class="string">&quot;not&quot;</span>), <span class="string">&quot;forward&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">forward</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">false</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;owned&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">owned</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;ref&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">ref_</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;ref_mut&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">ref_mut</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;source&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">source</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">Some</span>(<span class="string">&quot;not&quot;</span>), <span class="string">&quot;source&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">source</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">false</span>),
+                    (<span class="prelude-val">None</span>, <span class="string">&quot;backtrace&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">backtrace</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                    (<span class="prelude-val">Some</span>(<span class="string">&quot;not&quot;</span>), <span class="string">&quot;backtrace&quot;</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">backtrace</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="bool-val">false</span>),
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                            <span class="ident">path</span>.<span class="ident">span</span>(),
+                            <span class="macro">format</span><span class="macro">!</span>(
+                                <span class="string">&quot;Attribute doesn&#39;t support parameter `{}` here&quot;</span>,
+                                <span class="macro">quote</span><span class="macro">!</span> { #<span class="ident">path</span> }
+                            ),
+                        ))
+                    }
+                }
             }
 
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">meta</span>.<span class="ident">span</span>(), <span class="string">&quot;Attribute format not supported5&quot;</span>))
+            <span class="ident">Meta</span>::<span class="ident">NameValue</span>(<span class="ident">val</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">new</span>(
+                    <span class="ident">val</span>.<span class="ident">span</span>(),
+                    <span class="string">&quot;Attribute doesn&#39;t support name-value parameters here&quot;</span>,
+                ))
             }
         }
     }
@@ -1966,7 +2331,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FullMetaInfo</span> {
     <span class="kw">pub</span> <span class="ident">enabled</span>: <span class="ident">bool</span>,
     <span class="kw">pub</span> <span class="ident">forward</span>: <span class="ident">bool</span>,
@@ -1976,7 +2341,7 @@
     <span class="kw">pub</span> <span class="ident">info</span>: <span class="ident">MetaInfo</span>,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MetaInfo</span> {
     <span class="kw">pub</span> <span class="ident">enabled</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">forward</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>,
@@ -1985,24 +2350,25 @@
     <span class="kw">pub</span> <span class="ident">ref_mut</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">source</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">backtrace</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>,
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;from&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;into&quot;</span>))]</span>
+    <span class="kw">pub</span> <span class="ident">types</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RefType</span>, <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">syn</span>::<span class="ident">Type</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">MetaInfo</span> {
-    <span class="kw">fn</span> <span class="ident">to_full</span>(<span class="self">self</span>, <span class="ident">defaults</span>: <span class="ident">FullMetaInfo</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FullMetaInfo</span> {
-        <span class="kw">let</span> <span class="ident">info</span> <span class="op">=</span> <span class="self">self</span>;
+    <span class="kw">fn</span> <span class="ident">into_full</span>(<span class="self">self</span>, <span class="ident">defaults</span>: <span class="ident">FullMetaInfo</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">FullMetaInfo</span> {
         <span class="ident">FullMetaInfo</span> {
             <span class="ident">enabled</span>: <span class="self">self</span>.<span class="ident">enabled</span>.<span class="ident">unwrap_or</span>(<span class="ident">defaults</span>.<span class="ident">enabled</span>),
             <span class="ident">forward</span>: <span class="self">self</span>.<span class="ident">forward</span>.<span class="ident">unwrap_or</span>(<span class="ident">defaults</span>.<span class="ident">forward</span>),
             <span class="ident">owned</span>: <span class="self">self</span>.<span class="ident">owned</span>.<span class="ident">unwrap_or</span>(<span class="ident">defaults</span>.<span class="ident">owned</span>),
             <span class="ident">ref_</span>: <span class="self">self</span>.<span class="ident">ref_</span>.<span class="ident">unwrap_or</span>(<span class="ident">defaults</span>.<span class="ident">ref_</span>),
             <span class="ident">ref_mut</span>: <span class="self">self</span>.<span class="ident">ref_mut</span>.<span class="ident">unwrap_or</span>(<span class="ident">defaults</span>.<span class="ident">ref_mut</span>),
-            <span class="ident">info</span>,
+            <span class="ident">info</span>: <span class="self">self</span>,
         }
     }
 }
 
 <span class="kw">impl</span> <span class="ident">FullMetaInfo</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ref_types</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">RefType</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ref_types</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">RefType</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ref_types</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[];
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">owned</span> {
             <span class="ident">ref_types</span>.<span class="ident">push</span>(<span class="ident">RefType</span>::<span class="ident">No</span>);
@@ -2015,6 +2381,11 @@
         }
         <span class="ident">ref_types</span>
     }
+
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;from&quot;</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;into&quot;</span>))]</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">additional_types</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ref_type</span>: <span class="ident">RefType</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">syn</span>::<span class="ident">Type</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">info</span>.<span class="ident">types</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">ref_type</span>).<span class="ident">cloned</span>().<span class="ident">unwrap_or_default</span>()
+    }
 }
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_if_type_parameter_used_in_type</span>(
@@ -2024,7 +2395,7 @@
     <span class="kw">if</span> <span class="ident">is_type_parameter_used_in_type</span>(<span class="ident">type_parameters</span>, <span class="ident">ty</span>) {
         <span class="kw">match</span> <span class="ident">ty</span> {
             <span class="ident">syn</span>::<span class="ident">Type</span>::<span class="ident">Reference</span>(<span class="ident">syn</span>::<span class="ident">TypeReference</span> { <span class="ident">elem</span>: <span class="ident">ty</span>, .. }) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">ty</span>.<span class="ident">deref</span>().<span class="ident">clone</span>())
+                <span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">ty</span>).<span class="ident">clone</span>())
             }
             <span class="ident">ty</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Some</span>(<span class="ident">ty</span>.<span class="ident">clone</span>()),
         }
@@ -2078,4 +2449,4 @@
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "derive_more";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "derive_more";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
