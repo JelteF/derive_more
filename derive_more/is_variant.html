@@ -77,8 +77,10 @@
     <h1 class="title">What #[derive(IsVariant)] generates</h1>
     <nav id="TOC"><ul>
 <li><a href="#example-usage">1 Example usage</a><ul></ul></li>
-<li><a href="#what-is-generated">2 What is generated?</a><ul></ul></li></ul></nav><p>When an enum is decorated with <code>#[derive(IsVariant)]</code>, for each variant <code>foo</code> in the enum,
-a public instance method <code>is_foo(&amp;self) -&gt; bool</code> is generated.</p>
+<li><a href="#what-is-generated">2 What is generated?</a><ul></ul></li></ul></nav><p>When an enum is decorated with <code>#[derive(IsVariant)]</code>, for each variant <code>foo</code> in
+the enum, a public instance method <code>is_foo(&amp;self) -&gt; bool</code> is generated. If you
+don’t want the <code>is_foo</code> method generated for a variant you can put the
+<code>#[is_variant(ignore)]</code> attribute on that variant.</p>
 <h1 id="example-usage" class="section-header"><a href="#example-usage">1 Example usage</a></h1>
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">IsVariant</span>)]</span>
