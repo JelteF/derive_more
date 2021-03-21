@@ -8,7 +8,7 @@ a public instance method `is_foo(&self) -> bool` is generated.
 # #[macro_use] extern crate derive_more;
 # fn main(){
 #   assert!(Maybe::<()>::Nothing.is_nothing());
-#   assert!(!Maybe::<()>::Nothing.is_just());   
+#   assert!(!Maybe::<()>::Nothing.is_just());
 # }
 #[derive(IsVariant)]
 enum Maybe<T> {
