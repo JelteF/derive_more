@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature = "default"), allow(dead_code))]
+#![cfg_attr(not(feature = "default"), allow(dead_code), allow(unused_mut))]
 
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
