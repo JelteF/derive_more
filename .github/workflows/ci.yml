@@ -17,6 +17,8 @@ jobs:
         with:
           toolchain: ${{matrix.toolchain}}
           override: true
+      - name: Remove lockfile
+        run: rm Cargo.lock
       - name: Test
         uses: actions-rs/cargo@v1
         with:
