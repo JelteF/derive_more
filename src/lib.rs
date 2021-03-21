@@ -120,8 +120,8 @@
 //! 1. [`Constructor`], this derives a `new` method that can be used as a constructor.
 //!    This is very basic if you need more customization for your constructor, check
 //!    out the [`derive-new`] crate.
-//!
 //! 2. [`IsVariant`], for each variant `foo` of an enum type, derives a `is_foo` method.
+//!
 //! ## Generated code
 //!
 //! ## Installation

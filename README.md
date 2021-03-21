@@ -120,6 +120,7 @@ These don't derive traits, but derive static methods instead.
 1. [`Constructor`], this derives a `new` method that can be used as a constructor.
    This is very basic if you need more customization for your constructor, check
    out the [`derive-new`] crate.
+2. [`IsVariant`], for each variant `foo` of an enum type, derives a `is_foo` method.
 
 ## Generated code
 
@@ -178,3 +179,4 @@ extern crate derive_more;
 [`MulAssign`-like]: https://jeltef.github.io/derive_more/derive_more/mul_assign.html
 
 [`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
+[`IsVariant`]: https://jeltef.github.io/derive_more/derive_more/is_variant.html
