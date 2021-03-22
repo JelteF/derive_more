@@ -426,7 +426,7 @@ create_derive!(
     BorrowMut,
     borrow_mut_derive,
     borrow_mut
-};
+);
 
 create_derive!(
     "is_variant",
