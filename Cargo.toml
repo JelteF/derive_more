@@ -1,6 +1,6 @@
 [package]
 name = "derive_more"
-version = "0.99.12-alpha.0"
+version = "0.99.14-alpha.0"
 description = "Adds #[derive(x)] macros for more traits"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
@@ -30,6 +30,7 @@ proc-macro = true
 proc-macro2 = "1"
 quote = "1"
 syn = { version = "1" }
+convert_case = { version = "0.4", optional = true}
 
 [build-dependencies]
 peg = { version = "0.5", optional = true }
@@ -65,6 +66,7 @@ sum = []
 try_into = ["syn/extra-traits"]
 generate-parsing-rs = ["peg"]
 testing-helpers = ["rustc_version"]
+is_variant = ["convert_case"]
 
 default = [
     "add_assign",
@@ -90,6 +92,7 @@ default = [
     "not",
     "sum",
     "try_into",
+    "is_variant",
 ]
 
 [[test]]
@@ -198,6 +201,11 @@ path = "tests/try_into.rs"
 required-features = ["try_into"]
 
 [[test]]
+name = "is_variant"
+path = "tests/is_variant.rs"
+required-features = ["is_variant"]
+
+[[test]]
 name = "no_std"
 path = "tests/no_std.rs"
 required-features = [
@@ -219,6 +227,7 @@ required-features = [
     "not",
     "sum",
     "try_into",
+    "is_variant",
 ]
 
 [[test]]
@@ -242,6 +251,7 @@ required-features = [
     "mul",
     "not",
     "try_into",
+    "is_variant",
 ]
 
 [[test]]
@@ -265,6 +275,7 @@ required-features = [
     "mul",
     "not",
     "try_into",
+    "is_variant",
 ]
 
 [[example]]
@@ -288,4 +299,5 @@ required-features = [
     "mul",
     "not",
     "try_into",
+    "is_variant",
 ]

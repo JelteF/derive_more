@@ -32,6 +32,7 @@ pub struct MyVec(Vec<i32>);
 /// Some docs
 #[allow(dead_code)]
 #[derive(Clone, Copy, TryInto)]
+#[derive(IsVariant)]
 enum MixedInts {
     SmallInt(i32),
     NamedBigInt { int: i64 },

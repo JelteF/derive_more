@@ -122,6 +122,7 @@
 //! 1. [`Constructor`], this derives a `new` method that can be used as a constructor.
 //!    This is very basic if you need more customization for your constructor, check
 //!    out the [`derive-new`] crate.
+//! 2. [`IsVariant`], for each variant `foo` of an enum type, derives a `is_foo` method.
 //!
 //! ## Generated code
 //!
@@ -183,6 +184,7 @@
 //! [`MulAssign`-like]: https://jeltef.github.io/derive_more/derive_more/mul_assign.html
 //!
 //! [`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
+//! [`IsVariant`]: https://jeltef.github.io/derive_more/derive_more/is_variant.html
 
 // Suppress Clippy tips to use `matches!` macro, because minimal supported Rust version is 1.36.0.
 // Remove this suppression once minimal supported Rust version is bumped up to 1.42.0 or above.
@@ -237,6 +239,8 @@ mod index_mut;
 mod into;
 #[cfg(feature = "into_iterator")]
 mod into_iterator;
+#[cfg(feature = "is_variant")]
+mod is_variant;
 #[cfg(feature = "mul_assign")]
 mod mul_assign_like;
 #[cfg(any(feature = "mul", feature = "mul_assign"))]
@@ -422,4 +426,12 @@ create_derive!(
     BorrowMut,
     borrow_mut_derive,
     borrow_mut
+};
+
+create_derive!(
+    "is_variant",
+    is_variant,
+    IsVariant,
+    is_variant_derive,
+    is_variant
 );

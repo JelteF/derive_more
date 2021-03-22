@@ -110,8 +110,10 @@ fn render_enum(
     let mut backtrace_match_arms = Vec::new();
 
     for variant in state.enabled_variant_data().variants {
-        let mut default_info = FullMetaInfo::default();
-        default_info.enabled = true;
+        let default_info = FullMetaInfo {
+            enabled: true,
+            ..FullMetaInfo::default()
+        };
 
         let state = State::from_variant(
             state.input,
