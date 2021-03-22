@@ -103,7 +103,7 @@ struct MyWrapper {
 
 Generates:
 
-```
+```rust
 # #[macro_use] extern crate derive_more;
 # use core::borrow::Borrow;
 # use core::borrow::BorrowMut;
