@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter::FromIterator as _, str::FromStr as _};
+use std::{fmt::Display, str::FromStr as _};
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
@@ -115,7 +115,7 @@ fn trait_name_to_trait_bound(trait_name: &str) -> syn::TraitBound {
         paren_token: None,
         path: syn::Path {
             leading_colon: Some(syn::Token![::](Span::call_site())),
-            segments: syn::punctuated::Punctuated::from_iter(path_segments_iterator),
+            segments: path_segments_iterator.collect(),
         },
     }
 }
