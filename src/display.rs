@@ -785,7 +785,7 @@ mod regex_maybe_placeholder_spec {
         let fmt_string = "{}, {:?}, {{}}, {{{1:0$}}}";
         let placeholders: Vec<_> = crate::parsing::all_placeholders(&fmt_string)
             .into_iter()
-            .flat_map(|x| x)
+            .flatten()
             .collect();
         assert_eq!(placeholders, vec!["{}", "{:?}", "{1:0$}"]);
     }
