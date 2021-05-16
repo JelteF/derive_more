@@ -134,13 +134,13 @@ the type that <code>.into()</code> is called on.</p>
 }
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyInt</span>(<span class="number">2</span>) <span class="op">=</span><span class="op">=</span> <span class="number">2</span>.<span class="ident">into</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyInt64</span>(<span class="number">6</span>) <span class="op">=</span><span class="op">=</span> <span class="number">6u8</span>.<span class="ident">into</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum</span>::<span class="ident">SmallInt</span>(<span class="number">123</span>) <span class="op">=</span><span class="op">=</span> <span class="number">123i32</span>.<span class="ident">into</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum</span>::<span class="ident">SmallInt</span>(<span class="number">123</span>) <span class="op">!</span><span class="op">=</span> <span class="number">123i64</span>.<span class="ident">into</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum</span>::<span class="ident">NamedBigInt</span>{<span class="ident">int</span>: <span class="number">123</span>} <span class="op">=</span><span class="op">=</span> <span class="number">123i64</span>.<span class="ident">into</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum3</span>::<span class="ident">SmallInt</span>(<span class="number">123</span>) <span class="op">=</span><span class="op">=</span> <span class="number">123i8</span>.<span class="ident">into</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">MyEnum3</span>::<span class="ident">NamedBigInt</span>{<span class="ident">int</span>: <span class="number">123</span>} <span class="op">=</span><span class="op">=</span> <span class="number">123i16</span>.<span class="ident">into</span>());
+    <span class="macro">assert!</span>(<span class="ident">MyInt</span>(<span class="number">2</span>) <span class="op">=</span><span class="op">=</span> <span class="number">2</span>.<span class="ident">into</span>());
+    <span class="macro">assert!</span>(<span class="ident">MyInt64</span>(<span class="number">6</span>) <span class="op">=</span><span class="op">=</span> <span class="number">6u8</span>.<span class="ident">into</span>());
+    <span class="macro">assert!</span>(<span class="ident">MyEnum::SmallInt</span>(<span class="number">123</span>) <span class="op">=</span><span class="op">=</span> <span class="number">123i32</span>.<span class="ident">into</span>());
+    <span class="macro">assert!</span>(<span class="ident">MyEnum::SmallInt</span>(<span class="number">123</span>) <span class="op">!</span><span class="op">=</span> <span class="number">123i64</span>.<span class="ident">into</span>());
+    <span class="macro">assert!</span>(<span class="ident">MyEnum::NamedBigInt</span>{<span class="ident">int</span>: <span class="number">123</span>} <span class="op">=</span><span class="op">=</span> <span class="number">123i64</span>.<span class="ident">into</span>());
+    <span class="macro">assert!</span>(<span class="ident">MyEnum3::SmallInt</span>(<span class="number">123</span>) <span class="op">=</span><span class="op">=</span> <span class="number">123i8</span>.<span class="ident">into</span>());
+    <span class="macro">assert!</span>(<span class="ident">MyEnum3::NamedBigInt</span>{<span class="ident">int</span>: <span class="number">123</span>} <span class="op">=</span><span class="op">=</span> <span class="number">123i16</span>.<span class="ident">into</span>());
 }</pre></div>
 <h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">2 Tuple structs</a></h1>
 <p>When deriving for a tuple struct with a single field (i.e. a newtype) like this:</p>
@@ -151,7 +151,7 @@ the type that <code>.into()</code> is called on.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInt</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInt</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MyInt</span> {
         <span class="ident">MyInt</span>(<span class="ident">original</span>)
     }
@@ -165,7 +165,7 @@ fields. For instance when deriving for a tuple struct with two fields like this:
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>, <span class="ident">i32</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MyInts</span> {
         <span class="ident">MyInts</span>(<span class="ident">original</span>.<span class="number">0</span>, <span class="ident">original</span>.<span class="number">1</span>)
     }
@@ -183,7 +183,7 @@ When deriving for a regular struct with a single field like this:</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point1D</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point1D</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point1D</span> {
         <span class="ident">Point1D</span> { <span class="ident">x</span>: <span class="ident">original</span> }
     }
@@ -201,7 +201,7 @@ fields. For instance when deriving for a tuple struct with two fields like this:
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>, <span class="ident">i32</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point2D</span> {
         <span class="ident">Point2D</span> {
             <span class="ident">x</span>: <span class="ident">original</span>.<span class="number">0</span>,
@@ -232,46 +232,46 @@ For instance when deriving <code>From</code> for the following enum:</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MixedInts</span> {
-        <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">original</span>)
+        <span class="ident">MixedInts::SmallInt</span>(<span class="ident">original</span>)
     }
 }
 
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i64</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i64</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i64</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MixedInts</span> {
-        <span class="ident">MixedInts</span>::<span class="ident">NamedBigInt</span> { <span class="ident">int</span>: <span class="ident">original</span> }
+        <span class="ident">MixedInts::NamedBigInt</span> { <span class="ident">int</span>: <span class="ident">original</span> }
     }
 }
 
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i32</span>, <span class="ident">i32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i32</span>, <span class="ident">i32</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MixedInts</span> {
-        <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">original</span>.<span class="number">0</span>, <span class="ident">original</span>.<span class="number">1</span>)
+        <span class="ident">MixedInts::TwoSmallInts</span>(<span class="ident">original</span>.<span class="number">0</span>, <span class="ident">original</span>.<span class="number">1</span>)
     }
 }
 
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">i64</span>, <span class="ident">i64</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">i64</span>, <span class="ident">i64</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MixedInts</span> {
-        <span class="ident">MixedInts</span>::<span class="ident">NamedBigInts</span> {
+        <span class="ident">MixedInts::NamedBigInts</span> {
             <span class="ident">x</span>: <span class="ident">original</span>.<span class="number">0</span>,
             <span class="ident">y</span>: <span class="ident">original</span>.<span class="number">1</span>,
         }
     }
 }
 
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">u32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::convert::From</span><span class="op">&lt;</span>(<span class="ident">u32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">original</span>: (<span class="ident">u32</span>)) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MixedInts</span> {
-        <span class="ident">MixedInts</span>::<span class="ident">NamedUnsigned</span> { <span class="ident">x</span>: <span class="ident">original</span> }
+        <span class="ident">MixedInts::NamedUnsigned</span> { <span class="ident">x</span>: <span class="ident">original</span> }
     }
 }</pre></div>
 <p>Without the <code>#[from(ignore)]</code> on <code>Unsigned</code>, no <code>impl</code> would be generated for

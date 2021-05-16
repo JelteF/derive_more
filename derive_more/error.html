@@ -119,7 +119,7 @@ ignored for one of these methods by using <code>#[error(not(backtrace))]</code> 
 <h1 id="example-usage" class="section-header"><a href="#example-usage">2 Example usage</a></h1>
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="attribute">#![<span class="ident">feature</span>(<span class="ident">backtrace</span>)]</span>
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">backtrace</span>::<span class="ident">Backtrace</span>;
+<span class="kw">use</span> <span class="ident">std::backtrace::Backtrace</span>;
 
 <span class="comment">// std::error::Error requires std::fmt::Debug and std::fmt::Display,</span>
 <span class="comment">// so we can also use derive_more::Display for fully declarative</span>
@@ -168,24 +168,24 @@ ignored for one of these methods by using <code>#[error(not(backtrace))]</code> 
 }
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">Simple</span>.<span class="ident">source</span>().<span class="ident">is_none</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">Simple</span>.<span class="ident">backtrace</span>().<span class="ident">is_none</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">WithSource</span>::<span class="ident">default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">WithExplicitSource</span>::<span class="ident">default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">Tuple</span>::<span class="ident">default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">WithoutSource</span>::<span class="ident">default</span>().<span class="ident">source</span>().<span class="ident">is_none</span>());
+    <span class="macro">assert!</span>(<span class="ident">Simple</span>.<span class="ident">source</span>().<span class="ident">is_none</span>());
+    <span class="macro">assert!</span>(<span class="ident">Simple</span>.<span class="ident">backtrace</span>().<span class="ident">is_none</span>());
+    <span class="macro">assert!</span>(<span class="ident">WithSource::default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">WithExplicitSource::default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">Tuple::default</span>().<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">WithoutSource::default</span>().<span class="ident">source</span>().<span class="ident">is_none</span>());
     <span class="kw">let</span> <span class="ident">with_source_and_backtrace</span> <span class="op">=</span> <span class="ident">WithSourceAndBacktrace</span>{
         <span class="ident">source</span>: <span class="ident">Simple</span>,
-        <span class="ident">backtrace</span>: <span class="ident">Backtrace</span>::<span class="ident">capture</span>(),
+        <span class="ident">backtrace</span>: <span class="ident">Backtrace::capture</span>(),
     };
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">with_source_and_backtrace</span>.<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">with_source_and_backtrace</span>.<span class="ident">backtrace</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">with_source_and_backtrace</span>.<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">with_source_and_backtrace</span>.<span class="ident">backtrace</span>().<span class="ident">is_some</span>());
 
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">CompoundError</span>::<span class="ident">Simple</span>.<span class="ident">source</span>().<span class="ident">is_none</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">CompoundError</span>::<span class="ident">from</span>(<span class="ident">Simple</span>).<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">CompoundError</span>::<span class="ident">from</span>(<span class="ident">WithSource</span>::<span class="ident">default</span>()).<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">CompoundError</span>::<span class="ident">from</span>(<span class="ident">WithExplicitSource</span>::<span class="ident">default</span>()).<span class="ident">source</span>().<span class="ident">is_some</span>());
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">CompoundError</span>::<span class="ident">from</span>(<span class="ident">Tuple</span>::<span class="ident">default</span>()).<span class="ident">source</span>().<span class="ident">is_none</span>());
+    <span class="macro">assert!</span>(<span class="ident">CompoundError::Simple</span>.<span class="ident">source</span>().<span class="ident">is_none</span>());
+    <span class="macro">assert!</span>(<span class="ident">CompoundError::from</span>(<span class="ident">Simple</span>).<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">CompoundError::from</span>(<span class="ident">WithSource::default</span>()).<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">CompoundError::from</span>(<span class="ident">WithExplicitSource::default</span>()).<span class="ident">source</span>().<span class="ident">is_some</span>());
+    <span class="macro">assert!</span>(<span class="ident">CompoundError::from</span>(<span class="ident">Tuple::default</span>()).<span class="ident">source</span>().<span class="ident">is_none</span>());
 }</pre></div>
 
     <!--copied from otput -->

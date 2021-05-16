@@ -108,11 +108,11 @@ you want to derive <code>Deref</code> for.</p>
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
     <span class="kw">let</span> <span class="ident">num</span> <span class="op">=</span> <span class="ident">Num</span>{<span class="ident">num</span>: <span class="number">123</span>};
-    <span class="kw">let</span> <span class="ident">boxed</span> <span class="op">=</span> <span class="ident">MyBoxedInt</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="number">123</span>));
-    <span class="kw">let</span> <span class="ident">cool_vec</span> <span class="op">=</span> <span class="ident">CoolVec</span>{<span class="ident">cool</span>: <span class="bool-val">true</span>, <span class="ident">vec</span>: <span class="macro">vec</span><span class="macro">!</span>[<span class="number">123</span>]};
-    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="number">123</span>, <span class="kw-2">*</span><span class="ident">num</span>);
-    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="number">123</span>, <span class="kw-2">*</span><span class="ident">boxed</span>);
-    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="number">123</span>], <span class="kw-2">*</span><span class="ident">cool_vec</span>);
+    <span class="kw">let</span> <span class="ident">boxed</span> <span class="op">=</span> <span class="ident">MyBoxedInt</span>(<span class="ident">Box::new</span>(<span class="number">123</span>));
+    <span class="kw">let</span> <span class="ident">cool_vec</span> <span class="op">=</span> <span class="ident">CoolVec</span>{<span class="ident">cool</span>: <span class="bool-val">true</span>, <span class="ident">vec</span>: <span class="macro">vec!</span>[<span class="number">123</span>]};
+    <span class="macro">assert_eq!</span>(<span class="number">123</span>, <span class="kw-2">*</span><span class="ident">num</span>);
+    <span class="macro">assert_eq!</span>(<span class="number">123</span>, <span class="kw-2">*</span><span class="ident">boxed</span>);
+    <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[<span class="number">123</span>], <span class="kw-2">*</span><span class="ident">cool_vec</span>);
 }</pre></div>
 <h1 id="structs" class="section-header"><a href="#structs">2 Structs</a></h1>
 <p>When deriving a non-forwarded <code>Deref</code> for a struct:</p>
@@ -127,10 +127,10 @@ you want to derive <code>Deref</code> for.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Deref</span> <span class="kw">for</span> <span class="ident">CoolVec</span> {
+<span class="kw">impl</span> <span class="ident">::core::ops::Deref</span> <span class="kw">for</span> <span class="ident">CoolVec</span> {
     <span class="kw">type</span> <span class="ident">Target</span> <span class="op">=</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span>;
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="self">Self</span>::<span class="ident">Target</span> {
+    <span class="kw">fn</span> <span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="self">Self</span><span class="ident">::Target</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">vec</span>
     }
 }</pre></div>
@@ -143,11 +143,11 @@ you want to derive <code>Deref</code> for.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Deref</span> <span class="kw">for</span> <span class="ident">MyBoxedInt</span> {
-    <span class="kw">type</span> <span class="ident">Target</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span> <span class="kw">as</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Deref</span><span class="op">&gt;</span>::<span class="ident">Target</span>;
+<span class="kw">impl</span> <span class="ident">::core::ops::Deref</span> <span class="kw">for</span> <span class="ident">MyBoxedInt</span> {
+    <span class="kw">type</span> <span class="ident">Target</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">::core::ops::Deref</span><span class="op">&gt;</span><span class="ident">::Target</span>;
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="self">Self</span>::<span class="ident">Target</span> {
-        <span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span> <span class="kw">as</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Deref</span><span class="op">&gt;</span>::<span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">fn</span> <span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="self">Self</span><span class="ident">::Target</span> {
+        <span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">::core::ops::Deref</span><span class="op">&gt;</span><span class="ident">::deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>)
     }
 }</pre></div>
 <h1 id="enums" class="section-header"><a href="#enums">3 Enums</a></h1>

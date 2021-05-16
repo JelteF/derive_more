@@ -101,8 +101,8 @@ This will instead generate a <code>Mul</code> implementation with the same seman
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInt</span>
-    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInt</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MyInt</span>;
     <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MyInt</span> {
@@ -119,8 +119,8 @@ For instance when deriving for a tuple struct with two fields like this:</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: ::<span class="ident">core</span>::<span class="ident">marker</span>::<span class="ident">Copy</span><span class="op">&gt;</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span>
-    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: <span class="ident">::core::marker::Copy</span><span class="op">&gt;</span> <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MyInts</span>;
     <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MyInts</span> {
@@ -139,8 +139,8 @@ For instance when deriving for a tuple struct with two fields like this:</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point1D</span>
-    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point1D</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">Point1D</span>;
     <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point1D</span> {
@@ -160,8 +160,8 @@ For instance when deriving for a tuple struct with two fields like this:</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: ::<span class="ident">core</span>::<span class="ident">marker</span>::<span class="ident">Copy</span><span class="op">&gt;</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span>
-    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: <span class="ident">::core::marker::Copy</span><span class="op">&gt;</span> <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: <span class="ident">::core::ops::Mul</span><span class="op">&lt;</span><span class="ident">__RhsT</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">i32</span><span class="op">&gt;</span>
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">Point2D</span>;
     <span class="kw">fn</span> <span class="ident">mul</span>(<span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point2D</span> {

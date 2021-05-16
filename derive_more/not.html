@@ -91,7 +91,7 @@ instance of the same variant with these negated fields is returned.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::ops::Not</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MyInts</span>;
     <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MyInts</span> {
         <span class="ident">MyInts</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">not</span>(), <span class="self">self</span>.<span class="number">1</span>.<span class="ident">not</span>())
@@ -110,7 +110,7 @@ instance of the same variant with these negated fields is returned.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
+<span class="kw">impl</span> <span class="ident">::core::ops::Not</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">Point2D</span>;
     <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Point2D</span> {
         <span class="ident">Point2D</span> {
@@ -138,21 +138,21 @@ For instance when deriving <code>Not</code> for an enum like this:</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::ops::Not</span> <span class="kw">for</span> <span class="ident">MixedInts</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">MixedInts</span>;
     <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">MixedInts</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">BigInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">BigInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">__0</span>, <span class="ident">__1</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">TwoSmallInts</span>(<span class="ident">__0</span>.<span class="ident">not</span>(), <span class="ident">__1</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">NamedSmallInts</span> { <span class="ident">x</span>: <span class="ident">__0</span>, <span class="ident">y</span>: <span class="ident">__1</span> } <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">MixedInts</span>::<span class="ident">NamedSmallInts</span> {
+            <span class="ident">MixedInts::SmallInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts::SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts::BigInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts::BigInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts::TwoSmallInts</span>(<span class="ident">__0</span>, <span class="ident">__1</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts::TwoSmallInts</span>(<span class="ident">__0</span>.<span class="ident">not</span>(), <span class="ident">__1</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts::NamedSmallInts</span> { <span class="ident">x</span>: <span class="ident">__0</span>, <span class="ident">y</span>: <span class="ident">__1</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">MixedInts::NamedSmallInts</span> {
                     <span class="ident">x</span>: <span class="ident">__0</span>.<span class="ident">not</span>(),
                     <span class="ident">y</span>: <span class="ident">__1</span>.<span class="ident">not</span>(),
                 }
             }
-            <span class="ident">MixedInts</span>::<span class="ident">UnsignedOne</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">UnsignedOne</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
-            <span class="ident">MixedInts</span>::<span class="ident">UnsignedTwo</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts</span>::<span class="ident">UnsignedTwo</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts::UnsignedOne</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts::UnsignedOne</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
+            <span class="ident">MixedInts::UnsignedTwo</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">MixedInts::UnsignedTwo</span>(<span class="ident">__0</span>.<span class="ident">not</span>()),
         }
     }
 }</pre></div>
@@ -171,12 +171,12 @@ So, when deriving <code>Not</code> for an enum like this:</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">Not</span> <span class="kw">for</span> <span class="ident">EnumWithUnit</span> {
+<span class="kw">impl</span> <span class="ident">::core::ops::Not</span> <span class="kw">for</span> <span class="ident">EnumWithUnit</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EnumWithUnit</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span>;
     <span class="kw">fn</span> <span class="ident">not</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">EnumWithUnit</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">EnumWithUnit</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">EnumWithUnit</span>::<span class="ident">SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>())),
-            <span class="ident">EnumWithUnit</span>::<span class="ident">Unit</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Cannot not() unit variants&quot;</span>),
+            <span class="ident">EnumWithUnit::SmallInt</span>(<span class="ident">__0</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">EnumWithUnit::SmallInt</span>(<span class="ident">__0</span>.<span class="ident">not</span>())),
+            <span class="ident">EnumWithUnit::Unit</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="string">&quot;Cannot not() unit variants&quot;</span>),
         }
     }
 }</pre></div>

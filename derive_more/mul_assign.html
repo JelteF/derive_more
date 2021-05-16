@@ -94,8 +94,8 @@ as <code>AddAssign</code>.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: ::<span class="ident">core</span>::<span class="ident">marker</span>::<span class="ident">Copy</span><span class="op">&gt;</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span>
-    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: <span class="ident">::core::marker::Copy</span><span class="op">&gt;</span> <span class="ident">::core::ops::MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MyInts</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: <span class="ident">::core::ops::MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span>
 {
     <span class="kw">fn</span> <span class="ident">mul_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) {
         <span class="self">self</span>.<span class="number">0</span>.<span class="ident">mul_assign</span>(<span class="ident">rhs</span>);
@@ -116,8 +116,8 @@ as <code>AddAssign</code>.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: ::<span class="ident">core</span>::<span class="ident">marker</span>::<span class="ident">Copy</span><span class="op">&gt;</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span>
-    <span class="kw">where</span> <span class="ident">i32</span>: ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">__RhsT</span>: <span class="ident">::core::marker::Copy</span><span class="op">&gt;</span> <span class="ident">::core::ops::MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Point2D</span>
+    <span class="kw">where</span> <span class="ident">i32</span>: <span class="ident">::core::ops::MulAssign</span><span class="op">&lt;</span><span class="ident">__RhsT</span><span class="op">&gt;</span>
 {
     <span class="kw">fn</span> <span class="ident">mul_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">__RhsT</span>) {
         <span class="self">self</span>.<span class="ident">x</span>.<span class="ident">mul_assign</span>(<span class="ident">rhs</span>);

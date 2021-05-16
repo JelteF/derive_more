@@ -90,7 +90,7 @@ new one.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">AddAssign</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
+<span class="kw">impl</span> <span class="ident">::core::ops::AddAssign</span> <span class="kw">for</span> <span class="ident">MyInts</span> {
     <span class="kw">fn</span> <span class="ident">add_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">MyInts</span>) {
         <span class="self">self</span>.<span class="number">0</span>.<span class="ident">add_assign</span>(<span class="ident">rhs</span>.<span class="number">0</span>);
         <span class="self">self</span>.<span class="number">1</span>.<span class="ident">add_assign</span>(<span class="ident">rhs</span>.<span class="number">1</span>);
@@ -109,7 +109,7 @@ new one.</p>
 <p>Code like this will be generated:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">impl</span> ::<span class="ident">core</span>::<span class="ident">ops</span>::<span class="ident">AddAssign</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
+<span class="kw">impl</span> <span class="ident">::core::ops::AddAssign</span> <span class="kw">for</span> <span class="ident">Point2D</span> {
     <span class="kw">fn</span> <span class="ident">add_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">Point2D</span>) {
         <span class="self">self</span>.<span class="ident">x</span>.<span class="ident">add_assign</span>(<span class="ident">rhs</span>.<span class="ident">x</span>);
         <span class="self">self</span>.<span class="ident">y</span>.<span class="ident">add_assign</span>(<span class="ident">rhs</span>.<span class="ident">y</span>);
