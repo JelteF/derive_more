@@ -418,9 +418,6 @@
 <span id="415">415</span>
 <span id="416">416</span>
 <span id="417">417</span>
-<span id="418">418</span>
-<span id="419">419</span>
-<span id="420">420</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! # `derive_more`</span>
 <span class="doccomment">//!</span>
@@ -606,9 +603,6 @@
 <span class="doccomment">//! [`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html</span>
 <span class="doccomment">//! [`IsVariant`]: https://jeltef.github.io/derive_more/derive_more/is_variant.html</span>
 
-<span class="comment">// Suppress Clippy tips to use `matches!` macro, because minimal supported Rust version is 1.36.0.</span>
-<span class="comment">// Remove this suppression once minimal supported Rust version is bumped up to 1.42.0 or above.</span>
-<span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">nightly</span>, <span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">match_like_matches_macro</span>))]</span>
 <span class="attribute">#![<span class="ident">recursion_limit</span> <span class="op">=</span> <span class="string">&quot;128&quot;</span>]</span>
 
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">proc_macro</span>;
