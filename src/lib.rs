@@ -230,6 +230,8 @@ mod into;
 mod into_iterator;
 #[cfg(feature = "is_variant")]
 mod is_variant;
+#[cfg(feature = "unwrap")]
+mod unwrap;
 #[cfg(feature = "mul_assign")]
 mod mul_assign_like;
 #[cfg(any(feature = "mul", feature = "mul_assign"))]
@@ -415,3 +417,5 @@ create_derive!(
     is_variant_derive,
     is_variant
 );
+
+create_derive!("unwrap", unwrap, Unwrap, unwrap_derive, unwrap);

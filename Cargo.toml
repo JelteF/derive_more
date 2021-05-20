@@ -65,6 +65,7 @@ try_into = ["syn/extra-traits"]
 generate-parsing-rs = ["peg"]
 testing-helpers = ["rustc_version"]
 is_variant = ["convert_case"]
+unwrap = ["convert_case"]
 
 default = [
     "add_assign",
@@ -89,6 +90,7 @@ default = [
     "sum",
     "try_into",
     "is_variant",
+    "unwrap"
 ]
 
 [[test]]
