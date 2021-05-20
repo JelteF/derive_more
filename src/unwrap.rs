@@ -48,13 +48,28 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             Fields::Unit => (quote! {}, quote! { () }, quote! { () }),
         };
 
+        let other_arms = state.enabled_variant_data().variant_states.into_iter().map(|variant| {
+            variant.variant.unwrap()
+        }).filter(|variant| {
+            &variant.ident != variant_ident
+        }).map(|variant| {
+            let data_pattern = match variant.fields {
+                Fields::Named(_) => quote! { {..} },
+                Fields::Unnamed(_) => quote! { (..) },
+                Fields::Unit => quote! {},
+            };
+            let variant_ident = &variant.ident;
+            quote! { #enum_name :: #variant_ident #data_pattern =>
+                      panic!(concat!("called `", stringify!(#enum_name), "::", stringify!(#fn_name),
+                                     "()` on a `", stringify!(#variant_ident), "` value"))
+            }
+        });
         let func = quote! {
             #[track_caller]
             pub fn #fn_name(self) -> #ret_type {
                 match self {
                     #enum_name ::#variant_ident #data_pattern => #ret_value,
-                    _ => panic!(concat!("called `", stringify!(#enum_name), "::", stringify!(#fn_name),
-                                        "()` on an invalid value")),
+                    #(#other_arms),*
                 }
             }
         };
