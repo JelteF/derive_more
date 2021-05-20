@@ -43,7 +43,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                     a
                 });
                 let ret_type = &fields.unnamed;
-                (quote! { (#(#data_pattern),*) }, quote! { (#(#data_pattern),*) }, quote! { #ret_type })
+                (quote! { (#(#data_pattern),*) }, quote! { (#(#data_pattern),*) }, quote! { (#ret_type) })
             },
             Fields::Unit => (quote! {}, quote! { () }, quote! { () }),
         };
