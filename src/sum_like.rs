@@ -35,7 +35,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input.generics.clone()
     } else {
         let generic_type = quote!(<#(#type_params),*>);
-        let generics = add_extra_ty_param_bound(&input.generics, &trait_path);
+        let generics = add_extra_ty_param_bound(&input.generics, trait_path);
         let operator_where_clause = quote! {
             where #input_type#generic_type: #op_path<Output=#input_type#generic_type>
         };

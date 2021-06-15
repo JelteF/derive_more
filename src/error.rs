@@ -93,7 +93,7 @@ fn render_struct(
     type_params: &HashSet<syn::Ident>,
     state: &State,
 ) -> Result<(HashSet<syn::Type>, Option<TokenStream>, Option<TokenStream>)> {
-    let parsed_fields = parse_fields(&type_params, &state)?;
+    let parsed_fields = parse_fields(type_params, state)?;
 
     let source = parsed_fields.render_source_as_struct();
     let backtrace = parsed_fields.render_backtrace_as_struct();
@@ -125,7 +125,7 @@ fn render_enum(
             default_info,
         )?;
 
-        let parsed_fields = parse_fields(&type_params, &state)?;
+        let parsed_fields = parse_fields(type_params, &state)?;
 
         if let Some(expr) = parsed_fields.render_source_as_enum_variant_match_arm() {
             source_match_arms.push(expr);

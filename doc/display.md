@@ -152,6 +152,22 @@ struct Unit;
 #[derive(Display)]
 struct UnitStruct {}
 
+#[derive(Display)]
+#[display(fmt = "{}", "self.sign()")]
+struct PositiveOrNegative {
+    x: i32,
+}
+
+impl PositiveOrNegative {
+    fn sign(&self) -> &str {
+        if self.x >= 0 {
+            "Positive"
+        } else {
+            "Negative"
+        }
+    }
+}
+
 fn main() {
     assert_eq!(MyInt(-2).to_string(), "-2");
     assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
@@ -165,5 +181,7 @@ fn main() {
     assert_eq!(format!("{:X}", UH), "UpperHex");
     assert_eq!(Unit.to_string(), "Unit");
     assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
+    assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
+    assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
 }
 ```
