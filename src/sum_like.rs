@@ -31,13 +31,18 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         .type_params()
         .map(|t| t.ident.clone())
         .collect();
+    let const_params: Vec<_> = input
+        .generics
+        .const_params()
+        .map(|t| t.ident.clone())
+        .collect();
     let generics = if type_params.is_empty() {
         input.generics.clone()
     } else {
-        let generic_type = quote!(<#(#type_params),*>);
+        let generic_params = quote!(<#(#type_params),* #(,#const_params)*>);
         let generics = add_extra_ty_param_bound(&input.generics, trait_path);
         let operator_where_clause = quote! {
-            where #input_type#generic_type: #op_path<Output=#input_type#generic_type>
+            where #input_type#generic_params: #op_path<Output=#input_type#generic_params>
         };
         add_extra_where_clauses(&generics, operator_where_clause)
     };
