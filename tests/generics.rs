@@ -34,6 +34,9 @@ struct WrappedDouble<T: Clone, U: Clone>(T, U);
 #[from(forward)]
 struct WrappedDouble2<T: Clone, U: Clone>(T, U);
 
+#[derive(Add, Sum)]
+struct WrappedWithConst<T, const C: u32>(T);
+
 #[derive(
     From,
     FromStr,
