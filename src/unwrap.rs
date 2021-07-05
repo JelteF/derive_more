@@ -48,7 +48,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             Fields::Unit => (quote! {}, quote! { () }, quote! { () }),
         };
 
-        let other_arms = state.enabled_variant_data().variant_states.into_iter().map(|variant| {
+        let other_arms = state.variant_states.iter().map(|variant| {
             variant.variant.unwrap()
         }).filter(|variant| {
             &variant.ident != variant_ident
