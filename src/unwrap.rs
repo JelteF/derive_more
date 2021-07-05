@@ -82,6 +82,5 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         }
     };
 
-    println!("{}", imp);
     Ok(imp)
 }
