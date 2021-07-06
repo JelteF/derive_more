@@ -65,7 +65,7 @@ try_into = ["syn/extra-traits"]
 generate-parsing-rs = ["peg"]
 testing-helpers = ["rustc_version"]
 is_variant = ["convert_case"]
-unwrap = ["convert_case"]
+unwrap = ["convert_case", "rustc_version"]
 
 default = [
     "add_assign",
