@@ -8,7 +8,7 @@ you can put the `#[unwrap(ignore)]` attribute on that variant.
 # Example usage
 
 ```rust
-use ::derive_more::Unwrap;
+# #[macro_use] extern crate derive_more;
 
 #[derive(Unwrap)]
 enum Maybe<T> {
@@ -21,6 +21,10 @@ enum Maybe<T> {
 
 The derive in the above example code generates the following code:
 ```rust
+# enum Maybe<T> {
+#     Just(T),
+#     Nothing,
+# }
 impl<T> Maybe<T> {
     pub fn unwrap_just(self) -> (T) {
         match self {
