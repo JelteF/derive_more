@@ -41,7 +41,7 @@ fn detect_track_caller() {}
 #[cfg(feature = "unwrap")]
 fn detect_track_caller() {
     use rustc_version::version_meta;
-    if version_meta().unwrap().semver.minor > 46 {
+    if version_meta().unwrap().semver.minor >= 46 {
         println!("cargo:rustc-cfg=feature=\"track-caller\"");
     }
 }
