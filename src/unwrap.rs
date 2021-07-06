@@ -38,13 +38,18 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let (data_pattern, ret_value, ret_type) = match variant.fields {
             Fields::Named(_) => panic!("cannot unwrap anonymous records"),
             Fields::Unnamed(ref fields) => {
-                let data_pattern = (0..fields.unnamed.len()).fold(vec![], |mut a, n| {
-                    a.push(format_ident!("field_{}", n));
-                    a
-                });
+                let data_pattern =
+                    (0..fields.unnamed.len()).fold(vec![], |mut a, n| {
+                        a.push(format_ident!("field_{}", n));
+                        a
+                    });
                 let ret_type = &fields.unnamed;
-                (quote! { (#(#data_pattern),*) }, quote! { (#(#data_pattern),*) }, quote! { (#ret_type) })
-            },
+                (
+                    quote! { (#(#data_pattern),*) },
+                    quote! { (#(#data_pattern),*) },
+                    quote! { (#ret_type) },
+                )
+            }
             Fields::Unit => (quote! {}, quote! { () }, quote! { () }),
         };
 

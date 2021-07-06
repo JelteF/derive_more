@@ -232,8 +232,6 @@ mod into;
 mod into_iterator;
 #[cfg(feature = "is_variant")]
 mod is_variant;
-#[cfg(feature = "unwrap")]
-mod unwrap;
 #[cfg(feature = "mul_assign")]
 mod mul_assign_like;
 #[cfg(any(feature = "mul", feature = "mul_assign"))]
@@ -250,6 +248,8 @@ mod parsing;
 mod sum_like;
 #[cfg(feature = "try_into")]
 mod try_into;
+#[cfg(feature = "unwrap")]
+mod unwrap;
 
 // This trait describes the possible return types of
 // the derives. A derive can generally be infallible and
