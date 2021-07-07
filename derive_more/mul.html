@@ -89,9 +89,9 @@ One meter can be added to one meter, to get two meters. Also, one meter times
 two would be two meters, but one meter times one meter would be one square meter.
 As this second case clearly requires more knowledge about the meaning of the
 type in question deriving for this is not implemented.</p>
-<p>NOTE: In case you don’t want this behaviour you can add <code>#[mul(forward)]</code>.
-This will instead generate a <code>Mul</code> implementation with the same semantics as
-<code>Add</code>.</p>
+<p>NOTE: In case you don’t want this behaviour you can add <code>#[mul(forward)]</code> in
+addition to <code>#[derive(Mul)]</code>. This will instead generate a <code>Mul</code> implementation
+with the same semantics as <code>Add</code>.</p>
 <h1 id="tuple-structs" class="section-header"><a href="#tuple-structs">1 Tuple structs</a></h1>
 <p>When deriving for a tuple struct with a single field (i.e. a newtype) like this:</p>
 
