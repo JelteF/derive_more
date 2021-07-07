@@ -65,6 +65,12 @@ try_into = ["syn/extra-traits"]
 generate-parsing-rs = ["peg"]
 testing-helpers = ["rustc_version"]
 is_variant = ["convert_case"]
+unwrap = ["convert_case", "rustc_version"]
+# Feature that requires post-MSRV Rust version,
+# of 1.46. We perform rustc version detection in the
+# build script for features that require this.
+# (Currently just `unwrap`.)
+track-caller = []
 
 default = [
     "add_assign",
@@ -89,6 +95,7 @@ default = [
     "sum",
     "try_into",
     "is_variant",
+    "unwrap"
 ]
 
 [[test]]
@@ -200,6 +207,11 @@ required-features = ["try_into"]
 name = "is_variant"
 path = "tests/is_variant.rs"
 required-features = ["is_variant"]
+
+[[test]]
+name = "unwrap"
+path = "tests/unwrap.rs"
+required-features = ["unwrap"]
 
 [[test]]
 name = "no_std"
