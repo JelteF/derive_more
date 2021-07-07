@@ -10,7 +10,7 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "derive_more"
-version = "0.99.16"
+version = "0.99.17-alpha.0"
 dependencies = [
  "convert_case",
  "peg",
