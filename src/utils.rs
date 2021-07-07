@@ -182,6 +182,27 @@ pub fn add_extra_generic_param(
     generics
 }
 
+pub fn add_extra_generic_type_param(
+    generics: &Generics,
+    generic_param: TokenStream,
+) -> Generics {
+    let generic_param: GenericParam = parse_quote! { #generic_param };
+    let lifetimes: Vec<GenericParam> =
+        generics.lifetimes().map(|x| x.clone().into()).collect();
+    let type_params: Vec<GenericParam> =
+        generics.type_params().map(|x| x.clone().into()).collect();
+    let const_params: Vec<GenericParam> =
+        generics.const_params().map(|x| x.clone().into()).collect();
+    let mut generics = generics.clone();
+    generics.params = Default::default();
+    generics.params.extend(lifetimes);
+    generics.params.extend(type_params);
+    generics.params.push(generic_param);
+    generics.params.extend(const_params);
+
+    generics
+}
+
 pub fn add_extra_where_clauses(
     generics: &Generics,
     type_where_clauses: TokenStream,
@@ -212,7 +233,7 @@ pub fn add_where_clauses_for_new_ident<'a>(
     };
 
     let generics = add_extra_where_clauses(generics, type_where_clauses);
-    add_extra_generic_param(&generics, generic_param)
+    add_extra_generic_type_param(&generics, generic_param)
 }
 
 pub fn unnamed_to_vec(fields: &FieldsUnnamed) -> Vec<&Field> {
