@@ -102,8 +102,7 @@ These are traits that can be used for operator overloading.
 1. [`Index`]
 2. [`Deref`]
 3. [`Not`-like], contains `Not` and `Neg`
-4. [`Add`-like], contains `Add`, `Sub`, `BitAnd`, `BitOr`, `BitXor`, `MulSelf`,
-   `DivSelf`, `RemSelf`, `ShrSelf` and `ShlSelf`
+4. [`Add`-like], contains `Add`, `Sub`, `BitAnd`, `BitOr`, `BitXor`
 5. [`Mul`-like], contains `Mul`, `Div`, `Rem`, `Shr` and `Shl`
 3. [`Sum`-like], contains `Sum` and `Product`
 6. [`IndexMut`]

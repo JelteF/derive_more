@@ -13,9 +13,9 @@ two would be two meters, but one meter times one meter would be one square meter
 As this second case clearly requires more knowledge about the meaning of the
 type in question deriving for this is not implemented.
 
-NOTE: In case you don't want this behaviour you can add `#[mul(forward)]`.
-This will instead generate a `Mul` implementation with the same semantics as
-`Add`.
+NOTE: In case you don't want this behaviour you can add `#[mul(forward)]` in
+addition to `#[derive(Mul)]`. This will instead generate a `Mul` implementation
+with the same semantics as `Add`.
 
 # Tuple structs
 
