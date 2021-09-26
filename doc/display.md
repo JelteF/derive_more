@@ -33,6 +33,10 @@ i.e. `_0`, `_1`, `_2`, etc.
 The syntax does not change, but the name of the attribute is the snake case version of the trait.
 E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
 
+A special case is the `DebugCustom` trait, which derives a `Debug` implementation instead of a `Display` implementation.
+The attribute for formatting is named `#[debug(..)]` when using `DebugCustom`.
+The arguments are the same as for `#[display(..)]`.
+
 # Generic data types
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type
@@ -104,6 +108,10 @@ use std::path::PathBuf;
 
 #[derive(Display)]
 struct MyInt(i32);
+
+#[derive(DebugCustom)]
+#[debug(fmt = "MyIntDbg(as hex: {:x}, as dec: {})", _0, _0)]
+struct MyIntDbg(i32);
 
 #[derive(Display)]
 #[display(fmt = "({}, {})", x, y)]
@@ -183,5 +191,9 @@ fn main() {
     assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
     assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
     assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
+    assert_eq!(
+        format!("{:?}", MyIntDbg(-255)),
+        "MyIntDbg(as hex: ffffff01, as dec: -255)"
+    );
 }
 ```
