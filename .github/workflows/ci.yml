@@ -131,8 +131,6 @@ jobs:
           toolchain: ${{ matrix.msrv }}
           override: true
 
-      - name: Remove .lock file
-        run: rm Cargo.lock
       - name: Install minimal dependecies versions
         run: cargo +nightly update -Z minimal-versions
 
