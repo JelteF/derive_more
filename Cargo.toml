@@ -27,14 +27,14 @@ name = "derive_more"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1"
-quote = "1"
-syn = { version = "1" }
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0.3"
 convert_case = { version = "0.4", optional = true}
 
 [build-dependencies]
 peg = { version = "0.5", optional = true }
-rustc_version = {version = "0.3", optional = true }
+rustc_version = { version = "0.4", optional = true }
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }

@@ -17,9 +17,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             field: vec!["ignore"],
         },
     )?;
-    if state.derive_type != DeriveType::Enum {
-        panic!("IsVariant can only be derived for enums");
-    }
+    assert!(
+        state.derive_type == DeriveType::Enum,
+        "IsVariant can only be derived for enums"
+    );
 
     let enum_name = &input.ident;
     let (imp_generics, type_generics, where_clause) = input.generics.split_for_impl();

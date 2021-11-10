@@ -144,8 +144,7 @@ fn enum_output_type_and_content(
                 matches.push(matcher);
             }
             Fields::Unit => {
-                let message =
-                    format!("Cannot {}() unit variants", method_ident.to_string());
+                let message = format!("Cannot {}() unit variants", method_ident);
                 matches.push(quote!(#subtype => ::core::result::Result::Err(#message)));
             }
         }

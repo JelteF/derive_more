@@ -1,67 +1,73 @@
-on: [push, pull_request]
-
 name: CI
+
+on: [push, pull_request]
 
 jobs:
   test:
-    name: Test Rust ${{matrix.toolchain}} on ${{matrix.os}}
-    runs-on: ${{matrix.os}}-latest
+    name: Test Rust ${{ matrix.toolchain }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       matrix:
         toolchain: [stable, nightly, 1.36.0]
         os: [ubuntu, macOS, windows]
     steps:
-      - uses: actions/checkout@master
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{matrix.toolchain}}
+          toolchain: ${{ matrix.toolchain }}
           override: true
-      - name: Remove lockfile
+
+      - name: Remove .lock file
         run: rm Cargo.lock
+
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --features testing-helpers
 
+
   test_features_separate:
     name: Test features
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Install tomljson
-        run: go get github.com/pelletier/go-toml/cmd/tomljson
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           override: true
+
+      - name: Install tomljson
+        run: go get github.com/pelletier/go-toml/cmd/tomljson
+
       - name: Test
         run: |
           export GOBIN=$HOME/go/bin
           export PATH=$PATH:$GOBIN
           ci/test_all_features.sh
 
+
   doc_test:
     name: Doc tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           override: true
+
       - name: Install cargo-external-doc
         uses: actions-rs/cargo@v1
         with:
           command: install
           args: --git https://github.com/JelteF/cargo-external-doc --force
+
       - name: Build library
         uses: actions-rs/cargo@v1
         with:
           command: build
+
       - name: Run cargo-external-doc
         uses: actions-rs/cargo@v1
         with:
@@ -72,9 +78,8 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Install minimal nightly with clippy and rustfmt
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: nightly
@@ -87,13 +92,12 @@ jobs:
           command: clippy
           args: --all-features -- -D warnings
 
+
   rustfmt:
-    name: rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Install minimal nightly with clipy
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: nightly
@@ -105,3 +109,36 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+
+  msrv:
+    # TODO: Use MSRV once it understands new `Cargo.lock` format.
+    # name: MSRV
+    name: Minimal crates versions
+    strategy:
+      fail-fast: false
+      matrix:
+        # msrv: ["1.36.0"]
+        msrv: [stable]
+        os: [ubuntu, macOS, windows]
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.msrv }}
+          override: true
+
+      - name: Install minimal dependecies versions
+        run: cargo +nightly update -Z minimal-versions
+
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features testing-helpers
