@@ -27,9 +27,9 @@ name = "derive_more"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1"
-quote = "1"
-syn = { version = "1" }
+proc-macro2 = "1.0.32"
+quote = "1.0.10"
+syn = "1.0.81"
 convert_case = { version = "0.4", optional = true}
 
 [build-dependencies]

@@ -105,3 +105,34 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+  msrv:
+    name: MSRV
+    strategy:
+      fail-fast: false
+      matrix:
+        msrv: [ '1.36.0' ]
+        os:
+          - ubuntu
+          - macOS
+          - windows
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.msrv }}
+          override: true
+
+      - run: cargo +nightly update -Z minimal-versions
+
+      - name: Test
+          uses: actions-rs/cargo@v1
+          with:
+            command: test
+            args: --features testing-helpers
