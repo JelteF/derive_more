@@ -66,15 +66,15 @@ impl Type {
     /// Returns trait name of this [`Type`].
     pub(crate) fn trait_name(&self) -> &'static str {
         match self {
-            Self::Display => "Display",
-            Self::Debug | Self::LowerDebug | Self::UpperDebug => "Debug",
-            Self::Octal => "Octal",
-            Self::LowerHex => "LowerHex",
-            Self::UpperHex => "UpperHex",
-            Self::Pointer => "Pointer",
-            Self::Binary => "Binary",
-            Self::LowerExp => "LowerExp",
-            Self::UpperExp => "UpperExp",
+            Type::Display => "Display",
+            Type::Debug | Type::LowerDebug | Type::UpperDebug => "Debug",
+            Type::Octal => "Octal",
+            Type::LowerHex => "LowerHex",
+            Type::UpperHex => "UpperHex",
+            Type::Pointer => "Pointer",
+            Type::Binary => "Binary",
+            Type::LowerExp => "LowerExp",
+            Type::UpperExp => "UpperExp",
         }
     }
 }
@@ -125,7 +125,9 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
     let formats = iter::repeat(())
         .scan(&mut input, |input, _| {
             let (curr, format) =
-                alt([&mut maybe_format, &mut map(text, |(i, _)| (i, None))])(input)?;
+                alt(&mut [&mut maybe_format, &mut map(text, |(i, _)| (i, None))])(
+                    input,
+                )?;
             **input = curr;
             Some(format)
         })
@@ -133,7 +135,11 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
         .collect();
 
     // Should consume all tokens for a successful parse.
-    input.is_empty().then(|| FormatString { formats })
+    if input.is_empty() {
+        Some(FormatString { formats })
+    } else {
+        None
+    }
 }
 
 /// Parses an `maybe_format` as defined in the [grammar spec][1].
@@ -154,7 +160,7 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
-    alt([
+    alt(&mut [
         &mut map(str("{{"), |i| (i, None)),
         &mut map(str("}}"), |i| (i, None)),
         &mut map(format, |(i, format)| (i, Some(format))),
@@ -208,7 +214,7 @@ fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
-    alt([
+    alt(&mut [
         &mut map(identifier, |(i, ident)| (i, Argument::Identifier(ident))),
         &mut map(integer, |(i, int)| (i, Argument::Integer(int))),
     ])(input)
@@ -233,19 +239,22 @@ fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
     let input = unwrap_or_else(
-        alt([
-            &mut try_seq([&mut any_char, &mut one_of("<^>")]),
+        alt(&mut [
+            &mut try_seq(&mut [&mut any_char, &mut one_of("<^>")]),
             &mut one_of("<^>"),
         ]),
         identity,
     )(input);
 
-    let input = seq([
+    let input = seq(&mut [
         &mut optional(one_of("+-")),
         &mut optional(char('#')),
-        &mut optional(try_seq([
+        &mut optional(try_seq(&mut [
             &mut char('0'),
-            &mut lookahead(check_char(|c| !matches!(c, '0'..='9' | '$'))),
+            &mut lookahead(check_char(|c| match c {
+                '0'..='9' | '$' => false,
+                _ => true,
+            })),
         ])),
     ])(input);
 
@@ -286,7 +295,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn precision(input: &str) -> Option<(LeftToParse<'_>, Precision<'_>)> {
-    alt([
+    alt(&mut [
         &mut map(count, |(i, c)| (i, Precision::Count(c))),
         &mut map(char('*'), |i| (i, Precision::Star)),
     ])(input)
@@ -318,7 +327,7 @@ fn precision(input: &str) -> Option<(LeftToParse<'_>, Precision<'_>)> {
 /// [`type`]: type_
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn type_(input: &str) -> Option<(&str, Type)> {
-    alt([
+    alt(&mut [
         &mut map(str("x?"), |i| (i, Type::LowerDebug)),
         &mut map(str("X?"), |i| (i, Type::UpperDebug)),
         &mut map(char('?'), |i| (i, Type::Debug)),
@@ -349,7 +358,7 @@ fn type_(input: &str) -> Option<(&str, Type)> {
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn count(input: &str) -> Option<(LeftToParse<'_>, Count<'_>)> {
-    alt([
+    alt(&mut [
         &mut map(parameter, |(i, p)| (i, Count::Parameter(p))),
         &mut map(integer, |(i, int)| (i, Count::Integer(int))),
     ])(input)
@@ -392,7 +401,7 @@ fn parameter(input: &str) -> Option<(LeftToParse<'_>, Parameter<'_>)> {
 /// [2]: https://doc.rust-lang.org/reference/identifiers.html
 fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
     map(
-        alt([
+        alt(&mut [
             &mut map(
                 check_char(XID::is_xid_start),
                 take_while0(check_char(XID::is_xid_continue)),
@@ -408,7 +417,10 @@ fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn integer(input: &str) -> Option<(LeftToParse<'_>, usize)> {
     and_then(
-        take_while1(check_char(|c| matches!(c, '0'..='9'))),
+        take_while1(check_char(|c| match c {
+            '0'..='9' => true,
+            _ => false,
+        })),
         |(i, int)| int.parse().ok().map(|int| (i, int)),
     )(input)
 }
@@ -421,24 +433,24 @@ fn text(input: &str) -> Option<(LeftToParse<'_>, &str)> {
 }
 
 /// Applies non-failing parsers in sequence.
-fn seq<const N: usize>(
-    mut parsers: [&mut dyn FnMut(&str) -> &str; N],
-) -> impl FnMut(&str) -> LeftToParse<'_> + '_ {
+fn seq<'p>(
+    parsers: &'p mut [&'p mut dyn FnMut(&str) -> &str],
+) -> impl FnMut(&str) -> LeftToParse<'_> + 'p {
     move |input| parsers.iter_mut().fold(input, |i, p| (**p)(i))
 }
 
 /// Tries to apply parsers in sequence. Returns [`None`] in case one of them
 /// returned [`None`].
-fn try_seq<const N: usize>(
-    mut parsers: [&mut dyn FnMut(&str) -> Option<&str>; N],
-) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + '_ {
+fn try_seq<'p>(
+    parsers: &'p mut [&'p mut dyn FnMut(&str) -> Option<&str>],
+) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + 'p {
     move |input| parsers.iter_mut().try_fold(input, |i, p| (**p)(i))
 }
 
 /// Returns first successful parser or [`None`] in case all of them returned
 /// [`None`].
-fn alt<'p, 'i, T: 'i, const N: usize>(
-    mut parsers: [&'p mut dyn FnMut(&'i str) -> Option<T>; N],
+fn alt<'p, 'i, T: 'i>(
+    parsers: &'p mut [&'p mut dyn FnMut(&'i str) -> Option<T>],
 ) -> impl FnMut(&'i str) -> Option<T> + 'p {
     move |input| parsers.iter_mut().find_map(|p| (**p)(input))
 }
@@ -568,12 +580,24 @@ fn take_until1(
 
 /// Checks whether `input` starts with `s`.
 fn str(s: &str) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + '_ {
-    move |input| input.starts_with(s).then(|| &input[s.as_bytes().len()..])
+    move |input| {
+        if input.starts_with(s) {
+            Some(&input[s.as_bytes().len()..])
+        } else {
+            None
+        }
+    }
 }
 
 /// Checks whether `input` starts with `c`.
 fn char(c: char) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
-    move |input| input.starts_with(c).then(|| &input[c.len_utf8()..])
+    move |input| {
+        if input.starts_with(c) {
+            Some(&input[c.len_utf8()..])
+        } else {
+            None
+        }
+    }
 }
 
 /// Checks whether first [`char`] suits `check`.
@@ -581,10 +605,13 @@ fn check_char(
     mut check: impl FnMut(char) -> bool,
 ) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
     move |input| {
-        input
-            .chars()
-            .next()
-            .and_then(|c| check(c).then(|| &input[c.len_utf8()..]))
+        input.chars().next().and_then(|c| {
+            if check(c) {
+                Some(&input[c.len_utf8()..])
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -613,7 +640,10 @@ mod tests {
             format_string("Минск"),
             Some(FormatString { formats: vec![] }),
         );
-        assert_eq!(format_string("🦀"), Some(FormatString { formats: vec![] }));
+        assert_eq!(
+            format_string("🦀"),
+            Some(FormatString { formats: vec![] })
+        );
     }
 
     #[test]
@@ -872,7 +902,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
-                        width: Some(Width::Integer(1)),
+                        width: Some(Count::Integer(1)),
                         precision: None,
                         ty: Type::Display
                     })
@@ -885,7 +915,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
-                        width: Some(Width::Parameter(Argument::Integer(1))),
+                        width: Some(Count::Parameter(Argument::Integer(1))),
                         precision: None,
                         ty: Type::Display
                     })
@@ -898,7 +928,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
-                        width: Some(Width::Parameter(Argument::Identifier("par"))),
+                        width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: None,
                         ty: Type::Display
                     })
@@ -911,7 +941,9 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
-                        width: Some(Width::Parameter(Argument::Identifier("Минск"))),
+                        width: Some(Count::Parameter(Argument::Identifier(
+                            "Минск"
+                        ))),
                         precision: None,
                         ty: Type::Display
                     })
@@ -980,7 +1012,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
-                        width: Some(Width::Parameter(Argument::Integer(2))),
+                        width: Some(Count::Parameter(Argument::Integer(2))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par")
                         ))),
@@ -1021,7 +1053,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
-                        width: Some(Width::Parameter(Argument::Identifier("par"))),
+                        width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par")
                         ))),
@@ -1049,7 +1081,7 @@ mod tests {
                     Format {
                         arg: Some(Argument::Identifier("par")),
                         spec: Some(FormatSpec {
-                            width: Some(Width::Parameter(Argument::Identifier("par"))),
+                            width: Some(Count::Parameter(Argument::Identifier("par"))),
                             precision: Some(Precision::Count(Count::Parameter(
                                 Argument::Identifier("a")
                             ))),
