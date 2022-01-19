@@ -252,7 +252,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
         &mut optional(try_seq(&mut [
             &mut char('0'),
             &mut lookahead(check_char(|c| match c {
-                '0'..='9' | '$' => false,
+                '$' => false,
                 _ => true,
             })),
         ])),
