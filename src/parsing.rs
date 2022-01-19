@@ -640,7 +640,10 @@ mod tests {
             format_string("Минск"),
             Some(FormatString { formats: vec![] }),
         );
-        assert_eq!(format_string("🦀"), Some(FormatString { formats: vec![] }));
+        assert_eq!(
+            format_string("🦀"),
+            Some(FormatString { formats: vec![] })
+        );
     }
 
     #[test]
@@ -938,7 +941,9 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
-                        width: Some(Count::Parameter(Argument::Identifier("Минск"))),
+                        width: Some(Count::Parameter(Argument::Identifier(
+                            "Минск"
+                        ))),
                         precision: None,
                         ty: Type::Display
                     })
