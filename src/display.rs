@@ -359,6 +359,7 @@ impl<'a, 'b> State<'a, 'b> {
                     == "fmt" =>
                 {
                     let expected_affix_usage = "outer `enum` `fmt` is an affix spec that expects no args and at most 1 placeholder for inner variant display";
+                    let placeholders = Placeholder::parse_fmt_string(&fmt.value());
                     if outer_enum {
                         if list.nested.iter().skip(1).count() != 0 {
                             return Err(Error::new(
@@ -367,35 +368,18 @@ impl<'a, 'b> State<'a, 'b> {
                             ));
                         }
                         // TODO: Check for a single `Display` group?
-                        let fmt_string = match &list.nested[0] {
-                            syn::NestedMeta::Meta(syn::Meta::NameValue(
-                                syn::MetaNameValue {
-                                    path,
-                                    lit: syn::Lit::Str(s),
-                                    ..
-                                },
-                            )) if path
-                                .segments
+                        if placeholders.len() > 1
+                            || placeholders
                                 .first()
-                                .expect("path shouldn't be empty")
-                                .ident
-                                == "fmt" =>
-                            {
-                                s.value()
-                            }
-                            // This one has been checked already in get_meta_fmt() method.
-                            _ => unreachable!(),
-                        };
-
-                        let num_placeholders =
-                            Placeholder::parse_fmt_string(&fmt_string).len();
-                        if num_placeholders > 1 {
+                                .map(|p| p.arg != Argument::Integer(0))
+                                .unwrap_or_default()
+                        {
                             return Err(Error::new(
                                 list.nested[1].span(),
                                 expected_affix_usage,
                             ));
                         }
-                        if num_placeholders == 1 {
+                        if placeholders.len() == 1 {
                             return Ok((quote_spanned!(fmt.span()=> #fmt), true));
                         }
                     }
@@ -421,8 +405,26 @@ impl<'a, 'b> State<'a, 'b> {
                             Ok(quote_spanned!(list.span()=> #args #arg,))
                         })?;
 
+                    let interpolated_args = placeholders
+                        .into_iter()
+                        .flat_map(|p| {
+                            let map_argument = |arg| match arg {
+                                Argument::Ident(i) => {
+                                    let ident = syn::Ident::new(&i, Span::call_site());
+                                    Some(quote! { #ident = #ident, })
+                                }
+                                Argument::Integer(_) => None,
+                            };
+
+                            map_argument(p.arg)
+                                .into_iter()
+                                .chain(p.width.and_then(map_argument))
+                                .chain(p.precision.and_then(map_argument))
+                        })
+                        .collect::<TokenStream>();
+
                     Ok((
-                        quote_spanned!(meta.span()=> write!(_derive_more_display_formatter, #fmt, #args)),
+                        quote_spanned!(meta.span()=> write!(_derive_more_display_formatter, #fmt, #args #interpolated_args)),
                         false,
                     ))
                 }
@@ -665,9 +667,6 @@ impl<'a, 'b> State<'a, 'b> {
                 _ => unreachable!(),
             })
             .collect();
-        if fmt_args.is_empty() {
-            return HashMap::default();
-        }
         let fmt_string = match &list.nested[0] {
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                 path,
@@ -689,7 +688,14 @@ impl<'a, 'b> State<'a, 'b> {
         Placeholder::parse_fmt_string(&fmt_string).into_iter().fold(
             HashMap::default(),
             |mut bounds, pl| {
-                if let Some(arg) = fmt_args.get(&pl.position) {
+                let arg = match pl.arg {
+                    Argument::Integer(i) => fmt_args.get(&i).cloned(),
+                    Argument::Ident(i) => {
+                        Some(syn::Ident::new(&i, Span::call_site()).into())
+                    }
+                };
+
+                if let Some(arg) = &arg {
                     if fields_type_params.contains_key(arg) {
                         bounds
                             .entry(fields_type_params[arg].clone())
@@ -733,11 +739,28 @@ impl<'a, 'b> State<'a, 'b> {
     }
 }
 
+#[derive(Debug, PartialEq)]
+enum Argument {
+    Integer(usize),
+    Ident(String),
+}
+
+impl<'a> From<parsing::Argument<'a>> for Argument {
+    fn from(arg: parsing::Argument<'a>) -> Self {
+        match arg {
+            parsing::Argument::Integer(i) => Argument::Integer(i),
+            parsing::Argument::Identifier(i) => Argument::Ident(i.to_owned()),
+        }
+    }
+}
+
 /// Representation of formatting placeholder.
 #[derive(Debug, PartialEq)]
 struct Placeholder {
     /// Position of formatting argument to be used for this placeholder.
-    position: usize,
+    arg: Argument,
+    width: Option<Argument>,
+    precision: Option<Argument>,
     /// Name of [`std::fmt`] trait to be used for rendering this placeholder.
     trait_name: &'static str,
 }
@@ -754,20 +777,25 @@ impl Placeholder {
                     format.arg,
                     format.spec.map(|s| s.ty).unwrap_or(parsing::Type::Display),
                 );
-                let position = maybe_arg
-                    .and_then(|arg| match arg {
-                        parsing::Argument::Integer(i) => Some(i),
-                        parsing::Argument::Identifier(_) => None,
-                    })
-                    .unwrap_or_else(|| {
-                        // Assign "the next argument".
-                        // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
-                        n += 1;
-                        n - 1
-                    });
+                let position = maybe_arg.map(Into::into).unwrap_or_else(|| {
+                    // Assign "the next argument".
+                    // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
+                    n += 1;
+                    Argument::Integer(n - 1)
+                });
 
                 Placeholder {
-                    position,
+                    arg: position,
+                    width: format.spec.and_then(|s| match s.width {
+                        Some(parsing::Count::Parameter(arg)) => Some(arg.into()),
+                        _ => None,
+                    }),
+                    precision: format.spec.and_then(|s| match s.precision {
+                        Some(parsing::Precision::Count(parsing::Count::Parameter(
+                            arg,
+                        ))) => Some(arg.into()),
+                        _ => None,
+                    }),
                     trait_name: ty.trait_name(),
                 }
             })
@@ -781,32 +809,44 @@ mod placeholder_parse_fmt_string_spec {
 
     #[test]
     fn indicates_position_and_trait_name_for_each_fmt_placeholder() {
-        let fmt_string = "{},{:?},{{}},{{{1:0$}}}-{2:.1$x}{0:#?}{:width$}";
+        let fmt_string = "{},{:?},{{}},{{{1:0$}}}-{2:.1$x}{par:#?}{:width$}";
         assert_eq!(
             Placeholder::parse_fmt_string(&fmt_string),
             vec![
                 Placeholder {
-                    position: 0,
+                    arg: Argument::Integer(0),
+                    width: None,
+                    precision: None,
                     trait_name: "Display",
                 },
                 Placeholder {
-                    position: 1,
+                    arg: Argument::Integer(1),
+                    width: None,
+                    precision: None,
                     trait_name: "Debug",
                 },
                 Placeholder {
-                    position: 1,
+                    arg: Argument::Integer(1),
+                    width: Some(Argument::Integer(0)),
+                    precision: None,
                     trait_name: "Display",
                 },
                 Placeholder {
-                    position: 2,
+                    arg: Argument::Integer(2),
+                    width: None,
+                    precision: Some(Argument::Integer(1)),
                     trait_name: "LowerHex",
                 },
                 Placeholder {
-                    position: 0,
+                    arg: Argument::Ident("par".to_owned()),
+                    width: None,
+                    precision: None,
                     trait_name: "Debug",
                 },
                 Placeholder {
-                    position: 2,
+                    arg: Argument::Integer(2),
+                    width: Some(Argument::Ident("width".to_owned())),
+                    precision: None,
                     trait_name: "Display",
                 },
             ],

@@ -33,6 +33,9 @@ syn = "1.0.3"
 convert_case = { version = "0.4", optional = true}
 unicode-xid = { version = "0.2.2", optional = true }
 
+[dev-dependencies]
+rustversion = "1.0.6"
+
 [build-dependencies]
 rustc_version = { version = "0.4", optional = true }
 
