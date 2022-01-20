@@ -185,6 +185,26 @@ mod generic {
     }
 
     #[derive(Display)]
+    #[display(fmt = "Generic {field:<>width$.prec$}")]
+    struct InterpolatedNamedGenericStructWidthPrecision<T> {
+        field: T,
+        width: usize,
+        prec: usize,
+    }
+    #[test]
+    fn interpolated_named_generic_struct_width_precision() {
+        assert_eq!(
+            InterpolatedNamedGenericStructWidthPrecision {
+                field: 1.2345,
+                width: 9,
+                prec: 2,
+            }
+            .to_string(),
+            "Generic <<<<<1.23",
+        );
+    }
+
+    #[derive(Display)]
     struct AutoNamedGenericStruct<T> {
         field: T,
     }
