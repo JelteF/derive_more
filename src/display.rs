@@ -409,17 +409,19 @@ impl<'a, 'b> State<'a, 'b> {
                         .into_iter()
                         .flat_map(|p| {
                             let map_argument = |arg| match arg {
-                                Argument::Ident(i) => {
-                                    let ident = syn::Ident::new(&i, Span::call_site());
-                                    Some(quote! { #ident = #ident, })
-                                }
+                                Argument::Ident(i) => Some(i),
                                 Argument::Integer(_) => None,
                             };
-
                             map_argument(p.arg)
                                 .into_iter()
                                 .chain(p.width.and_then(map_argument))
                                 .chain(p.precision.and_then(map_argument))
+                        })
+                        .collect::<HashSet<_>>()
+                        .into_iter()
+                        .map(|ident| {
+                            let ident = syn::Ident::new(&ident, Span::call_site());
+                            quote! { #ident = #ident, }
                         })
                         .collect::<TokenStream>();
 

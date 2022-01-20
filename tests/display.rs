@@ -185,7 +185,7 @@ mod generic {
     }
 
     #[derive(Display)]
-    #[display(fmt = "Generic {field:<>width$.prec$}")]
+    #[display(fmt = "Generic {field:<>width$.prec$} {field}")]
     struct InterpolatedNamedGenericStructWidthPrecision<T> {
         field: T,
         width: usize,
@@ -200,7 +200,7 @@ mod generic {
                 prec: 2,
             }
             .to_string(),
-            "Generic <<<<<1.23",
+            "Generic <<<<<1.23 1.2345",
         );
     }
 
