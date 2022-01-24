@@ -765,7 +765,6 @@ impl Placeholder {
                         n += 1;
                         n - 1
                     });
-
                 Placeholder {
                     position,
                     trait_name: ty.trait_name(),
@@ -810,6 +809,6 @@ mod placeholder_parse_fmt_string_spec {
                     trait_name: "Display",
                 },
             ],
-        )
+        );
     }
 }
