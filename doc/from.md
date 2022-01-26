@@ -37,7 +37,7 @@ enum MyEnum {
     NoFromImpl(i64),
 }
 
-// Or explicitly annotate the once you need
+// Or explicitly annotate the ones you need
 #[derive(From, PartialEq)]
 enum MyEnum2 {
     #[from]
