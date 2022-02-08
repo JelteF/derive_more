@@ -1189,7 +1189,7 @@ pub fn get_if_type_parameter_used_in_type(
     if is_type_parameter_used_in_type(type_parameters, ty) {
         match ty {
             syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => {
-                Some((&**ty).clone())
+                Some((**ty).clone())
             }
             ty => Some(ty.clone()),
         }
