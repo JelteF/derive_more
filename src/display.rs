@@ -669,9 +669,6 @@ impl<'a, 'b> State<'a, 'b> {
                 _ => unreachable!(),
             })
             .collect();
-        if fmt_args.is_empty() {
-            return HashMap::default();
-        }
         let (fmt_string, fmt_span) = match &list.nested[0] {
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                 path,
