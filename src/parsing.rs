@@ -79,7 +79,7 @@ impl Type {
     }
 }
 
-/// Type alias for [`FormatSpec::width`].
+/// Type alias for the [`FormatSpec::width`].
 type Width<'a> = Count<'a>;
 
 /// Output of the [`maybe_format`] parser.
@@ -91,10 +91,12 @@ type Identifier<'a> = &'a str;
 /// Output of the [`parameter`] parser.
 type Parameter<'a> = Argument<'a>;
 
-/// [`str`](prim@str) left to parse.
+/// [`str`] left to parse.
+///
+/// [`str`]: prim@str
 type LeftToParse<'a> = &'a str;
 
-/// Parses an `format_string` as defined in the [grammar spec][1].
+/// Parses a `format_string` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -142,7 +144,7 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
     }
 }
 
-/// Parses an `maybe_format` as defined in the [grammar spec][1].
+/// Parses a `maybe_format` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -167,7 +169,7 @@ fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
     ])(input)
 }
 
-/// Parses an `format` as defined in the [grammar spec][1].
+/// Parses a `format` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -220,7 +222,7 @@ fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
     ])(input)
 }
 
-/// Parses an `format_spec` as defined in the [grammar spec][1].
+/// Parses a `format_spec` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -278,7 +280,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
     ))
 }
 
-/// Parses an `precision` as defined in the [grammar spec][1].
+/// Parses a `precision` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -301,7 +303,7 @@ fn precision(input: &str) -> Option<(LeftToParse<'_>, Precision<'_>)> {
     ])(input)
 }
 
-/// Parses an `type` as defined in the [grammar spec][1].
+/// Parses a `type` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -342,7 +344,7 @@ fn type_(input: &str) -> Option<(&str, Type)> {
     ])(input)
 }
 
-/// Parses an `count` as defined in the [grammar spec][1].
+/// Parses a `count` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -364,7 +366,7 @@ fn count(input: &str) -> Option<(LeftToParse<'_>, Count<'_>)> {
     ])(input)
 }
 
-/// Parses an `parameter` as defined in the [grammar spec][1].
+/// Parses a `parameter` as defined in the [grammar spec][1].
 ///
 /// # Grammar
 ///
@@ -425,7 +427,7 @@ fn integer(input: &str) -> Option<(LeftToParse<'_>, usize)> {
     )(input)
 }
 
-/// Parses an `text` as defined in the [grammar spec][1].
+/// Parses a `text` as defined in the [grammar spec][1].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn text(input: &str) -> Option<(LeftToParse<'_>, &str)> {
@@ -659,27 +661,27 @@ mod tests {
             Some(FormatString {
                 formats: vec![Format {
                     arg: Some(Argument::Integer(0)),
-                    spec: None
-                }]
-            })
+                    spec: None,
+                }],
+            }),
         );
         assert_eq!(
             format_string("{par}"),
             Some(FormatString {
                 formats: vec![Format {
                     arg: Some(Argument::Identifier("par")),
-                    spec: None
-                }]
-            })
+                    spec: None,
+                }],
+            }),
         );
         assert_eq!(
             format_string("{Минск}"),
             Some(FormatString {
                 formats: vec![Format {
                     arg: Some(Argument::Identifier("Минск")),
-                    spec: None
-                }]
-            })
+                    spec: None,
+                }],
+            }),
         );
     }
 
@@ -693,10 +695,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:^}"),
@@ -706,10 +708,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:-<}"),
@@ -719,10 +721,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{: <}"),
@@ -732,10 +734,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:^<}"),
@@ -745,10 +747,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:+}"),
@@ -758,10 +760,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:^<-}"),
@@ -771,10 +773,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:#}"),
@@ -784,10 +786,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:+#}"),
@@ -797,10 +799,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:-<#}"),
@@ -810,10 +812,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:^<-#}"),
@@ -823,10 +825,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:0}"),
@@ -836,10 +838,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:#0}"),
@@ -849,10 +851,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:-0}"),
@@ -862,10 +864,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:^<0}"),
@@ -875,10 +877,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:^<+#0}"),
@@ -888,10 +890,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:1}"),
@@ -901,10 +903,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: Some(Count::Integer(1)),
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:1$}"),
@@ -914,10 +916,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: Some(Count::Parameter(Argument::Integer(1))),
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:par$}"),
@@ -927,10 +929,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:-^-#0Минск$}"),
@@ -940,10 +942,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: Some(Count::Parameter(Argument::Identifier("Минск"))),
                         precision: None,
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:.*}"),
@@ -953,10 +955,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: Some(Precision::Star),
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:.0}"),
@@ -966,10 +968,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: Some(Precision::Count(Count::Integer(0))),
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:.0$}"),
@@ -979,12 +981,12 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Integer(0)
+                            Argument::Integer(0),
                         ))),
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:.par$}"),
@@ -994,12 +996,12 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Identifier("par")
+                            Argument::Identifier("par"),
                         ))),
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{: >+#2$.par$}"),
@@ -1009,12 +1011,12 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: Some(Count::Parameter(Argument::Integer(2))),
                         precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Identifier("par")
+                            Argument::Identifier("par"),
                         ))),
-                        ty: Type::Display
-                    })
-                }]
-            })
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:x?}"),
@@ -1024,10 +1026,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::LowerDebug
-                    })
-                }]
-            })
+                        ty: Type::LowerDebug,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{:E}"),
@@ -1037,10 +1039,10 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: None,
                         precision: None,
-                        ty: Type::UpperExp
-                    })
-                }]
-            })
+                        ty: Type::UpperExp,
+                    }),
+                }],
+            }),
         );
         assert_eq!(
             format_string("{: >+#par$.par$X?}"),
@@ -1050,12 +1052,12 @@ mod tests {
                     spec: Some(FormatSpec {
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Identifier("par")
+                            Argument::Identifier("par"),
                         ))),
-                        ty: Type::UpperDebug
-                    })
-                }]
-            })
+                        ty: Type::UpperDebug,
+                    }),
+                }],
+            }),
         );
     }
 
@@ -1071,21 +1073,21 @@ mod tests {
                             width: None,
                             precision: None,
                             ty: Type::Debug,
-                        })
+                        }),
                     },
                     Format {
                         arg: Some(Argument::Identifier("par")),
                         spec: Some(FormatSpec {
                             width: Some(Count::Parameter(Argument::Identifier("par"))),
                             precision: Some(Precision::Count(Count::Parameter(
-                                Argument::Identifier("a")
+                                Argument::Identifier("a"),
                             ))),
-                            ty: Type::Display
-                        })
-                    }
-                ]
-            })
-        )
+                            ty: Type::Display,
+                        }),
+                    },
+                ],
+            }),
+        );
     }
 
     #[test]

@@ -852,6 +852,6 @@ mod placeholder_parse_fmt_string_spec {
                     trait_name: "Display",
                 },
             ],
-        )
+        );
     }
 }
