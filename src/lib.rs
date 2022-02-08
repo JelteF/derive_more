@@ -240,8 +240,6 @@ mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
 #[cfg(feature = "display")]
-#[allow(ellipsis_inclusive_range_patterns)]
-#[allow(clippy::all)]
 mod parsing;
 #[cfg(feature = "sum")]
 mod sum_like;
