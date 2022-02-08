@@ -349,6 +349,7 @@ impl<'a, 'b> State<'a, 'b> {
             }
         };
 
+        // TODO: Check for a single `Display` group?
         match &list.nested[0] {
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                 path,
@@ -367,7 +368,6 @@ impl<'a, 'b> State<'a, 'b> {
                                 expected_affix_usage,
                             ));
                         }
-                        // TODO: Check for a single `Display` group?
                         if placeholders.len() > 1
                             || placeholders
                                 .first()
@@ -420,7 +420,7 @@ impl<'a, 'b> State<'a, 'b> {
                         .collect::<HashSet<_>>()
                         .into_iter()
                         .map(|ident| {
-                            let ident = syn::Ident::new(&ident, Span::call_site());
+                            let ident = syn::Ident::new(&ident, fmt.span());
                             quote! { #ident = #ident, }
                         })
                         .collect::<TokenStream>();
@@ -669,7 +669,10 @@ impl<'a, 'b> State<'a, 'b> {
                 _ => unreachable!(),
             })
             .collect();
-        let fmt_string = match &list.nested[0] {
+        if fmt_args.is_empty() {
+            return HashMap::default();
+        }
+        let (fmt_string, fmt_span) = match &list.nested[0] {
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                 path,
                 lit: syn::Lit::Str(s),
@@ -681,7 +684,7 @@ impl<'a, 'b> State<'a, 'b> {
                 .ident
                 == "fmt" =>
             {
-                s.value()
+                (s.value(), s.span())
             }
             // This one has been checked already in get_meta_fmt() method.
             _ => unreachable!(),
@@ -692,9 +695,7 @@ impl<'a, 'b> State<'a, 'b> {
             |mut bounds, pl| {
                 let arg = match pl.arg {
                     Argument::Integer(i) => fmt_args.get(&i).cloned(),
-                    Argument::Ident(i) => {
-                        Some(syn::Ident::new(&i, Span::call_site()).into())
-                    }
+                    Argument::Ident(i) => Some(syn::Ident::new(&i, fmt_span).into()),
                 };
 
                 if let Some(arg) = &arg {
@@ -741,9 +742,17 @@ impl<'a, 'b> State<'a, 'b> {
     }
 }
 
+/// [`Placeholder`] argument.
 #[derive(Debug, PartialEq)]
 enum Argument {
+    /// [Positional parameter][1].
+    ///
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
     Integer(usize),
+
+    /// [Named parameter][1].
+    ///
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
     Ident(String),
 }
 
@@ -761,8 +770,17 @@ impl<'a> From<parsing::Argument<'a>> for Argument {
 struct Placeholder {
     /// Position of formatting argument to be used for this placeholder.
     arg: Argument,
+
+    /// [Width argument][1], if present.
+    ///
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#width
     width: Option<Argument>,
+
+    /// [Precision argument][1], if present.
+    ///
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#precision
     precision: Option<Argument>,
+
     /// Name of [`std::fmt`] trait to be used for rendering this placeholder.
     trait_name: &'static str,
 }
