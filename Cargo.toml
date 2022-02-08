@@ -29,7 +29,7 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0"
-syn = "1.0.3"
+syn = "1.0.81"
 convert_case = { version = "0.4", optional = true}
 unicode-xid = { version = "0.2.2", optional = true }
 
@@ -51,7 +51,7 @@ deref_mut = []
 display = ["syn/extra-traits", "unicode-xid"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
-from_str = []
+from_str = ["convert_case"]
 index = []
 index_mut = []
 into = ["syn/extra-traits"]
