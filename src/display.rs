@@ -6,8 +6,10 @@ use syn::{
     parse::Parser as _, punctuated::Punctuated, spanned::Spanned as _, Error, Result,
 };
 
-use crate::utils;
-use utils::{HashMap, HashSet};
+use crate::{
+    parsing,
+    utils::{self, HashMap, HashSet},
+};
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
@@ -744,107 +746,31 @@ impl Placeholder {
     /// Parses [`Placeholder`]s from a given formatting string.
     fn parse_fmt_string(s: &str) -> Vec<Placeholder> {
         let mut n = 0;
-        crate::parsing::all_placeholders(s)
+        parsing::format_string(s)
             .into_iter()
-            .flatten()
-            .map(|m| {
-                let (maybe_arg, maybe_typ) = crate::parsing::format(m).unwrap();
-                let position = maybe_arg.unwrap_or_else(|| {
-                    // Assign "the next argument".
-                    // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
-                    n += 1;
-                    n - 1
-                });
-                let typ = maybe_typ.unwrap_or_default();
-                let trait_name = match typ {
-                    "" => "Display",
-                    "?" | "x?" | "X?" => "Debug",
-                    "o" => "Octal",
-                    "x" => "LowerHex",
-                    "X" => "UpperHex",
-                    "p" => "Pointer",
-                    "b" => "Binary",
-                    "e" => "LowerExp",
-                    "E" => "UpperExp",
-                    _ => unreachable!(),
-                };
+            .flat_map(|f| f.formats)
+            .map(|format| {
+                let (maybe_arg, ty) = (
+                    format.arg,
+                    format.spec.map(|s| s.ty).unwrap_or(parsing::Type::Display),
+                );
+                let position = maybe_arg
+                    .and_then(|arg| match arg {
+                        parsing::Argument::Integer(i) => Some(i),
+                        parsing::Argument::Identifier(_) => None,
+                    })
+                    .unwrap_or_else(|| {
+                        // Assign "the next argument".
+                        // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
+                        n += 1;
+                        n - 1
+                    });
                 Placeholder {
                     position,
-                    trait_name,
+                    trait_name: ty.trait_name(),
                 }
             })
             .collect()
-    }
-}
-
-#[cfg(test)]
-mod regex_maybe_placeholder_spec {
-
-    #[test]
-    fn parses_placeholders_and_omits_escaped() {
-        let fmt_string = "{}, {:?}, {{}}, {{{1:0$}}}";
-        let placeholders: Vec<_> = crate::parsing::all_placeholders(&fmt_string)
-            .into_iter()
-            .flatten()
-            .collect();
-        assert_eq!(placeholders, vec!["{}", "{:?}", "{1:0$}"]);
-    }
-}
-
-#[cfg(test)]
-mod regex_placeholder_format_spec {
-
-    #[test]
-    fn detects_type() {
-        for (p, expected) in vec![
-            ("{}", ""),
-            ("{:?}", "?"),
-            ("{:x?}", "x?"),
-            ("{:X?}", "X?"),
-            ("{:o}", "o"),
-            ("{:x}", "x"),
-            ("{:X}", "X"),
-            ("{:p}", "p"),
-            ("{:b}", "b"),
-            ("{:e}", "e"),
-            ("{:E}", "E"),
-            ("{:.*}", ""),
-            ("{8}", ""),
-            ("{:04}", ""),
-            ("{1:0$}", ""),
-            ("{:width$}", ""),
-            ("{9:>8.*}", ""),
-            ("{2:.1$x}", "x"),
-        ] {
-            let typ = crate::parsing::format(p).unwrap().1.unwrap_or_default();
-            assert_eq!(typ, expected);
-        }
-    }
-
-    #[test]
-    fn detects_arg() {
-        for (p, expected) in vec![
-            ("{}", ""),
-            ("{0:?}", "0"),
-            ("{12:x?}", "12"),
-            ("{3:X?}", "3"),
-            ("{5:o}", "5"),
-            ("{6:x}", "6"),
-            ("{:X}", ""),
-            ("{8}", "8"),
-            ("{:04}", ""),
-            ("{1:0$}", "1"),
-            ("{:width$}", ""),
-            ("{9:>8.*}", "9"),
-            ("{2:.1$x}", "2"),
-        ] {
-            let arg = crate::parsing::format(p)
-                .unwrap()
-                .0
-                .map(|s| s.to_string())
-                .unwrap_or_default();
-            assert_eq!(arg, String::from(expected));
-        }
     }
 }
 
@@ -883,6 +809,6 @@ mod placeholder_parse_fmt_string_spec {
                     trait_name: "Display",
                 },
             ],
-        )
+        );
     }
 }

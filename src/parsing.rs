@@ -1,883 +1,1104 @@
-use self::RuleResult::{Failed, Matched};
-fn escape_default(s: &str) -> String {
-    s.chars().flat_map(|c| c.escape_default()).collect()
+use std::{convert::identity, iter};
+
+use unicode_xid::UnicodeXID as XID;
+
+/// Output of the [`format_string`] parser.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) struct FormatString<'a> {
+    pub(crate) formats: Vec<Format<'a>>,
 }
-fn char_range_at(s: &str, pos: usize) -> (char, usize) {
-    let c = &s[pos..].chars().next().unwrap();
-    let next_pos = pos + c.len_utf8();
-    (*c, next_pos)
+
+/// Output of the [`format`] parser.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) struct Format<'a> {
+    pub(crate) arg: Option<Argument<'a>>,
+    pub(crate) spec: Option<FormatSpec<'a>>,
 }
-#[derive(Clone)]
-enum RuleResult<T> {
-    Matched(usize, T),
-    Failed,
+
+/// Output of the [`format_spec`] parser.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) struct FormatSpec<'a> {
+    pub(crate) width: Option<Width<'a>>,
+    pub(crate) precision: Option<Precision<'a>>,
+    pub(crate) ty: Type,
 }
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub struct ParseError {
-    pub line: usize,
-    pub column: usize,
-    pub offset: usize,
-    pub expected: ::std::collections::HashSet<&'static str>,
+
+/// Output of the [`argument`] parser.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum Argument<'a> {
+    Integer(usize),
+    Identifier(&'a str),
 }
-pub type ParseResult<T> = Result<T, ParseError>;
-impl ::std::fmt::Display for ParseError {
-    fn fmt(
-        &self,
-        fmt: &mut ::std::fmt::Formatter,
-    ) -> ::std::result::Result<(), ::std::fmt::Error> {
-        write!(fmt, "error at {}:{}: expected ", self.line, self.column)?;
-        if self.expected.len() == 0 {
-            write!(fmt, "EOF")?;
-        } else if self.expected.len() == 1 {
-            write!(
-                fmt,
-                "`{}`",
-                escape_default(self.expected.iter().next().unwrap())
-            )?;
+
+/// Output of the [`precision`] parser.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum Precision<'a> {
+    Count(Count<'a>),
+    Star,
+}
+
+/// Output of the [`count`] parser.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum Count<'a> {
+    Integer(usize),
+    Parameter(Parameter<'a>),
+}
+
+/// Output of the [`type_`] parser. See [formatting traits][1] for more info.
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-traits
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum Type {
+    Display,
+    Debug,
+    LowerDebug,
+    UpperDebug,
+    Octal,
+    LowerHex,
+    UpperHex,
+    Pointer,
+    Binary,
+    LowerExp,
+    UpperExp,
+}
+
+impl Type {
+    /// Returns trait name of this [`Type`].
+    pub(crate) fn trait_name(&self) -> &'static str {
+        match self {
+            Type::Display => "Display",
+            Type::Debug | Type::LowerDebug | Type::UpperDebug => "Debug",
+            Type::Octal => "Octal",
+            Type::LowerHex => "LowerHex",
+            Type::UpperHex => "UpperHex",
+            Type::Pointer => "Pointer",
+            Type::Binary => "Binary",
+            Type::LowerExp => "LowerExp",
+            Type::UpperExp => "UpperExp",
+        }
+    }
+}
+
+/// Type alias for the [`FormatSpec::width`].
+type Width<'a> = Count<'a>;
+
+/// Output of the [`maybe_format`] parser.
+type MaybeFormat<'a> = Option<Format<'a>>;
+
+/// Output of the [`identifier`] parser.
+type Identifier<'a> = &'a str;
+
+/// Output of the [`parameter`] parser.
+type Parameter<'a> = Argument<'a>;
+
+/// [`str`] left to parse.
+///
+/// [`str`]: prim@str
+type LeftToParse<'a> = &'a str;
+
+/// Parses a `format_string` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`format_string`]` := `[`text`]` [`[`maybe_format text`]`] *`
+///
+/// # Example
+///
+/// ```text
+/// Hello
+/// Hello, {}!
+/// {:?}
+/// Hello {people}!
+/// {} {}
+/// {:04}
+/// {par:-^#.0$?}
+/// ```
+///
+/// # Return value
+///
+/// - [`Some`] in case of successful parse.
+/// - [`None`] otherwise (not all characters are consumed by underlying
+///   parsers).
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
+    let (mut input, _) = optional_result(text)(input);
+
+    let formats = iter::repeat(())
+        .scan(&mut input, |input, _| {
+            let (curr, format) =
+                alt(&mut [&mut maybe_format, &mut map(text, |(i, _)| (i, None))])(
+                    input,
+                )?;
+            **input = curr;
+            Some(format)
+        })
+        .flatten()
+        .collect();
+
+    // Should consume all tokens for a successful parse.
+    if input.is_empty() {
+        Some(FormatString { formats })
+    } else {
+        None
+    }
+}
+
+/// Parses a `maybe_format` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`maybe_format`]` := '{' '{' | '}' '}' | `[`format`]
+///
+/// # Example
+///
+/// ```text
+/// {{
+/// }}
+/// {:04}
+/// {:#?}
+/// {par:-^#.0$?}
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
+    alt(&mut [
+        &mut map(str("{{"), |i| (i, None)),
+        &mut map(str("}}"), |i| (i, None)),
+        &mut map(format, |(i, format)| (i, Some(format))),
+    ])(input)
+}
+
+/// Parses a `format` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`format`]` := '{' [`[`argument`]`] [':' `[`format_spec`]`] '}'`
+///
+/// # Example
+///
+/// ```text
+/// {par}
+/// {:#?}
+/// {par:-^#.0$?}
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
+    let input = char('{')(input)?;
+
+    let (input, arg) = optional_result(argument)(input);
+
+    let (input, spec) = map_or_else(
+        char(':'),
+        |i| Some((i, None)),
+        map(format_spec, |(i, s)| (i, Some(s))),
+    )(input)?;
+
+    let input = char('}')(input)?;
+
+    Some((input, Format { arg, spec }))
+}
+
+/// Parses an `argument` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`argument`]` := `[`integer`]` | `[`identifier`]
+///
+/// # Example
+///
+/// ```text
+/// 0
+/// ident
+/// Минск
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
+    alt(&mut [
+        &mut map(identifier, |(i, ident)| (i, Argument::Identifier(ident))),
+        &mut map(integer, |(i, int)| (i, Argument::Integer(int))),
+    ])(input)
+}
+
+/// Parses a `format_spec` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`format_spec`]` := [[fill]align][sign]['#']['0'][`[`width`]`]`
+///                     `['.' `[`precision`]`]`[`type`]
+///
+/// # Example
+///
+/// ```text
+/// ^
+/// <^
+/// ->+#0width$.precision$x?
+/// ```
+///
+/// [`type`]: type_
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
+    let input = unwrap_or_else(
+        alt(&mut [
+            &mut try_seq(&mut [&mut any_char, &mut one_of("<^>")]),
+            &mut one_of("<^>"),
+        ]),
+        identity,
+    )(input);
+
+    let input = seq(&mut [
+        &mut optional(one_of("+-")),
+        &mut optional(char('#')),
+        &mut optional(try_seq(&mut [
+            &mut char('0'),
+            &mut lookahead(check_char(|c| match c {
+                '$' => false,
+                _ => true,
+            })),
+        ])),
+    ])(input);
+
+    let (input, width) = optional_result(count)(input);
+
+    let (input, precision) = map_or_else(
+        char('.'),
+        |i| Some((i, None)),
+        map(precision, |(i, p)| (i, Some(p))),
+    )(input)?;
+
+    let (input, ty) = type_(input)?;
+
+    Some((
+        input,
+        FormatSpec {
+            width,
+            precision,
+            ty,
+        },
+    ))
+}
+
+/// Parses a `precision` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`precision`]` := `[`count`]` | '*'`
+///
+/// # Example
+///
+/// ```text
+/// 0
+/// 42$
+/// par$
+/// *
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn precision(input: &str) -> Option<(LeftToParse<'_>, Precision<'_>)> {
+    alt(&mut [
+        &mut map(count, |(i, c)| (i, Precision::Count(c))),
+        &mut map(char('*'), |i| (i, Precision::Star)),
+    ])(input)
+}
+
+/// Parses a `type` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`type`]` := '' | '?' | 'x?' | 'X?' | identifier`
+///
+/// # Example
+///
+/// All possible [`Type`]s.
+///
+/// ```text
+/// ?
+/// x?
+/// X?
+/// o
+/// x
+/// X
+/// p
+/// b
+/// e
+/// E
+/// ```
+///
+/// [`type`]: type_
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn type_(input: &str) -> Option<(&str, Type)> {
+    alt(&mut [
+        &mut map(str("x?"), |i| (i, Type::LowerDebug)),
+        &mut map(str("X?"), |i| (i, Type::UpperDebug)),
+        &mut map(char('?'), |i| (i, Type::Debug)),
+        &mut map(char('o'), |i| (i, Type::Octal)),
+        &mut map(char('x'), |i| (i, Type::LowerHex)),
+        &mut map(char('X'), |i| (i, Type::UpperHex)),
+        &mut map(char('p'), |i| (i, Type::Pointer)),
+        &mut map(char('b'), |i| (i, Type::Binary)),
+        &mut map(char('e'), |i| (i, Type::LowerExp)),
+        &mut map(char('E'), |i| (i, Type::UpperExp)),
+        &mut map(lookahead(char('}')), |i| (i, Type::Display)),
+    ])(input)
+}
+
+/// Parses a `count` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`count`]` := `[`parameter`]` | `[`integer`]
+///
+/// # Example
+///
+/// ```text
+/// 0
+/// 42$
+/// par$
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn count(input: &str) -> Option<(LeftToParse<'_>, Count<'_>)> {
+    alt(&mut [
+        &mut map(parameter, |(i, p)| (i, Count::Parameter(p))),
+        &mut map(integer, |(i, int)| (i, Count::Integer(int))),
+    ])(input)
+}
+
+/// Parses a `parameter` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`parameter`]` := `[`argument`]` '$'`
+///
+/// # Example
+///
+/// ```text
+/// 42$
+/// par$
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn parameter(input: &str) -> Option<(LeftToParse<'_>, Parameter<'_>)> {
+    and_then(argument, |(i, arg)| map(char('$'), |i| (i, arg))(i))(input)
+}
+
+/// Parses an `identifier` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// `IDENTIFIER_OR_KEYWORD : XID_Start XID_Continue* | _ XID_Continue+`
+///
+/// See [rust reference][2] for more info.
+///
+/// # Example
+///
+/// ```text
+/// identifier
+/// Минск
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [2]: https://doc.rust-lang.org/reference/identifiers.html
+fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
+    map(
+        alt(&mut [
+            &mut map(
+                check_char(XID::is_xid_start),
+                take_while0(check_char(XID::is_xid_continue)),
+            ),
+            &mut and_then(char('_'), take_while1(check_char(XID::is_xid_continue))),
+        ]),
+        |(i, _)| (i, &input[..(input.as_bytes().len() - i.as_bytes().len())]),
+    )(input)
+}
+
+/// Parses an `integer` as defined in the [grammar spec][1].
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn integer(input: &str) -> Option<(LeftToParse<'_>, usize)> {
+    and_then(
+        take_while1(check_char(|c| match c {
+            '0'..='9' => true,
+            _ => false,
+        })),
+        |(i, int)| int.parse().ok().map(|int| (i, int)),
+    )(input)
+}
+
+/// Parses a `text` as defined in the [grammar spec][1].
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn text(input: &str) -> Option<(LeftToParse<'_>, &str)> {
+    take_until1(any_char, one_of("{}"))(input)
+}
+
+/// Applies non-failing parsers in sequence.
+fn seq<'p>(
+    parsers: &'p mut [&'p mut dyn FnMut(&str) -> &str],
+) -> impl FnMut(&str) -> LeftToParse<'_> + 'p {
+    move |input| parsers.iter_mut().fold(input, |i, p| (**p)(i))
+}
+
+/// Tries to apply parsers in sequence. Returns [`None`] in case one of them
+/// returned [`None`].
+fn try_seq<'p>(
+    parsers: &'p mut [&'p mut dyn FnMut(&str) -> Option<&str>],
+) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + 'p {
+    move |input| parsers.iter_mut().try_fold(input, |i, p| (**p)(i))
+}
+
+/// Returns first successful parser or [`None`] in case all of them returned
+/// [`None`].
+fn alt<'p, 'i, T: 'i>(
+    parsers: &'p mut [&'p mut dyn FnMut(&'i str) -> Option<T>],
+) -> impl FnMut(&'i str) -> Option<T> + 'p {
+    move |input| parsers.iter_mut().find_map(|p| (**p)(input))
+}
+
+/// Maps output of the parser in case it returned [`Some`].
+fn map<'i, I: 'i, O: 'i>(
+    mut parser: impl FnMut(&'i str) -> Option<I>,
+    mut f: impl FnMut(I) -> O,
+) -> impl FnMut(&'i str) -> Option<O> {
+    move |input| parser(input).map(&mut f)
+}
+
+/// Maps output of the parser in case it returned [`Some`] or uses `default`.
+fn map_or_else<'i, I: 'i, O: 'i>(
+    mut parser: impl FnMut(&'i str) -> Option<I>,
+    mut default: impl FnMut(&'i str) -> O,
+    mut f: impl FnMut(I) -> O,
+) -> impl FnMut(&'i str) -> O {
+    move |input| parser(input).map_or_else(|| default(input), &mut f)
+}
+
+/// Returns the contained [`Some`] value or computes it from a closure.
+fn unwrap_or_else<'i, O: 'i>(
+    mut parser: impl FnMut(&'i str) -> Option<O>,
+    mut f: impl FnMut(&'i str) -> O,
+) -> impl FnMut(&'i str) -> O {
+    move |input| parser(input).unwrap_or_else(|| f(input))
+}
+
+/// Returns [`None`] if the parser returned is [`None`], otherwise calls `f`
+/// with the wrapped value and returns the result.
+fn and_then<'i, I: 'i, O: 'i>(
+    mut parser: impl FnMut(&'i str) -> Option<I>,
+    mut f: impl FnMut(I) -> Option<O>,
+) -> impl FnMut(&'i str) -> Option<O> {
+    move |input| parser(input).and_then(&mut f)
+}
+
+/// Checks whether `parser` is successful while not advancing the original
+/// `input`.
+fn lookahead(
+    mut parser: impl FnMut(&str) -> Option<&str>,
+) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
+    move |input| map(&mut parser, |_| input)(input)
+}
+
+/// Makes underlying `parser` optional by returning the original `input` in case
+/// it returned [`None`].
+fn optional(
+    mut parser: impl FnMut(&str) -> Option<&str>,
+) -> impl FnMut(&str) -> LeftToParse<'_> {
+    move |input: &str| parser(input).unwrap_or(input)
+}
+
+/// Makes underlying `parser` optional by returning the original `input` and
+/// [`None`] in case it returned [`None`].
+fn optional_result<'i, T: 'i>(
+    mut parser: impl FnMut(&'i str) -> Option<(&'i str, T)>,
+) -> impl FnMut(&'i str) -> (LeftToParse<'i>, Option<T>) {
+    move |input: &str| {
+        map_or_else(&mut parser, |i| (i, None), |(i, c)| (i, Some(c)))(input)
+    }
+}
+
+/// Parses while `parser` is successful. Never fails.
+fn take_while0(
+    mut parser: impl FnMut(&str) -> Option<&str>,
+) -> impl FnMut(&str) -> (LeftToParse<'_>, &str) {
+    move |input| {
+        let mut cur = input;
+        while let Some(step) = parser(cur) {
+            cur = step;
+        }
+        (
+            cur,
+            &input[..(input.as_bytes().len() - cur.as_bytes().len())],
+        )
+    }
+}
+
+/// Parses while `parser` is successful. Returns [`None`] in case `parser` never
+/// succeeded.
+fn take_while1(
+    mut parser: impl FnMut(&str) -> Option<&str>,
+) -> impl FnMut(&str) -> Option<(LeftToParse<'_>, &str)> {
+    move |input| {
+        let mut cur = parser(input)?;
+        while let Some(step) = parser(cur) {
+            cur = step;
+        }
+        Some((
+            cur,
+            &input[..(input.as_bytes().len() - cur.as_bytes().len())],
+        ))
+    }
+}
+
+/// Parses with `basic` while `until` returns [`None`]. Returns [`None`] in case
+/// `until` succeeded initially or `basic` never succeeded. Doesn't consume
+/// [`char`]s parsed by `until`.
+fn take_until1(
+    mut basic: impl FnMut(&str) -> Option<&str>,
+    mut until: impl FnMut(&str) -> Option<&str>,
+) -> impl FnMut(&str) -> Option<(LeftToParse<'_>, &str)> {
+    move |input: &str| {
+        if until(input).is_some() {
+            return None;
+        }
+        let mut cur = basic(input)?;
+        loop {
+            if until(cur).is_some() {
+                break;
+            }
+            if let Some(b) = basic(cur) {
+                cur = b;
+            } else {
+                break;
+            }
+        }
+
+        Some((
+            cur,
+            &input[..(input.as_bytes().len() - cur.as_bytes().len())],
+        ))
+    }
+}
+
+/// Checks whether `input` starts with `s`.
+fn str(s: &str) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + '_ {
+    move |input| {
+        if input.starts_with(s) {
+            Some(&input[s.as_bytes().len()..])
         } else {
-            let mut iter = self.expected.iter();
-            write!(fmt, "one of `{}`", escape_default(iter.next().unwrap()))?;
-            for elem in iter {
-                write!(fmt, ", `{}`", escape_default(elem))?;
-            }
-        }
-        Ok(())
-    }
-}
-impl ::std::error::Error for ParseError {
-    fn description(&self) -> &str {
-        "parse error"
-    }
-}
-fn slice_eq(
-    input: &str,
-    state: &mut ParseState,
-    pos: usize,
-    m: &'static str,
-) -> RuleResult<()> {
-    #![inline]
-    #![allow(dead_code)]
-    let l = m.len();
-    if input.len() >= pos + l && &input.as_bytes()[pos..pos + l] == m.as_bytes() {
-        Matched(pos + l, ())
-    } else {
-        state.mark_failure(pos, m)
-    }
-}
-fn slice_eq_case_insensitive(
-    input: &str,
-    state: &mut ParseState,
-    pos: usize,
-    m: &'static str,
-) -> RuleResult<()> {
-    #![inline]
-    #![allow(dead_code)]
-    let mut used = 0usize;
-    let mut input_iter = input[pos..].chars().flat_map(|x| x.to_uppercase());
-    for m_char_upper in m.chars().flat_map(|x| x.to_uppercase()) {
-        used += m_char_upper.len_utf8();
-        let input_char_result = input_iter.next();
-        if input_char_result.is_none() || input_char_result.unwrap() != m_char_upper {
-            return state.mark_failure(pos, m);
-        }
-    }
-    Matched(pos + used, ())
-}
-fn any_char(input: &str, state: &mut ParseState, pos: usize) -> RuleResult<()> {
-    #![inline]
-    #![allow(dead_code)]
-    if input.len() > pos {
-        let (_, next) = char_range_at(input, pos);
-        Matched(next, ())
-    } else {
-        state.mark_failure(pos, "<character>")
-    }
-}
-fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
-    let before = &input[..pos];
-    let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
-    let col = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
-    (line, col)
-}
-impl<'input> ParseState<'input> {
-    fn mark_failure(&mut self, pos: usize, expected: &'static str) -> RuleResult<()> {
-        if self.suppress_fail == 0 {
-            if pos > self.max_err_pos {
-                self.max_err_pos = pos;
-                self.expected.clear();
-            }
-            if pos == self.max_err_pos {
-                self.expected.insert(expected);
-            }
-        }
-        Failed
-    }
-}
-struct ParseState<'input> {
-    max_err_pos: usize,
-    suppress_fail: usize,
-    expected: ::std::collections::HashSet<&'static str>,
-    _phantom: ::std::marker::PhantomData<&'input ()>,
-}
-impl<'input> ParseState<'input> {
-    fn new() -> ParseState<'input> {
-        ParseState {
-            max_err_pos: 0,
-            suppress_fail: 0,
-            expected: ::std::collections::HashSet::new(),
-            _phantom: ::std::marker::PhantomData,
+            None
         }
     }
 }
 
-fn __parse_discard_doubles<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<Option<&'input str>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let __choice_res = {
-                let __seq_res = slice_eq(__input, __state, __pos, "{");
-                match __seq_res {
-                    Matched(__pos, _) => slice_eq(__input, __state, __pos, "{"),
-                    Failed => Failed,
-                }
-            };
-            match __choice_res {
-                Matched(__pos, __value) => Matched(__pos, __value),
-                Failed => {
-                    let __seq_res = slice_eq(__input, __state, __pos, "}");
-                    match __seq_res {
-                        Matched(__pos, _) => slice_eq(__input, __state, __pos, "}"),
-                        Failed => Failed,
-                    }
-                }
-            }
-        };
-        match __seq_res {
-            Matched(__pos, _) => Matched(__pos, { None }),
-            Failed => Failed,
+/// Checks whether `input` starts with `c`.
+fn char(c: char) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
+    move |input| {
+        if input.starts_with(c) {
+            Some(&input[c.len_utf8()..])
+        } else {
+            None
         }
     }
 }
 
-fn __parse_placeholder_inner<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<Option<&'input str>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let str_start = __pos;
-            match {
-                let __seq_res = if __input.len() > __pos {
-                    let (__ch, __next) = char_range_at(__input, __pos);
-                    match __ch {
-                        '{' => Matched(__next, ()),
-                        _ => __state.mark_failure(__pos, "[{]"),
-                    }
-                } else {
-                    __state.mark_failure(__pos, "[{]")
-                };
-                match __seq_res {
-                    Matched(__pos, _) => {
-                        let __seq_res = {
-                            let mut __repeat_pos = __pos;
-                            loop {
-                                let __pos = __repeat_pos;
-                                let __step_res = {
-                                    let __seq_res = {
-                                        __state.suppress_fail += 1;
-                                        let __assert_res = if __input.len() > __pos {
-                                            let (__ch, __next) =
-                                                char_range_at(__input, __pos);
-                                            match __ch {
-                                                '{' | '}' => Matched(__next, ()),
-                                                _ => {
-                                                    __state.mark_failure(__pos, "[{}]")
-                                                }
-                                            }
-                                        } else {
-                                            __state.mark_failure(__pos, "[{}]")
-                                        };
-                                        __state.suppress_fail -= 1;
-                                        match __assert_res {
-                                            Failed => Matched(__pos, ()),
-                                            Matched(..) => Failed,
-                                        }
-                                    };
-                                    match __seq_res {
-                                        Matched(__pos, _) => {
-                                            any_char(__input, __state, __pos)
-                                        }
-                                        Failed => Failed,
-                                    }
-                                };
-                                match __step_res {
-                                    Matched(__newpos, __value) => {
-                                        __repeat_pos = __newpos;
-                                    }
-                                    Failed => {
-                                        break;
-                                    }
-                                }
-                            }
-                            Matched(__repeat_pos, ())
-                        };
-                        match __seq_res {
-                            Matched(__pos, _) => {
-                                if __input.len() > __pos {
-                                    let (__ch, __next) = char_range_at(__input, __pos);
-                                    match __ch {
-                                        '}' => Matched(__next, ()),
-                                        _ => __state.mark_failure(__pos, "[}]"),
-                                    }
-                                } else {
-                                    __state.mark_failure(__pos, "[}]")
-                                }
-                            }
-                            Failed => Failed,
-                        }
-                    }
-                    Failed => Failed,
-                }
-            } {
-                Matched(__newpos, _) => {
-                    Matched(__newpos, &__input[str_start..__newpos])
-                }
-                Failed => Failed,
+/// Checks whether first [`char`] suits `check`.
+fn check_char(
+    mut check: impl FnMut(char) -> bool,
+) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
+    move |input| {
+        input.chars().next().and_then(|c| {
+            if check(c) {
+                Some(&input[c.len_utf8()..])
+            } else {
+                None
             }
-        };
-        match __seq_res {
-            Matched(__pos, n) => Matched(__pos, { Some(n) }),
-            Failed => Failed,
-        }
+        })
     }
 }
 
-fn __parse_discard_any<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<Option<&'input str>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = any_char(__input, __state, __pos);
-        match __seq_res {
-            Matched(__pos, _) => Matched(__pos, { None }),
-            Failed => Failed,
-        }
-    }
+/// Checks whether first [`char`] of input is present in `chars`.
+fn one_of(chars: &str) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + '_ {
+    move |input: &str| chars.chars().find_map(|c| char(c)(input))
 }
 
-fn __parse_arg<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<usize> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let str_start = __pos;
-            match {
-                let mut __repeat_pos = __pos;
-                let mut __repeat_value = vec![];
-                loop {
-                    let __pos = __repeat_pos;
-                    let __step_res = if __input.len() > __pos {
-                        let (__ch, __next) = char_range_at(__input, __pos);
-                        match __ch {
-                            '0'...'9' => Matched(__next, ()),
-                            _ => __state.mark_failure(__pos, "[0-9]"),
-                        }
-                    } else {
-                        __state.mark_failure(__pos, "[0-9]")
-                    };
-                    match __step_res {
-                        Matched(__newpos, __value) => {
-                            __repeat_pos = __newpos;
-                            __repeat_value.push(__value);
-                        }
-                        Failed => {
-                            break;
-                        }
-                    }
-                }
-                if __repeat_value.len() >= 1 {
-                    Matched(__repeat_pos, ())
-                } else {
-                    Failed
-                }
-            } {
-                Matched(__newpos, _) => {
-                    Matched(__newpos, &__input[str_start..__newpos])
-                }
-                Failed => Failed,
-            }
-        };
-        match __seq_res {
-            Matched(__pos, n) => Matched(__pos, { n.parse().unwrap() }),
-            Failed => Failed,
-        }
-    }
+/// Parses any [`char`].
+fn any_char(input: &str) -> Option<LeftToParse<'_>> {
+    input.chars().next().map(|c| &input[c.len_utf8()..])
 }
 
-fn __parse_ty<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<&'input str> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let str_start = __pos;
-            match {
-                let __choice_res = {
-                    let __choice_res = slice_eq(__input, __state, __pos, "x?");
-                    match __choice_res {
-                        Matched(__pos, __value) => Matched(__pos, __value),
-                        Failed => slice_eq(__input, __state, __pos, "X?"),
-                    }
-                };
-                match __choice_res {
-                    Matched(__pos, __value) => Matched(__pos, __value),
-                    Failed => {
-                        let __choice_res = slice_eq(__input, __state, __pos, "o");
-                        match __choice_res {
-                            Matched(__pos, __value) => Matched(__pos, __value),
-                            Failed => {
-                                let __choice_res =
-                                    slice_eq(__input, __state, __pos, "x");
-                                match __choice_res {
-                                    Matched(__pos, __value) => Matched(__pos, __value),
-                                    Failed => {
-                                        let __choice_res =
-                                            slice_eq(__input, __state, __pos, "X");
-                                        match __choice_res {
-                                            Matched(__pos, __value) => {
-                                                Matched(__pos, __value)
-                                            }
-                                            Failed => {
-                                                let __choice_res = slice_eq(
-                                                    __input, __state, __pos, "p",
-                                                );
-                                                match __choice_res {
-                                                    Matched(__pos, __value) => {
-                                                        Matched(__pos, __value)
-                                                    }
-                                                    Failed => {
-                                                        let __choice_res = slice_eq(
-                                                            __input, __state, __pos,
-                                                            "b",
-                                                        );
-                                                        match __choice_res {
-                                                            Matched(__pos, __value) => {
-                                                                Matched(__pos, __value)
-                                                            }
-                                                            Failed => {
-                                                                let __choice_res =
-                                                                    slice_eq(
-                                                                        __input,
-                                                                        __state, __pos,
-                                                                        "e",
-                                                                    );
-                                                                match __choice_res {
-                                                                    Matched(
-                                                                        __pos,
-                                                                        __value,
-                                                                    ) => Matched(
-                                                                        __pos, __value,
-                                                                    ),
-                                                                    Failed => {
-                                                                        let __choice_res =
-                                                                            slice_eq(
-                                                                                __input,
-                                                                                __state,
-                                                                                __pos,
-                                                                                "E",
-                                                                            );
-                                                                        match __choice_res { Matched ( __pos , __value ) => Matched ( __pos , __value ) , Failed => slice_eq ( __input , __state , __pos , "?" ) }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } {
-                Matched(__newpos, _) => {
-                    Matched(__newpos, &__input[str_start..__newpos])
-                }
-                Failed => Failed,
-            }
-        };
-        match __seq_res {
-            Matched(__pos, n) => Matched(__pos, { n }),
-            Failed => Failed,
-        }
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-fn __parse_format_spec<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<Option<&'input str>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = slice_eq(__input, __state, __pos, ":");
-        match __seq_res {
-            Matched(__pos, _) => {
-                let __seq_res = match {
-                    let __seq_res = match {
-                        let __seq_res = {
-                            __state.suppress_fail += 1;
-                            let __assert_res = if __input.len() > __pos {
-                                let (__ch, __next) = char_range_at(__input, __pos);
-                                match __ch {
-                                    '<' | '^' | '>' => Matched(__next, ()),
-                                    _ => __state.mark_failure(__pos, "[<^>]"),
-                                }
-                            } else {
-                                __state.mark_failure(__pos, "[<^>]")
-                            };
-                            __state.suppress_fail -= 1;
-                            match __assert_res {
-                                Failed => Matched(__pos, ()),
-                                Matched(..) => Failed,
-                            }
-                        };
-                        match __seq_res {
-                            Matched(__pos, _) => any_char(__input, __state, __pos),
-                            Failed => Failed,
-                        }
-                    } {
-                        Matched(__newpos, _) => Matched(__newpos, ()),
-                        Failed => Matched(__pos, ()),
-                    };
-                    match __seq_res {
-                        Matched(__pos, _) => {
-                            if __input.len() > __pos {
-                                let (__ch, __next) = char_range_at(__input, __pos);
-                                match __ch {
-                                    '<' | '^' | '>' => Matched(__next, ()),
-                                    _ => __state.mark_failure(__pos, "[<^>]"),
-                                }
-                            } else {
-                                __state.mark_failure(__pos, "[<^>]")
-                            }
-                        }
-                        Failed => Failed,
-                    }
-                } {
-                    Matched(__newpos, _) => Matched(__newpos, ()),
-                    Failed => Matched(__pos, ()),
-                };
-                match __seq_res {
-                    Matched(__pos, _) => {
-                        let __seq_res = match {
-                            let __choice_res = slice_eq(__input, __state, __pos, "+");
-                            match __choice_res {
-                                Matched(__pos, __value) => Matched(__pos, __value),
-                                Failed => slice_eq(__input, __state, __pos, "-"),
-                            }
-                        } {
-                            Matched(__newpos, _) => Matched(__newpos, ()),
-                            Failed => Matched(__pos, ()),
-                        };
-                        match __seq_res {
-                            Matched(__pos, _) => {
-                                let __seq_res =
-                                    match slice_eq(__input, __state, __pos, "#") {
-                                        Matched(__newpos, _) => Matched(__newpos, ()),
-                                        Failed => Matched(__pos, ()),
-                                    };
-                                match __seq_res {
-                                    Matched(__pos, _) => {
-                                        let __seq_res = match {
-                                            let __choice_res = {
-                                                let __seq_res = {
-                                                    let mut __repeat_pos = __pos;
-                                                    let mut __repeat_value = vec![];
-                                                    loop {
-                                                        let __pos = __repeat_pos;
-                                                        let __step_res =
-                                                            if __input.len() > __pos {
-                                                                let (__ch, __next) =
-                                                                    char_range_at(
-                                                                        __input, __pos,
-                                                                    );
-                                                                match __ch {
-                                                                    'A'...'Z'
-                                                                    | 'a'...'z'
-                                                                    | '0'...'9'
-                                                                    | '_' => Matched(
-                                                                        __next,
-                                                                        (),
-                                                                    ),
-                                                                    _ => __state
-                                                                        .mark_failure(
-                                                                        __pos,
-                                                                        "[A-Za-z0-9_]",
-                                                                    ),
-                                                                }
-                                                            } else {
-                                                                __state.mark_failure(
-                                                                    __pos,
-                                                                    "[A-Za-z0-9_]",
-                                                                )
-                                                            };
-                                                        match __step_res {
-                                                            Matched(
-                                                                __newpos,
-                                                                __value,
-                                                            ) => {
-                                                                __repeat_pos = __newpos;
-                                                                __repeat_value
-                                                                    .push(__value);
-                                                            }
-                                                            Failed => {
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                    if __repeat_value.len() >= 1 {
-                                                        Matched(__repeat_pos, ())
-                                                    } else {
-                                                        Failed
-                                                    }
-                                                };
-                                                match __seq_res {
-                                                    Matched(__pos, _) => slice_eq(
-                                                        __input, __state, __pos, "$",
-                                                    ),
-                                                    Failed => Failed,
-                                                }
-                                            };
-                                            match __choice_res {
-                                                Matched(__pos, __value) => {
-                                                    Matched(__pos, __value)
-                                                }
-                                                Failed => {
-                                                    let mut __repeat_pos = __pos;
-                                                    let mut __repeat_value = vec![];
-                                                    loop {
-                                                        let __pos = __repeat_pos;
-                                                        let __step_res = if __input
-                                                            .len()
-                                                            > __pos
-                                                        {
-                                                            let (__ch, __next) =
-                                                                char_range_at(
-                                                                    __input, __pos,
-                                                                );
-                                                            match __ch {
-                                                                '0'...'9' => {
-                                                                    Matched(__next, ())
-                                                                }
-                                                                _ => __state
-                                                                    .mark_failure(
-                                                                        __pos, "[0-9]",
-                                                                    ),
-                                                            }
-                                                        } else {
-                                                            __state.mark_failure(
-                                                                __pos, "[0-9]",
-                                                            )
-                                                        };
-                                                        match __step_res {
-                                                            Matched(
-                                                                __newpos,
-                                                                __value,
-                                                            ) => {
-                                                                __repeat_pos = __newpos;
-                                                                __repeat_value
-                                                                    .push(__value);
-                                                            }
-                                                            Failed => {
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                    if __repeat_value.len() >= 1 {
-                                                        Matched(__repeat_pos, ())
-                                                    } else {
-                                                        Failed
-                                                    }
-                                                }
-                                            }
-                                        } {
-                                            Matched(__newpos, _) => {
-                                                Matched(__newpos, ())
-                                            }
-                                            Failed => Matched(__pos, ()),
-                                        };
-                                        match __seq_res {
-                                            Matched(__pos, _) => {
-                                                let __seq_res = match slice_eq(
-                                                    __input, __state, __pos, "0",
-                                                ) {
-                                                    Matched(__newpos, _) => {
-                                                        Matched(__newpos, ())
-                                                    }
-                                                    Failed => Matched(__pos, ()),
-                                                };
-                                                match __seq_res {
-                                                    Matched(__pos, _) => {
-                                                        let __seq_res = match {
-                                                            let __seq_res = slice_eq(
-                                                                __input, __state,
-                                                                __pos, ".",
-                                                            );
-                                                            match __seq_res {
-                                                                Matched(__pos, _) => {
-                                                                    let __choice_res = {
-                                                                        let __seq_res = {
-                                                                            let mut
-                                                                            __repeat_pos =
-                                                                                __pos;
-                                                                            let mut
-                                                                            __repeat_value =
-                                                                                vec![];
-                                                                            loop {
-                                                                                let __pos = __repeat_pos ;
-                                                                                let __step_res = if __input . len ( ) > __pos { let ( __ch , __next ) = char_range_at ( __input , __pos ) ; match __ch { 'A' ... 'Z' | 'a' ... 'z' | '0' ... '9' | '_' => Matched ( __next , ( ) ) , _ => __state . mark_failure ( __pos , "[A-Za-z0-9_]" ) , } } else { __state . mark_failure ( __pos , "[A-Za-z0-9_]" ) } ;
-                                                                                match __step_res { Matched ( __newpos , __value ) => { __repeat_pos = __newpos ; __repeat_value . push ( __value ) ; } , Failed => { break ; } }
-                                                                            }
-                                                                            if __repeat_value . len ( ) >= 1 { Matched ( __repeat_pos , ( ) ) } else { Failed }
-                                                                        };
-                                                                        match __seq_res { Matched ( __pos , _ ) => { slice_eq ( __input , __state , __pos , "$" ) } Failed => Failed , }
-                                                                    };
-                                                                    match __choice_res {
-                                                                        Matched(
-                                                                            __pos,
-                                                                            __value,
-                                                                        ) => Matched(
-                                                                            __pos,
-                                                                            __value,
-                                                                        ),
-                                                                        Failed => {
-                                                                            let __choice_res = {
-                                                                                let mut __repeat_pos = __pos ;
-                                                                                let mut
-                                                                                __repeat_value = vec![];
-                                                                                loop {
-                                                                                    let __pos = __repeat_pos ;
-                                                                                    let __step_res = if __input . len ( ) > __pos { let ( __ch , __next ) = char_range_at ( __input , __pos ) ; match __ch { '0' ... '9' => Matched ( __next , ( ) ) , _ => __state . mark_failure ( __pos , "[0-9]" ) , } } else { __state . mark_failure ( __pos , "[0-9]" ) } ;
-                                                                                    match __step_res { Matched ( __newpos , __value ) => { __repeat_pos = __newpos ; __repeat_value . push ( __value ) ; } , Failed => { break ; } }
-                                                                                }
-                                                                                if __repeat_value . len ( ) >= 1 { Matched ( __repeat_pos , ( ) ) } else { Failed }
-                                                                            };
-                                                                            match __choice_res { Matched ( __pos , __value ) => Matched ( __pos , __value ) , Failed => slice_eq ( __input , __state , __pos , "*" ) }
-                                                                        }
-                                                                    }
-                                                                }
-                                                                Failed => Failed,
-                                                            }
-                                                        } {
-                                                            Matched(__newpos, _) => {
-                                                                Matched(__newpos, ())
-                                                            }
-                                                            Failed => {
-                                                                Matched(__pos, ())
-                                                            }
-                                                        };
-                                                        match __seq_res {
-                                                            Matched(__pos, _) => {
-                                                                let __seq_res =
-                                                                    match __parse_ty(
-                                                                        __input,
-                                                                        __state, __pos,
-                                                                    ) {
-                                                                        Matched(
-                                                                            __newpos,
-                                                                            __value,
-                                                                        ) => Matched(
-                                                                            __newpos,
-                                                                            Some(
-                                                                                __value,
-                                                                            ),
-                                                                        ),
-                                                                        Failed => {
-                                                                            Matched(
-                                                                                __pos,
-                                                                                None,
-                                                                            )
-                                                                        }
-                                                                    };
-                                                                match __seq_res {
-                                                                    Matched(
-                                                                        __pos,
-                                                                        n,
-                                                                    ) => Matched(
-                                                                        __pos,
-                                                                        { n },
-                                                                    ),
-                                                                    Failed => Failed,
-                                                                }
-                                                            }
-                                                            Failed => Failed,
-                                                        }
-                                                    }
-                                                    Failed => Failed,
-                                                }
-                                            }
-                                            Failed => Failed,
-                                        }
-                                    }
-                                    Failed => Failed,
-                                }
-                            }
-                            Failed => Failed,
-                        }
-                    }
-                    Failed => Failed,
-                }
-            }
-            Failed => Failed,
-        }
+    #[test]
+    fn text() {
+        assert_eq!(format_string(""), Some(FormatString { formats: vec![] }));
+        assert_eq!(
+            format_string("test"),
+            Some(FormatString { formats: vec![] }),
+        );
+        assert_eq!(
+            format_string("Минск"),
+            Some(FormatString { formats: vec![] }),
+        );
+        assert_eq!(format_string("🦀"), Some(FormatString { formats: vec![] }));
     }
-}
 
-fn __parse_all_placeholders<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<Vec<&'input str>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let mut __repeat_pos = __pos;
-            let mut __repeat_value = vec![];
-            loop {
-                let __pos = __repeat_pos;
-                let __step_res = {
-                    let __choice_res = __parse_discard_doubles(__input, __state, __pos);
-                    match __choice_res {
-                        Matched(__pos, __value) => Matched(__pos, __value),
-                        Failed => {
-                            let __choice_res =
-                                __parse_placeholder_inner(__input, __state, __pos);
-                            match __choice_res {
-                                Matched(__pos, __value) => Matched(__pos, __value),
-                                Failed => __parse_discard_any(__input, __state, __pos),
-                            }
-                        }
-                    }
-                };
-                match __step_res {
-                    Matched(__newpos, __value) => {
-                        __repeat_pos = __newpos;
-                        __repeat_value.push(__value);
-                    }
-                    Failed => {
-                        break;
-                    }
-                }
-            }
-            Matched(__repeat_pos, __repeat_value)
-        };
-        match __seq_res {
-            Matched(__pos, x) => {
-                Matched(__pos, { x.into_iter().flat_map(|x| x).collect() })
-            }
-            Failed => Failed,
-        }
+    #[test]
+    fn argument() {
+        assert_eq!(
+            format_string("{}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: None,
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{0}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: Some(Argument::Integer(0)),
+                    spec: None,
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{par}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: Some(Argument::Identifier("par")),
+                    spec: None,
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{Минск}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: Some(Argument::Identifier("Минск")),
+                    spec: None,
+                }],
+            }),
+        );
     }
-}
 
-fn __parse_format<'input>(
-    __input: &'input str,
-    __state: &mut ParseState<'input>,
-    __pos: usize,
-) -> RuleResult<(Option<usize>, Option<&'input str>)> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = slice_eq(__input, __state, __pos, "{");
-        match __seq_res {
-            Matched(__pos, _) => {
-                let __seq_res = match __parse_arg(__input, __state, __pos) {
-                    Matched(__newpos, __value) => Matched(__newpos, Some(__value)),
-                    Failed => Matched(__pos, None),
-                };
-                match __seq_res {
-                    Matched(__pos, n) => {
-                        let __seq_res =
-                            match __parse_format_spec(__input, __state, __pos) {
-                                Matched(__newpos, __value) => {
-                                    Matched(__newpos, Some(__value))
-                                }
-                                Failed => Matched(__pos, None),
-                            };
-                        match __seq_res {
-                            Matched(__pos, o) => {
-                                let __seq_res = slice_eq(__input, __state, __pos, "}");
-                                match __seq_res {
-                                    Matched(__pos, _) => {
-                                        Matched(__pos, { (n, o.and_then(|x| x)) })
-                                    }
-                                    Failed => Failed,
-                                }
-                            }
-                            Failed => Failed,
-                        }
-                    }
-                    Failed => Failed,
-                }
-            }
-            Failed => Failed,
-        }
+    #[test]
+    fn spec() {
+        assert_eq!(
+            format_string("{:}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:^}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:-<}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{: <}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:^<}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:+}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:^<-}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:#}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:+#}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:-<#}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:^<-#}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:0}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:#0}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:-0}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:^<0}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:^<+#0}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:1}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: Some(Count::Integer(1)),
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:1$}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: Some(Count::Parameter(Argument::Integer(1))),
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:par$}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: Some(Count::Parameter(Argument::Identifier("par"))),
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:-^-#0Минск$}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: Some(Count::Parameter(Argument::Identifier("Минск"))),
+                        precision: None,
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:.*}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: Some(Precision::Star),
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:.0}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: Some(Precision::Count(Count::Integer(0))),
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:.0$}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: Some(Precision::Count(Count::Parameter(
+                            Argument::Integer(0),
+                        ))),
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:.par$}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: Some(Precision::Count(Count::Parameter(
+                            Argument::Identifier("par"),
+                        ))),
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{: >+#2$.par$}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: Some(Count::Parameter(Argument::Integer(2))),
+                        precision: Some(Precision::Count(Count::Parameter(
+                            Argument::Identifier("par"),
+                        ))),
+                        ty: Type::Display,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:x?}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::LowerDebug,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{:E}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: None,
+                        precision: None,
+                        ty: Type::UpperExp,
+                    }),
+                }],
+            }),
+        );
+        assert_eq!(
+            format_string("{: >+#par$.par$X?}"),
+            Some(FormatString {
+                formats: vec![Format {
+                    arg: None,
+                    spec: Some(FormatSpec {
+                        width: Some(Count::Parameter(Argument::Identifier("par"))),
+                        precision: Some(Precision::Count(Count::Parameter(
+                            Argument::Identifier("par"),
+                        ))),
+                        ty: Type::UpperDebug,
+                    }),
+                }],
+            }),
+        );
     }
-}
 
-pub fn all_placeholders<'input>(__input: &'input str) -> ParseResult<Vec<&'input str>> {
-    #![allow(non_snake_case, unused)]
-    let mut __state = ParseState::new();
-    match __parse_all_placeholders(__input, &mut __state, 0) {
-        Matched(__pos, __value) => {
-            if __pos == __input.len() {
-                return Ok(__value);
-            }
-        }
-        _ => {}
+    #[test]
+    fn full() {
+        assert_eq!(
+            format_string("prefix{{{0:#?}postfix{par:-^par$.a$}}}"),
+            Some(FormatString {
+                formats: vec![
+                    Format {
+                        arg: Some(Argument::Integer(0)),
+                        spec: Some(FormatSpec {
+                            width: None,
+                            precision: None,
+                            ty: Type::Debug,
+                        }),
+                    },
+                    Format {
+                        arg: Some(Argument::Identifier("par")),
+                        spec: Some(FormatSpec {
+                            width: Some(Count::Parameter(Argument::Identifier("par"))),
+                            precision: Some(Precision::Count(Count::Parameter(
+                                Argument::Identifier("a"),
+                            ))),
+                            ty: Type::Display,
+                        }),
+                    },
+                ],
+            }),
+        );
     }
-    let (__line, __col) = pos_to_line(__input, __state.max_err_pos);
-    Err(ParseError {
-        line: __line,
-        column: __col,
-        offset: __state.max_err_pos,
-        expected: __state.expected,
-    })
-}
 
-pub fn format<'input>(
-    __input: &'input str,
-) -> ParseResult<(Option<usize>, Option<&'input str>)> {
-    #![allow(non_snake_case, unused)]
-    let mut __state = ParseState::new();
-    match __parse_format(__input, &mut __state, 0) {
-        Matched(__pos, __value) => {
-            if __pos == __input.len() {
-                return Ok(__value);
-            }
-        }
-        _ => {}
+    #[test]
+    fn error() {
+        assert_eq!(format_string("{"), None);
+        assert_eq!(format_string("}"), None);
+        assert_eq!(format_string("{{}"), None);
+        assert_eq!(format_string("{:x?"), None);
+        assert_eq!(format_string("{:.}"), None);
+        assert_eq!(format_string("{:q}"), None);
+        assert_eq!(format_string("{:par}"), None);
+        assert_eq!(format_string("{⚙️}"), None);
     }
-    let (__line, __col) = pos_to_line(__input, __state.max_err_pos);
-    Err(ParseError {
-        line: __line,
-        column: __col,
-        offset: __state.max_err_pos,
-        expected: __state.expected,
-    })
 }

@@ -31,9 +31,9 @@ proc-macro2 = "1.0"
 quote = "1.0"
 syn = "1.0.3"
 convert_case = { version = "0.4", optional = true}
+unicode-xid = { version = "0.2.2", optional = true }
 
 [build-dependencies]
-peg = { version = "0.5", optional = true }
 rustc_version = { version = "0.4", optional = true }
 
 [badges]
@@ -48,7 +48,7 @@ as_ref = []
 constructor = []
 deref = []
 deref_mut = []
-display = ["syn/extra-traits"]
+display = ["syn/extra-traits", "unicode-xid"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
 from_str = []
@@ -62,7 +62,6 @@ mul = ["syn/extra-traits"]
 not = ["syn/extra-traits"]
 sum = []
 try_into = ["syn/extra-traits"]
-generate-parsing-rs = ["peg"]
 testing-helpers = ["rustc_version"]
 is_variant = ["convert_case"]
 unwrap = ["convert_case", "rustc_version"]
