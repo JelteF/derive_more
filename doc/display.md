@@ -28,9 +28,13 @@ The variables available in the arguments is `self` and each member of the varian
 with members of tuple structs being named with a leading underscore and their index,
 i.e. `_0`, `_1`, `_2`, etc.
 
-Although [captured identifiers in format strings are supported only since `1.58`](https://blog.rust-lang.org/2022/01/13/Rust-1.58.0.html#captured-identifiers-in-format-strings) we support this feature on earlier version of Rust. This means that `#[display(fmt = "Prefix: {field}")]` is completely valid on MSRV.
+Although [captured identifiers in format strings are supported since 1.58
+Rust](https://blog.rust-lang.org/2022/01/13/Rust-1.58.0.html#captured-identifiers-in-format-strings),
+we support this feature on earlier versions of Rust too. This means that
+`#[display(fmt = "Prefix: {field}")]` is completely valid on MSRV.
 
-> __NOTE:__ Underscored named parameters like `#[display(fmt = "Prefix: {_0}")]` [are supported since `1.41`](https://github.com/rust-lang/rust/pull/66847)
+> __NOTE:__ Underscored named parameters like `#[display(fmt = "Prefix: {_0}")]`
+>           [are supported only since 1.41 Rust](https://github.com/rust-lang/rust/pull/66847).
 
 ## Other formatting traits
 

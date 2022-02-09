@@ -349,7 +349,6 @@ impl<'a, 'b> State<'a, 'b> {
             }
         };
 
-        // TODO: Check for a single `Display` group?
         match &list.nested[0] {
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {
                 path,
@@ -371,7 +370,7 @@ impl<'a, 'b> State<'a, 'b> {
                         if placeholders.len() > 1
                             || placeholders
                                 .first()
-                                .map(|p| p.arg != Argument::Integer(0))
+                                .map(|p| p.arg != Parameter::Positional(0))
                                 .unwrap_or_default()
                         {
                             return Err(Error::new(
@@ -409,8 +408,8 @@ impl<'a, 'b> State<'a, 'b> {
                         .into_iter()
                         .flat_map(|p| {
                             let map_argument = |arg| match arg {
-                                Argument::Ident(i) => Some(i),
-                                Argument::Integer(_) => None,
+                                Parameter::Named(i) => Some(i),
+                                Parameter::Positional(_) => None,
                             };
                             map_argument(p.arg)
                                 .into_iter()
@@ -691,10 +690,9 @@ impl<'a, 'b> State<'a, 'b> {
             HashMap::default(),
             |mut bounds, pl| {
                 let arg = match pl.arg {
-                    Argument::Integer(i) => fmt_args.get(&i).cloned(),
-                    Argument::Ident(i) => Some(syn::Ident::new(&i, fmt_span).into()),
+                    Parameter::Positional(i) => fmt_args.get(&i).cloned(),
+                    Parameter::Named(i) => Some(syn::Ident::new(&i, fmt_span).into()),
                 };
-
                 if let Some(arg) = &arg {
                     if fields_type_params.contains_key(arg) {
                         bounds
@@ -739,25 +737,27 @@ impl<'a, 'b> State<'a, 'b> {
     }
 }
 
-/// [`Placeholder`] argument.
-#[derive(Debug, PartialEq)]
-enum Argument {
+/// [Parameter][1] used in [`Placeholder`].
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-parameters
+#[derive(Debug, Eq, PartialEq)]
+enum Parameter {
     /// [Positional parameter][1].
     ///
     /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
-    Integer(usize),
+    Positional(usize),
 
     /// [Named parameter][1].
     ///
     /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
-    Ident(String),
+    Named(String),
 }
 
-impl<'a> From<parsing::Argument<'a>> for Argument {
+impl<'a> From<parsing::Argument<'a>> for Parameter {
     fn from(arg: parsing::Argument<'a>) -> Self {
         match arg {
-            parsing::Argument::Integer(i) => Argument::Integer(i),
-            parsing::Argument::Identifier(i) => Argument::Ident(i.to_owned()),
+            parsing::Argument::Integer(i) => Parameter::Positional(i),
+            parsing::Argument::Identifier(i) => Parameter::Named(i.to_owned()),
         }
     }
 }
@@ -765,18 +765,18 @@ impl<'a> From<parsing::Argument<'a>> for Argument {
 /// Representation of formatting placeholder.
 #[derive(Debug, PartialEq)]
 struct Placeholder {
-    /// Position of formatting argument to be used for this placeholder.
-    arg: Argument,
+    /// Formatting argument (either named or positional) to be used by this placeholder.
+    arg: Parameter,
 
-    /// [Width argument][1], if present.
+    /// [Width parameter][1], if present.
     ///
     /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#width
-    width: Option<Argument>,
+    width: Option<Parameter>,
 
-    /// [Precision argument][1], if present.
+    /// [Precision parameter][1], if present.
     ///
     /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#precision
-    precision: Option<Argument>,
+    precision: Option<Parameter>,
 
     /// Name of [`std::fmt`] trait to be used for rendering this placeholder.
     trait_name: &'static str,
@@ -798,7 +798,7 @@ impl Placeholder {
                     // Assign "the next argument".
                     // https://doc.rust-lang.org/stable/std/fmt/index.html#positional-parameters
                     n += 1;
-                    Argument::Integer(n - 1)
+                    Parameter::Positional(n - 1)
                 });
 
                 Placeholder {
@@ -831,38 +831,38 @@ mod placeholder_parse_fmt_string_spec {
             Placeholder::parse_fmt_string(&fmt_string),
             vec![
                 Placeholder {
-                    arg: Argument::Integer(0),
+                    arg: Parameter::Positional(0),
                     width: None,
                     precision: None,
                     trait_name: "Display",
                 },
                 Placeholder {
-                    arg: Argument::Integer(1),
+                    arg: Parameter::Positional(1),
                     width: None,
                     precision: None,
                     trait_name: "Debug",
                 },
                 Placeholder {
-                    arg: Argument::Integer(1),
-                    width: Some(Argument::Integer(0)),
+                    arg: Parameter::Positional(1),
+                    width: Some(Parameter::Positional(0)),
                     precision: None,
                     trait_name: "Display",
                 },
                 Placeholder {
-                    arg: Argument::Integer(2),
+                    arg: Parameter::Positional(2),
                     width: None,
-                    precision: Some(Argument::Integer(1)),
+                    precision: Some(Parameter::Positional(1)),
                     trait_name: "LowerHex",
                 },
                 Placeholder {
-                    arg: Argument::Ident("par".to_owned()),
+                    arg: Parameter::Named("par".to_owned()),
                     width: None,
                     precision: None,
                     trait_name: "Debug",
                 },
                 Placeholder {
-                    arg: Argument::Integer(2),
-                    width: Some(Argument::Ident("width".to_owned())),
+                    arg: Parameter::Positional(2),
+                    width: Some(Parameter::Named("width".to_owned())),
                     precision: None,
                     trait_name: "Display",
                 },
