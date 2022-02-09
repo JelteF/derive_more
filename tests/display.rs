@@ -41,7 +41,7 @@ impl PositiveOrNegative {
 }
 
 #[derive(Display)]
-#[display(fmt = "{}", message)]
+#[display(fmt = "{message}")]
 struct Error {
     message: &'static str,
     backtrace: (),
@@ -109,7 +109,7 @@ struct Generic<T>(T);
 #[display(fmt = "Here's a prefix for {} and a suffix")]
 enum Affix {
     A(u32),
-    #[display(fmt = "{} -- {}", wat, stuff)]
+    #[display(fmt = "{wat} -- {}", stuff)]
     B {
         wat: String,
         stuff: bool,
@@ -172,6 +172,39 @@ mod generic {
     }
 
     #[derive(Display)]
+    #[display(fmt = "Generic {field}")]
+    struct InterpolatedNamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn interpolated_named_generic_struct() {
+        assert_eq!(
+            InterpolatedNamedGenericStruct { field: 1 }.to_string(),
+            "Generic 1",
+        );
+    }
+
+    #[derive(Display)]
+    #[display(fmt = "Generic {field:<>width$.prec$} {field}")]
+    struct InterpolatedNamedGenericStructWidthPrecision<T> {
+        field: T,
+        width: usize,
+        prec: usize,
+    }
+    #[test]
+    fn interpolated_named_generic_struct_width_precision() {
+        assert_eq!(
+            InterpolatedNamedGenericStructWidthPrecision {
+                field: 1.2345,
+                width: 9,
+                prec: 2,
+            }
+            .to_string(),
+            "Generic <<<<<1.23 1.2345",
+        );
+    }
+
+    #[derive(Display)]
     struct AutoNamedGenericStruct<T> {
         field: T,
     }
@@ -186,6 +219,16 @@ mod generic {
     #[test]
     fn unnamed_generic_struct() {
         assert_eq!(UnnamedGenericStruct(2).to_string(), "Generic 2");
+    }
+
+    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+    #[derive(Display)]
+    #[display(fmt = "Generic {_0}")]
+    struct InterpolatedUnnamedGenericStruct<T>(T);
+    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+    #[test]
+    fn interpolated_unnamed_generic_struct() {
+        assert_eq!(InterpolatedUnnamedGenericStruct(2).to_string(), "Generic 2");
     }
 
     #[derive(Display)]
@@ -206,6 +249,27 @@ mod generic {
     fn generic_enum() {
         assert_eq!(GenericEnum::A::<_, u8> { field: 1 }.to_string(), "Gen::A 1");
         assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Gen::B 2");
+    }
+
+    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+    #[derive(Display)]
+    enum InterpolatedGenericEnum<A, B> {
+        #[display(fmt = "Gen::A {field}")]
+        A { field: A },
+        #[display(fmt = "Gen::B {_0}")]
+        B(B),
+    }
+    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+    #[test]
+    fn interpolated_generic_enum() {
+        assert_eq!(
+            InterpolatedGenericEnum::A::<_, u8> { field: 1 }.to_string(),
+            "Gen::A 1",
+        );
+        assert_eq!(
+            InterpolatedGenericEnum::B::<u8, _>(2).to_string(),
+            "Gen::B 2",
+        );
     }
 
     #[derive(Display)]
@@ -232,11 +296,34 @@ mod generic {
     }
 
     #[derive(Display)]
+    #[display(fmt = "{} {b} <-> {0:o} {1:#x} <-> {0:?} {1:X?}", a, b)]
+    struct InterpolatedMultiTraitNamedGenericStruct<A, B> {
+        a: A,
+        b: B,
+    }
+    #[test]
+    fn interpolated_multi_trait_named_generic_struct() {
+        let s = InterpolatedMultiTraitNamedGenericStruct { a: 8u8, b: 255 };
+        assert_eq!(s.to_string(), "8 255 <-> 10 0xff <-> 8 FF");
+    }
+
+    #[derive(Display)]
     #[display(fmt = "{} {} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", "_0", "_1")]
     struct MultiTraitUnnamedGenericStruct<A, B>(A, B);
     #[test]
     fn multi_trait_unnamed_generic_struct() {
         let s = MultiTraitUnnamedGenericStruct(8u8, 255);
+        assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
+    }
+
+    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+    #[derive(Display)]
+    #[display(fmt = "{} {_1} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", "_0", "_1")]
+    struct InterpolatedMultiTraitUnnamedGenericStruct<A, B>(A, B);
+    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+    #[test]
+    fn interpolated_multi_trait_unnamed_generic_struct() {
+        let s = InterpolatedMultiTraitUnnamedGenericStruct(8u8, 255);
         assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
     }
 
@@ -384,11 +471,34 @@ mod generic {
             assert_eq!(s.to_string(), "10 20");
         }
 
+        #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+        #[test]
+        fn underscored_simple() {
+            #[derive(Display)]
+            #[display(fmt = "{_0} {_1}")]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
         #[test]
         fn redundant() {
             #[derive(Display)]
             #[display(bound = "T1: ::core::fmt::Display, T2: ::core::fmt::Display")]
             #[display(fmt = "{} {}", _0, _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+        #[test]
+        fn underscored_redundant() {
+            #[derive(Display)]
+            #[display(bound = "T1: ::core::fmt::Display, T2: ::core::fmt::Display")]
+            #[display(fmt = "{_0} {_1}")]
             struct Struct<T1, T2>(T1, T2);
 
             let s = Struct(10, 20);
@@ -420,6 +530,38 @@ mod generic {
             #[derive(Display)]
             #[display(bound = "T1: Trait1 + Trait2, T2: Trait1 + Trait2")]
             #[display(fmt = "{} {} {} {}", "_0.function1()", _0, "_1.function2()", _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "WHAT 10 EVER 20");
+        }
+
+        #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
+        #[test]
+        fn underscored_complex() {
+            trait Trait1 {
+                fn function1(&self) -> &'static str;
+            }
+
+            trait Trait2 {
+                fn function2(&self) -> &'static str;
+            }
+
+            impl Trait1 for i32 {
+                fn function1(&self) -> &'static str {
+                    "WHAT"
+                }
+            }
+
+            impl Trait2 for i32 {
+                fn function2(&self) -> &'static str {
+                    "EVER"
+                }
+            }
+
+            #[derive(Display)]
+            #[display(bound = "T1: Trait1 + Trait2, T2: Trait1 + Trait2")]
+            #[display(fmt = "{} {_0} {} {_1}", "_0.function1()", "_1.function2()")]
             struct Struct<T1, T2>(T1, T2);
 
             let s = Struct(10, 20);

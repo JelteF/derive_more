@@ -36,6 +36,9 @@ unicode-xid = { version = "0.2.2", optional = true }
 [build-dependencies]
 rustc_version = { version = "0.4", optional = true }
 
+[dev-dependencies]
+rustversion = "1.0"
+
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
 
