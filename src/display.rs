@@ -251,7 +251,7 @@ impl<'a, 'b> State<'a, 'b> {
                             format!(
                                 "Unknown `{}` attribute argument. \
                                  Allowed arguments are: {}",
-                                meta_nv.path.to_token_stream().to_string(),
+                                meta_nv.path.to_token_stream(),
                                 ALLOWED_ATTRIBUTE_ARGUMENTS
                                     .iter()
                                     .fold(None, |acc, key| acc.map_or_else(
