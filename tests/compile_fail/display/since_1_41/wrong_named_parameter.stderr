@@ -1,0 +1,5 @@
+error[E0425]: cannot find value `bars` in this scope
+ --> tests/compile_fail/display/since_1_41/wrong_named_parameter.rs:2:17
+  |
+2 | #[display(fmt = "Stuff({bars})")]
+  |                 ^^^^^^^^^^^^^^^ help: a local variable with a similar name exists: `bar`

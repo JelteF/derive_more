@@ -1,0 +1,5 @@
+error[E0425]: cannot find value `_1` in this scope
+ --> tests/compile_fail/display/since_1_41/wrong_unnamed_parameter.rs:2:17
+  |
+2 | #[display(fmt = "Stuff({_1})")]
+  |                 ^^^^^^^^^^^^^ help: a local variable with a similar name exists: `_0`

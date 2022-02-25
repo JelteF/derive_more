@@ -1,0 +1,7 @@
+error: argument never used
+ --> tests/compile_fail/display/missing_placeholder.rs:2:28
+  |
+2 | #[display(fmt = "Stuff()", bar)]
+  |                 ---------  ^^^ argument never used
+  |                 |
+  |                 formatting specifier missing

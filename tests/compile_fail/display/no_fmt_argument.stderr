@@ -1,0 +1,5 @@
+error: The format for this attribute cannot be parsed. Correct format: `#[display(fmt = "...")]`
+ --> tests/compile_fail/display/no_fmt_argument.rs:2:3
+  |
+2 | #[display("Stuff({})", bar)]
+  |   ^^^^^^^

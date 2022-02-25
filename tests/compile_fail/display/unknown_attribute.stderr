@@ -1,0 +1,5 @@
+error: Unknown `unknown` attribute argument. Allowed arguments are: fmt, bound
+ --> tests/compile_fail/display/unknown_attribute.rs:3:11
+  |
+3 | #[display(unknown = "unknown")]
+  |           ^^^^^^^
