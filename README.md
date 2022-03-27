@@ -132,7 +132,7 @@ Then add the following to `Cargo.toml`:
 ```toml
 [dependencies]
 derive_more = "0.99.0"
-# You can specifiy the types of derives that you need for less time spent
+# You can specify the types of derives that you need for less time spent
 # compiling. For the full list of features see this crate its Cargo.toml.
 default-features = false
 features = ["from", "add", "iterator"]
