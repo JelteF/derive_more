@@ -247,6 +247,8 @@ mod sum_like;
 mod try_into;
 #[cfg(feature = "unwrap")]
 mod unwrap;
+#[cfg(feature = "enum_default")]
+mod default;
 
 // This trait describes the possible return types of
 // the derives. A derive can generally be infallible and
@@ -418,3 +420,11 @@ create_derive!(
 );
 
 create_derive!("unwrap", unwrap, Unwrap, unwrap_derive, unwrap);
+
+create_derive!(
+    "default",
+    default,
+    EnumDefault,
+    default_derive,
+    default
+);

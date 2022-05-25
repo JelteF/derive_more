@@ -251,6 +251,13 @@ fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     )
 }
 
+fn panic_one_variant(trait_name: &str, trait_attr: &str) -> ! {
+    panic!(
+        "derive({}) only works when forwarding to a single variant. Try putting #[{}] or #[{}(ignore)] on the variants in the enum",
+        trait_name, trait_attr, trait_attr,
+    )
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DeriveType {
     Unnamed,
@@ -694,6 +701,29 @@ impl<'input> State<'input> {
         }
     }
 
+    pub fn assert_single_enabled_variant<'state>(
+        &'state self,
+    ) -> SingleVariantData<'input, 'state> {
+        if self.derive_type != DeriveType::Enum {
+            panic_one_variant(self.trait_name, &self.trait_attr);
+        }
+        let data = self.enabled_variant_data();
+        if data.variants.len() != 1 {
+            panic_one_variant(self.trait_name, &self.trait_attr);
+        };
+        SingleVariantData {
+            input_type: data.input_type,
+            variant: data.variants[0],
+            variant_state: data.variant_states[0],
+            info: data.infos[0].clone(),
+            trait_path: data.trait_path,
+            impl_generics: data.impl_generics.clone(),
+            ty_generics: data.ty_generics.clone(),
+            where_clause: data.where_clause,
+            multi_variant_data: data,
+        }
+    }
+
     pub fn enabled_variant_data<'state>(
         &'state self,
     ) -> MultiVariantData<'input, 'state> {
@@ -836,6 +866,18 @@ pub struct MultiVariantData<'input, 'state> {
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
     pub where_clause: Option<&'state WhereClause>,
+}
+
+pub struct SingleVariantData<'input, 'state> {
+    pub input_type: &'input Ident,
+    pub variant: &'input Variant,
+    pub variant_state: &'state State<'input>,
+    pub info: FullMetaInfo,
+    pub trait_path: &'state TokenStream,
+    pub impl_generics: ImplGenerics<'state>,
+    pub ty_generics: TypeGenerics<'state>,
+    pub where_clause: Option<&'state WhereClause>,
+    multi_variant_data: MultiVariantData<'input, 'state>,
 }
 
 impl<'input, 'state> MultiFieldData<'input, 'state> {

@@ -49,6 +49,7 @@ add = []
 as_mut = []
 as_ref = []
 constructor = []
+enum_default = []
 deref = []
 deref_mut = []
 display = ["syn/extra-traits", "unicode-xid"]
@@ -83,6 +84,7 @@ default = [
     "deref",
     "deref_mut",
     "display",
+    "enum_default",
     "error",
     "from",
     "from_str",
