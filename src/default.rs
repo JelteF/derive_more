@@ -1,12 +1,11 @@
-use crate::utils::{AttrParams, DeriveType, SingleVariantData, State};
-use convert_case::{Case, Casing};
+use crate::utils::{AttrParams, SingleVariantData, State};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{
-    DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed, Ident, Result, Variant,
+    DeriveInput, Field, Fields, Result, Variant,
 };
 
-pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+pub fn expand(input: &DeriveInput, _trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_attr_params(
         input,
         "Default",

@@ -720,7 +720,6 @@ impl<'input> State<'input> {
             impl_generics: data.impl_generics.clone(),
             ty_generics: data.ty_generics.clone(),
             where_clause: data.where_clause,
-            multi_variant_data: data,
         }
     }
 
@@ -877,7 +876,6 @@ pub struct SingleVariantData<'input, 'state> {
     pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
     pub where_clause: Option<&'state WhereClause>,
-    multi_variant_data: MultiVariantData<'input, 'state>,
 }
 
 impl<'input, 'state> MultiFieldData<'input, 'state> {
