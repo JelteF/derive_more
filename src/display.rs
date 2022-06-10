@@ -761,7 +761,7 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
 }
 
 /// Representation of formatting placeholder.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 struct Placeholder {
     /// Formatting argument (either named or positional) to be used by this placeholder.
     arg: Parameter,
