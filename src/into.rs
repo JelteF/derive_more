@@ -68,11 +68,11 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 
             (quote! {
                 #[automatically_derived]
-                impl#impl_generics ::core::convert::From<#reference_with_lifetime #input_type#ty_generics> for
+                impl #impl_generics ::core::convert::From<#reference_with_lifetime #input_type #ty_generics> for
                     (#(#into_types),*) #where_clause {
 
                     #[inline]
-                    fn from(original: #reference_with_lifetime #input_type#ty_generics) -> Self {
+                    fn from(original: #reference_with_lifetime #input_type #ty_generics) -> Self {
                         (#(#initializers),*)
                     }
                 }

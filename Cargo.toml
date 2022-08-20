@@ -6,7 +6,7 @@ authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
 repository = "https://github.com/JelteF/derive_more"
 documentation = "https://jeltef.github.io/derive_more/derive_more/"
-edition = "2018"
+edition = "2021"
 
 readme = "README.md"
 keywords = ["derive", "Add", "From", "Display", "IntoIterator"]
