@@ -6,7 +6,34 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## 0.99.10 - 2020-??-??
+## 1.0.0 - 2022-??-??
+
+### Breaking changes
+
+- The minimum supported rust version is updated to Rust 1.56 (the Rust Edition
+  2022 release).
+- The `From` derive doesn't derive `From<()>` for enum variants without any
+  fields anymore. This feature was removed because it was considered useless in
+  practice.
+
+### New features
+- Add support captured identifiers in `Display` derives. So now you can use:
+  `#[display(fmt = "Prefix: {field}")]` instead of needing to use
+  `#[display(fmt = "Prefix: {}", field)]`
+- Add `FromStr` derive support for enums that contain variants without fields.
+  If you pass the name of the variant to `from_str` it will create the matching
+  variant.
+
+### Improvements
+
+- Generate doc comments for `Unwrap` and `IsVariant`
+
+### Fixes
+
+- Use a deterministic `HashSet` in all derives, this is needed for rust analyzer
+  to work correctly.
+
+## 0.99.10 - 2020-09-11
 
 ### Improvements
 
