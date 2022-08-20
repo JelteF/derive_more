@@ -118,20 +118,8 @@ fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
     }
     for (ref field_types, ref variant_states) in variants_per_types {
         for variant_state in variant_states {
-            let multi_field_data = variant_state.enabled_fields_data();
-            let MultiFieldData {
-                variant_info,
-                infos,
-                ..
-            } = multi_field_data.clone();
-            // If there would be a conflict on a empty tuple derive, ignore the
-            // variants that are not explicitly enabled or have explicitly enabled
-            // or disabled fields
+            // Don't derive From for variants without any fields
             if field_types.is_empty()
-                && variant_states.len() > 1
-                && !std::iter::once(variant_info)
-                    .chain(infos)
-                    .any(|info| info.info.enabled.is_some())
             {
                 continue;
             }
