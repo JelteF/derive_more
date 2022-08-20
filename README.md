@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://jeltef.github.io/derive_more/derive_more/)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
-[![Rust 1.36+](https://img.shields.io/badge/rustc-1.36+-lightgray.svg)](https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html)
+[![Rust 1.56+](https://img.shields.io/badge/rustc-1.56+-lightgray.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
 
 Rust has lots of builtin traits that are implemented for its basic types, such
 as `Add`, `Not`, `From` or `Display`.
@@ -126,7 +126,7 @@ These don't derive traits, but derive static methods instead.
 
 ## Installation
 
-This library requires Rust 1.36 or higher and it supports `no_std` out of the box.
+This library requires Rust 1.56 or higher and it supports `no_std` out of the box.
 Then add the following to `Cargo.toml`:
 
 ```toml
@@ -138,7 +138,7 @@ default-features = false
 features = ["from", "add", "iterator"]
 ```
 
-And this to the top of your Rust file for Rust 2018:
+And this to the top of your Rust file for Rust 2018 and up:
 
 ```rust
 extern crate derive_more;

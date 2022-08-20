@@ -381,10 +381,9 @@ where
     P: Fn(&str, &syn::Field, usize) -> bool,
     V: Fn(&MetaInfo) -> Option<bool>,
 {
-    let explicit_fields = iter.clone().filter(|(_, _, info)| match value(info) {
-        Some(true) => true,
-        _ => false,
-    });
+    let explicit_fields = iter
+        .clone()
+        .filter(|(_, _, info)| matches!(value(info), Some(true)));
 
     let inferred_fields = iter.filter(|(_, field, info)| match value(info) {
         None => is_valid_default_field_for_attr(attr, field, len),

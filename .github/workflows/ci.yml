@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     strategy:
       matrix:
-        toolchain: [stable, nightly, 1.36.0]
+        toolchain: [stable, nightly, 1.56.0]
         os: [ubuntu, macOS, windows]
     steps:
       - uses: actions/checkout@v2

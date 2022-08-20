@@ -119,8 +119,7 @@ fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
     for (ref field_types, ref variant_states) in variants_per_types {
         for variant_state in variant_states {
             // Don't derive From for variants without any fields
-            if field_types.is_empty()
-            {
+            if field_types.is_empty() {
                 continue;
             }
             struct_from(input, variant_state).to_tokens(&mut tokens);
