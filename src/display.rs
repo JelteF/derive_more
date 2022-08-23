@@ -68,9 +68,8 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             fn fmt(&self, _derive_more_display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 #helper_struct
 
-                match self {
+                match *self {
                     #arms
-                    _ => Ok(()) // This is needed for empty enums
                 }
             }
         }
@@ -200,7 +199,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let fields: TokenStream = (0..fields.unnamed.len())
                     .map(|n| {
                         let i = Ident::new(&format!("_{}", n), Span::call_site());
-                        quote!(#i,)
+                        quote!(ref #i,)
                     })
                     .collect();
                 quote!((#fields))
@@ -211,7 +210,7 @@ impl<'a, 'b> State<'a, 'b> {
                     .iter()
                     .map(|f| {
                         let i = f.ident.as_ref().unwrap();
-                        quote!(#i,)
+                        quote!(ref #i,)
                     })
                     .collect();
                 quote!({#fields})

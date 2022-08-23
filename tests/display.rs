@@ -160,6 +160,13 @@ fn check_display() {
     assert_eq!(DebugStructAsDisplay.to_string(), "DebugStructAsDisplay");
 }
 
+#[test]
+fn empty_enum_impls_display() {
+    trait S: std::fmt::Display {}
+
+    impl S for EmptyEnum {}
+}
+
 mod generic {
     #[derive(Display)]
     #[display(fmt = "Generic {}", field)]
