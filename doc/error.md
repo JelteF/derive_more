@@ -47,7 +47,7 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 # Example usage
 
 ```rust
-#![feature(backtrace)]
+#![feature(error_generic_member_access, provide_any)]
 # #[macro_use] extern crate derive_more;
 # use std::error::Error as _;
 use std::backtrace::Backtrace;
