@@ -50,7 +50,7 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 #![feature(error_generic_member_access, provide_any)]
 # #[macro_use] extern crate derive_more;
 # use std::error::Error as _;
-use std::backtrace::Backtrace;
+use std::{any, backtrace::Backtrace};
 
 // std::error::Error requires std::fmt::Debug and std::fmt::Display,
 // so we can also use derive_more::Display for fully declarative
@@ -90,8 +90,22 @@ enum CompoundError {
     WithSource {
         source: Simple,
     },
+    #[from(ignore)]
+    WithBacktraceFromSource {
+        #[error(backtrace)]
+        source: Simple,
+    },
+    WithDifferentBacktrace {
+        source: Simple,
+        backtrace: Backtrace,
+    },
     WithExplicitSource {
         #[error(source)]
+        explicit_source: WithSource,
+    },
+    #[from(ignore)]
+    WithBacktraceFromExplicitSource {
+        #[error(backtrace, source)]
         explicit_source: WithSource,
     },
     Tuple(WithExplicitSource),
@@ -100,7 +114,7 @@ enum CompoundError {
 
 fn main() {
     assert!(Simple.source().is_none());
-    assert!(Simple.backtrace().is_none());
+    assert!(any::request_ref::<Backtrace>(&Simple).is_none());
     assert!(WithSource::default().source().is_some());
     assert!(WithExplicitSource::default().source().is_some());
     assert!(Tuple::default().source().is_some());
@@ -110,7 +124,7 @@ fn main() {
         backtrace: Backtrace::capture(),
     };
     assert!(with_source_and_backtrace.source().is_some());
-    assert!(with_source_and_backtrace.backtrace().is_some());
+    assert!(any::request_ref::<Backtrace>(&with_source_and_backtrace).is_some());
 
     assert!(CompoundError::Simple.source().is_none());
     assert!(CompoundError::from(Simple).source().is_some());
