@@ -143,17 +143,13 @@ fn render_enum(
             match_arms.push(quote!(_ => #unmatched));
         }
 
-        if !match_arms.is_empty() {
-            let expr = quote! {
+        (!match_arms.is_empty()).then(|| {
+            quote! {
                 match self {
                     #(#match_arms),*
                 }
-            };
-
-            Some(expr)
-        } else {
-            None
-        }
+            }
+        })
     };
 
     let source = render(&mut source_match_arms, quote!(None));
@@ -212,24 +208,23 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 ::std::error::Error::provide(&#source_expr, demand);
             }
         });
-        let backtrace_provider =
-            if self.source.filter(|source| *source == backtrace).is_some() {
-                None
-            } else {
+        let backtrace_provider = self
+            .source
+            .filter(|source| *source == backtrace)
+            .is_none()
+            .then(|| {
                 let backtrace_expr = &self.data.members[backtrace];
-                Some(quote! {
+                quote! {
                     demand.provide_ref::<std::backtrace::Backtrace>(&#backtrace_expr);
-                })
-            };
+                }
+            });
 
-        if source_provider.is_some() || backtrace_provider.is_some() {
-            Some(quote! {
+        (source_provider.is_some() || backtrace_provider.is_some()).then(|| {
+            quote! {
                 #backtrace_provider
                 #source_provider
-            })
-        } else {
-            None
-        }
+            }
+        })
     }
 
     fn render_provide_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
@@ -238,31 +233,31 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
         match self.source {
             Some(source) if source == backtrace => {
                 let pattern = self.data.matcher(&[source], &[quote!(source)]);
-                Some(quote!(
+                Some(quote! {
                     #pattern => {
                         ::std::error::Error::provide(source, demand);
                     }
-                ))
+                })
             }
             Some(source) => {
                 let pattern = self.data.matcher(
                     &[source, backtrace],
                     &[quote!(source), quote!(backtrace)],
                 );
-                Some(quote!(
+                Some(quote! {
                     #pattern => {
                         demand.provide_ref::<std::backtrace::Backtrace>(backtrace);
                         ::std::error::Error::provide(source, demand);
                     }
-                ))
+                })
             }
             None => {
                 let pattern = self.data.matcher(&[backtrace], &[quote!(backtrace)]);
-                Some(quote!(
+                Some(quote! {
                     #pattern => {
                         demand.provide_ref::<std::backtrace::Backtrace>(backtrace);
                     }
-                ))
+                })
             }
         }
     }
