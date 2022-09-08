@@ -86,6 +86,8 @@ impl Default for BacktraceErr {
 
 impl Error for BacktraceErr {
     fn provide<'a>(&'a self, demand: &mut std::any::Demand<'a>) {
-        demand.provide_ref(&self.backtrace).provide_value(|| 42);
+        demand
+            .provide_ref::<Backtrace>(&self.backtrace)
+            .provide_value::<i32>(42);
     }
 }
