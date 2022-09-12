@@ -24,8 +24,8 @@ often [`From`] as well.
 2. It's a tuple struct/variant and there's exactly one field that is not used as
    the `backtrace`. So either a tuple struct with one field, or one with two where one
    is the `backtrace`. Then it returns this field as the `source`.
-3. One of the fields is annotated with `#[error(backtrace)]`. Then it would
-   return that field as the `backtrace`.
+3. One of the fields is annotated with `#[error(source)]`. Then it would
+   return that field as the `source`.
 
 ## When and how does it derive `provide()`?
 
