@@ -33,7 +33,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let (_, ty_generics, _) = input.generics.split_for_impl();
         let generics = add_extra_ty_param_bound(&input.generics, trait_path);
         let operator_where_clause = quote! {
-            where #input_type#ty_generics: #op_path<Output=#input_type#ty_generics>
+            where #input_type #ty_generics: #op_path<Output=#input_type #ty_generics>
         };
         add_extra_where_clauses(&generics, operator_where_clause)
     };
@@ -46,7 +46,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let identity = multi_field_data.initializer(&initializers);
 
     Ok(quote!(
-        impl#impl_generics #trait_path for #input_type#ty_generics #where_clause {
+        impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
             #[inline]
             fn #method_ident<I: ::core::iter::Iterator<Item = Self>>(iter: I) -> Self {
                 iter.fold(#identity, #op_path::#op_method_ident)

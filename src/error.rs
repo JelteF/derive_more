@@ -80,7 +80,7 @@ pub fn expand(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let render = quote! {
-        impl#impl_generics ::std::error::Error for #ident#ty_generics #where_clause {
+        impl #impl_generics ::std::error::Error for #ident #ty_generics #where_clause {
             #source
             #provide
         }

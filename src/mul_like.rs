@@ -49,10 +49,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let body = multi_field_data.initializer(&initializers);
     let (impl_generics, _, where_clause) = generics.split_for_impl();
     Ok(quote!(
-        impl#impl_generics  #trait_path_with_params for #input_type#ty_generics #where_clause {
-            type Output = #input_type#ty_generics;
+        impl #impl_generics  #trait_path_with_params for #input_type #ty_generics #where_clause {
+            type Output = #input_type #ty_generics;
             #[inline]
-            fn #method_ident(self, rhs: #scalar_ident) -> #input_type#ty_generics {
+            fn #method_ident(self, rhs: #scalar_ident) -> #input_type #ty_generics {
                 #body
             }
         }

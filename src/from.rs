@@ -90,11 +90,11 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
 
         impls.push(quote! {
             #[automatically_derived]
-            impl#impl_generics #trait_path<(#(#from_types),*)> for
-                #input_type#ty_generics #where_clause {
+            impl #impl_generics #trait_path<(#(#from_types),*)> for
+                #input_type #ty_generics #where_clause {
 
                 #[inline]
-                fn from(original: (#(#from_types),*)) -> #input_type#ty_generics {
+                fn from(original: (#(#from_types),*)) -> #input_type #ty_generics {
                     #body
                 }
             }
