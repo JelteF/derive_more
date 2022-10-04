@@ -32,7 +32,7 @@ pub fn expand(
         })
         .collect();
 
-    let (bounds, source, backtrace) = match state.derive_type {
+    let (bounds, source, provide) = match state.derive_type {
         DeriveType::Named | DeriveType::Unnamed => render_struct(&type_params, &state)?,
         DeriveType::Enum => render_enum(&type_params, &state)?,
     };
@@ -45,11 +45,11 @@ pub fn expand(
         }
     });
 
-    let backtrace = backtrace.map(|backtrace| {
+    let provide = provide.map(|provide| {
         quote! {
-            fn backtrace(&self) -> Option<&::std::backtrace::Backtrace> {
-                #backtrace
-            }
+            fn provide<'_demand>(&'_demand self, demand: &mut ::std::any::Demand<'_demand>) {
+                 #provide
+             }
         }
     });
 
@@ -82,7 +82,7 @@ pub fn expand(
     let render = quote! {
         impl#impl_generics ::std::error::Error for #ident#ty_generics #where_clause {
             #source
-            #backtrace
+            #provide
         }
     };
 
@@ -96,9 +96,9 @@ fn render_struct(
     let parsed_fields = parse_fields(type_params, state)?;
 
     let source = parsed_fields.render_source_as_struct();
-    let backtrace = parsed_fields.render_backtrace_as_struct();
+    let provide = parsed_fields.render_provide_as_struct();
 
-    Ok((parsed_fields.bounds, source, backtrace))
+    Ok((parsed_fields.bounds, source, provide))
 }
 
 fn render_enum(
@@ -107,7 +107,7 @@ fn render_enum(
 ) -> Result<(HashSet<syn::Type>, Option<TokenStream>, Option<TokenStream>)> {
     let mut bounds = HashSet::default();
     let mut source_match_arms = Vec::new();
-    let mut backtrace_match_arms = Vec::new();
+    let mut provide_match_arms = Vec::new();
 
     for variant in state.enabled_variant_data().variants {
         let default_info = FullMetaInfo {
@@ -131,35 +131,31 @@ fn render_enum(
             source_match_arms.push(expr);
         }
 
-        if let Some(expr) = parsed_fields.render_backtrace_as_enum_variant_match_arm() {
-            backtrace_match_arms.push(expr);
+        if let Some(expr) = parsed_fields.render_provide_as_enum_variant_match_arm() {
+            provide_match_arms.push(expr);
         }
 
         bounds.extend(parsed_fields.bounds.into_iter());
     }
 
-    let render = |match_arms: &mut Vec<TokenStream>| {
+    let render = |match_arms: &mut Vec<TokenStream>, unmatched| {
         if !match_arms.is_empty() && match_arms.len() < state.variants.len() {
-            match_arms.push(quote!(_ => None));
+            match_arms.push(quote!(_ => #unmatched));
         }
 
-        if !match_arms.is_empty() {
-            let expr = quote! {
+        (!match_arms.is_empty()).then(|| {
+            quote! {
                 match self {
                     #(#match_arms),*
                 }
-            };
-
-            Some(expr)
-        } else {
-            None
-        }
+            }
+        })
     };
 
-    let source = render(&mut source_match_arms);
-    let backtrace = render(&mut backtrace_match_arms);
+    let source = render(&mut source_match_arms, quote!(None));
+    let provide = render(&mut provide_match_arms, quote!(()));
 
-    Ok((bounds, source, backtrace))
+    Ok((bounds, source, provide))
 }
 
 fn allowed_attr_params() -> AttrParams {
@@ -203,16 +199,67 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
         Some(quote!(#pattern => #expr))
     }
 
-    fn render_backtrace_as_struct(&self) -> Option<TokenStream> {
+    fn render_provide_as_struct(&self) -> Option<TokenStream> {
         let backtrace = self.backtrace?;
-        let backtrace_expr = &self.data.members[backtrace];
-        Some(quote!(Some(&#backtrace_expr)))
+
+        let source_provider = self.source.map(|source| {
+            let source_expr = &self.data.members[source];
+            quote! {
+                ::std::error::Error::provide(&#source_expr, demand);
+            }
+        });
+        let backtrace_provider = self
+            .source
+            .filter(|source| *source == backtrace)
+            .is_none()
+            .then(|| {
+                let backtrace_expr = &self.data.members[backtrace];
+                quote! {
+                    demand.provide_ref::<std::backtrace::Backtrace>(&#backtrace_expr);
+                }
+            });
+
+        (source_provider.is_some() || backtrace_provider.is_some()).then(|| {
+            quote! {
+                #backtrace_provider
+                #source_provider
+            }
+        })
     }
 
-    fn render_backtrace_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
+    fn render_provide_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         let backtrace = self.backtrace?;
-        let pattern = self.data.matcher(&[backtrace], &[quote!(backtrace)]);
-        Some(quote!(#pattern => Some(backtrace)))
+
+        match self.source {
+            Some(source) if source == backtrace => {
+                let pattern = self.data.matcher(&[source], &[quote!(source)]);
+                Some(quote! {
+                    #pattern => {
+                        ::std::error::Error::provide(source, demand);
+                    }
+                })
+            }
+            Some(source) => {
+                let pattern = self.data.matcher(
+                    &[source, backtrace],
+                    &[quote!(source), quote!(backtrace)],
+                );
+                Some(quote! {
+                    #pattern => {
+                        demand.provide_ref::<std::backtrace::Backtrace>(backtrace);
+                        ::std::error::Error::provide(source, demand);
+                    }
+                })
+            }
+            None => {
+                let pattern = self.data.matcher(&[backtrace], &[quote!(backtrace)]);
+                Some(quote! {
+                    #pattern => {
+                        demand.provide_ref::<std::backtrace::Backtrace>(backtrace);
+                    }
+                })
+            }
+        }
     }
 }
 
