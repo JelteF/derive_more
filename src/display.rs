@@ -503,9 +503,8 @@ impl<'a, 'b> State<'a, 'b> {
                             } else {
                                 self.infer_fmt(&v.fields, &v.ident)?
                             };
-                            let name = &self.input.ident;
                             let v_name = &v.ident;
-                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(
+                            Ok(quote_spanned!(fmt.span()=> #arms Self::#v_name #matcher => write!(
                                 _derive_more_display_formatter,
                                 #outer_fmt,
                                 _derive_more_DisplayAs(|_derive_more_display_formatter| #fmt)
@@ -522,7 +521,6 @@ impl<'a, 'b> State<'a, 'b> {
                     None => e.variants.iter().try_fold(ParseResult::default(), |result, v| {
                         let ParseResult{ arms, mut bounds, requires_helper } = result;
                         let matcher = self.get_matcher(&v.fields);
-                        let name = &self.input.ident;
                         let v_name = &v.ident;
                         let fmt: TokenStream;
                         let these_bounds: HashMap<_, _>;
@@ -537,7 +535,7 @@ impl<'a, 'b> State<'a, 'b> {
                         these_bounds.into_iter().for_each(|(ty, trait_names)| {
                             bounds.entry(ty).or_default().extend(trait_names)
                         });
-                        let arms = quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,);
+                        let arms = quote_spanned!(self.input.span()=> #arms Self::#v_name #matcher => #fmt,);
 
                         Ok(ParseResult{ arms, bounds, requires_helper })
                     }),
@@ -763,7 +761,7 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
 }
 
 /// Representation of formatting placeholder.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 struct Placeholder {
     /// Formatting argument (either named or positional) to be used by this placeholder.
     arg: Parameter,
