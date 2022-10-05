@@ -1,8 +1,8 @@
 #![allow(dead_code)]
+
 use std::marker::PhantomData;
 
-#[macro_use]
-extern crate derive_more;
+use derive_more::MulAssign;
 
 #[derive(MulAssign)]
 struct MyInt(i32);

@@ -1,8 +1,8 @@
 #![allow(dead_code)]
-#[macro_use]
-extern crate derive_more;
 
 use std::borrow::Cow;
+
+use derive_more::Into;
 
 #[derive(Into)]
 #[into(owned, ref, ref_mut)]

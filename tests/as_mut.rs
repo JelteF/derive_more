@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
-#[macro_use]
-extern crate derive_more;
-
 use std::path::PathBuf;
 use std::ptr;
+
+use derive_more::AsMut;
 
 #[derive(AsMut)]
 struct SingleFieldTuple(String);

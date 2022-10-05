@@ -1,12 +1,12 @@
 #![allow(dead_code, unused_imports)]
-#[macro_use]
-extern crate derive_more;
 
 use std::path::PathBuf;
 
 // Here just to make sure that this doesn't conflict with
 // the derives in some way
 use std::fmt::Binary;
+
+use derive_more::{Binary, DebugCustom, Display, Octal, UpperHex};
 
 #[derive(Display, Octal, Binary)]
 struct MyInt(i32);
@@ -168,6 +168,8 @@ fn empty_enum_impls_display() {
 }
 
 mod generic {
+    use derive_more::Display;
+
     #[derive(Display)]
     #[display(fmt = "Generic {}", field)]
     struct NamedGenericStruct<T> {

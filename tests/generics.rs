@@ -1,6 +1,9 @@
 #![allow(dead_code, non_camel_case_types)]
-#[macro_use]
-extern crate derive_more;
+
+use derive_more::{
+    Add, AddAssign, Constructor, Deref, DerefMut, Display, From, FromStr, Index,
+    IndexMut, IntoIterator, Mul, MulAssign, Not, Sum,
+};
 
 #[derive(
     From,

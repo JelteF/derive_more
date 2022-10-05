@@ -1,8 +1,7 @@
 // The following code is from https://github.com/withoutboats/display_derive/blob/232a32ee19e262aacbd2c93be5b4ce9e89a5fc30/tests/tests.rs
 // Written by without boats originally
 
-#[macro_use]
-extern crate derive_more;
+use derive_more::Display;
 
 #[derive(Display)]
 #[display(fmt = "An error has occurred.")]

@@ -1,8 +1,11 @@
-#![deny(missing_docs)]
 //! Some docs
 
-#[macro_use]
-extern crate derive_more;
+#![deny(missing_docs)]
+
+use derive_more::{
+    Add, AddAssign, Constructor, Deref, DerefMut, Display, From, FromStr, Index,
+    IndexMut, Into, IsVariant, Mul, MulAssign, Not, TryInto,
+};
 
 fn main() {}
 

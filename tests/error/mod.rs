@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use derive_more::Error;
+
 /// Derives `std::fmt::Display` for structs/enums.
 /// Derived implementation outputs empty string.
 /// Useful, as a way to formally satisfy `Display` trait bound.
