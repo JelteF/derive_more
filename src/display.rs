@@ -64,9 +64,8 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     };
 
     Ok(quote! {
-        impl #impl_generics #trait_path for #name #ty_generics #where_clause
-        {
-            #[allow(unused_variables)]
+        #[automatically_derived]
+        impl #impl_generics #trait_path for #name #ty_generics #where_clause {
             #[inline]
             fn fmt(&self, _derive_more_display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 #helper_struct

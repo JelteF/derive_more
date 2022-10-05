@@ -88,7 +88,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     }
 
     let imp = quote! {
-        impl #imp_generics #enum_name #type_generics #where_clause{
+        #[automatically_derived]
+        impl #imp_generics #enum_name #type_generics #where_clause {
             #(#funcs)*
         }
     };

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   practice.
 
 ### New features
+
 - Add support captured identifiers in `Display` derives. So now you can use:
   `#[display(fmt = "Prefix: {field}")]` instead of needing to use
   `#[display(fmt = "Prefix: {}", field)]`
@@ -26,7 +27,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Improvements
 
-- Generate doc comments for `Unwrap` and `IsVariant`
+- Generate doc comments for `Unwrap` and `IsVariant`.
+- Use `#[automatically_derived]` attribute in all macros' expansion for code
+  style linters to omit the generated code.
 
 ### Fixes
 

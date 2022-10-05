@@ -43,9 +43,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let (impl_generics, _, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        impl #impl_generics #trait_path for #input_type #ty_generics #where_clause
-        {
+        #[automatically_derived]
+        impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
             type Target = #target;
+
             #[inline]
             fn deref(&self) -> &Self::Target {
                 #body
