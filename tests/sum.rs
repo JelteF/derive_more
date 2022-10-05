@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate derive_more;
+use derive_more::Sum;
 
 #[derive(Sum)]
 struct MyInts(i32, i64);

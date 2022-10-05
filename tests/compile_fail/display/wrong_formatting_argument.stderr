@@ -1,5 +1,5 @@
 error: unknown format trait `M`
- --> tests/compile_fail/display/since_1_41/wrong_formatting_argument.rs:2:26
+ --> tests/compile_fail/display/wrong_formatting_argument.rs:2:26
   |
 2 | #[display(fmt = "Stuff({:M})", bar)]
   |                          ^

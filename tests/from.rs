@@ -1,8 +1,8 @@
 #![allow(dead_code)]
-#[macro_use]
-extern crate derive_more;
 
 use std::borrow::Cow;
+
+use derive_more::From;
 
 #[derive(From)]
 struct EmptyTuple();
@@ -48,7 +48,7 @@ enum MixedInts {
     },
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
 #[from(forward)]
 struct MyIntForward(u64);
@@ -60,7 +60,7 @@ fn forward_struct() {
     assert_eq!(MyIntForward(42), 42u64.into());
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
 enum MixedIntsForward {
     #[from(forward)]

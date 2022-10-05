@@ -1,6 +1,6 @@
 #![allow(dead_code, unused_imports)]
-#[macro_use]
-extern crate derive_more;
+
+use derive_more::IntoIterator;
 
 #[derive(IntoIterator)]
 #[into_iterator(owned, ref, ref_mut)]
@@ -32,6 +32,7 @@ struct Numbers3 {
 impl ::core::iter::IntoIterator for Numbers3 {
     type Item = <Vec<i32> as ::core::iter::IntoIterator>::Item;
     type IntoIter = <Vec<i32> as ::core::iter::IntoIterator>::IntoIter;
+
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         <Vec<i32> as ::core::iter::IntoIterator>::into_iter(self.numbers)

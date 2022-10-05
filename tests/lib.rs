@@ -1,10 +1,13 @@
-#[macro_use]
-extern crate derive_more;
+use derive_more::{
+    Add, AddAssign, Binary, BitAnd, BitOr, BitXor, Constructor, Deref, DerefMut,
+    Display, Div, From, FromStr, Index, IndexMut, Into, IntoIterator, Mul, MulAssign,
+    Neg, Not, Octal, Product, Rem, Shl, Shr, Sub, Sum,
+};
 
 #[derive(From)]
 #[derive(Into)]
 #[derive(Constructor)]
-#[derive(Eq, PartialEq, Debug, Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[derive(Add)]
 #[derive(Mul)]
 #[derive(Neg)]
@@ -28,7 +31,7 @@ struct MyInt(i32);
 #[mul_assign(forward)]
 struct MyInt2(i32);
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(Index, IndexMut)]
 #[derive(Deref, DerefMut)]
 #[derive(IntoIterator)]
@@ -37,13 +40,13 @@ struct MyInt2(i32);
 #[into_iterator(owned, ref, ref_mut)]
 struct MyVec(Vec<i32>);
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(Deref, DerefMut)]
 #[deref(forward)]
 #[deref_mut(forward)]
 struct MyBoxedInt(Box<i32>);
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(Not)]
 #[derive(From)]
 struct MyBool(bool);
@@ -52,7 +55,7 @@ struct MyBool(bool);
 #[derive(Into)]
 #[derive(Constructor)]
 #[derive(Add)]
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(Mul)]
 #[derive(AddAssign)]
 struct MyUInt(u64, u64);
@@ -61,7 +64,7 @@ struct MyUInt(u64, u64);
 #[derive(Into)]
 #[derive(Constructor)]
 #[derive(FromStr)]
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(Display)]
 struct SimpleStruct {
     int1: u64,
@@ -70,7 +73,7 @@ struct SimpleStruct {
 #[derive(From)]
 #[derive(Constructor)]
 #[derive(Add, Sub, Mul, Div, Rem, BitAnd, BitOr, BitXor, Shr, Shl)]
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[derive(Into)]
 #[derive(AddAssign)]
 #[into(owned, ref, ref_mut)]
@@ -80,10 +83,10 @@ struct NormalStruct {
 }
 
 #[derive(From)]
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 struct NestedInt(MyInt);
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
 #[derive(Add, Sub)]
 enum SimpleMyIntEnum {
@@ -92,7 +95,7 @@ enum SimpleMyIntEnum {
     _UnsignedOne(u32),
     _UnsignedTwo(u32),
 }
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
 #[derive(Neg)]
 enum SimpleSignedIntEnum {
@@ -100,7 +103,7 @@ enum SimpleSignedIntEnum {
     Int2(i16),
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
 #[derive(Add, Sub)]
 #[derive(Neg)]
@@ -115,7 +118,7 @@ enum SimpleEnum {
     _SomeUnit,
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
 #[derive(Add, Sub)]
 enum MyIntEnum {
@@ -137,18 +140,18 @@ enum MyIntEnum {
     },
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(Add, Mul)]
 struct DoubleUInt(u32, u32);
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(Add, Mul)]
 struct DoubleUIntStruct {
     x: u32,
     y: u32,
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[derive(From, Into, Constructor)]
 struct Unit;
 

@@ -21,7 +21,6 @@
 //! By using this library the following code just works:
 //!
 //! ```rust
-//! extern crate derive_more;
 //! use derive_more::{Add, Display, From, Into};
 //!
 //! #[derive(PartialEq, From, Add)]
@@ -132,25 +131,23 @@
 //! ```toml
 //! [dependencies]
 //! derive_more = "0.99.0"
-//! # You can specifiy the types of derives that you need for less time spent
+//! # You can specify the types of derives that you need for less time spent
 //! # compiling. For the full list of features see this crate its Cargo.toml.
 //! default-features = false
 //! features = ["from", "add", "iterator"]
 //! ```
 //!
-//! And this to the top of your Rust file for Rust 2018:
-//!
+//! And this to the top of your Rust file:
 //! ```rust
-//! extern crate derive_more;
 //! // use the derives that you want in the file
 //! use derive_more::{Add, Display, From};
 //! ```
-//! If you're still using Rust 2015 you should add this instead:
-//! ```rust
+//! If you're still using Rust 2015, add this instead:
+//! ```rust,edition2015
 //! extern crate core;
 //! #[macro_use]
 //! extern crate derive_more;
-//! # fn main(){}
+//! # fn main() {} // omit wrapping statements above into `main()`
 //! ```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
@@ -184,8 +181,6 @@
 //! [`Unwrap`]: https://jeltef.github.io/derive_more/derive_more/unwrap.html
 
 #![recursion_limit = "128"]
-
-extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use syn::parse::Error as ParseError;

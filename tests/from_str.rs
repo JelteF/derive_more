@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-#[macro_use]
-extern crate derive_more;
+
+use derive_more::FromStr;
 
 #[derive(FromStr)]
 struct MyInt(i32);

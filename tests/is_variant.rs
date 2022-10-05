@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
-#[macro_use]
-extern crate derive_more;
+use derive_more::IsVariant;
 
 #[derive(IsVariant)]
 enum Either<TLeft, TRight> {

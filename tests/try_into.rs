@@ -1,12 +1,9 @@
 #![allow(dead_code)]
 
-#[macro_use]
-extern crate derive_more;
+use derive_more::TryInto;
 
-use std::convert::{TryFrom, TryInto};
-
-// Ensure that the TryFrom macro is hygenic and doesn't break when `Result` has
-// been redefined.
+// Ensure that the `TryInto` macro is hygienic and doesn't break when `Result`
+// has been redefined.
 type Result = ();
 
 #[derive(Clone, Copy, TryInto)]

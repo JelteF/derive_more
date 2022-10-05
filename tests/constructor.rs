@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-#[macro_use]
-extern crate derive_more;
+
+use derive_more::Constructor;
 
 #[derive(Constructor)]
 struct EmptyTuple();
