@@ -20,8 +20,6 @@ variants you want to derive `TryInto` for.
 
 ```rust
 # #[macro_use] extern crate derive_more;
-use core::convert::TryFrom;
-use core::convert::TryInto;
 #[derive(TryInto, Clone)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedData {
