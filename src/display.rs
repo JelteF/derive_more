@@ -11,7 +11,7 @@ use crate::{
     utils::{self, HashMap, HashSet},
 };
 
-/// Allowed [`syn::MetaNameValue`] keys. Errors on unknown keys.
+/// Allowed [`syn::MetaNameValue`] arguments of `#[display]` attribute.
 const ALLOWED_ATTRIBUTE_ARGUMENTS: &[&str] = &["fmt", "bound"];
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
