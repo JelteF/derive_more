@@ -138,14 +138,13 @@ default-features = false
 features = ["from", "add", "iterator"]
 ```
 
-And this to the top of your Rust file for Rust 2018 and up:
-
+And this to the top of your Rust file:
 ```rust
 extern crate derive_more;
 // use the derives that you want in the file
 use derive_more::{Add, Display, From};
 ```
-If you're still using Rust 2015 you should add this instead:
+If you're still using Rust 2015, add this instead:
 ```rust
 extern crate core;
 #[macro_use]

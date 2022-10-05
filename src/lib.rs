@@ -138,16 +138,16 @@
 //! ```
 //!
 //! And this to the top of your Rust file:
-//!
 //! ```rust
 //! // use the derives that you want in the file
 //! use derive_more::{Add, Display, From};
 //! ```
 //! If you're still using Rust 2015, add this instead:
-//! ```rust
+//! ```rust,edition2015
 //! extern crate core;
 //! #[macro_use]
 //! extern crate derive_more;
+//! # fn main() {} // omit wrapping statements above into `main()`
 //! ```
 //!
 //! [`cargo-expand`]: https://github.com/dtolnay/cargo-expand

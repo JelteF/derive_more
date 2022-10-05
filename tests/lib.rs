@@ -1,7 +1,7 @@
 use derive_more::{
     Add, AddAssign, Binary, BitAnd, BitOr, BitXor, Constructor, Deref, DerefMut,
     Display, Div, From, FromStr, Index, IndexMut, Into, IntoIterator, Mul, MulAssign,
-    Neg, Octal, Product, Rem, Shl, Shr, Sub, Sum,
+    Neg, Not, Octal, Product, Rem, Shl, Shr, Sub, Sum,
 };
 
 #[derive(From)]
