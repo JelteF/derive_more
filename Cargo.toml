@@ -38,6 +38,7 @@ rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
 rustversion = "1.0"
+trybuild = "1.0.56"
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
@@ -214,6 +215,11 @@ required-features = ["is_variant"]
 name = "unwrap"
 path = "tests/unwrap.rs"
 required-features = ["unwrap"]
+
+[[test]]
+name = "compile_fail"
+path = "tests/compile_fail/mod.rs"
+required-features = ["display"]
 
 [[test]]
 name = "no_std"

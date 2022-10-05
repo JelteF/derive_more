@@ -1,7 +1,7 @@
 use std::{fmt::Display, str::FromStr as _};
 
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{quote, quote_spanned};
+use quote::{quote, quote_spanned, ToTokens as _};
 use syn::{
     parse::Parser as _, punctuated::Punctuated, spanned::Spanned as _, Error, Result,
 };
@@ -10,6 +10,9 @@ use crate::{
     parsing,
     utils::{self, HashMap, HashSet},
 };
+
+/// Allowed [`syn::MetaNameValue`] arguments of `#[display]` attribute.
+const ALLOWED_ATTRIBUTE_ARGUMENTS: &[&str] = &["fmt", "bound"];
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
@@ -223,19 +226,42 @@ impl<'a, 'b> State<'a, 'b> {
         meta_key: &str,
     ) -> Result<Option<syn::Meta>> {
         let mut metas = Vec::new();
-        for meta in attrs.iter().filter_map(|attr| attr.parse_meta().ok()) {
+        for attr in attrs
+            .iter()
+            .filter(|attr| attr.path.is_ident(self.trait_attr))
+        {
+            let meta = attr.parse_meta()?;
             let meta_list = match &meta {
                 syn::Meta::List(meta) => meta,
                 _ => continue,
             };
 
-            if !meta_list.path.is_ident(self.trait_attr) {
-                continue;
-            }
-
             use syn::{Meta, NestedMeta};
             let meta_nv = match meta_list.nested.first() {
-                Some(NestedMeta::Meta(Meta::NameValue(meta_nv))) => meta_nv,
+                Some(NestedMeta::Meta(Meta::NameValue(meta_nv))) => {
+                    if ALLOWED_ATTRIBUTE_ARGUMENTS
+                        .iter()
+                        .any(|attr| meta_nv.path.is_ident(attr))
+                    {
+                        meta_nv
+                    } else {
+                        return Err(Error::new(
+                            meta_nv.path.span(),
+                            format!(
+                                "Unknown `{}` attribute argument. \
+                                 Allowed arguments are: {}",
+                                meta_nv.path.to_token_stream(),
+                                ALLOWED_ATTRIBUTE_ARGUMENTS
+                                    .iter()
+                                    .fold(None, |acc, key| acc.map_or_else(
+                                        || Some(key.to_string()),
+                                        |acc| Some(format!("{}, {}", acc, key))
+                                    ))
+                                    .unwrap_or_default(),
+                            ),
+                        ));
+                    }
+                }
                 _ => {
                     // If the given attribute is not MetaNameValue, it most likely implies that the
                     // user is writing an incorrect format. For example:

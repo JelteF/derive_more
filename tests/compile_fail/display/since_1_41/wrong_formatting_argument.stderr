@@ -1,0 +1,16 @@
+error: unknown format trait `M`
+ --> tests/compile_fail/display/since_1_41/wrong_formatting_argument.rs:2:26
+  |
+2 | #[display(fmt = "Stuff({:M})", bar)]
+  |                          ^
+  |
+  = note: the only appropriate formatting traits are:
+          - ``, which uses the `Display` trait
+          - `?`, which uses the `Debug` trait
+          - `e`, which uses the `LowerExp` trait
+          - `E`, which uses the `UpperExp` trait
+          - `o`, which uses the `Octal` trait
+          - `p`, which uses the `Pointer` trait
+          - `b`, which uses the `Binary` trait
+          - `x`, which uses the `LowerHex` trait
+          - `X`, which uses the `UpperHex` trait
