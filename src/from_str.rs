@@ -43,7 +43,7 @@ pub fn struct_from(state: &State, trait_name: &'static str) -> TokenStream {
     let body = single_field_data.initializer(&initializers);
 
     quote! {
-        impl#impl_generics #trait_path for #input_type#ty_generics #where_clause
+        impl #impl_generics #trait_path for #input_type #ty_generics #where_clause
         {
             type Err = <#field_type as #trait_path>::Err;
             #[inline]

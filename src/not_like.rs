@@ -18,11 +18,11 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let (output_type, block) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
-                quote!(#input_type#ty_generics),
+                quote!(#input_type #ty_generics),
                 tuple_content(input_type, &unnamed_to_vec(fields), method_ident),
             ),
             Fields::Named(ref fields) => (
-                quote!(#input_type#ty_generics),
+                quote!(#input_type #ty_generics),
                 struct_content(input_type, &named_to_vec(fields), method_ident),
             ),
             _ => panic!("Unit structs cannot use derive({})", trait_name),
@@ -35,7 +35,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     quote!(
-        impl#impl_generics ::core::ops::#trait_ident for #input_type#ty_generics #where_clause {
+        impl #impl_generics ::core::ops::#trait_ident for #input_type #ty_generics #where_clause {
             type Output = #output_type;
             #[inline]
             fn #method_ident(self) -> #output_type {
@@ -157,9 +157,9 @@ fn enum_output_type_and_content(
     );
 
     let output_type = if has_unit_type {
-        quote!(::core::result::Result<#input_type#ty_generics, &'static str>)
+        quote!(::core::result::Result<#input_type #ty_generics, &'static str>)
     } else {
-        quote!(#input_type#ty_generics)
+        quote!(#input_type #ty_generics)
     };
 
     (output_type, body)

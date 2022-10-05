@@ -2,8 +2,8 @@
 
 # Using #[derive(Error)]
 Deriving `Error` will generate an `Error` implementation, that contains
-(depending on the type) a `source()` and a `backtrace()` method. Please note,
-at the time of writing `backtrace` is only supported on nightly rust. So you
+(depending on the type) a `source()` and a `provide()` method. Please note,
+at the time of writing `provide()` is only supported on nightly rust. So you
 have to use that to make use of it.
 
 For a struct, these methods always do the same. For an `enum` they have separate
@@ -17,15 +17,6 @@ often [`From`] as well.
 [`Display`]: display.html
 [`From`]: from.html
 
-## When and how does it derive `backtrace()`?
-
-1. It's a struct/variant with named fields and one of the fields is
-   called `backtrace`. Then it would return that field as the `backtrace`.
-2. It's a tuple struct/variant and the type of exactly one of the fields is
-   called `Backtrace`. Then it would return that field as the `backtrace`.
-3. One of the fields is annotated with `#[error(backtrace)]`. Then it would
-   return that field as the `backtrace`.
-
 ## When and how does it derive `source()`?
 
 1. It's a struct/variant with named fields and one is the fields is
@@ -33,6 +24,15 @@ often [`From`] as well.
 2. It's a tuple struct/variant and there's exactly one field that is not used as
    the `backtrace`. So either a tuple struct with one field, or one with two where one
    is the `backtrace`. Then it returns this field as the `source`.
+3. One of the fields is annotated with `#[error(source)]`. Then it would
+   return that field as the `source`.
+
+## When and how does it derive `provide()`?
+
+1. It's a struct/variant with named fields and one of the fields is
+   called `backtrace`. Then it would return that field as the `backtrace`.
+2. It's a tuple struct/variant and the type of exactly one of the fields is
+   called `Backtrace`. Then it would return that field as the `backtrace`.
 3. One of the fields is annotated with `#[error(backtrace)]`. Then it would
    return that field as the `backtrace`.
 
@@ -47,10 +47,10 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 # Example usage
 
 ```rust
-#![feature(backtrace)]
+#![feature(error_generic_member_access, provide_any)]
 # #[macro_use] extern crate derive_more;
 # use std::error::Error as _;
-use std::backtrace::Backtrace;
+use std::{any, backtrace::Backtrace};
 
 // std::error::Error requires std::fmt::Debug and std::fmt::Display,
 // so we can also use derive_more::Display for fully declarative
@@ -90,8 +90,23 @@ enum CompoundError {
     WithSource {
         source: Simple,
     },
+    #[from(ignore)]
+    WithBacktraceFromSource {
+        #[error(backtrace)]
+        source: Simple,
+    },
+    #[display(fmt = "{source}")]
+    WithDifferentBacktrace {
+        source: Simple,
+        backtrace: Backtrace,
+    },
     WithExplicitSource {
         #[error(source)]
+        explicit_source: WithSource,
+    },
+    #[from(ignore)]
+    WithBacktraceFromExplicitSource {
+        #[error(backtrace, source)]
         explicit_source: WithSource,
     },
     Tuple(WithExplicitSource),
@@ -100,7 +115,7 @@ enum CompoundError {
 
 fn main() {
     assert!(Simple.source().is_none());
-    assert!(Simple.backtrace().is_none());
+    assert!(any::request_ref::<Backtrace>(&Simple).is_none());
     assert!(WithSource::default().source().is_some());
     assert!(WithExplicitSource::default().source().is_some());
     assert!(Tuple::default().source().is_some());
@@ -110,7 +125,7 @@ fn main() {
         backtrace: Backtrace::capture(),
     };
     assert!(with_source_and_backtrace.source().is_some());
-    assert!(with_source_and_backtrace.backtrace().is_some());
+    assert!(any::request_ref::<Backtrace>(&with_source_and_backtrace).is_some());
 
     assert!(CompoundError::Simple.source().is_none());
     assert!(CompoundError::from(Simple).source().is_some());

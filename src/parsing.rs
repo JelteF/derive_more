@@ -253,10 +253,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
         &mut optional(char('#')),
         &mut optional(try_seq(&mut [
             &mut char('0'),
-            &mut lookahead(check_char(|c| match c {
-                '$' => false,
-                _ => true,
-            })),
+            &mut lookahead(check_char(|c| !matches!(c, '$'))),
         ])),
     ])(input);
 
@@ -419,10 +416,7 @@ fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn integer(input: &str) -> Option<(LeftToParse<'_>, usize)> {
     and_then(
-        take_while1(check_char(|c| match c {
-            '0'..='9' => true,
-            _ => false,
-        })),
+        take_while1(check_char(|c| matches!(c, '0'..='9'))),
         |(i, int)| int.parse().ok().map(|int| (i, int)),
     )(input)
 }
@@ -434,17 +428,19 @@ fn text(input: &str) -> Option<(LeftToParse<'_>, &str)> {
     take_until1(any_char, one_of("{}"))(input)
 }
 
+type Parser<'p> = &'p mut dyn FnMut(&str) -> &str;
+
 /// Applies non-failing parsers in sequence.
-fn seq<'p>(
-    parsers: &'p mut [&'p mut dyn FnMut(&str) -> &str],
-) -> impl FnMut(&str) -> LeftToParse<'_> + 'p {
+fn seq<'p>(parsers: &'p mut [Parser<'p>]) -> impl FnMut(&str) -> LeftToParse<'_> + 'p {
     move |input| parsers.iter_mut().fold(input, |i, p| (**p)(i))
 }
+
+type FallibleParser<'p> = &'p mut dyn FnMut(&str) -> Option<&str>;
 
 /// Tries to apply parsers in sequence. Returns [`None`] in case one of them
 /// returned [`None`].
 fn try_seq<'p>(
-    parsers: &'p mut [&'p mut dyn FnMut(&str) -> Option<&str>],
+    parsers: &'p mut [FallibleParser<'p>],
 ) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + 'p {
     move |input| parsers.iter_mut().try_fold(input, |i, p| (**p)(i))
 }

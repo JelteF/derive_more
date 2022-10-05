@@ -71,9 +71,8 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             fn fmt(&self, _derive_more_display_formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
                 #helper_struct
 
-                match self {
+                match *self {
                     #arms
-                    _ => Ok(()) // This is needed for empty enums
                 }
             }
         }
@@ -203,7 +202,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let fields: TokenStream = (0..fields.unnamed.len())
                     .map(|n| {
                         let i = Ident::new(&format!("_{}", n), Span::call_site());
-                        quote!(#i,)
+                        quote!(ref #i,)
                     })
                     .collect();
                 quote!((#fields))
@@ -214,7 +213,7 @@ impl<'a, 'b> State<'a, 'b> {
                     .iter()
                     .map(|f| {
                         let i = f.ident.as_ref().unwrap();
-                        quote!(#i,)
+                        quote!(ref #i,)
                     })
                     .collect();
                 quote!({#fields})
@@ -529,9 +528,8 @@ impl<'a, 'b> State<'a, 'b> {
                             } else {
                                 self.infer_fmt(&v.fields, &v.ident)?
                             };
-                            let name = &self.input.ident;
                             let v_name = &v.ident;
-                            Ok(quote_spanned!(fmt.span()=> #arms #name::#v_name #matcher => write!(
+                            Ok(quote_spanned!(fmt.span()=> #arms Self::#v_name #matcher => write!(
                                 _derive_more_display_formatter,
                                 #outer_fmt,
                                 _derive_more_DisplayAs(|_derive_more_display_formatter| #fmt)
@@ -548,7 +546,6 @@ impl<'a, 'b> State<'a, 'b> {
                     None => e.variants.iter().try_fold(ParseResult::default(), |result, v| {
                         let ParseResult{ arms, mut bounds, requires_helper } = result;
                         let matcher = self.get_matcher(&v.fields);
-                        let name = &self.input.ident;
                         let v_name = &v.ident;
                         let fmt: TokenStream;
                         let these_bounds: HashMap<_, _>;
@@ -563,7 +560,7 @@ impl<'a, 'b> State<'a, 'b> {
                         these_bounds.into_iter().for_each(|(ty, trait_names)| {
                             bounds.entry(ty).or_default().extend(trait_names)
                         });
-                        let arms = quote_spanned!(self.input.span()=> #arms #name::#v_name #matcher => #fmt,);
+                        let arms = quote_spanned!(self.input.span()=> #arms Self::#v_name #matcher => #fmt,);
 
                         Ok(ParseResult{ arms, bounds, requires_helper })
                     }),
@@ -789,7 +786,7 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
 }
 
 /// Representation of formatting placeholder.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 struct Placeholder {
     /// Formatting argument (either named or positional) to be used by this placeholder.
     arg: Parameter,

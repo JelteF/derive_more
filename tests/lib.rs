@@ -135,7 +135,6 @@ enum MyIntEnum {
         x: u64,
         y: u64,
     },
-    Nothing,
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -175,7 +174,6 @@ fn main() {
     let _: MyIntEnum = 6i64.into();
     let _: MyIntEnum = (5i32, 8i32).into();
     let _: MyIntEnum = (5i64, 8i64).into();
-    let _: MyIntEnum = ().into();
 
     let int_ref: &i32 = (&myint).into();
     assert_eq!(int_ref, &5);
