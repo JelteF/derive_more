@@ -71,9 +71,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let return_types = sub_items.iter().map(|i| &i.4);
 
     Ok(quote! {#(
-        impl #impl_genericses #trait_paths for #input_type #ty_generics
-        #where_clauses
-        {
+        #[automatically_derived]
+        impl #impl_genericses #trait_paths for #input_type #ty_generics #where_clauses {
             #[inline]
             fn as_mut(&mut self) -> &mut #return_types {
                 #bodies

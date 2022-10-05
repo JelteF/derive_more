@@ -26,6 +26,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     let original_types = &get_field_types(&fields);
     quote! {
         #[allow(missing_docs)]
+        #[automatically_derived]
         impl #impl_generics #input_type #ty_generics #where_clause {
             #[inline]
             pub fn new(#(#vars: #original_types),*) -> #input_type #ty_generics {

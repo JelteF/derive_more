@@ -38,9 +38,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let (impl_generics, _, where_clause) = new_generics.split_for_impl();
     let (_, ty_generics, _) = input.generics.split_for_impl();
     Ok(quote! {
-        impl #impl_generics #trait_path_with_params for #input_type #ty_generics #where_clause
-        {
+        #[automatically_derived]
+        impl #impl_generics #trait_path_with_params for #input_type #ty_generics #where_clause {
             type Output = #casted_trait::Output;
+
             #[inline]
             fn index(&self, idx: #index_type) -> &Self::Output {
                 #casted_trait::index(&#member, idx)

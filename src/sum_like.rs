@@ -46,6 +46,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let identity = multi_field_data.initializer(&initializers);
 
     Ok(quote!(
+        #[automatically_derived]
         impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
             #[inline]
             fn #method_ident<I: ::core::iter::Iterator<Item = Self>>(iter: I) -> Self {
