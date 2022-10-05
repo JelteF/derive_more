@@ -39,8 +39,10 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     quote!(
+        #[automatically_derived]
         impl #impl_generics ::core::ops::#trait_ident for #input_type #ty_generics #where_clause {
             type Output = #output_type;
+
             #[inline]
             fn #method_ident(self, rhs: #input_type #ty_generics) -> #output_type {
                 #block

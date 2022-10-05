@@ -43,10 +43,13 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let casted_trait =
             &quote!(<#reference_with_lifetime #field_type as #trait_path>);
         let into_iterator = quote! {
-            impl #impl_generics #trait_path for #reference_with_lifetime #input_type #ty_generics #where_clause
+            #[automatically_derived]
+            impl #impl_generics #trait_path for #reference_with_lifetime #input_type #ty_generics
+                 #where_clause
             {
                 type Item = #casted_trait::Item;
                 type IntoIter = #casted_trait::IntoIter;
+
                 #[inline]
                 fn into_iter(self) -> Self::IntoIter {
                     #casted_trait::into_iter(#reference #member)
