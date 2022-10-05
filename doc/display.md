@@ -33,9 +33,6 @@ Rust](https://blog.rust-lang.org/2022/01/13/Rust-1.58.0.html#captured-identifier
 we support this feature on earlier versions of Rust too. This means that
 `#[display(fmt = "Prefix: {field}")]` is completely valid on MSRV.
 
-> __NOTE:__ Underscored named parameters like `#[display(fmt = "Prefix: {_0}")]`
->           [are supported only since 1.41 Rust](https://github.com/rust-lang/rust/pull/66847).
-
 ## Other formatting traits
 
 The syntax does not change, but the name of the attribute is the snake case version of the trait.

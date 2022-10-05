@@ -228,11 +228,9 @@ mod generic {
         assert_eq!(UnnamedGenericStruct(2).to_string(), "Generic 2");
     }
 
-    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
     #[derive(Display)]
     #[display(fmt = "Generic {_0}")]
     struct InterpolatedUnnamedGenericStruct<T>(T);
-    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
     #[test]
     fn interpolated_unnamed_generic_struct() {
         assert_eq!(InterpolatedUnnamedGenericStruct(2).to_string(), "Generic 2");
@@ -258,7 +256,6 @@ mod generic {
         assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Gen::B 2");
     }
 
-    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
     #[derive(Display)]
     enum InterpolatedGenericEnum<A, B> {
         #[display(fmt = "Gen::A {field}")]
@@ -266,7 +263,6 @@ mod generic {
         #[display(fmt = "Gen::B {_0}")]
         B(B),
     }
-    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
     #[test]
     fn interpolated_generic_enum() {
         assert_eq!(
@@ -323,11 +319,9 @@ mod generic {
         assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
     }
 
-    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
     #[derive(Display)]
     #[display(fmt = "{} {_1} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", "_0", "_1")]
     struct InterpolatedMultiTraitUnnamedGenericStruct<A, B>(A, B);
-    #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
     #[test]
     fn interpolated_multi_trait_unnamed_generic_struct() {
         let s = InterpolatedMultiTraitUnnamedGenericStruct(8u8, 255);
@@ -478,7 +472,6 @@ mod generic {
             assert_eq!(s.to_string(), "10 20");
         }
 
-        #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
         #[test]
         fn underscored_simple() {
             #[derive(Display)]
@@ -500,7 +493,6 @@ mod generic {
             assert_eq!(s.to_string(), "10 20");
         }
 
-        #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
         #[test]
         fn underscored_redundant() {
             #[derive(Display)]
@@ -543,7 +535,6 @@ mod generic {
             assert_eq!(s.to_string(), "WHAT 10 EVER 20");
         }
 
-        #[rustversion::since(1.41)] // https://github.com/rust-lang/rust/pull/66847
         #[test]
         fn underscored_complex() {
             trait Trait1 {
