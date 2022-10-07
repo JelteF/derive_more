@@ -82,6 +82,8 @@ These are traits that are used to convert automatically between types.
 5. [`IntoIterator`]
 6. [`AsRef`]
 7. [`AsMut`]
+8. [`Borrow`]
+9. [`BorrowMut`]
 
 ### Formatting traits
 
@@ -161,6 +163,8 @@ extern crate derive_more;
 [`IntoIterator`]: https://jeltef.github.io/derive_more/derive_more/into_iterator.html
 [`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
 [`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
+[`Borrow`]: https://jeltef.github.io/derive_more/derive_more/borrow.html
+[`BorrowMut`]: https://jeltef.github.io/derive_more/derive_more/borrow_mut.html
 
 [`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
 
