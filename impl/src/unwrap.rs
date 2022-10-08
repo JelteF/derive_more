@@ -2,7 +2,7 @@ use crate::utils::{AttrParams, DeriveType, State};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, Fields, Result};
+use syn::{DeriveInput, Fields, Result, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_attr_params(
@@ -26,67 +26,88 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let (imp_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
     let variant_data = state.enabled_variant_data();
+
+    fn failed_block(state: &State, enum_name: &Ident, fn_name: &Ident) -> TokenStream {
+        let arms = state
+            .variant_states
+            .iter()
+            .map(|it| it.variant.unwrap())
+            .map(|variant| {
+                let data_pattern = match variant.fields {
+                    Fields::Named(_) => quote! { {..} },
+                    Fields::Unnamed(_) => quote! { (..) },
+                    Fields::Unit => quote! {},
+                };
+                let variant_ident = &variant.ident;
+                quote! {
+                    #enum_name :: #variant_ident #data_pattern => panic!(concat!(
+                        "called `", stringify!(#enum_name), "::", stringify!(#fn_name), "()` ",
+                        "on a `", stringify!(#variant_ident), "` value"
+                    ))
+                }
+            });
+
+        quote! {
+            match val {
+                #(#arms),*
+            }
+        }
+    }
+
     let mut funcs = vec![];
-    for (variant_state, info) in Iterator::zip(variant_data.variant_states.iter(), variant_data.infos) {
+    for (variant_state, info) in
+        Iterator::zip(variant_data.variant_states.iter(), variant_data.infos)
+    {
         let gen_refs = info.ref_ && state.default_info.ref_;
         let variant = variant_state.variant.unwrap();
-        let ident_snake = variant.ident.to_string().to_case(Case::Snake);
-        let fn_name = format_ident!("unwrap_{ident_snake}", span = variant.ident.span());
-        let try_fn_name = format_ident!("try_unwrap_{ident_snake}", span = variant.ident.span());
-        let ref_fn_name = format_ident!("unwrap_{ident_snake}_ref", span = variant.ident.span());
-        let try_ref_fn_name = format_ident!("try_unwrap_{ident_snake}_ref", span = variant.ident.span());
+        let fn_name = format_ident!(
+            "unwrap_{ident}",
+            ident = variant.ident.to_string().to_case(Case::Snake),
+            span = variant.ident.span(),
+        );
+        let try_fn_name = format_ident!(
+            "try_unwrap_{ident}",
+            ident = variant.ident.to_string().to_case(Case::Snake),
+            span = variant.ident.span(),
+        );
+        let ref_fn_name = format_ident!(
+            "unwrap_{ident}_ref",
+            ident = variant.ident.to_string().to_case(Case::Snake),
+            span = variant.ident.span(),
+        );
+        let try_ref_fn_name = format_ident!(
+            "try_unwrap_{ident}_ref",
+            ident = variant.ident.to_string().to_case(Case::Snake),
+            span = variant.ident.span(),
+        );
         let variant_ident = &variant.ident;
 
         let (data_pattern, ret_value, ret_type, ret_type_ref) = match variant.fields {
             Fields::Named(_) => panic!("cannot unwrap anonymous records"),
             Fields::Unnamed(ref fields) => {
-                let (fields, field_types): (Vec<_>, Vec<_>) = fields.unnamed.iter().enumerate()
+                let (fields, field_types): (Vec<_>, Vec<_>) = fields
+                    .unnamed
+                    .iter()
+                    .enumerate()
                     .map(|(n, it)| (format_ident!("field_{n}"), &it.ty))
                     .unzip();
-                
+
                 (
                     quote! { (#(#fields),*) },
                     quote! { (#(#fields),*) },
                     quote! { (#(#field_types),*) },
                     quote! { (#(&#field_types),*) },
                 )
-            },
-            Fields::Unit => (quote!{}, quote!{ () }, quote!{ () }, quote!{ () }),
+            }
+            Fields::Unit => (quote! {}, quote! { () }, quote! { () }, quote! { () }),
         };
 
         let pattern = quote! { #enum_name :: #variant_ident #data_pattern };
 
-        let others = state.variant_states.iter()
-            .map(|variant| variant.variant.unwrap() )
-            .filter(|variant| &variant.ident != variant_ident)
-            .collect::<Vec<_>>();
-
-        let other_arms = others.iter().map(|&variant| {
-            let data_pattern = match variant.fields {
-                Fields::Named(_) => quote! { {..} },
-                Fields::Unnamed(_) => quote! { (..) },
-                Fields::Unit => quote! {},
-            };
-            let variant_ident = &variant.ident;
-            quote! {
-                #enum_name :: #variant_ident #data_pattern => 
-                    panic!(concat!("called `", stringify!(#enum_name), "::", stringify!(#fn_name),
-                                   "()` on a `", stringify!(#variant_ident), "` value"))
-            }
-        }).collect::<Vec<_>>();
-
-        let other_arms_try = others.iter().map(|&variant| {
-            let data_pattern = match variant.fields {
-                Fields::Named(_) => quote! { {..} },
-                Fields::Unnamed(_) => quote! { (..) },
-                Fields::Unit => quote! {},
-            };
-            let variant_ident = &variant.ident;
-
-            quote! { 
-                #enum_name :: #variant_ident #data_pattern => None
-            }
-        }).collect::<Vec<_>>();
+        let (failed_block, failed_block_ref) = (
+            failed_block(&state, enum_name, &fn_name),
+            failed_block(&state, enum_name, &ref_fn_name),
+        );
 
         let variant_name = stringify!(variant_ident);
         let func = quote! {
@@ -97,7 +118,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             pub fn #fn_name(self) -> #ret_type {
                 match self {
                     #pattern => #ret_value,
-                    #(#other_arms),*
+                    val @ _ => #failed_block,
                 }
             }
 
@@ -108,7 +129,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             pub fn #try_fn_name(self) -> Option<#ret_type> {
                 match self {
                     #pattern => Some(#ret_value),
-                    #(#other_arms_try),*
+                    _ => None,
                 }
             }
         };
@@ -121,7 +142,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             pub fn #ref_fn_name(&self) -> #ret_type_ref {
                 match self {
                     #pattern => #ret_value,
-                    #(#other_arms),*
+                    val @ _ => #failed_block_ref,
                 }
             }
 
@@ -132,7 +153,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             pub fn #try_ref_fn_name(&self) -> Option<#ret_type_ref> {
                 match self {
                     #pattern => Some(#ret_value),
-                    #(#other_arms_try),*
+                    _ => None,
                 }
             }
         };
