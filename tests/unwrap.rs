@@ -9,6 +9,7 @@ enum Either<TLeft, TRight> {
 }
 
 #[derive(Unwrap)]
+#[unwrap(ref)]
 enum Maybe<T> {
     Nothing,
     Just(T),
@@ -37,7 +38,7 @@ where
     Two,
 }
 #[derive(Unwrap)]
-enum KitchenSink<'a, 'b, T1: Copy, T2: Clone>
+enum KitchenSink<'a, 'b, T1: Clone + Copy, T2: Clone>
 where
     T2: Into<T1> + 'b,
 {
@@ -58,4 +59,14 @@ pub fn test_unwrap() {
 #[should_panic]
 pub fn test_unwrap_panic() {
     Maybe::<()>::Nothing.unwrap_just()
+}
+
+#[test]
+pub fn test_try_unwrap() {
+    let sink = KitchenSink::OwnBoth(0, 1);
+    assert_eq!(sink.unwrap_own_both(), (0, 1));
+    let sink = KitchenSink::OwnBoth(0, 1);
+    assert_eq!(sink.try_unwrap_own_both(), Some((0, 1)));
+    let sink = KitchenSink::OwnBoth(0, 1);
+    assert_eq!(sink.try_unwrap_nothing_to_see_here(), None);
 }
