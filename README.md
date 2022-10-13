@@ -21,7 +21,6 @@ It does this by allowing you to derive lots of commonly used traits for both str
 By using this library the following code just works:
 
 ```rust
-extern crate derive_more;
 use derive_more::{Add, Display, From, Into};
 
 #[derive(PartialEq, From, Add)]
@@ -104,13 +103,13 @@ These are traits that can be used for operator overloading.
 3. [`Not`-like], contains `Not` and `Neg`
 4. [`Add`-like], contains `Add`, `Sub`, `BitAnd`, `BitOr`, `BitXor`
 5. [`Mul`-like], contains `Mul`, `Div`, `Rem`, `Shr` and `Shl`
-3. [`Sum`-like], contains `Sum` and `Product`
-6. [`IndexMut`]
-7. [`DerefMut`]
-8. [`AddAssign`-like], contains `AddAssign`, `SubAssign`, `BitAndAssign`,
+6.[`Sum`-like], contains `Sum` and `Product`
+7. [`IndexMut`]
+8. [`DerefMut`]
+9. [`AddAssign`-like], contains `AddAssign`, `SubAssign`, `BitAndAssign`,
    `BitOrAssign` and `BitXorAssign`
-9. [`MulAssign`-like], contains `MulAssign`, `DivAssign`, `RemAssign`,
-   `ShrAssign` and `ShlAssign`
+10. [`MulAssign`-like], contains `MulAssign`, `DivAssign`, `RemAssign`,
+    `ShrAssign` and `ShlAssign`
 
 ### Static methods
 
@@ -140,43 +139,43 @@ features = ["from", "add", "iterator"]
 
 And this to the top of your Rust file:
 ```rust
-extern crate derive_more;
 // use the derives that you want in the file
 use derive_more::{Add, Display, From};
 ```
 If you're still using Rust 2015, add this instead:
-```rust
+```rust,edition2015
 extern crate core;
 #[macro_use]
 extern crate derive_more;
+# fn main() {} // omit wrapping statements above into `main()` in tests
 ```
 
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`derive-new`]: https://github.com/nrc/derive-new
 
-[`From`]: https://jeltef.github.io/derive_more/derive_more/from.html
-[`Into`]: https://jeltef.github.io/derive_more/derive_more/into.html
-[`FromStr`]: https://jeltef.github.io/derive_more/derive_more/from_str.html
-[`TryInto`]: https://jeltef.github.io/derive_more/derive_more/try_into.html
-[`IntoIterator`]: https://jeltef.github.io/derive_more/derive_more/into_iterator.html
-[`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
-[`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
+[`From`]: doc/from.md
+[`Into`]: doc/into.md
+[`FromStr`]: doc/from_str.md
+[`TryInto`]: doc/try_into.md
+[`IntoIterator`]: doc/into_iterator.md
+[`AsRef`]: doc/as_ref.md
+[`AsMut`]: doc/as_mut.md
 
-[`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
+[`Display`-like]: doc/display.md
 
-[`Error`]: https://jeltef.github.io/derive_more/derive_more/error.html
+[`Error`]: doc/error.md
 
-[`Index`]: https://jeltef.github.io/derive_more/derive_more/index_op.html
-[`Deref`]: https://jeltef.github.io/derive_more/derive_more/deref.html
-[`Not`-like]: https://jeltef.github.io/derive_more/derive_more/not.html
-[`Add`-like]: https://jeltef.github.io/derive_more/derive_more/add.html
-[`Mul`-like]: https://jeltef.github.io/derive_more/derive_more/mul.html
-[`Sum`-like]: https://jeltef.github.io/derive_more/derive_more/sum.html
-[`IndexMut`]: https://jeltef.github.io/derive_more/derive_more/index_mut.html
-[`DerefMut`]: https://jeltef.github.io/derive_more/derive_more/deref_mut.html
-[`AddAssign`-like]: https://jeltef.github.io/derive_more/derive_more/add_assign.html
-[`MulAssign`-like]: https://jeltef.github.io/derive_more/derive_more/mul_assign.html
+[`Index`]: doc/index.md
+[`Deref`]: doc/deref.md
+[`Not`-like]: doc/not.md
+[`Add`-like]: doc/add.md
+[`Mul`-like]: doc/mul.md
+[`Sum`-like]: doc/sum.md
+[`IndexMut`]: doc/index_mut.md
+[`DerefMut`]: doc/deref_mut.md
+[`AddAssign`-like]: doc/add_assign.md
+[`MulAssign`-like]: doc/mul_assign.md
 
-[`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
-[`IsVariant`]: https://jeltef.github.io/derive_more/derive_more/is_variant.html
-[`Unwrap`]: https://jeltef.github.io/derive_more/derive_more/unwrap.html
+[`Constructor`]: doc/constructor.md
+[`IsVariant`]: doc/is_variant.md
+[`Unwrap`]: doc/unwrap.md
