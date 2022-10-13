@@ -8,7 +8,8 @@ don't want the `is_foo` method generated for a variant you can put the
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::IsVariant;
+#
 #[derive(IsVariant)]
 enum Maybe<T> {
     Just(T),

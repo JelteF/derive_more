@@ -11,7 +11,8 @@ field that you want to derive `IndexMut` for.
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::{Index, IndexMut};
+#
 #[derive(Index, IndexMut)]
 struct MyVec(Vec<i32>);
 
@@ -23,15 +24,13 @@ struct Numbers {
     useless: bool,
 }
 
-fn main() {
-    let mut myvec = MyVec(vec![5, 8]);
-    myvec[0] = 50;
-    assert_eq!(50, myvec[0]);
+let mut myvec = MyVec(vec![5, 8]);
+myvec[0] = 50;
+assert_eq!(50, myvec[0]);
 
-    let mut numbers = Numbers{numbers: vec![100, 200], useless: false};
-    numbers[1] = 400;
-    assert_eq!(400, numbers[1]);
-}
+let mut numbers = Numbers{numbers: vec![100, 200], useless: false};
+numbers[1] = 400;
+assert_eq!(400, numbers[1]);
 ```
 
 # Regular structs
@@ -39,8 +38,8 @@ fn main() {
 When deriving `IndexMut` for a struct:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::{Index, IndexMut};
+#
 #[derive(Index, IndexMut)]
 struct Numbers {
     #[index]

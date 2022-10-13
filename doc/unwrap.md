@@ -8,8 +8,8 @@ you can put the `#[unwrap(ignore)]` attribute on that variant.
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
-
+# use derive_more::Unwrap;
+#
 #[derive(Unwrap)]
 enum Maybe<T> {
     Just(T),

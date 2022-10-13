@@ -9,7 +9,8 @@ contained in the type implements `FromStr`.
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::FromStr;
+#
 #[derive(FromStr, Debug, Eq, PartialEq)]
 struct MyInt(i32);
 
@@ -18,10 +19,8 @@ struct Point1D{
     x: i32,
 }
 
-fn main() {
-    assert_eq!(MyInt(5), "5".parse().unwrap());
-    assert_eq!(Point1D{x: 100}, "100".parse().unwrap());
-}
+assert_eq!(MyInt(5), "5".parse().unwrap());
+assert_eq!(Point1D{x: 100}, "100".parse().unwrap());
 ```
 
 # Tuple structs
@@ -29,8 +28,8 @@ fn main() {
 When deriving `FromStr` for a tuple struct with one field:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::FromStr;
+#
 #[derive(FromStr)]
 struct MyInt(i32);
 ```
@@ -52,8 +51,8 @@ impl ::core::str::FromStr for MyInt {
 When deriving `FromStr` for a regular struct with one field:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::FromStr;
+#
 #[derive(FromStr)]
 struct Point1D {
     x: i32,
@@ -91,8 +90,8 @@ will be generated of the format `Parse{}Error`
 e.g. Given the following enum:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::FromStr;
+#
 #[derive(FromStr)]
 enum EnumNoFields {
     Foo,

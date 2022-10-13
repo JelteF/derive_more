@@ -11,8 +11,8 @@ indirect implementation of `Into` as recommended by the
 
 # Example usage
 ```rust
-# #[macro_use] extern crate derive_more;
-
+# use derive_more::Into;
+#
 // Allow converting into i32
 #[derive(Into, PartialEq)]
 struct MyInt(i32);
@@ -32,18 +32,16 @@ struct MyInt8(i8);
 #[into(owned, ref(types(i64)))]
 struct MyInt64Wrapped(MyInt64);
 
-fn main() {
-    assert!(i32::from(MyInt(2)) == 2i32);
-    assert!(i64::from(MyInt64(6)) == 6i64);
-    assert!(<&i64>::from(&MyInt64(6)) == &6i64);
-    assert!(<&mut i64>::from(&mut MyInt64(6)) == &mut 6i64);
-    assert!(i8::from(MyInt8(7)) == 7i8);
-    assert!(i16::from(MyInt8(7)) == 7i16);
-    assert!(i32::from(MyInt8(7)) == 7i32);
-    assert!(MyInt64::from(MyInt64Wrapped(MyInt64(1))) == MyInt64(1));
-    assert!(<&MyInt64>::from(&MyInt64Wrapped(MyInt64(1))) == &MyInt64(1));
-    assert!(<&i64>::from(&MyInt64Wrapped(MyInt64(1))) == &1i64);
-}
+assert!(i32::from(MyInt(2)) == 2i32);
+assert!(i64::from(MyInt64(6)) == 6i64);
+assert!(<&i64>::from(&MyInt64(6)) == &6i64);
+assert!(<&mut i64>::from(&mut MyInt64(6)) == &mut 6i64);
+assert!(i8::from(MyInt8(7)) == 7i8);
+assert!(i16::from(MyInt8(7)) == 7i16);
+assert!(i32::from(MyInt8(7)) == 7i32);
+assert!(MyInt64::from(MyInt64Wrapped(MyInt64(1))) == MyInt64(1));
+assert!(<&MyInt64>::from(&MyInt64Wrapped(MyInt64(1))) == &MyInt64(1));
+assert!(<&i64>::from(&MyInt64Wrapped(MyInt64(1))) == &1i64);
 ```
 
 # Tuple structs
@@ -51,8 +49,8 @@ fn main() {
 When deriving `Into` for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Into;
+#
 #[derive(Into)]
 struct MyInt(i32);
 ```
@@ -73,8 +71,8 @@ fields, since it returns a tuple. For instance when deriving for a tuple struct
 with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Into;
+#
 #[derive(Into)]
 struct MyInts(i32, i32);
 ```
@@ -97,8 +95,8 @@ except in the way the field values are assigned to the new struct.
 When deriving for a regular struct with a single field like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Into;
+#
 #[derive(Into)]
 struct Point1D {
     x: i32,
@@ -123,8 +121,8 @@ fields, because this also returns a tuple. For instance when deriving for a
 tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Into;
+#
 #[derive(Into)]
 struct Point2D {
     x: i32,

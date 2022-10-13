@@ -22,8 +22,8 @@ with the same semantics as `Add`.
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct MyInt(i32);
 ```
@@ -47,8 +47,8 @@ side of the multiplication now needs the `Copy` trait.
 For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct MyInts(i32, i32);
 ```
@@ -74,8 +74,8 @@ The behaviour is similar with more or less fields.
 When deriving `Mul` for a regular struct with a single field like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct Point1D {
     x: i32,
@@ -103,8 +103,8 @@ fields, because it still needs the `Copy` as well.
 For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct Point2D {
     x: i32,

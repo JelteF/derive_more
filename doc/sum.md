@@ -13,14 +13,13 @@ easiest to implement by adding `#[derive(MulSelf)]`.
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::{Add, Sum};
+#
 #[derive(Add, Sum, PartialEq)]
 struct MyInts(i32, i64);
 
-fn main() {
-    let int_vec = vec![MyInts(2, 3), MyInts(4, 5), MyInts(6, 7)];
-    assert!(MyInts(12, 15) == int_vec.into_iter().sum())
-}
+let int_vec = vec![MyInts(2, 3), MyInts(4, 5), MyInts(6, 7)];
+assert!(MyInts(12, 15) == int_vec.into_iter().sum())
 ```
 
 
@@ -29,8 +28,8 @@ fn main() {
 When deriving `Sum` for a struct with two fields its like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::{Add, Sum};
+#
 #[derive(Add, Sum)]
 struct MyInts(i32, i64);
 ```

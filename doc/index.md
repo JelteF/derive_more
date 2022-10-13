@@ -9,7 +9,8 @@ you want to derive `Index` for.
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::Index;
+#
 #[derive(Index)]
 struct MyVec(Vec<i32>);
 
@@ -21,10 +22,8 @@ struct Numbers {
     useless: bool,
 }
 
-fn main() {
-    assert_eq!(5, MyVec(vec![5, 8])[0]);
-    assert_eq!(200, Numbers{numbers: vec![100, 200], useless: false}[1]);
-}
+assert_eq!(5, MyVec(vec![5, 8])[0]);
+assert_eq!(200, Numbers { numbers: vec![100, 200], useless: false }[1]);
 ```
 
 # Structs
@@ -32,8 +31,8 @@ fn main() {
 When deriving `Index` for a struct:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Index;
+#
 #[derive(Index)]
 struct Numbers {
     #[index]

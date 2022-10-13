@@ -14,7 +14,8 @@ If that's not provided the default is `#[IntoIterator(owned)]`.
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::IntoIterator;
+#
 #[derive(IntoIterator)]
 struct MyVec(Vec<i32>);
 
@@ -26,14 +27,12 @@ struct Numbers {
     useless: bool,
 }
 
-fn main() {
-    assert_eq!(Some(5), MyVec(vec![5, 8]).into_iter().next());
+assert_eq!(Some(5), MyVec(vec![5, 8]).into_iter().next());
 
-    let mut nums = Numbers{numbers: vec![100, 200], useless: false};
-    assert_eq!(Some(&100), (&nums).into_iter().next());
-    assert_eq!(Some(&mut 100), (&mut nums).into_iter().next());
-    assert_eq!(Some(100), nums.into_iter().next());
-}
+let mut nums = Numbers{numbers: vec![100, 200], useless: false};
+assert_eq!(Some(&100), (&nums).into_iter().next());
+assert_eq!(Some(&mut 100), (&mut nums).into_iter().next());
+assert_eq!(Some(100), nums.into_iter().next());
 ```
 
 # Structs
@@ -41,8 +40,8 @@ fn main() {
 When deriving `IntoIterator` for a struct:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::IntoIterator;
+#
 #[derive(IntoIterator)]
 struct Numbers {
     #[into_iterator(owned, ref,  ref_mut)]

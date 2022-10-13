@@ -1,4 +1,4 @@
-% Using #[derive(Deref)]
+# Using `#[derive(Deref)]`
 
 Deriving `Deref` only works for a single field of a struct.
 It's possible to use it in two ways:
@@ -9,11 +9,14 @@ It's possible to use it in two ways:
 With `#[deref]` or `#[deref(ignore)]` it's possible to indicate the field that
 you want to derive `Deref` for.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
-
+# use derive_more::Deref;
+#
 #[derive(Deref)]
 struct Num {
     num: i32,
@@ -23,7 +26,7 @@ struct Num {
 #[deref(forward)]
 struct MyBoxedInt(Box<i32>);
 
-// You can specify the field you want to derive Deref for
+// You can specify the field you want to derive `Deref` for.
 #[derive(Deref)]
 struct CoolVec {
     cool: bool,
@@ -31,23 +34,24 @@ struct CoolVec {
     vec: Vec<i32>,
 }
 
-fn main() {
-    let num = Num{num: 123};
-    let boxed = MyBoxedInt(Box::new(123));
-    let cool_vec = CoolVec{cool: true, vec: vec![123]};
-    assert_eq!(123, *num);
-    assert_eq!(123, *boxed);
-    assert_eq!(vec![123], *cool_vec);
-}
+let num = Num{num: 123};
+let boxed = MyBoxedInt(Box::new(123));
+let cool_vec = CoolVec{cool: true, vec: vec![123]};
+assert_eq!(123, *num);
+assert_eq!(123, *boxed);
+assert_eq!(vec![123], *cool_vec);
 ```
 
-# Structs
+
+
+
+## Structs
 
 When deriving a non-forwarded `Deref` for a struct:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Deref;
+#
 #[derive(Deref)]
 struct CoolVec {
     cool: bool,
@@ -72,12 +76,11 @@ impl ::core::ops::Deref for CoolVec {
 }
 ```
 
-
 When deriving a forwarded `Deref` for a struct:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Deref;
+#
 #[derive(Deref)]
 #[deref(forward)]
 struct MyBoxedInt(Box<i32>);
@@ -96,6 +99,9 @@ impl ::core::ops::Deref for MyBoxedInt {
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `Deref` is not supported for enums.

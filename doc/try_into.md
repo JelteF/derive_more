@@ -19,7 +19,8 @@ variants you want to derive `TryInto` for.
 # Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::TryInto;
+#
 #[derive(TryInto, Clone)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedData {
@@ -27,15 +28,13 @@ enum MixedData {
     String(String),
 }
 
-fn main() {
-    let string = MixedData::String("foo".to_string());
-    let int = MixedData::Int(123);
-    assert_eq!(Ok(123u32), int.clone().try_into());
-    assert_eq!(Ok(&123u32), (&int.clone()).try_into());
-    assert_eq!(Ok(&mut 123u32), (&mut int.clone()).try_into());
-    assert_eq!("foo".to_string(), String::try_from(string.clone()).unwrap());
-    assert!(u32::try_from(string).is_err());
-}
+let string = MixedData::String("foo".to_string());
+let int = MixedData::Int(123);
+assert_eq!(Ok(123u32), int.clone().try_into());
+assert_eq!(Ok(&123u32), (&int.clone()).try_into());
+assert_eq!(Ok(&mut 123u32), (&mut int.clone()).try_into());
+assert_eq!("foo".to_string(), String::try_from(string.clone()).unwrap());
+assert!(u32::try_from(string).is_err());
 ```
 
 # Structs
@@ -52,8 +51,8 @@ When deriving `TryInto` for an enum, each enum variant gets its own
 For instance, when deriving `TryInto` for an enum link this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::TryInto;
+#
 #[derive(TryInto)]
 enum MixedInts {
     SmallInt(i32),
@@ -128,8 +127,8 @@ impl ::core::convert::TryFrom<MixedInts> for (u32) {
 When deriving `TryInto` for an enum with Unit variants like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::TryInto;
+#
 #[derive(TryInto)]
 enum EnumWithUnit {
     SmallInt(i32),

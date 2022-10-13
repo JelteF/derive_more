@@ -14,8 +14,8 @@ as `AddAssign`.
 When deriving `MulAssign` for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::MulAssign;
+#
 #[derive(MulAssign)]
 struct MyInts(i32, i32);
 ```
@@ -42,8 +42,8 @@ The behaviour is similar with more or less fields, except for the fact that
 When deriving `MulAssign` for a regular struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::MulAssign;
+#
 #[derive(MulAssign)]
 struct Point2D {
     x: i32,

@@ -10,8 +10,8 @@ instance of the same variant with these negated fields is returned.
 When deriving for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Not;
+#
 #[derive(Not)]
 struct MyInts(i32, i32);
 ```
@@ -35,8 +35,8 @@ The behaviour is similar with more or less fields.
 When deriving for a regular struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Not;
+#
 #[derive(Not)]
 struct Point2D {
     x: i32,
@@ -71,8 +71,8 @@ if it would be its own type.
 For instance when deriving `Not` for an enum like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Not;
+#
 #[derive(Not)]
 enum MixedInts {
     SmallInt(i32),
@@ -122,8 +122,8 @@ This is because Unit cannot have `Not` implemented.
 So, when deriving `Not` for an enum like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Not;
+#
 #[derive(Not)]
 enum EnumWithUnit {
     SmallInt(i32),
