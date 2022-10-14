@@ -109,8 +109,7 @@ jobs:
       - name: Install tomljson
         run: go get github.com/pelletier/go-toml/cmd/tomljson
 
-      - name: Test
-        run: ci/test_all_features.sh
+      - run: ci/test_all_features.sh
         env:
           GOBIN: "$HOME/go/bin"
           PATH: "$PATH:$GOBIN"
