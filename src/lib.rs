@@ -24,6 +24,7 @@
 //! [`IsVariant`]: crate::IsVariant
 //! [`Unwrap`]: crate::Unwrap
 #![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![recursion_limit = "128"]
 
 use proc_macro::TokenStream;
