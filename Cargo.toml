@@ -45,7 +45,6 @@ trybuild = "1.0.56"
 github = { repository = "JelteF/derive_more", workflow = "CI" }
 
 [features]
-nightly = []
 add_assign = []
 add = []
 as_mut = []
