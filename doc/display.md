@@ -47,8 +47,6 @@ The attribute for formatting is named `#[debug(..)]` when using `DebugCustom`.
 The arguments are the same as for `#[display(..)]`.
 
 
-
-
 ### Generic data types
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type

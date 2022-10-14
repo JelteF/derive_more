@@ -1,11 +1,14 @@
-% What #[derive(Not)] generates
+# What `#[derive(Not)]` generates
 
 The derived `Not` implementation simply negates all of the fields of a
 struct and returns that as a new instance of the struct.
 For enums all fields of the active variant of the enum are negated and a new
 instance of the same variant with these negated fields is returned.
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving for a tuple struct with two fields like this:
 
@@ -30,7 +33,10 @@ impl ::core::ops::Not for MyInts {
 
 The behaviour is similar with more or less fields.
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving for a regular struct with two fields like this:
 
@@ -64,7 +70,10 @@ impl ::core::ops::Not for Point2D {
 
 The behaviour is similar with more or less fields.
 
-# Enums
+
+
+
+## Enums
 
 For each enum variant `Not` is derived in a similar way as it would be derived
 if it would be its own type.

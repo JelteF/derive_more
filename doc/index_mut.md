@@ -1,4 +1,4 @@
-% What #[derive(IndexMut)] generates
+# What `#[derive(IndexMut)]` generates
 
 Deriving `IndexMut` only works for a single field of a struct.
 Furthermore it requires that the type also implements `Index`, so usually
@@ -8,7 +8,10 @@ The result is that you will mutably index it's member directly.
 With `#[index_mut]` or `#[index_mut(ignore)]` it's possible to indicate the
 field that you want to derive `IndexMut` for.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
 # use derive_more::{Index, IndexMut};
@@ -33,7 +36,10 @@ numbers[1] = 400;
 assert_eq!(400, numbers[1]);
 ```
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving `IndexMut` for a struct:
 
@@ -77,6 +83,9 @@ where
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `IndexMut` is not supported for enums.

@@ -10,8 +10,8 @@ behaviour for each of the variants. The variant is first matched and then the
 implementation will do the same as it would have done if the variant was a
 struct.
 
-Usually when you derive `Error` you will also want to derive `Display` and
-often `From` as well.
+Usually when you derive `Error` you will also want to [derive `Display`](crate::Display) and
+often [`From` as well](crate::From).
 
 
 ### When and how does it derive `source()`?
@@ -47,11 +47,13 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 ## Example usage
 
 ```rust
+# #[cfg(not(feature = "nightly"))] fn main() {}
+# #[cfg(feature = "nightly")] fn main() {
 #![feature(error_generic_member_access, provide_any)]
 #
 # use std::{any, error::Error as _, backtrace::Backtrace};
 #
-# use derive_more::{Display, Error};
+# use derive_more::{Display, Error, From};
 
 // std::error::Error requires std::fmt::Debug and std::fmt::Display,
 // so we can also use derive_more::Display for fully declarative
@@ -119,7 +121,7 @@ assert!(WithSource::default().source().is_some());
 assert!(WithExplicitSource::default().source().is_some());
 assert!(Tuple::default().source().is_some());
 assert!(WithoutSource::default().source().is_none());
-let with_source_and_backtrace = WithSourceAndBacktrace{
+let with_source_and_backtrace = WithSourceAndBacktrace {
     source: Simple,
     backtrace: Backtrace::capture(),
 };
@@ -131,4 +133,5 @@ assert!(CompoundError::from(Simple).source().is_some());
 assert!(CompoundError::from(WithSource::default()).source().is_some());
 assert!(CompoundError::from(WithExplicitSource::default()).source().is_some());
 assert!(CompoundError::from(Tuple::default()).source().is_none());
+# }
 ```

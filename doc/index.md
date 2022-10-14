@@ -1,4 +1,4 @@
-% What #[derive(Index)] generates
+# What `#[derive(Index)]` generates
 
 Deriving `Index` only works for a single field of a struct.
 The result is that you will index it's member directly.
@@ -6,7 +6,10 @@ The result is that you will index it's member directly.
 With `#[index]` or `#[index(ignore)]` it's possible to indicate the field that
 you want to derive `Index` for.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
 # use derive_more::Index;
@@ -26,7 +29,10 @@ assert_eq!(5, MyVec(vec![5, 8])[0]);
 assert_eq!(200, Numbers { numbers: vec![100, 200], useless: false }[1]);
 ```
 
-# Structs
+
+
+
+## Structs
 
 When deriving `Index` for a struct:
 
@@ -58,9 +64,11 @@ where
         <Vec<i32> as ::core::ops::Index<__IdxT>>::index(&self.numbers, idx)
     }
 }
-
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `Index` is not supported for enums.

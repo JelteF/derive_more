@@ -1,6 +1,6 @@
-% What #[derive(Into)] generates
+# What `#[derive(Into)]` generates
 
-This derive creates the the exact oposite of [`#[derive(From)]`](from.html).
+This derive creates the the exact oposite of [`#[derive(From)]`](crate::From).
 Instead of allowing you to create a new instance of the struct from the values
 it should contain, it allows you to extract the values from the struct.
 One thing to note is that this derive doesn't actually generate an
@@ -9,7 +9,11 @@ Instead it derives `From` for the values contained in the struct and thus has an
 indirect implementation of `Into` as recommended by the
 [docs](https://doc.rust-lang.org/core/convert/trait.Into.html).
 
-# Example usage
+
+
+
+## Example usage
+
 ```rust
 # use derive_more::Into;
 #
@@ -44,7 +48,10 @@ assert!(<&MyInt64>::from(&MyInt64Wrapped(MyInt64(1))) == &MyInt64(1));
 assert!(<&i64>::from(&MyInt64Wrapped(MyInt64(1))) == &1i64);
 ```
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving `Into` for a tuple struct with a single field (i.e. a newtype) like this:
 
@@ -88,7 +95,10 @@ impl ::core::convert::From<MyInts> for (i32, i32) {
 }
 ```
 
-# Regular structs
+
+
+
+## Regular structs
 
 For regular structs almost the same code is generated as for tuple structs
 except in the way the field values are assigned to the new struct.
@@ -145,7 +155,10 @@ impl ::core::convert::From<Point2D> for (i32, i32) {
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `Into` for enums is not supported as it would not always be successful.
 This is what the currently unstable

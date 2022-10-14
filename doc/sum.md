@@ -1,4 +1,4 @@
-% Using #[derive(Sum)]
+# Using `#[derive(Sum)]`
 
 The derived `Sum` implementation will allow an iterator of your type to be
 summed together into a new instance of the type with all the fields added
@@ -10,7 +10,10 @@ All this is also true for the `Product`, except that then all the fields are
 multiplied and an implementation of `Mul` is required. This is usually the
 easiest to implement by adding `#[derive(MulSelf)]`.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
 # use derive_more::{Add, Sum};
@@ -23,7 +26,9 @@ assert!(MyInts(12, 15) == int_vec.into_iter().sum())
 ```
 
 
-# Structs
+
+
+## Structs
 
 When deriving `Sum` for a struct with two fields its like this:
 
@@ -64,6 +69,9 @@ iterators.
 This way we can get the identity for sum (i.e. `0`) and the identity for product
 (i.e. `1`).
 
-# Enums
+
+
+
+## Enums
 
 Deriving `Sum` for enums is not supported.

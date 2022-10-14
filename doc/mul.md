@@ -1,7 +1,7 @@
-% What #[derive(Mul)] generates
+# What `#[derive(Mul)]` generates
 
 Deriving `Mul` is quite different from deriving `Add`. It is not used to
-multiply two structs together. Instead it will normally multipy a struct, which
+multiply two structs together. Instead it will normally multiply a struct, which
 can have multiple fields, with a single primitive type (e.g. a `u64`). A new
 struct is then created with all the fields from the previous struct multiplied
 by this other value.
@@ -17,7 +17,10 @@ NOTE: In case you don't want this behaviour you can add `#[mul(forward)]` in
 addition to `#[derive(Mul)]`. This will instead generate a `Mul` implementation
 with the same semantics as `Add`.
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
@@ -69,7 +72,10 @@ impl<__RhsT: ::core::marker::Copy> ::core::ops::Mul<__RhsT> for MyInts
 
 The behaviour is similar with more or less fields.
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving `Mul` for a regular struct with a single field like this:
 
@@ -132,8 +138,11 @@ impl<__RhsT: ::core::marker::Copy> ::core::ops::Mul<__RhsT> for Point2D
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `Mul` for enums is not (yet) supported, except when you use
-`#[mul(forward)].
+`#[mul(forward)]`.
 Although it shouldn't be impossible no effort has been put into this yet.

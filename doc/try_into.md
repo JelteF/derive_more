@@ -1,4 +1,4 @@
-% What #[derive(TryInto)] generates
+# What `#[derive(TryInto)]` generates
 
 This derive allows you to convert enum variants into their corresponding
 variant types.
@@ -16,7 +16,10 @@ If that's not provided the default is `#[try_into(owned)]`.
 With `#[try_into]` or `#[try_into(ignore)]` it's possible to indicate which
 variants you want to derive `TryInto` for.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
 # use derive_more::TryInto;
@@ -37,14 +40,20 @@ assert_eq!("foo".to_string(), String::try_from(string.clone()).unwrap());
 assert!(u32::try_from(string).is_err());
 ```
 
-# Structs
+
+
+
+## Structs
 
 Deriving `TryInto` for structs is not supported because there is no failing
 mode. Use `#[derive(Into)]` instead. `TryInto` will automatically get a
 blanket implementation through `TryFrom`, automatically derived from `From`,
 which `#[derive(Into)]` produces.
 
-# Enums
+
+
+
+## Enums
 
 When deriving `TryInto` for an enum, each enum variant gets its own
 `TryFrom` implementation.
