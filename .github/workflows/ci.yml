@@ -57,21 +57,11 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Install cargo-external-doc
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --git https://github.com/JelteF/cargo-external-doc --force
-
-      - name: Build library
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-
       - name: Run cargo-external-doc
         uses: actions-rs/cargo@v1
         with:
-          command: external-doc
+          command: test
+          args: --doc --features testing-helpers
 
 
   clippy:
