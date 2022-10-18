@@ -1,4 +1,4 @@
-% What #[derive(Display)] generates
+# What `#[derive(Display)]` generates
 
 **NB: These derives are fully backward-compatible with the ones from the display_derive crate.**
 
@@ -16,7 +16,10 @@ For enums, you can either specify it on each variant, or on the enum as a whole.
 For variants that don't have a format specified, it will simply defer to the format of the
 inner variable. If there is no such variable, or there is more than 1, an error is generated.
 
-# The format of the format
+
+
+
+## The format of the format
 
 You supply a format by attaching an attribute of the syntax: `#[display(fmt = "...", args...)]`.
 The format supplied is passed verbatim to `write!`. The arguments supplied handled specially,
@@ -33,7 +36,8 @@ Rust](https://blog.rust-lang.org/2022/01/13/Rust-1.58.0.html#captured-identifier
 we support this feature on earlier versions of Rust too. This means that
 `#[display(fmt = "Prefix: {field}")]` is completely valid on MSRV.
 
-## Other formatting traits
+
+### Other formatting traits
 
 The syntax does not change, but the name of the attribute is the snake case version of the trait.
 E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
@@ -42,16 +46,18 @@ A special case is the `DebugCustom` trait, which derives a `Debug` implementatio
 The attribute for formatting is named `#[debug(..)]` when using `DebugCustom`.
 The arguments are the same as for `#[display(..)]`.
 
-# Generic data types
+
+### Generic data types
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type
 arguments used during formatting are bound by respective formatting trait.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::Display;
+#
 # trait Trait { type Type; }
-
+#
 #[derive(Display)]
 #[display(fmt = "{} {} {:?} {:p}", a, b, c, d)]
 struct Foo<'a, T1, T2: Trait, T3> {
@@ -67,7 +73,8 @@ The following where clauses would be generated:
 * `<T2 as Trait>::Type: Debug`
 * `Bar<T3>: Display`
 
-## Custom trait bounds
+
+### Custom trait bounds
 
 Sometimes you may want to specify additional trait bounds on your generic type parameters, so that they
 could be used during formatting. This can be done with a `#[display(bound = "...")]` attribute.
@@ -90,10 +97,12 @@ Also note, that `"c"` case is just a curious example. Bound inference works as e
 write `c` without double-quotes.
 
 ```rust
-# #[macro_use] extern crate derive_more;
 # use std::fmt::Display;
+#
+# use derive_more::Display;
+#
 # trait MyTrait { fn my_function(&self) -> i32; }
-
+#
 #[derive(Display)]
 #[display(bound = "T: MyTrait, U: Display, V: Display")]
 #[display(fmt = "{} {} {}", "a.my_function()", "b.to_string().len()", "c")]
@@ -104,13 +113,16 @@ struct MyStruct<T, U, V> {
 }
 ```
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
-
-use std::path::PathBuf;
-
+# use std::path::PathBuf;
+#
+# use derive_more::{DebugCustom, Display, Octal, UpperHex};
+#
 #[derive(Display)]
 struct MyInt(i32);
 
@@ -181,24 +193,22 @@ impl PositiveOrNegative {
     }
 }
 
-fn main() {
-    assert_eq!(MyInt(-2).to_string(), "-2");
-    assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
-    assert_eq!(E::Uint(2).to_string(), "2");
-    assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
-    assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
-    assert_eq!(EE::A.to_string(), "Java EE: A");
-    assert_eq!(EE::B.to_string(), "Java EE: B");
-    assert_eq!(U { i: 2 }.to_string(), "Hello there!");
-    assert_eq!(format!("{:o}", S), "7");
-    assert_eq!(format!("{:X}", UH), "UpperHex");
-    assert_eq!(Unit.to_string(), "Unit");
-    assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
-    assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
-    assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
-    assert_eq!(
-        format!("{:?}", MyIntDbg(-255)),
-        "MyIntDbg(as hex: ffffff01, as dec: -255)"
-    );
-}
+assert_eq!(MyInt(-2).to_string(), "-2");
+assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
+assert_eq!(E::Uint(2).to_string(), "2");
+assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
+assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
+assert_eq!(EE::A.to_string(), "Java EE: A");
+assert_eq!(EE::B.to_string(), "Java EE: B");
+assert_eq!(U { i: 2 }.to_string(), "Hello there!");
+assert_eq!(format!("{:o}", S), "7");
+assert_eq!(format!("{:X}", UH), "UpperHex");
+assert_eq!(Unit.to_string(), "Unit");
+assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
+assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
+assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
+assert_eq!(
+    format!("{:?}", MyIntDbg(-255)),
+    "MyIntDbg(as hex: ffffff01, as dec: -255)",
+);
 ```

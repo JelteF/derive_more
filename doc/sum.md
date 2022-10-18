@@ -1,4 +1,4 @@
-% Using #[derive(Sum)]
+# Using `#[derive(Sum)]`
 
 The derived `Sum` implementation will allow an iterator of your type to be
 summed together into a new instance of the type with all the fields added
@@ -10,27 +10,31 @@ All this is also true for the `Product`, except that then all the fields are
 multiplied and an implementation of `Mul` is required. This is usually the
 easiest to implement by adding `#[derive(MulSelf)]`.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::{Add, Sum};
+#
 #[derive(Add, Sum, PartialEq)]
 struct MyInts(i32, i64);
 
-fn main() {
-    let int_vec = vec![MyInts(2, 3), MyInts(4, 5), MyInts(6, 7)];
-    assert!(MyInts(12, 15) == int_vec.into_iter().sum())
-}
+let int_vec = vec![MyInts(2, 3), MyInts(4, 5), MyInts(6, 7)];
+assert!(MyInts(12, 15) == int_vec.into_iter().sum())
 ```
 
 
-# Structs
+
+
+## Structs
 
 When deriving `Sum` for a struct with two fields its like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::{Add, Sum};
+#
 #[derive(Add, Sum)]
 struct MyInts(i32, i64);
 ```
@@ -65,6 +69,9 @@ iterators.
 This way we can get the identity for sum (i.e. `0`) and the identity for product
 (i.e. `1`).
 
-# Enums
+
+
+
+## Enums
 
 Deriving `Sum` for enums is not supported.

@@ -1,4 +1,4 @@
-% What #[derive(From)] generates
+# What `#[derive(From)]` generates
 
 The point of deriving this type is that it makes it easy to create a new
 instance of the type by using the `.into()` method on the value(s) that it
@@ -13,11 +13,14 @@ For enums `.into()` works for each variant as if they were structs.
 This way the variant can not only be initialized, but also be chosen based on
 the type that `.into()` is called on.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
-
+# use derive_more::From;
+#
 // Allow converting from i32
 #[derive(From, PartialEq)]
 struct MyInt(i32);
@@ -57,24 +60,25 @@ enum MyEnum3 {
     NoFromImpl(i64),
 }
 
-fn main() {
-    assert!(MyInt(2) == 2.into());
-    assert!(MyInt64(6) == 6u8.into());
-    assert!(MyEnum::SmallInt(123) == 123i32.into());
-    assert!(MyEnum::SmallInt(123) != 123i64.into());
-    assert!(MyEnum::NamedBigInt{int: 123} == 123i64.into());
-    assert!(MyEnum3::SmallInt(123) == 123i8.into());
-    assert!(MyEnum3::NamedBigInt{int: 123} == 123i16.into());
-}
+assert!(MyInt(2) == 2.into());
+assert!(MyInt64(6) == 6u8.into());
+assert!(MyEnum::SmallInt(123) == 123i32.into());
+assert!(MyEnum::SmallInt(123) != 123i64.into());
+assert!(MyEnum::NamedBigInt{int: 123} == 123i64.into());
+assert!(MyEnum3::SmallInt(123) == 123i8.into());
+assert!(MyEnum3::NamedBigInt{int: 123} == 123i16.into());
 ```
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::From;
+#
 #[derive(From)]
 struct MyInt(i32);
 ```
@@ -94,8 +98,8 @@ The behaviour is a bit different when deriving for a struct with multiple
 fields. For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::From;
+#
 #[derive(From)]
 struct MyInts(i32, i32);
 ```
@@ -111,15 +115,18 @@ impl ::core::convert::From<(i32, i32)> for MyInts {
 }
 ```
 
-# Regular structs
+
+
+
+## Regular structs
 
 For regular structs almost the same code is generated as for tuple structs
 except in the way the field values are assigned to the new struct.
 When deriving for a regular struct with a single field like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::From;
+#
 #[derive(From)]
 struct Point1D {
     x: i32,
@@ -143,14 +150,13 @@ The behaviour is a bit different when deriving for a struct with multiple
 fields. For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::From;
+#
 #[derive(From)]
 struct Point2D {
     x: i32,
     y: i32,
 }
-
 ```
 
 Code like this will be generated:
@@ -170,7 +176,10 @@ impl ::core::convert::From<(i32, i32)> for Point2D {
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 When deriving `From` for enums a new `impl` will be generated for each of its
 variants.
@@ -180,8 +189,8 @@ overlap.
 For instance when deriving `From` for the following enum:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::From;
+#
 #[derive(From)]
 enum MixedInts {
     SmallInt(i32),
@@ -192,7 +201,6 @@ enum MixedInts {
     Unsigned(u32),
     NamedUnsigned { x: u32 },
 }
-
 ```
 
 Code like this will be generated:
