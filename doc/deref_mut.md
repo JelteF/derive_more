@@ -1,4 +1,4 @@
-% What #[derive(DerefMut)] generates
+# What `#[derive(DerefMut)]` generates
 
 Deriving `Deref` only works for a single field of a struct.
 Furthermore it requires that the type also implements `Deref`, so usually
@@ -13,10 +13,14 @@ the struct its member directly.
 With `#[deref_mut]` or `#[deref_mut(ignore)]` it's possible to indicate the
 field that you want to derive `DerefMut` for.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::{Deref, DerefMut};
+#
 #[derive(Deref, DerefMut)]
 struct Num {
     num: i32,
@@ -36,27 +40,27 @@ struct CoolVec {
     vec: Vec<i32>,
 }
 
-
-fn main() {
-    let mut num = Num{num: 123};
-    let mut boxed = MyBoxedInt(Box::new(123));
-    let mut cool_vec = CoolVec{cool: true, vec: vec![123]};
-    *num += 123;
-    assert_eq!(246, *num);
-    *boxed += 1000;
-    assert_eq!(1123, *boxed);
-    cool_vec.push(456);
-    assert_eq!(vec![123, 456], *cool_vec);
-}
+let mut num = Num{num: 123};
+let mut boxed = MyBoxedInt(Box::new(123));
+let mut cool_vec = CoolVec{cool: true, vec: vec![123]};
+*num += 123;
+assert_eq!(246, *num);
+*boxed += 1000;
+assert_eq!(1123, *boxed);
+cool_vec.push(456);
+assert_eq!(vec![123, 456], *cool_vec);
 ```
 
-# Structs
+
+
+
+## Structs
 
 When deriving a non-forwarded `Deref` for a struct:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::{Deref, DerefMut};
+#
 #[derive(Deref, DerefMut)]
 struct CoolVec {
     cool: bool,
@@ -88,12 +92,11 @@ impl ::core::ops::DerefMut for CoolVec {
 }
 ```
 
-
 When deriving `DerefMut` for a tuple struct with one field:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::{Deref, DerefMut};
+#
 #[derive(Deref, DerefMut)]
 #[deref(forward)]
 #[deref_mut(forward)]
@@ -119,6 +122,9 @@ impl ::core::ops::DerefMut for MyBoxedInt {
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `DerefMut` is not supported for enums.

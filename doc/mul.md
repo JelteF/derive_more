@@ -1,7 +1,7 @@
-% What #[derive(Mul)] generates
+# What `#[derive(Mul)]` generates
 
 Deriving `Mul` is quite different from deriving `Add`. It is not used to
-multiply two structs together. Instead it will normally multipy a struct, which
+multiply two structs together. Instead it will normally multiply a struct, which
 can have multiple fields, with a single primitive type (e.g. a `u64`). A new
 struct is then created with all the fields from the previous struct multiplied
 by this other value.
@@ -17,13 +17,16 @@ NOTE: In case you don't want this behaviour you can add `#[mul(forward)]` in
 addition to `#[derive(Mul)]`. This will instead generate a `Mul` implementation
 with the same semantics as `Add`.
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving for a tuple struct with a single field (i.e. a newtype) like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct MyInt(i32);
 ```
@@ -47,8 +50,8 @@ side of the multiplication now needs the `Copy` trait.
 For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct MyInts(i32, i32);
 ```
@@ -69,13 +72,16 @@ impl<__RhsT: ::core::marker::Copy> ::core::ops::Mul<__RhsT> for MyInts
 
 The behaviour is similar with more or less fields.
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving `Mul` for a regular struct with a single field like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct Point1D {
     x: i32,
@@ -103,8 +109,8 @@ fields, because it still needs the `Copy` as well.
 For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 struct Point2D {
     x: i32,
@@ -132,8 +138,11 @@ impl<__RhsT: ::core::marker::Copy> ::core::ops::Mul<__RhsT> for Point2D
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `Mul` for enums is not (yet) supported, except when you use
-`#[mul(forward)].
+`#[mul(forward)]`.
 Although it shouldn't be impossible no effort has been put into this yet.

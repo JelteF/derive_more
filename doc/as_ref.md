@@ -1,18 +1,21 @@
-% What #[derive(AsRef)] generates
+# What `#[derive(AsRef)]` generates
 
 Deriving `AsRef` generates one or more implementations of `AsRef`, each
 corresponding to one of the fields of the decorated type.
 This allows types which contain some `T` to be passed anywhere that an
 `AsRef<T>` is accepted.
 
-# Newtypes and Structs with One Field
+
+
+
+## Newtypes and Structs with One Field
 
 When `AsRef` is derived for a newtype or struct with one field, a single
 implementation is generated to expose the underlying field.
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::AsRef;
+#
 #[derive(AsRef)]
 struct MyWrapper(String);
 ```
@@ -33,16 +36,14 @@ to the `as_ref` implementation of the field. So here `SigleFieldForward`
 implements all `AsRef` for all types that `Vec<i32>` implements `AsRef` for.
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::AsRef;
+#
 #[derive(AsRef)]
 #[as_ref(forward)]
 struct SingleFieldForward(Vec<i32>);
 
-fn main() {
-    let item = SingleFieldForward(vec![]);
-    let _: &[i32] = (&item).as_ref();
-}
-
+let item = SingleFieldForward(vec![]);
+let _: &[i32] = (&item).as_ref();
 ```
 
 This generates:
@@ -60,7 +61,10 @@ where
 }
 ```
 
-# Structs with Multiple Fields
+
+
+
+## Structs with Multiple Fields
 
 When `AsRef` is derived for a struct with more than one field (including tuple
 structs), you must also mark one or more fields with the `#[as_ref]` attribute.
@@ -68,8 +72,8 @@ An implementation will be generated for each indicated field.
 You can also exclude a specific field by using `#[as_ref(ignore)]`.
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::AsRef;
+#
 #[derive(AsRef)]
 struct MyWrapper {
     #[as_ref]
@@ -78,7 +82,6 @@ struct MyWrapper {
     num: i32,
     valid: bool,
 }
-
 ```
 
 Generates:
@@ -106,9 +109,9 @@ Note that `AsRef<T>` may only be implemented once for any given type `T`.
 This means any attempt to mark more than one field of the same type with
 `#[as_ref]` will result in a compilation error.
 
-```compile_fail
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+```rust,compile_fail
+# use derive_more::AsRef;
+#
 // Error! Conflicting implementations of AsRef<String>
 #[derive(AsRef)]
 struct MyWrapper {
@@ -119,6 +122,9 @@ struct MyWrapper {
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `AsRef` for enums is not supported.

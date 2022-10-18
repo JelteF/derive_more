@@ -1,4 +1,4 @@
-% What #[derive(MulAssign)] generates
+# What `#[derive(MulAssign)]` generates
 
 This code is very similar to the code that is generated for `#[derive(Mul)]`.
 The difference is that it mutates the existing instance instead of creating a
@@ -9,13 +9,16 @@ semantics as `Mul`.
 This will instead generate a `MulAssign` implementation with the same semantics
 as `AddAssign`.
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving `MulAssign` for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::MulAssign;
+#
 #[derive(MulAssign)]
 struct MyInts(i32, i32);
 ```
@@ -37,13 +40,16 @@ impl<__RhsT: ::core::marker::Copy> ::core::ops::MulAssign<__RhsT> for MyInts
 The behaviour is similar with more or less fields, except for the fact that
 `__RhsT` does not need to implement `Copy` when only a single field is present.
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving `MulAssign` for a regular struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::MulAssign;
+#
 #[derive(MulAssign)]
 struct Point2D {
     x: i32,
@@ -72,7 +78,10 @@ The behaviour is again similar with more or less fields, except that `Copy`
 doesn't have to be implemented for `__Rhst` when the struct has only a single
 field.
 
-# Enums
+
+
+
+## Enums
 
 Deriving `MulAssign` for enums is not (yet) supported.
 This has two reason, the first being that deriving `Mul` is also not implemented

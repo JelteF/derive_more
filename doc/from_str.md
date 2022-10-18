@@ -1,4 +1,4 @@
-% What #[derive(FromStr)] generates
+# What `#[derive(FromStr)]` generates
 
 Deriving `FromStr` only works for enums with no fields
 or newtypes, i.e structs with only a single
@@ -6,10 +6,14 @@ field. The result is that you will be able to call the `parse()` method on a
 string to convert it to your newtype. This only works when the type that is
 contained in the type implements `FromStr`.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::FromStr;
+#
 #[derive(FromStr, Debug, Eq, PartialEq)]
 struct MyInt(i32);
 
@@ -18,19 +22,20 @@ struct Point1D{
     x: i32,
 }
 
-fn main() {
-    assert_eq!(MyInt(5), "5".parse().unwrap());
-    assert_eq!(Point1D{x: 100}, "100".parse().unwrap());
-}
+assert_eq!(MyInt(5), "5".parse().unwrap());
+assert_eq!(Point1D{x: 100}, "100".parse().unwrap());
 ```
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving `FromStr` for a tuple struct with one field:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::FromStr;
+#
 #[derive(FromStr)]
 struct MyInt(i32);
 ```
@@ -47,13 +52,16 @@ impl ::core::str::FromStr for MyInt {
 }
 ```
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving `FromStr` for a regular struct with one field:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::FromStr;
+#
 #[derive(FromStr)]
 struct Point1D {
     x: i32,
@@ -76,23 +84,26 @@ impl ::core::str::FromStr for Point1D {
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 When deriving `FromStr` for an enums with variants with no fields it will
 generate a `from_str` method that converts strings that match the variant name
 to the variant. If using a case insensitive match would give a unique variant
 (i.e you dont have both a `MyEnum::Foo` and a `MyEnum::foo` variant) then case
-insensitve matching will be used, otherwise it will fall back to exact string
-matchng.
+insensitive matching will be used, otherwise it will fall back to exact string
+matching.
 
 Since the string may not match any vairants an error type is needed so one
-will be generated of the format `Parse{}Error`
+will be generated of the format `Parse{}Error`.
 
 e.g. Given the following enum:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::FromStr;
+#
 #[derive(FromStr)]
 enum EnumNoFields {
     Foo,
@@ -109,8 +120,8 @@ Code like this will be generated:
 #     Bar,
 #     Baz,
 # }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct ParseEnumNoFieldsError;
 
 impl std::fmt::Display for ParseEnumNoFieldsError {

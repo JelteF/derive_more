@@ -7,7 +7,7 @@ description = "Adds #[derive(x)] macros for more traits"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
 repository = "https://github.com/JelteF/derive_more"
-documentation = "https://jeltef.github.io/derive_more/derive_more/"
+documentation = "https://docs.rs/derive_more"
 
 readme = "README.md"
 keywords = ["derive", "Add", "From", "Display", "IntoIterator"]
@@ -21,7 +21,6 @@ include = [
     "CHANGELOG.md",
     "tests/**/*.rs", # debian packaging wants this
 ]
-autotests = true
 
 [lib]
 name = "derive_more"
@@ -43,6 +42,9 @@ trybuild = "1.0.56"
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 nightly = []

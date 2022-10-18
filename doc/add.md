@@ -1,4 +1,4 @@
-% What #[derive(Add)] generates
+# What `#[derive(Add)]` generates
 
 The derived `Add` implementation will allow two structs from the same type to be
 added together. This done by adding their respective fields together and
@@ -8,13 +8,16 @@ same variant. There's one big difference however, it returns a
 `Result<EnumType>`, because an error is returned when to different variants are
 added together.
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving `Add` for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Add;
+#
 #[derive(Add)]
 struct MyInts(i32, i32);
 ```
@@ -33,13 +36,16 @@ impl ::core::ops::Add for MyInts {
 
 The behaviour is similar with more or less fields.
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving `Add` for a regular struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Add;
+#
 #[derive(Add)]
 struct Point2D {
     x: i32,
@@ -67,7 +73,10 @@ impl ::core::ops::Add for Point2D {
 
 The behaviour is similar for more or less fields.
 
-# Enums
+
+
+
+## Enums
 
 There's a big difference between the code that is generated for the two struct
 types and the one that is generated for enums. The code for enums returns
@@ -77,8 +86,8 @@ the generated code much more complex as well, because this check needs to be
 done. For instance when deriving `Add` for an enum like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Add;
+#
 #[derive(Add)]
 enum MixedInts {
     SmallInt(i32),

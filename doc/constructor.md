@@ -1,4 +1,4 @@
-% What #[derive(Constructor)] generates
+# What `#[derive(Constructor)]` generates
 
 A common pattern in Rust is to create a static constructor method called
 `new`. This method is can then be used to create an instance of a struct. You
@@ -7,13 +7,16 @@ can now derive this method by using `#[derive(Constructor)]`, even though
 similar to the `from` method when deriving `From`, except that it takes multiple
 arguments instead of a tuple.
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving `Constructor` for a tuple struct with a two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Constructor;
+#
 #[derive(Constructor)]
 struct MyInts(i32, i32);
 ```
@@ -31,14 +34,17 @@ impl MyInts {
 
 The generated code is similar for more or less fields.
 
-# Regular structs
+
+
+
+## Regular structs
 
 For regular structs almost the same code is generated as for tuple structs
 except that it assigns the fields differently.
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::Constructor;
+#
 #[derive(Constructor)]
 struct Point2D {
     x: i32,
@@ -62,7 +68,10 @@ impl Point2D {
 
 The generated code is similar for more or less fields.
 
-# Enums
+
+
+
+## Enums
 
 Currently `Constructor` cannot be derived for enums. This is because the `new`
 method might then need to have a different number of arguments. This is

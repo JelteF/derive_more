@@ -1,16 +1,19 @@
-% What #[derive(AddAssign)] generates
+# What `#[derive(AddAssign)]` generates
 
 This code is very similar to the code that is generated for `#[derive(Add)]`.
 The difference is that it mutates the existing instance instead of creating a
 new one.
 
-# Tuple structs
+
+
+
+## Tuple structs
 
 When deriving `AddAssign` for a tuple struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::AddAssign;
+#
 #[derive(AddAssign)]
 struct MyInts(i32, i32);
 ```
@@ -29,13 +32,16 @@ impl ::core::ops::AddAssign for MyInts {
 
 The behaviour is similar with more or less fields.
 
-# Regular structs
+
+
+
+## Regular structs
 
 When deriving for a regular struct with two fields like this:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::AddAssign;
+#
 #[derive(AddAssign)]
 struct Point2D {
     x: i32,
@@ -60,7 +66,10 @@ impl ::core::ops::AddAssign for Point2D {
 
 The behaviour is similar with more or less fields.
 
-# Enums
+
+
+
+## Enums
 
 Deriving `AddAssign` is not (yet) supported for enums.
 This is mostly due to the fact that it is not trivial convert the `Add`

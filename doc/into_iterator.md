@@ -1,4 +1,4 @@
-% Using #[derive(IntoIterator)]
+# Using `#[derive(IntoIterator)]`
 
 Deriving `IntoIterator` only works for a single field of a struct.
 The result is that you will call `.into_iter()` on this field directly.
@@ -11,14 +11,18 @@ By using `#[into_iterator(owned, ref, ref_mut)]` it's possible to derive an
 You can pick any combination of `owned`, `ref` and `ref_mut`.
 If that's not provided the default is `#[IntoIterator(owned)]`.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-# #[macro_use] extern crate derive_more;
+# use derive_more::IntoIterator;
+#
 #[derive(IntoIterator)]
 struct MyVec(Vec<i32>);
 
-// You can specify the field you want to derive IntoIterator for
+// You can specify the field you want to derive `IntoIterator` for
 #[derive(IntoIterator)]
 struct Numbers {
     #[into_iterator(owned, ref,  ref_mut)]
@@ -26,23 +30,24 @@ struct Numbers {
     useless: bool,
 }
 
-fn main() {
-    assert_eq!(Some(5), MyVec(vec![5, 8]).into_iter().next());
+assert_eq!(Some(5), MyVec(vec![5, 8]).into_iter().next());
 
-    let mut nums = Numbers{numbers: vec![100, 200], useless: false};
-    assert_eq!(Some(&100), (&nums).into_iter().next());
-    assert_eq!(Some(&mut 100), (&mut nums).into_iter().next());
-    assert_eq!(Some(100), nums.into_iter().next());
-}
+let mut nums = Numbers{numbers: vec![100, 200], useless: false};
+assert_eq!(Some(&100), (&nums).into_iter().next());
+assert_eq!(Some(&mut 100), (&mut nums).into_iter().next());
+assert_eq!(Some(100), nums.into_iter().next());
 ```
 
-# Structs
+
+
+
+## Structs
 
 When deriving `IntoIterator` for a struct:
 
 ```rust
-# #[macro_use] extern crate derive_more;
-# fn main(){}
+# use derive_more::IntoIterator;
+#
 #[derive(IntoIterator)]
 struct Numbers {
     #[into_iterator(owned, ref,  ref_mut)]
@@ -88,6 +93,9 @@ impl<'__deriveMoreLifetime> ::core::iter::IntoIterator for &'__deriveMoreLifetim
 }
 ```
 
-# Enums
+
+
+
+## Enums
 
 Deriving `IntoIterator` is not supported for enums.

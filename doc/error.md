@@ -1,6 +1,5 @@
-% Using #[derive(Error)]
+# Using `#[derive(Error)]`
 
-# Using #[derive(Error)]
 Deriving `Error` will generate an `Error` implementation, that contains
 (depending on the type) a `source()` and a `provide()` method. Please note,
 at the time of writing `provide()` is only supported on nightly rust. So you
@@ -11,13 +10,11 @@ behaviour for each of the variants. The variant is first matched and then the
 implementation will do the same as it would have done if the variant was a
 struct.
 
-Usually when you derive `Error` you will also want to derive [`Display`] and
-often [`From`] as well.
+Usually when you derive `Error` you will also want to [derive `Display`](crate::Display) and
+often [`From` as well](crate::From).
 
-[`Display`]: display.html
-[`From`]: from.html
 
-## When and how does it derive `source()`?
+### When and how does it derive `source()`?
 
 1. It's a struct/variant with named fields and one is the fields is
    called `source`. Then it would return that field as the `source`.
@@ -27,7 +24,7 @@ often [`From`] as well.
 3. One of the fields is annotated with `#[error(source)]`. Then it would
    return that field as the `source`.
 
-## When and how does it derive `provide()`?
+### When and how does it derive `provide()`?
 
 1. It's a struct/variant with named fields and one of the fields is
    called `backtrace`. Then it would return that field as the `backtrace`.
@@ -36,7 +33,7 @@ often [`From`] as well.
 3. One of the fields is annotated with `#[error(backtrace)]`. Then it would
    return that field as the `backtrace`.
 
-## Ignoring fields for derives
+### Ignoring fields for derives
 
 It's possible to ignore a field or a whole enum variant completely for this
 derive using the `#[error(ignore)]` attribute. This will ignore it both for
@@ -44,13 +41,20 @@ detecting `backtrace` and `source`. It's also possible to mark a field only
 ignored for one of these methods by using `#[error(not(backtrace))]` or
 `#[error(not(source))]`.
 
-# Example usage
+
+
+
+## Example usage
 
 ```rust
-#![feature(error_generic_member_access, provide_any)]
-# #[macro_use] extern crate derive_more;
-# use std::error::Error as _;
-use std::{any, backtrace::Backtrace};
+# #![cfg_attr(feature = "nightly", feature(error_generic_member_access, provide_any))]
+// Nightly requires enabling this features:
+// #![feature(error_generic_member_access, provide_any)]
+# #[cfg(not(feature = "nightly"))] fn main() {}
+# #[cfg(feature = "nightly")] fn main() {
+# use std::{any, error::Error as _, backtrace::Backtrace};
+#
+# use derive_more::{Display, Error, From};
 
 // std::error::Error requires std::fmt::Debug and std::fmt::Display,
 // so we can also use derive_more::Display for fully declarative
@@ -82,7 +86,6 @@ struct WithSourceAndBacktrace {
     backtrace: Backtrace,
 }
 
-
 // derive_more::From fits nicely into this pattern as well
 #[derive(Debug, Display, Error, From)]
 enum CompoundError {
@@ -113,24 +116,23 @@ enum CompoundError {
     WithoutSource(#[error(not(source))] Tuple),
 }
 
-fn main() {
-    assert!(Simple.source().is_none());
-    assert!(any::request_ref::<Backtrace>(&Simple).is_none());
-    assert!(WithSource::default().source().is_some());
-    assert!(WithExplicitSource::default().source().is_some());
-    assert!(Tuple::default().source().is_some());
-    assert!(WithoutSource::default().source().is_none());
-    let with_source_and_backtrace = WithSourceAndBacktrace{
-        source: Simple,
-        backtrace: Backtrace::capture(),
-    };
-    assert!(with_source_and_backtrace.source().is_some());
-    assert!(any::request_ref::<Backtrace>(&with_source_and_backtrace).is_some());
+assert!(Simple.source().is_none());
+assert!(any::request_ref::<Backtrace>(&Simple).is_none());
+assert!(WithSource::default().source().is_some());
+assert!(WithExplicitSource::default().source().is_some());
+assert!(Tuple::default().source().is_some());
+assert!(WithoutSource::default().source().is_none());
+let with_source_and_backtrace = WithSourceAndBacktrace {
+    source: Simple,
+    backtrace: Backtrace::capture(),
+};
+assert!(with_source_and_backtrace.source().is_some());
+assert!(any::request_ref::<Backtrace>(&with_source_and_backtrace).is_some());
 
-    assert!(CompoundError::Simple.source().is_none());
-    assert!(CompoundError::from(Simple).source().is_some());
-    assert!(CompoundError::from(WithSource::default()).source().is_some());
-    assert!(CompoundError::from(WithExplicitSource::default()).source().is_some());
-    assert!(CompoundError::from(Tuple::default()).source().is_none());
-}
+assert!(CompoundError::Simple.source().is_none());
+assert!(CompoundError::from(Simple).source().is_some());
+assert!(CompoundError::from(WithSource::default()).source().is_some());
+assert!(CompoundError::from(WithExplicitSource::default()).source().is_some());
+assert!(CompoundError::from(Tuple::default()).source().is_none());
+# }
 ```

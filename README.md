@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/JelteF/derive_more/workflows/CI/badge.svg)](https://github.com/JelteF/derive_more/actions)
 [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
-[![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://jeltef.github.io/derive_more/derive_more/)
+[![Rust Documentation](https://docs.rs/derive_more/badge.svg)](https://docs.rs/derive_more)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
 [![Rust 1.56+](https://img.shields.io/badge/rustc-1.56+-lightgray.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
 
@@ -16,12 +16,14 @@ when using the commonly advised newtype pattern (e.g. `MyInt(i32)`).
 This library tries to remove these annoyances and the corresponding boilerplate code.
 It does this by allowing you to derive lots of commonly used traits for both structs and enums.
 
+
+
+
 ## Example code
 
 By using this library the following code just works:
 
 ```rust
-extern crate derive_more;
 use derive_more::{Add, Display, From, Into};
 
 #[derive(PartialEq, From, Add)]
@@ -50,6 +52,9 @@ assert!(MyEnum::Uint(42).to_string() == "42");
 assert!(MyEnum::Nothing.to_string() == "nothing");
 ```
 
+
+
+
 ## The derivable traits
 
 Below are all the traits that you can derive using this library.
@@ -71,6 +76,7 @@ This will show you your code with all macros and derives expanded.
 **NOTE**: You still have to derive each trait separately. So `#[derive(Mul)]` doesn't
 automatically derive `Div` as well. To derive both you should do `#[derive(Mul, Div)]`
 
+
 ### Conversion traits
 
 These are traits that are used to convert automatically between types.
@@ -83,6 +89,7 @@ These are traits that are used to convert automatically between types.
 6. [`AsRef`]
 7. [`AsMut`]
 
+
 ### Formatting traits
 
 These traits are used for converting a struct to a string in different ways.
@@ -90,10 +97,13 @@ These traits are used for converting a struct to a string in different ways.
 1. [`Display`-like], contains `Display`, `DebugCustom`, `Binary`, `Octal`,
    `LowerHex`, `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
 
+
 ### Error-handling traits
+
 These traits are used to define error-types.
 
 1. [`Error`]
+
 
 ### Operators
 
@@ -104,13 +114,14 @@ These are traits that can be used for operator overloading.
 3. [`Not`-like], contains `Not` and `Neg`
 4. [`Add`-like], contains `Add`, `Sub`, `BitAnd`, `BitOr`, `BitXor`
 5. [`Mul`-like], contains `Mul`, `Div`, `Rem`, `Shr` and `Shl`
-3. [`Sum`-like], contains `Sum` and `Product`
-6. [`IndexMut`]
-7. [`DerefMut`]
-8. [`AddAssign`-like], contains `AddAssign`, `SubAssign`, `BitAndAssign`,
+6. [`Sum`-like], contains `Sum` and `Product`
+7. [`IndexMut`]
+8. [`DerefMut`]
+9. [`AddAssign`-like], contains `AddAssign`, `SubAssign`, `BitAndAssign`,
    `BitOrAssign` and `BitXorAssign`
-9. [`MulAssign`-like], contains `MulAssign`, `DivAssign`, `RemAssign`,
-   `ShrAssign` and `ShlAssign`
+10. [`MulAssign`-like], contains `MulAssign`, `DivAssign`, `RemAssign`,
+    `ShrAssign` and `ShlAssign`
+
 
 ### Static methods
 
@@ -122,7 +133,8 @@ These don't derive traits, but derive static methods instead.
 2. [`IsVariant`], for each variant `foo` of an enum type, derives a `is_foo` method.
 3. [`Unwrap`], for each variant `foo` of an enum type, derives an `unwrap_foo` method.
 
-## Generated code
+
+
 
 ## Installation
 
@@ -140,15 +152,15 @@ features = ["from", "add", "iterator"]
 
 And this to the top of your Rust file:
 ```rust
-extern crate derive_more;
 // use the derives that you want in the file
 use derive_more::{Add, Display, From};
 ```
 If you're still using Rust 2015, add this instead:
-```rust
+```rust,edition2015
 extern crate core;
 #[macro_use]
 extern crate derive_more;
+# fn main() {} // omit wrapping statements above into `main()` in tests
 ```
 
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
