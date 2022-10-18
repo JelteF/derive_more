@@ -166,29 +166,29 @@ extern crate derive_more;
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`derive-new`]: https://github.com/nrc/derive-new
 
-[`From`]: doc/from.md
-[`Into`]: doc/into.md
-[`FromStr`]: doc/from_str.md
-[`TryInto`]: doc/try_into.md
-[`IntoIterator`]: doc/into_iterator.md
-[`AsRef`]: doc/as_ref.md
-[`AsMut`]: doc/as_mut.md
+[`From`]: https://jeltef.github.io/derive_more/derive_more/from.html
+[`Into`]: https://jeltef.github.io/derive_more/derive_more/into.html
+[`FromStr`]: https://jeltef.github.io/derive_more/derive_more/from_str.html
+[`TryInto`]: https://jeltef.github.io/derive_more/derive_more/try_into.html
+[`IntoIterator`]: https://jeltef.github.io/derive_more/derive_more/into_iterator.html
+[`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
+[`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
 
-[`Display`-like]: doc/display.md
+[`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
 
-[`Error`]: doc/error.md
+[`Error`]: https://jeltef.github.io/derive_more/derive_more/error.html
 
-[`Index`]: doc/index.md
-[`Deref`]: doc/deref.md
-[`Not`-like]: doc/not.md
-[`Add`-like]: doc/add.md
-[`Mul`-like]: doc/mul.md
-[`Sum`-like]: doc/sum.md
-[`IndexMut`]: doc/index_mut.md
-[`DerefMut`]: doc/deref_mut.md
-[`AddAssign`-like]: doc/add_assign.md
-[`MulAssign`-like]: doc/mul_assign.md
+[`Index`]: https://jeltef.github.io/derive_more/derive_more/index_op.html
+[`Deref`]: https://jeltef.github.io/derive_more/derive_more/deref.html
+[`Not`-like]: https://jeltef.github.io/derive_more/derive_more/not.html
+[`Add`-like]: https://jeltef.github.io/derive_more/derive_more/add.html
+[`Mul`-like]: https://jeltef.github.io/derive_more/derive_more/mul.html
+[`Sum`-like]: https://jeltef.github.io/derive_more/derive_more/sum.html
+[`IndexMut`]: https://jeltef.github.io/derive_more/derive_more/index_mut.html
+[`DerefMut`]: https://jeltef.github.io/derive_more/derive_more/deref_mut.html
+[`AddAssign`-like]: https://jeltef.github.io/derive_more/derive_more/add_assign.html
+[`MulAssign`-like]: https://jeltef.github.io/derive_more/derive_more/mul_assign.html
 
-[`Constructor`]: doc/constructor.md
-[`IsVariant`]: doc/is_variant.md
-[`Unwrap`]: doc/unwrap.md
+[`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
+[`IsVariant`]: https://jeltef.github.io/derive_more/derive_more/is_variant.html
+[`Unwrap`]: https://jeltef.github.io/derive_more/derive_more/unwrap.html
