@@ -177,6 +177,7 @@ jobs:
         run: |
           test "${{ steps.release.outputs.version }}" \
             == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
+
       - name: Parse CHANGELOG link
         id: changelog
         run: echo ::set-output
