@@ -28,6 +28,8 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![recursion_limit = "128"]
+#![deny(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
+#![forbid(non_ascii_idents, unsafe_code)]
 
 use proc_macro::TokenStream;
 use syn::parse::Error as ParseError;
