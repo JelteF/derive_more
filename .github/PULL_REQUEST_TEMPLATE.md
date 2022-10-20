@@ -32,10 +32,8 @@ Related to <!-- paste issues/PRs references -->
 - [ ] Documentation is updated (if required)
 - [ ] Tests are added/updated (if required)
 - [ ] [CHANGELOG entry][l:1] is added (if required)
-- [ ] [Review][l:2] is completed and changes are approved
 
 
 
 
 [l:1]: /CHANGELOG.md
-[l:2]: https://help.github.com/en/articles/reviewing-changes-in-pull-requests
