@@ -92,7 +92,7 @@ To produce a new release of the `derive_more` crate, perform the following steps
 
 1. Complete the existing [CHANGELOG] or fill up a new one for the new version.
 2. Update [README] installation instructions with the new version.
-3. Run `cargo release patch` (or `minor` or `major`)
+3. Run `cargo release patch` (or `minor`/`major`).
 4. Wait for the CI pipeline to complete successfully, and the [GitHub release] being created.
 
 
@@ -100,7 +100,6 @@ To produce a new release of the `derive_more` crate, perform the following steps
 
 [`Cargo.toml`]: Cargo.toml
 [CHANGELOG]: CHANGELOG.md
-[crates.io]: https://crates.io/
 [GitHub release]: /../../releases
 [issue]: /../../issues
 [PR]: /../../pulls
