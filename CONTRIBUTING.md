@@ -98,11 +98,17 @@ To produce a new release of the `derive_more` crate, perform the following steps
 
 4. Apply the Git version tag (in `v<version>` format) and push it.
 
+5. Wait for the CI pipeline to complete successfully, and the [GitHub release] being created.
+
+6. Publish the crate on [crates.io] via `cargo publish` command.
+
 
 
 
 [`Cargo.toml`]: Cargo.toml
 [CHANGELOG]: CHANGELOG.md
+[crates.io]: https://crates.io/
+[GitHub release]: /../../releases
 [issue]: /../../issues
 [PR]: /../../pulls
 [README]: README.md#installation
