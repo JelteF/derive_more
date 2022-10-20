@@ -81,7 +81,7 @@ All [PR]s are [squash]-merged to preserve the main history linear and meaningful
 
 #### Commit message for a [squash] merge
 
-Commit message for a [squash] merge of the [PR] should mention its number and the number of the relevant [issue] (if it has the one).
+Commit message for a [squash] merge of the [PR] should mention its number and the number of the relevant [issue] (if it has the one). The commit body should contain the PR description. All of this is done automatically by Github.
 
 
 
