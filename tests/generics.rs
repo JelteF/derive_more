@@ -37,7 +37,7 @@ struct WrappedDouble<T: Clone, U: Clone>(T, U);
 #[from(forward)]
 struct WrappedDouble2<T: Clone, U: Clone>(T, U);
 
-#[cfg(feature = "nightly")]
+#[cfg(nightly)]
 #[derive(
     From,
     FromStr,

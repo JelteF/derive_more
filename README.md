@@ -5,6 +5,7 @@
 [![Rust Documentation](https://docs.rs/derive_more/badge.svg)](https://docs.rs/derive_more)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
 [![Rust 1.56+](https://img.shields.io/badge/rustc-1.56+-lightgray.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
+[![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
 Rust has lots of builtin traits that are implemented for its basic types, such
 as `Add`, `Not`, `From` or `Display`.

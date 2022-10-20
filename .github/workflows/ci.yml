@@ -1,134 +1,177 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ["master"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["master"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_BACKTRACE: 1
 
 jobs:
-  test:
-    name: Test Rust ${{ matrix.toolchain }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      matrix:
-        toolchain: [stable, nightly, 1.56.0]
-        os: [ubuntu, macOS, windows]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          override: true
 
-      - name: Remove .lock file
-        run: rm Cargo.lock
-
-      - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features testing-helpers
-
-
-  test_features_separate:
-    name: Test features
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-
-      - name: Install tomljson
-        run: go get github.com/pelletier/go-toml/cmd/tomljson
-
-      - name: Test
-        run: |
-          export GOBIN=$HOME/go/bin
-          export PATH=$PATH:$GOBIN
-          ci/test_all_features.sh
-
-
-  doc_test:
-    name: Doc tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-
-      - name: Run cargo-external-doc
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --doc --features testing-helpers
-
+  ##########################
+  # Linting and formatting #
+  ##########################
 
   clippy:
-    name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
-          toolchain: nightly
+          toolchain: stable
           components: clippy
-          override: true
 
-      - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-features -- -D warnings
-
+      - run: cargo clippy --all-features -- -D warnings
 
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
           toolchain: nightly
           components: rustfmt
-          override: true
 
-      - name: rustfmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - run: cargo +nightly fmt --all -- --check
 
+
+
+
+  ###########
+  # Testing #
+  ###########
 
   msrv:
-    # TODO: Use MSRV once it understands new `Cargo.lock` format.
-    # name: MSRV
-    name: Minimal crates versions
+    name: MSRV
     strategy:
       fail-fast: false
       matrix:
-        # msrv: ["1.36.0"]
-        msrv: [stable]
-        os: [ubuntu, macOS, windows]
+        msrv: ["1.56.0"]
+        os:
+          - ubuntu
+          - macOS
+          - windows
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
-          toolchain: nightly
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
           toolchain: ${{ matrix.msrv }}
-          override: true
+      - run: rustup default ${{ matrix.msrv }}
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
 
-      - name: Install minimal dependecies versions
+      - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
 
-      - name: Test
-        uses: actions-rs/cargo@v1
+      - run: cargo test --features testing-helpers
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu
+          - macOS
+          - windows
+        toolchain:
+          - stable
+          - nightly
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
         with:
-          command: test
-          args: --features testing-helpers
+          toolchain: ${{ matrix.toolchain }}
+      - run: rustup default ${{ matrix.toolchain }}
+
+      - run: cargo test --features testing-helpers
+
+  test-features:
+    name: test features
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+      - run: rustup default nightly
+
+      - name: Install tomljson
+        run: go get github.com/pelletier/go-toml/cmd/tomljson
+
+      - run: ci/test_all_features.sh
+        env:
+          GOBIN: "$HOME/go/bin"
+          PATH: "$PATH:$GOBIN"
+
+
+
+
+  #################
+  # Documentation #
+  #################
+
+  rustdoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - run: cargo +nightly doc
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
+
+
+
+
+  #############
+  # Releasing #
+  #############
+
+  release-github:
+    name: release on GitHub
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs:
+      - clippy
+      - msrv
+      - rustdoc
+      - rustfmt
+      - test
+      - test-features
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Parse release version
+        id: release
+        run: echo ::set-output
+                  name=version::${GITHUB_REF#refs/tags/v}
+      - name: Verify release version matches `derive_more` Cargo manifest
+        run: |
+          test "${{ steps.release.outputs.version }}" \
+            == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
+
+      - name: Parse CHANGELOG link
+        id: changelog
+        run: echo ::set-output
+                  name=link::${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## ${{ steps.release.outputs.version }}/{s/^## \([^ ]*\) - \([0-9].*\)/\1---\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ steps.release.outputs.version }}
+          body: |
+            [API docs](https://docs.rs/derive_more/${{ steps.release.outputs.version }})
+            [Changelog](${{ steps.changelog.outputs.link }})
+          prerelease: ${{ contains(steps.release.outputs.version, '-') }}

@@ -50,7 +50,7 @@ mod derives_for_generic_enums_with_source;
 mod derives_for_generic_structs_with_source;
 mod derives_for_structs_with_source;
 
-#[cfg(feature = "nightly")]
+#[cfg(nightly)]
 mod nightly;
 
 derive_display!(SimpleErr);
