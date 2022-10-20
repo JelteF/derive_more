@@ -15,6 +15,7 @@ categories = ["development-tools", "development-tools::procedural-macro-helpers"
 
 include = [
     "src/**/*.rs",
+    "doc/**/*.md",
     "Cargo.toml",
     "LICENSE",
     "README.md",
