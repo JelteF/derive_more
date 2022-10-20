@@ -90,17 +90,10 @@ Commit message for a [squash] merge of the [PR] should mention its number and th
 
 To produce a new release of the `derive_more` crate, perform the following steps:
 
-1. Bump up the crate version correctly in [`Cargo.toml`] manifest.
-
-2. Complete the existing [CHANGELOG] or fill up a new one for the new version declared in [`Cargo.toml`].
-
-3. Update [README] with the new version declared in [`Cargo.toml`].
-
-4. Apply the Git version tag (in `v<version>` format) and push it.
-
-5. Wait for the CI pipeline to complete successfully, and the [GitHub release] being created.
-
-6. Publish the crate on [crates.io] via `cargo publish` command.
+1. Complete the existing [CHANGELOG] or fill up a new one for the new version.
+2. Update [README] installation instructions with the new version.
+3. Run `cargo release patch` (or `minor` or `major`)
+4. Wait for the CI pipeline to complete successfully, and the [GitHub release] being created.
 
 
 
