@@ -29,7 +29,7 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - run: cargo clippy --all-features -- -D warnings
+      - run: cargo clippy --workspace --all-features -- -D warnings
 
   rustfmt:
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
 
-      - run: cargo test --features testing-helpers
+      - run: cargo test --workspace --features testing-helpers
 
   test:
     strategy:
@@ -94,7 +94,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
       - run: rustup default ${{ matrix.toolchain }}
 
-      - run: cargo test --features testing-helpers
+      - run: cargo test --workspace --features testing-helpers
 
   test-features:
     name: test features
@@ -129,7 +129,7 @@ jobs:
         with:
           toolchain: nightly
 
-      - run: cargo +nightly doc
+      - run: cargo +nightly doc --workspace
         env:
           RUSTDOCFLAGS: --cfg docsrs
 
