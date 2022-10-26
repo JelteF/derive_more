@@ -22,15 +22,14 @@ include = [
     "tests/**/*.rs", # debian packaging wants this
 ]
 
+[workspace]
+members = ["impl"]
 
 [dependencies]
 derive_more-impl = { version = "=0.99.17", path = "impl" }
 
 [build-dependencies]
 rustc_version = { version = "0.4", optional = true }
-
-[workspace]
-members = ["impl"]
 
 [dev-dependencies]
 rustversion = "1.0"
@@ -64,7 +63,6 @@ mul = ["derive_more-impl/mul"]
 not = ["derive_more-impl/not"]
 sum = ["derive_more-impl/sum"]
 try_into = ["derive_more-impl/try_into"]
-testing-helpers = ["rustc_version"]
 is_variant = ["derive_more-impl/is_variant"]
 unwrap = ["derive_more-impl/unwrap"]
 
@@ -93,6 +91,8 @@ default = [
     "is_variant",
     "unwrap"
 ]
+
+testing-helpers = ["derive_more-impl/testing-helpers", "rustc_version"]
 
 [[test]]
 name = "add_assign"

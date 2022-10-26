@@ -1,9 +1,9 @@
 [package]
 name = "derive_more-impl"
-version = "0.99.17"
+version = "0.99.17" # should be the same as main crate version
 edition = "2021"
 rust-version = "1.56.0"
-description = "Adds #[derive(x)] macros for more traits"
+description = "Internal implementation of `derive_more` crate"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
 repository = "https://github.com/JelteF/derive_more"
@@ -32,8 +32,7 @@ unicode-xid = { version = "0.2.2", optional = true }
 rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
-rustversion = "1.0"
-trybuild = "1.0.56"
+derive_more = { path = ".." }
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
@@ -63,8 +62,9 @@ mul = ["syn/extra-traits"]
 not = ["syn/extra-traits"]
 sum = []
 try_into = ["syn/extra-traits"]
-testing-helpers = ["rustc_version"]
 is_variant = ["convert_case"]
-unwrap = ["convert_case", "rustc_version"]
+unwrap = ["convert_case"]
 
 default = []
+
+testing-helpers = ["rustc_version"]
