@@ -38,6 +38,9 @@ trybuild = "1.0.56"
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 add_assign = []
 add = []
