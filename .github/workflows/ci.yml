@@ -156,8 +156,8 @@ jobs:
 
       - name: Parse release version
         id: release
-        run: echo ::set-output
-                  name=version::${GITHUB_REF#refs/tags/v}
+        run: echo "version=${GITHUB_REF#refs/tags/v}"
+             >> $GITHUB_OUTPUT
       - name: Verify release version matches `derive_more` Cargo manifest
         run: |
           test "${{ steps.release.outputs.version }}" \
@@ -165,8 +165,8 @@ jobs:
 
       - name: Parse CHANGELOG link
         id: changelog
-        run: echo ::set-output
-                  name=link::${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## ${{ steps.release.outputs.version }}/{s/^## \([^ ]*\) - \([0-9].*\)/\1---\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)
+        run: echo "link=${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## ${{ steps.release.outputs.version }}/{s/^## \([^ ]*\) - \([0-9].*\)/\1---\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)"
+             >> $GITHUB_OUTPUT
 
       - uses: softprops/action-gh-release@v1
         with:
