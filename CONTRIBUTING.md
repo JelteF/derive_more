@@ -26,7 +26,7 @@ If a new behaviour makes sense, that is different from the current behavior, the
 
 ### Documentation
 
-Documentation is contained in the `doc/*.md` files and [README].
+Documentation is contained in the `impl/doc/*.md` files and [README].
 
 Documentation should be up-to-date with any [PR] changes visible for library end-users.
 
@@ -51,7 +51,7 @@ The best strategy for writing a new integration test is to look at existing inte
 
 #### Documentation tests
 
-These are the [code examples][1] in the `doc/*.md` files and [README].
+These are the [code examples][1] in the `impl/doc/*.md` files and [README].
 
 Writing documentation tests is needed for better illustration of the added/altered capabilities for end-users of the crate.
 
