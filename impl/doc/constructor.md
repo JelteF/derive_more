@@ -28,6 +28,7 @@ struct GenericType<X: Clone, Y: AsRef<[u8]>> {
     x: X,
     y: Y,
 }
+
 impl<X: Clone, Y: AsRef<[u8]>> GenericType<X, Y> {
     #[inline]
     pub const fn new(x: X, y: Y) -> GenericType<X, Y> {
@@ -35,6 +36,8 @@ impl<X: Clone, Y: AsRef<[u8]>> GenericType<X, Y> {
     }
 }
 ```
+
+
 ## Tuple structs
 
 When deriving `Constructor` for a tuple struct with a two fields like this:
