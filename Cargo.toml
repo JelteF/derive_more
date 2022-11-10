@@ -53,6 +53,7 @@ add = []
 as_mut = []
 as_ref = []
 constructor = []
+const = []
 deref = []
 deref_mut = []
 display = ["syn/extra-traits", "unicode-xid"]
@@ -128,6 +129,11 @@ required-features = ["display"]
 name = "constructor"
 path = "tests/constructor.rs"
 required-features = ["constructor"]
+
+[[test]]
+name = "const_constructor"
+path = "tests/constructor.rs"
+required-features = ["constructor", "const"]
 
 [[test]]
 name = "deref"
@@ -248,6 +254,31 @@ required-features = [
 name = "generics"
 path = "tests/generics.rs"
 required-features = [
+    "add_assign",
+    "add",
+    "as_mut",
+    "as_ref",
+    "constructor",
+    "deref",
+    "deref_mut",
+    "display",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "mul_assign",
+    "mul",
+    "not",
+    "try_into",
+    "is_variant",
+]
+
+[[test]]
+name = "const_generics"
+path = "tests/generics.rs"
+required-features = [
+    "const",
     "add_assign",
     "add",
     "as_mut",
