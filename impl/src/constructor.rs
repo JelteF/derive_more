@@ -24,12 +24,18 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
         _ => panic!("Only structs can derive a constructor"),
     };
     let original_types = &get_field_types(&fields);
+    let fn_signature = if cfg!(feature = "const") {
+        quote!( pub const fn new(#(#vars: #original_types),*) -> #input_type #ty_generics )
+    } else {
+        quote!( pub fn new(#(#vars: #original_types),*) -> #input_type #ty_generics )
+    };
+
     quote! {
         #[allow(missing_docs)]
         #[automatically_derived]
         impl #impl_generics #input_type #ty_generics #where_clause {
             #[inline]
-            pub fn new(#(#vars: #original_types),*) -> #input_type #ty_generics {
+            #fn_signature {
                 #body
             }
         }
