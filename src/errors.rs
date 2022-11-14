@@ -8,12 +8,12 @@ pub struct TryIntoError<T> {
 }
 
 impl<T> TryIntoError<T> {
-    pub fn new(
+    pub const fn new(
         input: T,
         variant_names: &'static str,
         output_type: &'static str,
-    ) -> TryIntoError<T> {
-        TryIntoError {
+    ) -> Self {
+        Self {
             input,
             variant_names,
             output_type,
