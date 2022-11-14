@@ -24,7 +24,7 @@ variants you want to derive `TryInto` for.
 ```rust
 # use derive_more::TryInto;
 #
-#[derive(TryInto, Debug, Clone)]
+#[derive(TryInto, Clone, Debug)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedData {
     Int(u32),

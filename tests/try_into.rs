@@ -6,7 +6,7 @@ use derive_more::TryInto;
 // has been redefined.
 type Result = ();
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug, TryInto)]
+#[derive(TryInto, Clone, Copy, Debug, Eq, PartialEq)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedInts {
     SmallInt(i32),
