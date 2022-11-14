@@ -1,13 +1,22 @@
 use core::fmt;
 
+/// Error returned by the derived [`TryInto`] implementation.
+///
+/// [`TryInto`]: crate::TryInto@macro
 #[derive(Clone, Copy, Debug)]
 pub struct TryIntoError<T> {
+    /// Original input value which failed to convert via the derived
+    /// [`TryInto`] implementation.
+    ///
+    /// [`TryInto`]: crate::TryInto@macro
     pub input: T,
     variant_names: &'static str,
     output_type: &'static str,
 }
 
 impl<T> TryIntoError<T> {
+    /// Creates a new [`TryIntoError`].
+    #[must_use]
     pub const fn new(
         input: T,
         variant_names: &'static str,
