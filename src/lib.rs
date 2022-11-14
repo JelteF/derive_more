@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
 //! [`From`]: crate::From

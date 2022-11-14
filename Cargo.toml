@@ -65,6 +65,11 @@ std = []
 unwrap = ["derive_more-impl/unwrap"]
 
 default = [
+    "all_no_std",
+    "std",
+]
+
+all_no_std = [
     "add_assign",
     "add",
     "as_mut",
@@ -80,15 +85,14 @@ default = [
     "index_mut",
     "into",
     "into_iterator",
+    "is_variant",
     "iterator",
     "mul_assign",
     "mul",
     "not",
-    "std",
     "sum",
     "try_into",
-    "is_variant",
-    "unwrap"
+    "unwrap",
 ]
 
 testing-helpers = ["derive_more-impl/testing-helpers"]
