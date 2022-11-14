@@ -61,6 +61,7 @@ not = ["derive_more-impl/not"]
 sum = ["derive_more-impl/sum"]
 try_into = ["derive_more-impl/try_into"]
 is_variant = ["derive_more-impl/is_variant"]
+std = []
 unwrap = ["derive_more-impl/unwrap"]
 
 default = [
@@ -83,6 +84,7 @@ default = [
     "mul_assign",
     "mul",
     "not",
+    "std",
     "sum",
     "try_into",
     "is_variant",
@@ -228,6 +230,7 @@ required-features = [
     "index",
     "index_mut",
     "into",
+    "into_iterator",
     "mul_assign",
     "mul",
     "not",

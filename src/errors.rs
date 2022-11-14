@@ -40,3 +40,6 @@ impl<T> fmt::Display for TryIntoError<T> {
         )
     }
 }
+
+#[cfg(feature = "std")]
+impl<T: fmt::Debug> ::std::error::Error for TryIntoError<T> {}
