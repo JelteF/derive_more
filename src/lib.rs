@@ -32,3 +32,12 @@
 
 #[doc(inline)]
 pub use derive_more_impl::*;
+
+
+mod aserror;
+
+// Not public API.
+#[doc(hidden)]
+pub mod __private {
+    pub use crate::aserror::AsDynError;
+}

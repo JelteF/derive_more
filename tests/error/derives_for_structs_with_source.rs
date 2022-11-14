@@ -248,3 +248,13 @@ fn unnamed_struct_ignore_redundant() {
 
     assert!(TestErr::default().source().is_none())
 }
+
+#[test]
+fn named_struct_with_trait_object() {
+    derive_display!(TestErr);
+    #[derive(Default, Debug, Error)]
+    struct TestErr {
+        source: Box<dyn Error + Send + 'static>,
+        field: i32,
+    }
+}
