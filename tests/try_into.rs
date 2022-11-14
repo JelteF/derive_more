@@ -14,7 +14,7 @@ enum MixedInts {
         int: i64,
     },
     UnsignedWithIgnoredField(#[try_into(ignore)] bool, i64),
-    NamedUnsignedWithIgnnoredField {
+    NamedUnsignedWithIgnoredField {
         #[try_into(ignore)]
         useless: bool,
         x: i64,
@@ -44,7 +44,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i).unwrap_err().to_string(),
-        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64"
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(i64::try_from(i).unwrap_err().input, MixedInts::SmallInt(42));
     assert_eq!(
@@ -99,7 +99,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i).unwrap_err().to_string(),
-        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64"
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!((42i32, 64i32), i.try_into().unwrap());
     assert_eq!((&42i32, &64i32), (&i).try_into().unwrap());
@@ -124,7 +124,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i).unwrap_err().to_string(),
-        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64"
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
         <(i32, i32)>::try_from(i).unwrap_err().to_string(),
@@ -149,7 +149,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i).unwrap_err().to_string(),
-        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64"
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
         <(i32, i32)>::try_from(i).unwrap_err().to_string(),
@@ -177,11 +177,11 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i).unwrap_err().to_string(),
-        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64"
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
         i64::try_from(i).unwrap_err().to_string(),
-        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64"
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
         <(i32, i32)>::try_from(i).unwrap_err().to_string(),
@@ -209,7 +209,7 @@ fn test_try_into() {
     );
     assert_eq!(
         i64::try_from(i).unwrap_err().to_string(),
-        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64"
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
         <(i32, i32)>::try_from(i).unwrap_err().to_string(),
