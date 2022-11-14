@@ -17,6 +17,7 @@ pub struct TryIntoError<T> {
 impl<T> TryIntoError<T> {
     /// Creates a new [`TryIntoError`].
     #[must_use]
+    #[inline]
     pub const fn new(
         input: T,
         variant_names: &'static str,
