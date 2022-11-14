@@ -32,3 +32,6 @@
 
 #[doc(inline)]
 pub use derive_more_impl::*;
+
+mod errors;
+pub use crate::errors::TryIntoError;
