@@ -1,6 +1,6 @@
 use core::fmt;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct TryIntoError<T> {
     pub input: T,
     variant_names: &'static str,
