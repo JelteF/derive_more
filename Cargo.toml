@@ -28,9 +28,6 @@ members = ["impl"]
 [dependencies]
 derive_more-impl = { version = "=0.99.17", path = "impl" }
 
-[build-dependencies]
-rustc_version = { version = "0.4", optional = true }
-
 [dev-dependencies]
 rustversion = "1.0"
 trybuild = "1.0.56"
@@ -92,7 +89,7 @@ default = [
     "unwrap"
 ]
 
-testing-helpers = ["derive_more-impl/testing-helpers", "rustc_version"]
+testing-helpers = ["derive_more-impl/testing-helpers"]
 
 [[test]]
 name = "add_assign"
