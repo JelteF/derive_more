@@ -15,7 +15,6 @@ categories = ["development-tools", "development-tools::procedural-macro-helpers"
 
 include = [
     "src/**/*.rs",
-    "doc/**/*.md",
     "Cargo.toml",
     "LICENSE",
     "README.md",
@@ -23,19 +22,11 @@ include = [
     "tests/**/*.rs", # debian packaging wants this
 ]
 
-[lib]
-name = "derive_more"
-proc-macro = true
+[workspace]
+members = ["impl"]
 
 [dependencies]
-proc-macro2 = "1.0"
-quote = "1.0"
-syn = "1.0.81"
-convert_case = { version = "0.6", optional = true }
-unicode-xid = { version = "0.2.2", optional = true }
-
-[build-dependencies]
-rustc_version = { version = "0.4", optional = true }
+derive_more-impl = { version = "=0.99.17", path = "impl" }
 
 [dev-dependencies]
 rustversion = "1.0"
@@ -48,30 +39,29 @@ github = { repository = "JelteF/derive_more", workflow = "CI" }
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-add_assign = []
-add = []
-as_mut = []
-as_ref = []
-constructor = []
-deref = []
-deref_mut = []
-display = ["syn/extra-traits", "unicode-xid"]
-error = ["syn/extra-traits"]
-from = ["syn/extra-traits"]
-from_str = ["convert_case"]
-index = []
-index_mut = []
-into = ["syn/extra-traits"]
-into_iterator = []
-iterator = []
-mul_assign = ["syn/extra-traits"]
-mul = ["syn/extra-traits"]
-not = ["syn/extra-traits"]
-sum = []
-try_into = ["syn/extra-traits"]
-testing-helpers = ["rustc_version"]
-is_variant = ["convert_case"]
-unwrap = ["convert_case", "rustc_version"]
+add_assign = ["derive_more-impl/add_assign"]
+add = ["derive_more-impl/add"]
+as_mut = ["derive_more-impl/as_mut"]
+as_ref = ["derive_more-impl/as_ref"]
+constructor = ["derive_more-impl/constructor"]
+deref = ["derive_more-impl/deref"]
+deref_mut = ["derive_more-impl/deref_mut"]
+display = ["derive_more-impl/display"]
+error = ["derive_more-impl/error"]
+from = ["derive_more-impl/from"]
+from_str = ["derive_more-impl/from_str"]
+index = ["derive_more-impl/index"]
+index_mut = ["derive_more-impl/index_mut"]
+into = ["derive_more-impl/into"]
+into_iterator = ["derive_more-impl/into_iterator"]
+iterator = ["derive_more-impl/iterator"]
+mul_assign = ["derive_more-impl/mul_assign"]
+mul = ["derive_more-impl/mul"]
+not = ["derive_more-impl/not"]
+sum = ["derive_more-impl/sum"]
+try_into = ["derive_more-impl/try_into"]
+is_variant = ["derive_more-impl/is_variant"]
+unwrap = ["derive_more-impl/unwrap"]
 
 default = [
     "add_assign",
@@ -98,6 +88,8 @@ default = [
     "is_variant",
     "unwrap"
 ]
+
+testing-helpers = ["derive_more-impl/testing-helpers"]
 
 [[test]]
 name = "add_assign"

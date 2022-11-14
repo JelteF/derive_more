@@ -47,11 +47,11 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 ## Example usage
 
 ```rust
-# #![cfg_attr(feature = "nightly", feature(error_generic_member_access, provide_any))]
+# #![cfg_attr(nightly, feature(error_generic_member_access, provide_any))]
 // Nightly requires enabling this features:
 // #![feature(error_generic_member_access, provide_any)]
-# #[cfg(not(feature = "nightly"))] fn main() {}
-# #[cfg(feature = "nightly")] fn main() {
+# #[cfg(not(nightly))] fn main() {}
+# #[cfg(nightly)] fn main() {
 # use std::{any, error::Error as _, backtrace::Backtrace};
 #
 # use derive_more::{Display, Error, From};

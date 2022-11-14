@@ -26,7 +26,7 @@ If a new behaviour makes sense, that is different from the current behavior, the
 
 ### Documentation
 
-Documentation is contained in the `doc/*.md` files and [README].
+Documentation is contained in the `impl/doc/*.md` files and [README].
 
 Documentation should be up-to-date with any [PR] changes visible for library end-users.
 
@@ -51,7 +51,7 @@ The best strategy for writing a new integration test is to look at existing inte
 
 #### Documentation tests
 
-These are the [code examples][1] in the `doc/*.md` files and [README].
+These are the [code examples][1] in the `impl/doc/*.md` files and [README].
 
 Writing documentation tests is needed for better illustration of the added/altered capabilities for end-users of the crate.
 
@@ -92,7 +92,7 @@ To produce a new release of the `derive_more` crate, perform the following steps
 
 1. Complete the existing [CHANGELOG] or fill up a new one for the new version.
 2. Update [README] installation instructions with the new version.
-3. Run `cargo release patch` (or `minor`/`major`).
+3. Run `cargo release patch --workspace` (or `minor`/`major`).
 4. Wait for the CI pipeline to complete successfully, and the [GitHub release] being created.
 
 

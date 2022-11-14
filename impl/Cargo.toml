@@ -1,0 +1,70 @@
+[package]
+name = "derive_more-impl"
+version = "0.99.17" # should be the same as main crate version
+edition = "2021"
+rust-version = "1.56.0"
+description = "Internal implementation of `derive_more` crate"
+authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
+license = "MIT"
+repository = "https://github.com/JelteF/derive_more"
+documentation = "https://docs.rs/derive_more"
+
+# explicitly no keywords or categories so it cannot be found easily
+
+include = [
+    "src/**/*.rs",
+    "doc/**/*.md",
+    "Cargo.toml",
+    "LICENSE",
+]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0.81"
+convert_case = { version = "0.6", optional = true }
+unicode-xid = { version = "0.2.2", optional = true }
+
+[build-dependencies]
+rustc_version = { version = "0.4", optional = true }
+
+[dev-dependencies]
+derive_more = { path = ".." }
+
+[badges]
+github = { repository = "JelteF/derive_more", workflow = "CI" }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+add_assign = []
+add = []
+as_mut = []
+as_ref = []
+constructor = []
+deref = []
+deref_mut = []
+display = ["syn/extra-traits", "unicode-xid"]
+error = ["syn/extra-traits"]
+from = ["syn/extra-traits"]
+from_str = ["convert_case"]
+index = []
+index_mut = []
+into = ["syn/extra-traits"]
+into_iterator = []
+iterator = []
+mul_assign = ["syn/extra-traits"]
+mul = ["syn/extra-traits"]
+not = ["syn/extra-traits"]
+sum = []
+try_into = ["syn/extra-traits"]
+is_variant = ["convert_case"]
+unwrap = ["convert_case"]
+
+default = []
+
+testing-helpers = ["rustc_version"]

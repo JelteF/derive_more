@@ -29,7 +29,7 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - run: cargo clippy --all-features -- -D warnings
+      - run: cargo clippy --workspace --all-features -- -D warnings
 
   rustfmt:
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
 
-      - run: cargo test --features testing-helpers
+      - run: cargo test --workspace --features testing-helpers
 
   test:
     strategy:
@@ -94,7 +94,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
       - run: rustup default ${{ matrix.toolchain }}
 
-      - run: cargo test --features testing-helpers
+      - run: cargo test --workspace --features testing-helpers
 
   test-features:
     name: test features
@@ -129,7 +129,7 @@ jobs:
         with:
           toolchain: nightly
 
-      - run: cargo +nightly doc
+      - run: cargo +nightly doc --workspace
         env:
           RUSTDOCFLAGS: --cfg docsrs
 
@@ -156,8 +156,8 @@ jobs:
 
       - name: Parse release version
         id: release
-        run: echo ::set-output
-                  name=version::${GITHUB_REF#refs/tags/v}
+        run: echo "version=${GITHUB_REF#refs/tags/v}"
+             >> $GITHUB_OUTPUT
       - name: Verify release version matches `derive_more` Cargo manifest
         run: |
           test "${{ steps.release.outputs.version }}" \
@@ -165,8 +165,8 @@ jobs:
 
       - name: Parse CHANGELOG link
         id: changelog
-        run: echo ::set-output
-                  name=link::${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## ${{ steps.release.outputs.version }}/{s/^## \([^ ]*\) - \([0-9].*\)/\1---\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)
+        run: echo "link=${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## ${{ steps.release.outputs.version }}/{s/^## \([^ ]*\) - \([0-9].*\)/\1---\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)"
+             >> $GITHUB_OUTPUT
 
       - uses: softprops/action-gh-release@v1
         with:
