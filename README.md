@@ -128,8 +128,7 @@ These are traits that can be used for operator overloading.
 
 These don't derive traits, but derive static methods instead.
 
-1. [`Constructor`], this derives a `new` method that can be used as a constructor. It also supports
-   `const fn` if `const` feature is enabled.
+1. [`Constructor`], this derives a `new` method that can be used as a constructor.
    This is very basic if you need more customization for your constructor, check
    out the [`derive-new`] crate.
 2. [`IsVariant`], for each variant `foo` of an enum type, derives a `is_foo` method.

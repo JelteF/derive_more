@@ -24,7 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `FromStr` derive support for enums that contain variants without fields.
   If you pass the name of the variant to `from_str` it will create the matching
   variant.
-- Add `const` feature, which supports `const fn` on `Constructor`.
+- Add `const fn` on `Constructor`, and `IsVariant`. 
+- Add `const` feature, which support `const fn` on `Unwrap`. See issue (67441)[https://github.com/rust-lang/rust/issues/67441]
 
 ### Improvements
 

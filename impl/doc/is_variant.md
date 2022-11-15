@@ -33,10 +33,10 @@ The derive in the above example code generates the following code:
 #     Nothing
 # }
 impl <T> Maybe<T>{
-    pub fn is_just(&self) -> bool {
+    pub const fn is_just(&self) -> bool {
         match self {Self::Just(..) => true, _ => false}
     }
-    pub fn is_nothing(&self) -> bool {
+    pub const fn is_nothing(&self) -> bool {
         match self {Self::Nothing => true, _ => false}
     }
 }
