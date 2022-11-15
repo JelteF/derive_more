@@ -89,8 +89,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             })
             .collect::<Vec<_>>()
             .join(", ");
-        let message =
-            format!("Only {} can be converted to {}", variant_names, output_type);
 
         let generics_impl;
         let (_, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -108,13 +106,13 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                  (#(#reference_with_lifetime #original_types),*)
                  #where_clause
             {
-                type Error = &'static str;
+                type Error = ::derive_more::TryIntoError<#reference_with_lifetime #input_type>;
 
                 #[inline]
                 fn try_from(value: #reference_with_lifetime #input_type #ty_generics) -> ::core::result::Result<Self, Self::Error> {
                     match value {
                         #(#matchers)|* => ::core::result::Result::Ok(#vars),
-                        _ => ::core::result::Result::Err(#message),
+                        _ => ::core::result::Result::Err(::derive_more::TryIntoError::new(value, #variant_names, #output_type)),
                     }
                 }
             }

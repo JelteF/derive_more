@@ -6,7 +6,7 @@ use derive_more::TryInto;
 // has been redefined.
 type Result = ();
 
-#[derive(Clone, Copy, TryInto)]
+#[derive(TryInto, Clone, Copy, Debug, Eq, PartialEq)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedInts {
     SmallInt(i32),
@@ -14,7 +14,7 @@ enum MixedInts {
         int: i64,
     },
     UnsignedWithIgnoredField(#[try_into(ignore)] bool, i64),
-    NamedUnsignedWithIgnnoredField {
+    NamedUnsignedWithIgnoredField {
         #[try_into(ignore)]
         useless: bool,
         x: i64,
@@ -36,161 +36,192 @@ enum MixedInts {
 #[test]
 fn test_try_into() {
     let mut i = MixedInts::SmallInt(42);
-    assert_eq!(Ok(42i32), i.try_into());
-    assert_eq!(Ok(&42i32), (&i).try_into());
-    assert_eq!(Ok(&mut 42i32), (&mut i).try_into());
+    assert_eq!(42i32, i.try_into().unwrap());
+    assert_eq!(&42i32, <_ as TryInto<&i32>>::try_into(&i).unwrap());
     assert_eq!(
-        i64::try_from(i),
-        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
+        &mut 42i32,
+        <_ as TryInto<&mut i32>>::try_into(&mut i).unwrap()
     );
     assert_eq!(
-        <(i32, i32)>::try_from(i),
-        Err("Only TwoSmallInts can be converted to (i32, i32)")
+        i64::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
+    );
+    assert_eq!(i64::try_from(i).unwrap_err().input, MixedInts::SmallInt(42));
+    assert_eq!(
+        <(i32, i32)>::try_from(i).unwrap_err().to_string(),
+        "Only TwoSmallInts can be converted to (i32, i32)"
     );
     assert_eq!(
-        <(i64, i64)>::try_from(i),
-        Err("Only NamedBigInts can be converted to (i64, i64)")
+        <(i64, i64)>::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInts can be converted to (i64, i64)"
     );
     assert_eq!(
-        u32::try_from(i),
-        Err("Only Unsigned, NamedUnsigned can be converted to u32")
+        u32::try_from(i).unwrap_err().to_string(),
+        "Only Unsigned, NamedUnsigned can be converted to u32"
     );
-    assert_eq!(<()>::try_from(i), Err("Only Unit can be converted to ()"));
+    assert_eq!(
+        <()>::try_from(i).unwrap_err().to_string(),
+        "Only Unit can be converted to ()"
+    );
 
     let mut i = MixedInts::NamedBigInt { int: 42 };
     assert_eq!(
-        i32::try_from(i),
-        Err("Only SmallInt can be converted to i32")
+        i32::try_from(i).unwrap_err().to_string(),
+        "Only SmallInt can be converted to i32"
     );
-    assert_eq!(Ok(42i64), i.try_into());
-    assert_eq!(Ok(&42i64), (&i).try_into());
-    assert_eq!(Ok(&mut 42i64), (&mut i).try_into());
+    assert_eq!(42i64, i.try_into().unwrap());
+    assert_eq!(&42i64, <_ as TryInto<&i64>>::try_into(&i).unwrap());
     assert_eq!(
-        <(i32, i32)>::try_from(i),
-        Err("Only TwoSmallInts can be converted to (i32, i32)")
-    );
-    assert_eq!(
-        <(i64, i64)>::try_from(i),
-        Err("Only NamedBigInts can be converted to (i64, i64)")
+        &mut 42i64,
+        <_ as TryInto<&mut i64>>::try_into(&mut i).unwrap()
     );
     assert_eq!(
-        u32::try_from(i),
-        Err("Only Unsigned, NamedUnsigned can be converted to u32")
+        <(i32, i32)>::try_from(i).unwrap_err().to_string(),
+        "Only TwoSmallInts can be converted to (i32, i32)"
     );
-    assert_eq!(<()>::try_from(i), Err("Only Unit can be converted to ()"));
+    assert_eq!(
+        <(i64, i64)>::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInts can be converted to (i64, i64)"
+    );
+    assert_eq!(
+        u32::try_from(i).unwrap_err().to_string(),
+        "Only Unsigned, NamedUnsigned can be converted to u32"
+    );
+    assert_eq!(
+        <()>::try_from(i).unwrap_err().to_string(),
+        "Only Unit can be converted to ()"
+    );
 
     let mut i = MixedInts::TwoSmallInts(42, 64);
     assert_eq!(
-        i32::try_from(i),
-        Err("Only SmallInt can be converted to i32")
+        i32::try_from(i).unwrap_err().to_string(),
+        "Only SmallInt can be converted to i32"
     );
     assert_eq!(
-        i64::try_from(i),
-        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
+        i64::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
-    assert_eq!(Ok((42i32, 64i32)), i.try_into());
-    assert_eq!(Ok((&42i32, &64i32)), (&i).try_into());
-    assert_eq!(Ok((&mut 42i32, &mut 64i32)), (&mut i).try_into());
+    assert_eq!((42i32, 64i32), i.try_into().unwrap());
+    assert_eq!((&42i32, &64i32), (&i).try_into().unwrap());
+    assert_eq!((&mut 42i32, &mut 64i32), (&mut i).try_into().unwrap());
     assert_eq!(
-        <(i64, i64)>::try_from(i),
-        Err("Only NamedBigInts can be converted to (i64, i64)")
+        <(i64, i64)>::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInts can be converted to (i64, i64)"
     );
     assert_eq!(
-        u32::try_from(i),
-        Err("Only Unsigned, NamedUnsigned can be converted to u32")
+        u32::try_from(i).unwrap_err().to_string(),
+        "Only Unsigned, NamedUnsigned can be converted to u32"
     );
-    assert_eq!(<()>::try_from(i), Err("Only Unit can be converted to ()"));
+    assert_eq!(
+        <()>::try_from(i).unwrap_err().to_string(),
+        "Only Unit can be converted to ()"
+    );
 
     let mut i = MixedInts::NamedBigInts { x: 42, y: 64 };
     assert_eq!(
-        i32::try_from(i),
-        Err("Only SmallInt can be converted to i32")
+        i32::try_from(i).unwrap_err().to_string(),
+        "Only SmallInt can be converted to i32"
     );
     assert_eq!(
-        i64::try_from(i),
-        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
+        i64::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
-        <(i32, i32)>::try_from(i),
-        Err("Only TwoSmallInts can be converted to (i32, i32)")
+        <(i32, i32)>::try_from(i).unwrap_err().to_string(),
+        "Only TwoSmallInts can be converted to (i32, i32)"
     );
-    assert_eq!(Ok((42i64, 64i64)), i.try_into());
-    assert_eq!(Ok((&42i64, &64i64)), (&i).try_into());
-    assert_eq!(Ok((&mut 42i64, &mut 64i64)), (&mut i).try_into());
+    assert_eq!((42i64, 64i64), i.try_into().unwrap());
+    assert_eq!((&42i64, &64i64), (&i).try_into().unwrap());
+    assert_eq!((&mut 42i64, &mut 64i64), (&mut i).try_into().unwrap());
     assert_eq!(
-        u32::try_from(i),
-        Err("Only Unsigned, NamedUnsigned can be converted to u32")
+        u32::try_from(i).unwrap_err().to_string(),
+        "Only Unsigned, NamedUnsigned can be converted to u32"
     );
-    assert_eq!(<()>::try_from(i), Err("Only Unit can be converted to ()"));
+    assert_eq!(
+        <()>::try_from(i).unwrap_err().to_string(),
+        "Only Unit can be converted to ()"
+    );
 
     let mut i = MixedInts::Unsigned(42);
     assert_eq!(
-        i32::try_from(i),
-        Err("Only SmallInt can be converted to i32")
+        i32::try_from(i).unwrap_err().to_string(),
+        "Only SmallInt can be converted to i32"
     );
     assert_eq!(
-        i64::try_from(i),
-        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
+        i64::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
-        <(i32, i32)>::try_from(i),
-        Err("Only TwoSmallInts can be converted to (i32, i32)")
+        <(i32, i32)>::try_from(i).unwrap_err().to_string(),
+        "Only TwoSmallInts can be converted to (i32, i32)"
     );
     assert_eq!(
-        <(i64, i64)>::try_from(i),
-        Err("Only NamedBigInts can be converted to (i64, i64)")
+        <(i64, i64)>::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInts can be converted to (i64, i64)"
     );
-    assert_eq!(Ok(42u32), i.try_into());
-    assert_eq!(Ok(&42u32), (&i).try_into());
-    assert_eq!(Ok(&mut 42u32), (&mut i).try_into());
-    assert_eq!(<()>::try_from(i), Err("Only Unit can be converted to ()"));
+    assert_eq!(42u32, i.try_into().unwrap());
+    assert_eq!(&42u32, <_ as TryInto<&u32>>::try_into(&i).unwrap());
+    assert_eq!(
+        &mut 42u32,
+        <_ as TryInto<&mut u32>>::try_into(&mut i).unwrap()
+    );
+    assert_eq!(
+        <()>::try_from(i).unwrap_err().to_string(),
+        "Only Unit can be converted to ()"
+    );
 
     let mut i = MixedInts::NamedUnsigned { x: 42 };
     assert_eq!(
-        i32::try_from(i),
-        Err("Only SmallInt can be converted to i32")
+        i32::try_from(i).unwrap_err().to_string(),
+        "Only SmallInt can be converted to i32"
     );
     assert_eq!(
-        i64::try_from(i),
-        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
+        i64::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
-        i64::try_from(i),
-        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
+        i64::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
-        <(i32, i32)>::try_from(i),
-        Err("Only TwoSmallInts can be converted to (i32, i32)")
+        <(i32, i32)>::try_from(i).unwrap_err().to_string(),
+        "Only TwoSmallInts can be converted to (i32, i32)"
     );
     assert_eq!(
-        <(i64, i64)>::try_from(i),
-        Err("Only NamedBigInts can be converted to (i64, i64)")
+        <(i64, i64)>::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInts can be converted to (i64, i64)"
     );
-    assert_eq!(Ok(42u32), i.try_into());
-    assert_eq!(Ok(&42u32), (&i).try_into());
-    assert_eq!(Ok(&mut 42u32), (&mut i).try_into());
-    assert_eq!(<()>::try_from(i), Err("Only Unit can be converted to ()"));
+    assert_eq!(42u32, i.try_into().unwrap());
+    assert_eq!(&42u32, <_ as TryInto<&u32>>::try_into(&i).unwrap());
+    assert_eq!(
+        &mut 42u32,
+        <_ as TryInto<&mut u32>>::try_into(&mut i).unwrap()
+    );
+    assert_eq!(
+        <()>::try_from(i).unwrap_err().to_string(),
+        "Only Unit can be converted to ()"
+    );
 
     let i = MixedInts::Unit;
     assert_eq!(
-        i32::try_from(i),
-        Err("Only SmallInt can be converted to i32")
+        i32::try_from(i).unwrap_err().to_string(),
+        "Only SmallInt can be converted to i32"
     );
     assert_eq!(
-        i64::try_from(i),
-        Err("Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnnoredField can be converted to i64")
+        i64::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
     );
     assert_eq!(
-        <(i32, i32)>::try_from(i),
-        Err("Only TwoSmallInts can be converted to (i32, i32)")
+        <(i32, i32)>::try_from(i).unwrap_err().to_string(),
+        "Only TwoSmallInts can be converted to (i32, i32)"
     );
     assert_eq!(
-        <(i64, i64)>::try_from(i),
-        Err("Only NamedBigInts can be converted to (i64, i64)")
+        <(i64, i64)>::try_from(i).unwrap_err().to_string(),
+        "Only NamedBigInts can be converted to (i64, i64)"
     );
     assert_eq!(
-        u32::try_from(i),
-        Err("Only Unsigned, NamedUnsigned can be converted to u32")
+        u32::try_from(i).unwrap_err().to_string(),
+        "Only Unsigned, NamedUnsigned can be converted to u32"
     );
-    assert_eq!(Ok(()), i.try_into());
+    assert_eq!((), i.try_into().unwrap());
 }
