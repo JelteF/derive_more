@@ -75,6 +75,21 @@ jobs:
 
       - run: cargo test --workspace --features testing-helpers
 
+  no_std:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install cargo nono
+        run: curl -LSfs https://japaric.github.io/trust/install.sh
+             | sh -s -- --git hobofan/cargo-nono
+
+      - run: cargo nono check --package derive_more
+                   --no-default-features --features all_no_std
+
   test:
     strategy:
       fail-fast: false
@@ -146,6 +161,7 @@ jobs:
     needs:
       - clippy
       - msrv
+      - no_std
       - rustdoc
       - rustfmt
       - test
