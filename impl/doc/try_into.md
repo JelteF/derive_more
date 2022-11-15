@@ -24,20 +24,29 @@ variants you want to derive `TryInto` for.
 ```rust
 # use derive_more::TryInto;
 #
-#[derive(TryInto, Clone)]
+#[derive(TryInto, Clone, Debug)]
 #[try_into(owned, ref, ref_mut)]
 enum MixedData {
     Int(u32),
     String(String),
 }
 
-let string = MixedData::String("foo".to_string());
-let int = MixedData::Int(123);
-assert_eq!(Ok(123u32), int.clone().try_into());
-assert_eq!(Ok(&123u32), (&int.clone()).try_into());
-assert_eq!(Ok(&mut 123u32), (&mut int.clone()).try_into());
-assert_eq!("foo".to_string(), String::try_from(string.clone()).unwrap());
-assert!(u32::try_from(string).is_err());
+let mixed_string = MixedData::String("foo".to_string());
+let mixed_int1 = MixedData::Int(123);
+let mixed_int2 = mixed_int1.clone();
+let mut mixed_int3 = mixed_int1.clone();
+
+assert_eq!(123u32, mixed_int1.try_into().unwrap());
+
+let int_ref : &u32 = (&mixed_int2).try_into().unwrap();
+assert_eq!(&123u32, int_ref);
+
+let int_ref_mut : &mut u32 = (&mut mixed_int3).try_into().unwrap();
+assert_eq!(&mut 123u32, int_ref_mut);
+
+assert_eq!("foo".to_string(), String::try_from(mixed_string.clone()).unwrap());
+
+assert!(u32::try_from(mixed_string).is_err());
 ```
 
 

@@ -75,6 +75,25 @@ jobs:
 
       - run: cargo test --workspace --features testing-helpers
 
+  no_std:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install cargo nono
+        run: curl -LSfs https://japaric.github.io/trust/install.sh
+             | sh -s -- --git hobofan/cargo-nono
+                        --tag $(curl -s https://api.github.com/repos/hobofan/cargo-nono/releases/latest
+                                | jq -r '.tag_name')
+             # TODO: Remove the latest Git tag detection above once this PR is merged:
+             #       https://github.com/japaric/trust/pull/137
+
+      - run: cargo nono check --package derive_more
+                   --no-default-features --features all_no_std
+
   test:
     strategy:
       fail-fast: false
@@ -146,6 +165,7 @@ jobs:
     needs:
       - clippy
       - msrv
+      - no_std
       - rustdoc
       - rustfmt
       - test

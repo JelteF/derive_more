@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `From` derive doesn't derive `From<()>` for enum variants without any
   fields anymore. This feature was removed because it was considered useless in
   practice.
+- The `TryFrom` derive now returns a dedicated error type instead of a
+  `&'static str` on error.
 
 ### New features
 
