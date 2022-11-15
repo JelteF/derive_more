@@ -86,6 +86,8 @@ jobs:
       - name: Install cargo nono
         run: curl -LSfs https://japaric.github.io/trust/install.sh
              | sh -s -- --git hobofan/cargo-nono
+                        --tag $(curl -s https://api.github.com/repos/hobofan/cargo-nono/releases/latest
+                                | jq -r '.tag_name')
 
       - run: cargo nono check --package derive_more
                    --no-default-features --features all_no_std
