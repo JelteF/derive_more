@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking changes
 
-- The minimum supported rust version is updated to Rust 1.65
+- The minimum supported rust version is updated to Rust 1.65.
 - The `From` derive doesn't derive `From<()>` for enum variants without any
   fields anymore. This feature was removed because it was considered useless in
   practice.
