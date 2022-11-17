@@ -82,22 +82,22 @@ use crate::{
 //         }
 //     })
 // }
-//
-// fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
-//     match trait_name {
-//         "Display" => "display",
-//         "Binary" => "binary",
-//         "Octal" => "octal",
-//         "LowerHex" => "lower_hex",
-//         "UpperHex" => "upper_hex",
-//         "LowerExp" => "lower_exp",
-//         "UpperExp" => "upper_exp",
-//         "Pointer" => "pointer",
-//         "Debug" => "debug",
-//         _ => unimplemented!(),
-//     }
-// }
-//
+
+fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
+    match trait_name {
+        "Display" => "display",
+        "Binary" => "binary",
+        "Octal" => "octal",
+        "LowerHex" => "lower_hex",
+        "UpperHex" => "upper_hex",
+        "LowerExp" => "lower_exp",
+        "UpperExp" => "upper_exp",
+        "Pointer" => "pointer",
+        "Debug" => "debug",
+        _ => unimplemented!(),
+    }
+}
+
 // fn attribute_name_to_trait_name(attribute_name: &str) -> &'static str {
 //     match attribute_name {
 //         "display" => "Display",
@@ -775,6 +775,7 @@ use crate::{
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let attrs = Attributes::parse_attrs(&input.attrs, trait_name)?;
+    let trait_ident = format_ident!("{trait_name}");
 
     // TODO: top-level attribute on enum or union.
     let (bounds, fmt) = match &input.data {
@@ -782,6 +783,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             let s = StructOrEnumVariant {
                 attr: &attrs,
                 fields: &s.fields,
+                trait_ident: &trait_ident,
             };
             let bounds = s.generate_bounds();
             let fmt = s.generate_fmt();
@@ -811,6 +813,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
                     let v = StructOrEnumVariant {
                         attr: &attrs,
                         fields: &variant.fields,
+                        trait_ident: &trait_ident,
                     };
                     let fmt_inner = v.generate_fmt();
 
@@ -878,7 +881,7 @@ impl Attributes {
         let (display_literal, display_args, bounds) = attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident(&trait_name.to_lowercase()))
+            .filter(|attr| attr.path.is_ident(trait_name_to_attribute_name(trait_name)))
             .try_fold(
                 (None, Vec::new(), TokenStream::new()),
                 |(lit, args, mut bounds), attr| {
@@ -1092,7 +1095,7 @@ impl Parse for Attribute {
                 let mut arguments = Vec::new();
 
                 let mut rest = *cursor;
-                while dbg!(!rest.eof()) {
+                while !rest.eof() {
                     let mut expr = None;
                     let mut alias = None;
 
@@ -1103,14 +1106,14 @@ impl Parse for Attribute {
                             // arg.get_or_insert_with(IdentOrTokenStream::new)
                             //     .extend_tt(ident.clone().into())
                             //     .extend_tt(eq.into());
-                            alias = Some(dbg!(ident));
+                            alias = Some(ident);
                             rest = c;
                         }
                     }
 
                     if let Some((gr @ TokenTree::Group(_), c)) = rest.token_tree() {
                         expr.get_or_insert_with(IdentOrTokenStream::new)
-                            .extend_tt(dbg!(gr));
+                            .extend_tt(gr);
                         rest = c;
                     }
 
@@ -1118,10 +1121,10 @@ impl Parse for Attribute {
                         if c.eof()
                             || c.punct().filter(|(p, _)| p.as_char() == ',').is_some()
                         {
-                            expr = Some(dbg!(match expr.take() {
+                            expr = Some(match expr.take() {
                                 None => IdentOrTokenStream::Ident(ident),
                                 Some(s) => s.push_ident(ident),
-                            }));
+                            });
                             rest = c;
                         }
                     }
@@ -1129,7 +1132,7 @@ impl Parse for Attribute {
                     while let Some((tt, c)) = rest.token_tree() {
                         rest = c;
 
-                        match dbg!(tt) {
+                        match tt {
                             TokenTree::Punct(p) if p.as_char() == ',' => {
                                 break;
                             }
@@ -1160,7 +1163,7 @@ impl Parse for Attribute {
 
             return Ok(Attribute::Display {
                 display_literal,
-                display_arguments: dbg!(display_arguments),
+                display_arguments,
             });
         }
 
@@ -1183,6 +1186,7 @@ impl Parse for Attribute {
 struct StructOrEnumVariant<'a> {
     attr: &'a Attributes,
     fields: &'a syn::Fields,
+    trait_ident: &'a Ident,
 }
 
 impl<'a> StructOrEnumVariant<'a> {
@@ -1197,8 +1201,9 @@ impl<'a> StructOrEnumVariant<'a> {
                 .next()
                 .unwrap_or_else(|| unreachable!("count() == 1"));
             let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
+            let trait_ident = self.trait_ident;
 
-            quote! { ::core::write!(__derive_more_f, "{}", #ident) }
+            quote! { ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f) }
         } else {
             todo!("err")
         }
