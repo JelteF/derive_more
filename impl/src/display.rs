@@ -774,7 +774,7 @@ use crate::{
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
-    let attrs = Attributes::parse_attrs(dbg!(&input.attrs), trait_name)?;
+    let attrs = Attributes::parse_attrs(&input.attrs, trait_name)?;
 
     // TODO: top-level attribute on enum or union.
     let (bounds, fmt) = match &input.data {
@@ -792,7 +792,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
                     .ident
                     .clone()
                     .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-                quote! { let #var = val.#member; }
+                quote! { let #var = &val.#member; }
             });
 
             let fmt = quote! {
@@ -1092,8 +1092,8 @@ impl Parse for Attribute {
                 let mut arguments = Vec::new();
 
                 let mut rest = *cursor;
-                'outer: while !rest.eof() {
-                    let mut arg = None;
+                while dbg!(!rest.eof()) {
+                    let mut expr = None;
                     let mut alias = None;
 
                     if let Some((ident, c)) = rest.ident() {
@@ -1103,14 +1103,14 @@ impl Parse for Attribute {
                             // arg.get_or_insert_with(IdentOrTokenStream::new)
                             //     .extend_tt(ident.clone().into())
                             //     .extend_tt(eq.into());
-                            alias = Some(ident);
+                            alias = Some(dbg!(ident));
                             rest = c;
                         }
                     }
 
                     if let Some((gr @ TokenTree::Group(_), c)) = rest.token_tree() {
-                        arg.get_or_insert_with(IdentOrTokenStream::new)
-                            .extend_tt(gr);
+                        expr.get_or_insert_with(IdentOrTokenStream::new)
+                            .extend_tt(dbg!(gr));
                         rest = c;
                     }
 
@@ -1118,26 +1118,20 @@ impl Parse for Attribute {
                         if c.eof()
                             || c.punct().filter(|(p, _)| p.as_char() == ',').is_some()
                         {
-                            arg = Some(match arg.take() {
+                            expr = Some(dbg!(match expr.take() {
                                 None => IdentOrTokenStream::Ident(ident),
                                 Some(s) => s.push_ident(ident),
-                            });
+                            }));
                             rest = c;
                         }
                     }
 
-                    while let Some((tree, c)) = rest.token_tree() {
+                    while let Some((tt, c)) = rest.token_tree() {
                         rest = c;
 
-                        match tree {
+                        match dbg!(tt) {
                             TokenTree::Punct(p) if p.as_char() == ',' => {
-                                if let Some(arg) = arg.take() {
-                                    arguments.push(FmtArgument {
-                                        alias: alias.take(),
-                                        expr: arg,
-                                    });
-                                    break 'outer;
-                                }
+                                break;
                             }
                             TokenTree::Punct(p)
                                 if paired_punct(p.as_char()).is_some() =>
@@ -1146,14 +1140,18 @@ impl Parse for Attribute {
                                     .and_then(|p| parse_until_paired_punct(p, c))
                                     .ok_or_else::<syn::Error, _>(|| todo!("err"))?;
                                 rest = c;
-                                arg.get_or_insert_with(IdentOrTokenStream::new)
+                                expr.get_or_insert_with(IdentOrTokenStream::new)
                                     .extend_ts(more);
                             }
                             tt => {
-                                arg.get_or_insert_with(IdentOrTokenStream::new)
+                                expr.get_or_insert_with(IdentOrTokenStream::new)
                                     .extend_tt(tt);
                             }
                         }
+                    }
+
+                    if let Some(expr) = expr {
+                        arguments.push(FmtArgument { alias, expr });
                     }
                 }
 
@@ -1162,7 +1160,7 @@ impl Parse for Attribute {
 
             return Ok(Attribute::Display {
                 display_literal,
-                display_arguments,
+                display_arguments: dbg!(display_arguments),
             });
         }
 
@@ -1189,7 +1187,7 @@ struct StructOrEnumVariant<'a> {
 
 impl<'a> StructOrEnumVariant<'a> {
     fn generate_fmt(&self) -> TokenStream {
-        if let Some(lit) = &dbg!(self).attr.display_literal {
+        if let Some(lit) = &self.attr.display_literal {
             let args = &self.attr.display_args;
             quote! { ::core::write!(__derive_more_f, #lit, #( #args ),*) }
         } else if self.fields.iter().count() == 1 {
