@@ -8,22 +8,22 @@ use std::fmt::Binary;
 
 use derive_more::{Binary, DebugCustom, Display, Octal, UpperHex};
 
-#[derive(Display, Octal, Binary)]
-struct MyInt(i32);
+// #[derive(Display, Octal, Binary)]
+// struct MyInt(i32);
+//
+// #[derive(UpperHex)]
+// enum IntEnum {
+//     U8(u8),
+//     I8(i8),
+// }
 
-#[derive(UpperHex)]
-enum IntEnum {
-    U8(u8),
-    I8(i8),
+#[derive(Display)]
+#[display("({}, {})", x, y)]
+struct Point2D {
+    x: i32,
+    y: i32,
 }
 
-// #[derive(Display)]
-// #[display(fmt = "({}, {})", x, y)]
-// struct Point2D {
-//     x: i32,
-//     y: i32,
-// }
-//
 // #[derive(Display)]
 // #[display(fmt = "{}", self.sign())]
 // struct PositiveOrNegative {
