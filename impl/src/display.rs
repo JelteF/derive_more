@@ -1,7 +1,7 @@
 use std::{fmt::Display, str::FromStr as _};
 
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{quote, quote_spanned, ToTokens as _};
+use quote::{format_ident, quote, quote_spanned, ToTokens as _};
 use syn::{
     parse::Parser as _, punctuated::Punctuated, spanned::Spanned as _, Error, Result,
 };
@@ -17,7 +17,7 @@ const ALLOWED_ATTRIBUTE_ARGUMENTS: &[&str] = &["fmt", "bound"];
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_name = trait_name.trim_end_matches("Custom");
-    let trait_ident = syn::Ident::new(trait_name, Span::call_site());
+    let trait_ident = format_ident!("{trait_name}");
     let trait_path = &quote!(::core::fmt::#trait_ident);
     let trait_attr = trait_name_to_attribute_name(trait_name);
     let type_params = input
@@ -110,7 +110,7 @@ fn attribute_name_to_trait_name(attribute_name: &str) -> &'static str {
 fn trait_name_to_trait_bound(trait_name: &str) -> syn::TraitBound {
     let path_segments_iterator = vec!["core", "fmt", trait_name]
         .into_iter()
-        .map(|segment| syn::PathSegment::from(Ident::new(segment, Span::call_site())));
+        .map(|segment| syn::PathSegment::from(format_ident!("{segment}")));
 
     syn::TraitBound {
         lifetimes: None,
@@ -200,7 +200,7 @@ impl<'a, 'b> State<'a, 'b> {
             syn::Fields::Unnamed(fields) => {
                 let fields: TokenStream = (0..fields.unnamed.len())
                     .map(|n| {
-                        let i = Ident::new(&format!("_{n}"), Span::call_site());
+                        let i = format_ident!("_{n}");
                         quote!(ref #i,)
                     })
                     .collect();
@@ -432,7 +432,7 @@ impl<'a, 'b> State<'a, 'b> {
                         .collect::<HashSet<_>>()
                         .into_iter()
                         .map(|ident| {
-                            let ident = syn::Ident::new(&ident, fmt.span());
+                            let ident = format_ident!("{ident}", span = fmt.span());
                             quote! { #ident = #ident, }
                         })
                         .collect::<TokenStream>();
@@ -643,9 +643,7 @@ impl<'a, 'b> State<'a, 'b> {
                             field
                                 .ident
                                 .clone()
-                                .unwrap_or_else(|| {
-                                    Ident::new(&format!("_{i}"), Span::call_site())
-                                })
+                                .unwrap_or_else(|| format_ident!("_{i}"))
                                 .into(),
                             ty,
                         )
@@ -697,7 +695,9 @@ impl<'a, 'b> State<'a, 'b> {
             |mut bounds, pl| {
                 let arg = match pl.arg {
                     Parameter::Positional(i) => fmt_args.get(&i).cloned(),
-                    Parameter::Named(i) => Some(syn::Ident::new(&i, fmt_span).into()),
+                    Parameter::Named(i) => {
+                        Some(format_ident!("{i}", span = fmt_span).into())
+                    }
                 };
                 if let Some(arg) = &arg {
                     if fields_type_params.contains_key(arg) {

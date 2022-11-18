@@ -1,9 +1,9 @@
 use crate::utils::{
     add_extra_ty_param_bound, add_extra_where_clauses, MultiFieldData, State,
 };
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
-use syn::{DeriveInput, Ident, Result};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use syn::{DeriveInput, Result};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::new(
@@ -22,10 +22,9 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     } = multi_field_data.clone();
 
     let op_trait_name = if trait_name == "Sum" { "Add" } else { "Mul" };
-    let op_trait_ident = Ident::new(op_trait_name, Span::call_site());
+    let op_trait_ident = format_ident!("{op_trait_name}");
     let op_path = quote!(::core::ops::#op_trait_ident);
-    let op_method_ident =
-        Ident::new(&(op_trait_name.to_lowercase()), Span::call_site());
+    let op_method_ident = format_ident!("{}", op_trait_name.to_lowercase());
     let has_type_params = input.generics.type_params().next().is_none();
     let generics = if has_type_params {
         input.generics.clone()

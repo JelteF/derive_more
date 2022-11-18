@@ -4,8 +4,8 @@
     allow(unused_mut)
 )]
 
-use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
     DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
@@ -89,9 +89,7 @@ impl RefType {
 }
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
-    (0..count)
-        .map(|i| Ident::new(&format!("__{prefix}{i}"), Span::call_site()))
-        .collect()
+    (0..count).map(|i| format_ident!("__{prefix}{i}")).collect()
 }
 
 pub fn field_idents<'a>(fields: &'a [&'a Field]) -> Vec<&'a Ident> {
@@ -418,8 +416,8 @@ impl<'input> State<'input> {
         add_type_bound: bool,
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
-        let trait_ident = Ident::new(trait_name, Span::call_site());
-        let method_ident = Ident::new(&trait_attr, Span::call_site());
+        let trait_ident = format_ident!("{trait_name}");
+        let method_ident = format_ident!("{trait_attr}");
         let trait_path = quote!(#trait_module::#trait_ident);
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
@@ -564,8 +562,8 @@ impl<'input> State<'input> {
         default_info: FullMetaInfo,
     ) -> Result<State<'arg_input>> {
         let trait_name = trait_name.trim_end_matches("ToInner");
-        let trait_ident = Ident::new(trait_name, Span::call_site());
-        let method_ident = Ident::new(&trait_attr, Span::call_site());
+        let trait_ident = format_ident!("{trait_name}");
+        let method_ident = format_ident!("{trait_attr}");
         let trait_path = quote!(#trait_module::#trait_ident);
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {

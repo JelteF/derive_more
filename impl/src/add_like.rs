@@ -3,16 +3,16 @@ use crate::utils::{
     add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
     unnamed_to_vec,
 };
-use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_name = trait_name.trim_end_matches("Self");
-    let trait_ident = Ident::new(trait_name, Span::call_site());
+    let trait_ident = format_ident!("{trait_name}");
     let method_name = trait_name.to_lowercase();
-    let method_ident = Ident::new(&method_name, Span::call_site());
+    let method_ident = format_ident!("{method_name}");
     let input_type = &input.ident;
 
     let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);

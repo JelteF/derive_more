@@ -1,8 +1,8 @@
 use std::iter;
 
-use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens};
-use syn::{parse::Result, DeriveInput, Ident, Index};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
+use syn::{parse::Result, DeriveInput, Index};
 
 use crate::utils::{
     add_where_clauses_for_new_ident, AttrParams, DeriveType, HashMap, MultiFieldData,
@@ -62,7 +62,7 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
                 });
                 from_types.push(quote! { #type_ });
             } else if info.forward {
-                let type_param = &Ident::new(&format!("__FromT{i}"), Span::call_site());
+                let type_param = format_ident!("__FromT{i}");
                 let sub_trait_path = quote! { #trait_path<#type_param> };
                 let type_where_clauses = quote! {
                     where #field_type: #sub_trait_path
@@ -70,7 +70,7 @@ pub fn struct_from(input: &DeriveInput, state: &State) -> TokenStream {
                 new_generics = add_where_clauses_for_new_ident(
                     &new_generics,
                     &[field],
-                    type_param,
+                    &type_param,
                     type_where_clauses,
                     true,
                 );

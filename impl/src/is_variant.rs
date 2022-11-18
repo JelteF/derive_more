@@ -2,7 +2,7 @@ use crate::utils::{AttrParams, DeriveType, State};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, Fields, Ident, Result};
+use syn::{DeriveInput, Fields, Result};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_attr_params(
@@ -28,11 +28,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let mut funcs = vec![];
     for variant_state in state.enabled_variant_data().variant_states {
         let variant = variant_state.variant.unwrap();
-        let fn_name = Ident::new(
-            &format_ident!("is_{}", variant.ident)
-                .to_string()
-                .to_case(Case::Snake),
-            variant.ident.span(),
+        let fn_name = format_ident!(
+            "is_{}",
+            variant.ident.to_string().to_case(Case::Snake),
+            span = variant.ident.span(),
         );
         let variant_ident = &variant.ident;
 

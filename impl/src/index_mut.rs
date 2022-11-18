@@ -1,11 +1,11 @@
 use crate::utils::{add_where_clauses_for_new_ident, SingleFieldData, State};
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
-use syn::{parse::Result, DeriveInput, Ident};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(IndexMut)]` into an implementation of `IndexMut`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let index_type = &Ident::new("__IdxT", Span::call_site());
+    let index_type = format_ident!("__IdxT");
     let mut state = State::with_field_ignore(
         input,
         trait_name,
@@ -30,7 +30,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let new_generics = add_where_clauses_for_new_ident(
         &input.generics,
         &[field],
-        index_type,
+        &index_type,
         type_where_clauses,
         true,
     );
