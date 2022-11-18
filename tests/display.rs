@@ -1,182 +1,333 @@
 #![allow(dead_code, unused_imports)]
 
-use std::path::PathBuf;
-
-// Here just to make sure that this doesn't conflict with
-// the derives in some way
-use std::fmt::{Binary, Display};
+use std::{
+    fmt::{Binary, Display},
+    path::PathBuf,
+};
 
 use derive_more::{Binary, DebugCustom, Display, Octal, UpperHex};
 
-#[derive(Display, Octal, Binary)]
-struct MyInt(i32);
+mod structs {
+    use super::*;
 
-#[derive(UpperHex)]
-enum IntEnum {
-    U8(u8),
-    I8(i8),
-}
+    mod unit {
+        use super::*;
 
-#[derive(Display)]
-#[display("({}, {})", x, y)]
-struct Point2D {
-    x: i32,
-    y: i32,
-}
+        #[derive(Display)]
+        struct Unit;
 
-#[derive(Display)]
-#[display("{}", self.sign())]
-struct PositiveOrNegative {
-    x: i32,
-}
+        #[derive(Display)]
+        struct Tuple();
 
-impl PositiveOrNegative {
-    fn sign(&self) -> &str {
-        if self.x >= 0 {
-            "Positive"
-        } else {
-            "Negative"
+        #[derive(Display)]
+        struct Struct {}
+
+        #[test]
+        fn assert() {
+            assert_eq!(Unit.to_string(), "Unit");
+            assert_eq!(Tuple().to_string(), "Tuple");
+            assert_eq!(Struct {}.to_string(), "Struct");
+        }
+
+        mod str {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("unit")]
+            pub struct Unit;
+
+            #[derive(Display)]
+            #[display("tuple")]
+            pub struct Tuple();
+
+            #[derive(Display)]
+            #[display("struct")]
+            pub struct Struct {}
+
+            #[test]
+            fn assert() {
+                assert_eq!(Unit.to_string(), "unit");
+                assert_eq!(Tuple().to_string(), "tuple");
+                assert_eq!(Struct {}.to_string(), "struct");
+            }
+        }
+
+        mod interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("unit: {}", 0)]
+            pub struct Unit;
+
+            #[derive(Display)]
+            #[display("tuple: {}", 0)]
+            pub struct Tuple();
+
+            #[derive(Display)]
+            #[display("struct: {}", 0)]
+            pub struct Struct {}
+
+            #[test]
+            fn assert() {
+                assert_eq!(Unit.to_string(), "unit: 0");
+                assert_eq!(Tuple().to_string(), "tuple: 0");
+                assert_eq!(Struct {}.to_string(), "struct: 0");
+            }
+        }
+    }
+
+    mod single_field {
+        use super::*;
+
+        #[derive(Display)]
+        struct Tuple(i32);
+
+        #[derive(Binary)]
+        struct Binary(i32);
+
+        #[derive(Display)]
+        struct Struct {
+            field: i32,
+        }
+
+        #[derive(Octal)]
+        struct Octal {
+            field: i32,
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Tuple(0).to_string(), "0");
+            assert_eq!(format!("{:b}", Binary(10)), "1010");
+            assert_eq!(Struct { field: 0 }.to_string(), "0");
+            assert_eq!(format!("{:o}", Octal { field: 10 }).to_string(), "12");
+        }
+
+        mod str {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("tuple")]
+            struct Tuple(i32);
+
+            #[derive(Display)]
+            #[display("struct")]
+            struct Struct {
+                field: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(0).to_string(), "tuple");
+                assert_eq!(Struct { field: 0 }.to_string(), "struct");
+            }
+        }
+
+        mod interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("tuple: {_0} {}", _0)]
+            struct Tuple(i32);
+
+            #[derive(Display)]
+            #[display("struct: {field} {}", field)]
+            struct Struct {
+                field: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(0).to_string(), "tuple: 0 0");
+                assert_eq!(Struct { field: 0 }.to_string(), "struct: 0 0");
+            }
+        }
+    }
+
+    mod multi_field {
+        use super::*;
+
+        mod str {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("tuple")]
+            struct Tuple(i32, i32);
+
+            #[derive(Display)]
+            #[display("struct")]
+            struct Struct {
+                field1: i32,
+                field2: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(1, 2).to_string(), "tuple");
+                assert_eq!(
+                    Struct {
+                        field1: 1,
+                        field2: 2,
+                    }
+                    .to_string(),
+                    "struct",
+                );
+            }
+        }
+
+        mod interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display(
+            "{_0} {ident} {_1} {} {}",
+            _1, _0 + _1, ident = 123, _1 = _0,
+            )]
+            struct Tuple(i32, i32);
+
+            #[derive(Display)]
+            #[display(
+            "{field1} {ident} {field2} {} {}",
+            field2, field1 + field2, ident = 123, field2 = field1,
+            )]
+            struct Struct {
+                field1: i32,
+                field2: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(1, 2).to_string(), "1 123 1 2 3");
+                assert_eq!(
+                    Struct {
+                        field1: 1,
+                        field2: 2,
+                    }
+                    .to_string(),
+                    "1 123 1 2 3",
+                );
+            }
         }
     }
 }
 
-#[derive(Display)]
-#[display("{message}")]
-struct Error {
-    message: &'static str,
-    backtrace: (),
-}
+mod enums {
+    use super::*;
 
-impl Error {
-    fn new(message: &'static str) -> Self {
-        Self {
-            message,
-            backtrace: (),
+    mod no_variants {
+        use super::*;
+
+        #[derive(Display)]
+        enum Void {}
+
+        const fn assert<T: Display>() {}
+        const _: () = assert::<Void>();
+    }
+
+    mod unit_variant {
+        use super::*;
+
+        #[derive(Display)]
+        enum Enum {
+            Unit,
+            Unnamed(),
+            Named {},
+            #[display("STR_UNIT")]
+            StrUnit,
+            #[display("STR_UNNAMED")]
+            StrUnnamed(),
+            #[display("STR_NAMED")]
+            StrNamed {},
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::Unit.to_string(), "Unit");
+            assert_eq!(Enum::Unnamed().to_string(), "Unnamed");
+            assert_eq!(Enum::Named {}.to_string(), "Named");
+            assert_eq!(Enum::StrUnit.to_string(), "STR_UNIT");
+            assert_eq!(Enum::StrUnnamed().to_string(), "STR_UNNAMED");
+            assert_eq!(Enum::StrNamed {}.to_string(), "STR_NAMED");
         }
     }
-}
 
-#[derive(Display)]
-enum E {
-    Uint(u32),
-    #[display("I am B {:b}", i)]
-    Binary {
-        i: i8,
-    },
-    #[display("I am C {}", _0.display())]
-    Path(PathBuf),
-}
+    mod single_field_variant {
+        use super::*;
 
-#[derive(Display)]
-enum Lang {
-    Rust,
-    Go,
-}
+        #[derive(Display)]
+        enum Enum {
+            Unnamed(i32),
+            Named {
+                field: i32,
+            },
+            #[display("unnamed")]
+            StrUnnamed(i32),
+            #[display("named")]
+            StrNamed {
+                field: i32,
+            },
+            #[display("{_0} {}", _0)]
+            InterpolatedUnnamed(i32),
+            #[display("{field} {}", field)]
+            InterpolatedNamed {
+                field: i32,
+            },
+        }
 
-// #[derive(Display)]
-// #[display("Java EE")]
-// enum EE {
-//     A,
-//     B,
-// }
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::Unnamed(1).to_string(), "1");
+            assert_eq!(Enum::Named { field: 1 }.to_string(), "1");
+            assert_eq!(Enum::StrUnnamed(1).to_string(), "unnamed");
+            assert_eq!(Enum::StrNamed { field: 1 }.to_string(), "named");
+            assert_eq!(Enum::InterpolatedUnnamed(1).to_string(), "1 1");
+            assert_eq!(Enum::InterpolatedNamed { field: 1 }.to_string(), "1 1");
+        }
+    }
 
-#[derive(Display)]
-#[display("Hello there!")]
-union U {
-    i: u32,
-}
+    mod multi_field_variant {
+        use super::*;
 
-#[derive(Octal)]
-#[octal("7")]
-struct S;
+        #[derive(Display)]
+        enum Enum {
+            #[display("unnamed")]
+            StrUnnamed(i32, i32),
+            #[display("named")]
+            StrNamed { field1: i32, field2: i32 },
+            #[display(
+            "{_0} {ident} {_1} {} {}",
+            _1, _0 + _1, ident = 123, _1 = _0,
+            )]
+            InterpolatedUnnamed(i32, i32),
+            #[display(
+            "{field1} {ident} {field2} {} {}",
+            field2, field1 + field2, ident = 123, field2 = field1,
+            )]
+            InterpolatedNamed { field1: i32, field2: i32 },
+        }
 
-#[derive(UpperHex)]
-#[upper_hex("UpperHex")]
-struct UH;
-
-#[derive(DebugCustom)]
-#[debug("MyDebug")]
-struct D;
-
-#[derive(Display)]
-struct Unit;
-
-#[derive(Display)]
-struct UnitStruct {}
-
-#[derive(Display)]
-struct UnitTupleStruct();
-
-#[derive(Display)]
-enum EmptyEnum {}
-
-#[derive(Display)]
-#[display("Generic")]
-struct Generic<T>(T);
-
-#[derive(Display)]
-#[display("Here's a prefix for {} and a suffix")]
-enum Affix {
-    A(u32),
-    #[display("{wat} -- {}", stuff)]
-    B {
-        wat: String,
-        stuff: bool,
-    },
-}
-
-#[derive(Debug, Display)]
-#[display("{:?}", self)]
-struct DebugStructAsDisplay;
-
-#[test]
-fn check_display() {
-    assert_eq!(MyInt(-2).to_string(), "-2");
-    assert_eq!(format!("{:b}", MyInt(9)), "1001");
-    assert_eq!(format!("{:#b}", MyInt(9)), "0b1001");
-    assert_eq!(format!("{:o}", MyInt(9)), "11");
-    assert_eq!(format!("{:X}", IntEnum::I8(-1)), "FF");
-    assert_eq!(format!("{:#X}", IntEnum::U8(255)), "0xFF");
-    assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
-    assert_eq!(PositiveOrNegative { x: 123 }.to_string(), "Positive");
-    assert_eq!(PositiveOrNegative { x: 0 }.to_string(), "Positive");
-    assert_eq!(PositiveOrNegative { x: -465 }.to_string(), "Negative");
-    assert_eq!(Error::new("Error").to_string(), "Error");
-    assert_eq!(E::Uint(2).to_string(), "2");
-    assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
-    assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
-    assert_eq!(Lang::Rust.to_string(), "Rust");
-    assert_eq!(Lang::Go.to_string(), "Go");
-    // assert_eq!(EE::A.to_string(), "Java EE");
-    // assert_eq!(EE::B.to_string(), "Java EE");
-    assert_eq!(U { i: 2 }.to_string(), "Hello there!");
-    assert_eq!(format!("{:o}", S), "7");
-    assert_eq!(format!("{:X}", UH), "UpperHex");
-    assert_eq!(format!("{:?}", D), "MyDebug");
-    assert_eq!(Unit.to_string(), "Unit");
-    assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
-    assert_eq!(UnitTupleStruct().to_string(), "UnitTupleStruct");
-    assert_eq!(Generic(()).to_string(), "Generic");
-    // assert_eq!(
-    //     Affix::A(2).to_string(),
-    //     "Here's a prefix for 2 and a suffix"
-    // );
-    // assert_eq!(
-    //     Affix::B {
-    //         wat: "things".to_owned(),
-    //         stuff: false,
-    //     }
-    //     .to_string(),
-    //     "Here's a prefix for things -- false and a suffix"
-    // );
-    assert_eq!(DebugStructAsDisplay.to_string(), "DebugStructAsDisplay");
-}
-
-#[test]
-fn empty_enum_impls_display() {
-    trait S: std::fmt::Display {}
-
-    impl S for EmptyEnum {}
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::StrUnnamed(1, 2).to_string(), "unnamed");
+            assert_eq!(
+                Enum::StrNamed {
+                    field1: 1,
+                    field2: 2,
+                }
+                .to_string(),
+                "named",
+            );
+            assert_eq!(Enum::InterpolatedUnnamed(1, 2).to_string(), "1 123 1 2 3");
+            assert_eq!(
+                Enum::InterpolatedNamed {
+                    field1: 1,
+                    field2: 2,
+                }
+                .to_string(),
+                "1 123 1 2 3",
+            );
+        }
+    }
 }
 
 mod generic {
@@ -578,319 +729,6 @@ mod generic {
 
             let s = Struct(10, 20);
             assert_eq!(s.to_string(), "WHAT 10 EVER 20");
-        }
-    }
-}
-
-mod structs {
-    use super::*;
-
-    mod unit {
-        use super::*;
-
-        #[derive(Display)]
-        struct Unit;
-
-        #[derive(Display)]
-        struct Tuple();
-
-        #[derive(Display)]
-        struct Struct {}
-
-        #[test]
-        fn assert() {
-            assert_eq!(Unit.to_string(), "Unit");
-            assert_eq!(Tuple().to_string(), "Tuple");
-            assert_eq!(Struct {}.to_string(), "Struct");
-        }
-
-        mod str {
-            use super::*;
-
-            #[derive(Display)]
-            #[display("unit")]
-            pub struct Unit;
-
-            #[derive(Display)]
-            #[display("tuple")]
-            pub struct Tuple();
-
-            #[derive(Display)]
-            #[display("struct")]
-            pub struct Struct {}
-
-            #[test]
-            fn assert() {
-                assert_eq!(Unit.to_string(), "unit");
-                assert_eq!(Tuple().to_string(), "tuple");
-                assert_eq!(Struct {}.to_string(), "struct");
-            }
-        }
-
-        mod interpolated {
-            use super::*;
-
-            #[derive(Display)]
-            #[display("unit: {}", 0)]
-            pub struct Unit;
-
-            #[derive(Display)]
-            #[display("tuple: {}", 0)]
-            pub struct Tuple();
-
-            #[derive(Display)]
-            #[display("struct: {}", 0)]
-            pub struct Struct {}
-
-            #[test]
-            fn assert() {
-                assert_eq!(Unit.to_string(), "unit: 0");
-                assert_eq!(Tuple().to_string(), "tuple: 0");
-                assert_eq!(Struct {}.to_string(), "struct: 0");
-            }
-        }
-    }
-
-    mod single_field {
-        use super::*;
-
-        #[derive(Display)]
-        struct Tuple(i32);
-
-        #[derive(Display)]
-        struct Struct {
-            field: i32,
-        }
-
-        #[test]
-        fn assert() {
-            assert_eq!(Tuple(0).to_string(), "0");
-            assert_eq!(Struct { field: 0 }.to_string(), "0");
-        }
-
-        mod str {
-            use super::*;
-
-            #[derive(Display)]
-            #[display("tuple")]
-            struct Tuple(i32);
-
-            #[derive(Display)]
-            #[display("struct")]
-            struct Struct {
-                field: i32,
-            }
-
-            #[test]
-            fn assert() {
-                assert_eq!(Tuple(0).to_string(), "tuple");
-                assert_eq!(Struct { field: 0 }.to_string(), "struct");
-            }
-        }
-
-        mod interpolated {
-            use super::*;
-
-            #[derive(Display)]
-            #[display("tuple: {_0} {}", _0)]
-            struct Tuple(i32);
-
-            #[derive(Display)]
-            #[display("struct: {field} {}", field)]
-            struct Struct {
-                field: i32,
-            }
-
-            #[test]
-            fn assert() {
-                assert_eq!(Tuple(0).to_string(), "tuple: 0 0");
-                assert_eq!(Struct { field: 0 }.to_string(), "struct: 0 0");
-            }
-        }
-    }
-
-    mod multi_field {
-        use super::*;
-
-        mod str {
-            use super::*;
-
-            #[derive(Display)]
-            #[display("tuple")]
-            struct Tuple(i32, i32);
-
-            #[derive(Display)]
-            #[display("struct")]
-            struct Struct {
-                field1: i32,
-                field2: i32,
-            }
-
-            #[test]
-            fn assert() {
-                assert_eq!(Tuple(1, 2).to_string(), "tuple");
-                assert_eq!(
-                    Struct {
-                        field1: 1,
-                        field2: 2,
-                    }
-                    .to_string(),
-                    "struct",
-                );
-            }
-        }
-
-        mod interpolated {
-            use super::*;
-
-            #[derive(Display)]
-            #[display(
-                "{_0} {ident} {_1} {} {}",
-                _1, _0 + _1, ident = 123, _1 = _0,
-            )]
-            struct Tuple(i32, i32);
-
-            #[derive(Display)]
-            #[display(
-                "{field1} {ident} {field2} {} {}",
-                field2, field1 + field2, ident = 123, field2 = field1,
-            )]
-            struct Struct {
-                field1: i32,
-                field2: i32,
-            }
-
-            #[test]
-            fn assert() {
-                assert_eq!(Tuple(1, 2).to_string(), "1 123 1 2 3");
-                assert_eq!(
-                    Struct {
-                        field1: 1,
-                        field2: 2,
-                    }
-                    .to_string(),
-                    "1 123 1 2 3",
-                );
-            }
-        }
-    }
-}
-
-mod enums {
-    use super::*;
-
-    mod no_variants {
-        use super::*;
-
-        #[derive(Display)]
-        enum Void {}
-
-        const fn assert<T: Display>() {}
-        const _: () = assert::<Void>();
-    }
-
-    mod unit_variant {
-        use super::*;
-
-        #[derive(Display)]
-        enum Enum {
-            Unit,
-            Unnamed(),
-            Named {},
-            #[display("STR_UNIT")]
-            StrUnit,
-            #[display("STR_UNNAMED")]
-            StrUnnamed(),
-            #[display("STR_NAMED")]
-            StrNamed {},
-        }
-
-        #[test]
-        fn assert() {
-            assert_eq!(Enum::Unit.to_string(), "Unit");
-            assert_eq!(Enum::Unnamed().to_string(), "Unnamed");
-            assert_eq!(Enum::Named {}.to_string(), "Named");
-            assert_eq!(Enum::StrUnit.to_string(), "STR_UNIT");
-            assert_eq!(Enum::StrUnnamed().to_string(), "STR_UNNAMED");
-            assert_eq!(Enum::StrNamed {}.to_string(), "STR_NAMED");
-        }
-    }
-
-    mod single_field_variant {
-        use super::*;
-
-        #[derive(Display)]
-        enum Enum {
-            Unnamed(i32),
-            Named {
-                field: i32,
-            },
-            #[display("unnamed")]
-            StrUnnamed(i32),
-            #[display("named")]
-            StrNamed {
-                field: i32,
-            },
-            #[display("{_0} {}", _0)]
-            InterpolatedUnnamed(i32),
-            #[display("{field} {}", field)]
-            InterpolatedNamed {
-                field: i32,
-            },
-        }
-
-        #[test]
-        fn assert() {
-            assert_eq!(Enum::Unnamed(1).to_string(), "1");
-            assert_eq!(Enum::Named { field: 1 }.to_string(), "1");
-            assert_eq!(Enum::StrUnnamed(1).to_string(), "unnamed");
-            assert_eq!(Enum::StrNamed { field: 1 }.to_string(), "named");
-            assert_eq!(Enum::InterpolatedUnnamed(1).to_string(), "1 1");
-            assert_eq!(Enum::InterpolatedNamed { field: 1 }.to_string(), "1 1");
-        }
-    }
-
-    mod multi_field_variant {
-        use super::*;
-
-        #[derive(Display)]
-        enum Enum {
-            #[display("unnamed")]
-            StrUnnamed(i32, i32),
-            #[display("named")]
-            StrNamed { field1: i32, field2: i32 },
-            #[display(
-                "{_0} {ident} {_1} {} {}",
-                _1, _0 + _1, ident = 123, _1 = _0,
-            )]
-            InterpolatedUnnamed(i32, i32),
-            #[display(
-                "{field1} {ident} {field2} {} {}",
-                field2, field1 + field2, ident = 123, field2 = field1,
-            )]
-            InterpolatedNamed { field1: i32, field2: i32 },
-        }
-
-        #[test]
-        fn assert() {
-            assert_eq!(Enum::StrUnnamed(1, 2).to_string(), "unnamed");
-            assert_eq!(
-                Enum::StrNamed {
-                    field1: 1,
-                    field2: 2,
-                }
-                .to_string(),
-                "named",
-            );
-            assert_eq!(Enum::InterpolatedUnnamed(1, 2).to_string(), "1 123 1 2 3");
-            assert_eq!(
-                Enum::InterpolatedNamed {
-                    field1: 1,
-                    field2: 2,
-                }
-                .to_string(),
-                "1 123 1 2 3",
-            );
         }
     }
 }
