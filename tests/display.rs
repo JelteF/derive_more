@@ -708,4 +708,70 @@ mod structs {
             }
         }
     }
+
+    mod multi_field {
+        use super::*;
+
+        mod str {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("tuple")]
+            struct Tuple(i32, i32);
+
+            #[derive(Display)]
+            #[display("struct")]
+            struct Struct {
+                field1: i32,
+                field2: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(1, 2).to_string(), "tuple");
+                assert_eq!(
+                    Struct {
+                        field1: 1,
+                        field2: 2,
+                    }
+                    .to_string(),
+                    "struct",
+                );
+            }
+        }
+
+        mod interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display(
+                "{_0} {ident} {_1} {} {}",
+                _1, _0 + _1, ident = 123, _1 = _0,
+            )]
+            struct Tuple(i32, i32);
+
+            #[derive(Display)]
+            #[display(
+                "{field1} {ident} {field2} {} {}",
+                field2, field1 + field2, ident = 123, field2 = field1,
+            )]
+            struct Struct {
+                field1: i32,
+                field2: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(1, 2).to_string(), "1 123 1 2 3");
+                assert_eq!(
+                    Struct {
+                        field1: 1,
+                        field2: 2,
+                    }
+                    .to_string(),
+                    "1 123 1 2 3",
+                );
+            }
+        }
+    }
 }
