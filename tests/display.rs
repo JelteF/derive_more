@@ -581,3 +581,77 @@ mod generic {
         }
     }
 }
+
+fn int() -> i32 {
+    0
+}
+
+mod structs {
+    use super::*;
+
+    mod unit {
+        use super::*;
+
+        #[derive(Display)]
+        struct Unit;
+
+        #[derive(Display)]
+        struct Tuple();
+
+        #[derive(Display)]
+        struct Struct {}
+
+        #[test]
+        fn assert() {
+            assert_eq!(Unit.to_string(), "Unit");
+            assert_eq!(Tuple().to_string(), "Tuple");
+            assert_eq!(Struct {}.to_string(), "Struct");
+        }
+
+        mod lower {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("unit")]
+            pub struct Unit;
+
+            #[derive(Display)]
+            #[display("tuple")]
+            pub struct Tuple();
+
+            #[derive(Display)]
+            #[display("struct")]
+            pub struct Struct {}
+
+            #[test]
+            fn assert() {
+                assert_eq!(Unit.to_string(), "unit");
+                assert_eq!(Tuple().to_string(), "tuple");
+                assert_eq!(Struct {}.to_string(), "struct");
+            }
+        }
+
+        mod lower_interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("unit: {}", int())]
+            pub struct Unit;
+
+            #[derive(Display)]
+            #[display("tuple: {}", int())]
+            pub struct Tuple();
+
+            #[derive(Display)]
+            #[display("struct: {}", int())]
+            pub struct Struct {}
+
+            #[test]
+            fn assert() {
+                assert_eq!(Unit.to_string(), "unit: 0");
+                assert_eq!(Tuple().to_string(), "tuple: 0");
+                assert_eq!(Struct {}.to_string(), "struct: 0");
+            }
+        }
+    }
+}
