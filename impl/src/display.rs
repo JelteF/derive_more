@@ -774,6 +774,12 @@ fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
 
 /// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
+    let trait_name = if trait_name == "DebugCustom" {
+        "Debug"
+    } else {
+        trait_name
+    };
+
     let attrs = Attributes::parse_attrs(&input.attrs, trait_name)?;
     let trait_ident = format_ident!("{trait_name}");
 

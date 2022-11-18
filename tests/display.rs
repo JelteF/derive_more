@@ -88,10 +88,10 @@ struct S;
 #[upper_hex("UpperHex")]
 struct UH;
 
-// #[derive(DebugCustom)]
-// #[debug("MyDebug")]
-// struct D;
-//
+#[derive(DebugCustom)]
+#[debug("MyDebug")]
+struct D;
+
 // #[derive(Display)]
 // struct Unit;
 //
@@ -141,7 +141,7 @@ fn check_display() {
     assert_eq!(U { i: 2 }.to_string(), "Hello there!");
     assert_eq!(format!("{:o}", S), "7");
     assert_eq!(format!("{:X}", UH), "UpperHex");
-    // assert_eq!(format!("{:?}", D), "MyDebug");
+    assert_eq!(format!("{:?}", D), "MyDebug");
     // assert_eq!(Unit.to_string(), "Unit");
     // assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
     assert_eq!(Generic(()).to_string(), "Generic");
