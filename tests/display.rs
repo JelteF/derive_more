@@ -105,6 +105,9 @@ struct Unit;
 struct UnitStruct {}
 
 #[derive(Display)]
+struct UnitTupleStruct();
+
+#[derive(Display)]
 enum EmptyEnum {}
 
 #[derive(Display)]
@@ -152,6 +155,7 @@ fn check_display() {
     assert_eq!(format!("{:?}", D), "MyDebug");
     assert_eq!(Unit.to_string(), "Unit");
     assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
+    assert_eq!(UnitTupleStruct().to_string(), "UnitTupleStruct");
     assert_eq!(Generic(()).to_string(), "Generic");
     // assert_eq!(
     //     Affix::A(2).to_string(),
