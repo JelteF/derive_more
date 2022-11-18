@@ -815,4 +815,30 @@ mod enums {
             assert_eq!(Enum::SecondStruct {}.to_string(), "SECOND_STRUCT");
         }
     }
+
+    mod single_field_variant {
+        use super::*;
+
+        #[derive(Display)]
+        enum Enum {
+            First(i32),
+            FirstNamed {
+                field: i32,
+            },
+            #[display("Second: {_0} {}", _0)]
+            Second(i32),
+            #[display("Second: {field} {}", field)]
+            SecondNamed {
+                field: i32,
+            },
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::First(1).to_string(), "1");
+            assert_eq!(Enum::FirstNamed { field: 1 }.to_string(), "1");
+            assert_eq!(Enum::Second(1).to_string(), "Second: 1 1");
+            assert_eq!(Enum::SecondNamed { field: 1 }.to_string(), "Second: 1 1");
+        }
+    }
 }
