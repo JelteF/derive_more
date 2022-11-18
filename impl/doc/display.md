@@ -10,7 +10,7 @@ In the case of an enum, each of its variants is matched.
 For each matched variant, a `write!` expression will be generated with
 the supplied format, or an automatically inferred one.
 
-You specify the format on each variant by writing e.g. `#[display(fmt = "my val: {}", some_val * 2)]`.
+You specify the format on each variant by writing e.g. `#[display(fmt = "my val: {}", "some_val * 2")]`.
 For enums, you can either specify it on each variant, or on the enum as a whole.
 
 For variants that don't have a format specified, it will simply defer to the format of the
@@ -105,7 +105,7 @@ write `c` without double-quotes.
 #
 #[derive(Display)]
 #[display(bound = "T: MyTrait, U: Display, V: Display")]
-#[display(fmt = "{} {} {}", a.my_function(), b.to_string().len(), c)]
+#[display(fmt = "{} {} {}", "a.my_function()", "b.to_string().len()", "c")]
 struct MyStruct<T, U, V> {
     a: T,
     b: U,
@@ -144,7 +144,7 @@ enum E {
     Binary {
         i: i8,
     },
-    #[display(fmt = "I am C {}", _0.display())]
+    #[display(fmt = "I am C {}", "_0.display()")]
     Path(PathBuf),
 }
 
@@ -178,7 +178,7 @@ struct Unit;
 struct UnitStruct {}
 
 #[derive(Display)]
-#[display(fmt = "{}", self.sign())]
+#[display(fmt = "{}", "self.sign()")]
 struct PositiveOrNegative {
     x: i32,
 }
