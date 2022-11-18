@@ -885,7 +885,12 @@ fn expand_enum(
         },
     )?;
 
-    Ok((bounds, quote! { match self { #fmt } }))
+    let fmt = fmt
+        .is_empty()
+        .then(|| quote! { match *self {} })
+        .unwrap_or_else(|| quote! { match self { #fmt } });
+
+    Ok((bounds, fmt))
 }
 
 fn expand_union(

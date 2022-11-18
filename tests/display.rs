@@ -95,11 +95,11 @@ struct D;
 #[derive(Display)]
 struct Unit;
 
-// #[derive(Display)]
-// struct UnitStruct {}
-//
-// #[derive(Display)]
-// enum EmptyEnum {}
+#[derive(Display)]
+struct UnitStruct {}
+
+#[derive(Display)]
+enum EmptyEnum {}
 
 #[derive(Display)]
 #[display("Generic")]
@@ -143,7 +143,7 @@ fn check_display() {
     assert_eq!(format!("{:X}", UH), "UpperHex");
     assert_eq!(format!("{:?}", D), "MyDebug");
     assert_eq!(Unit.to_string(), "Unit");
-    // assert_eq!(UnitStruct {}.to_string˚(), "UnitStruct");
+    assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
     assert_eq!(Generic(()).to_string(), "Generic");
     // assert_eq!(
     //     Affix::A(2).to_string(),
