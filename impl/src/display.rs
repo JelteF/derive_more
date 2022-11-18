@@ -782,16 +782,16 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
 
     let attrs = Attributes::parse_attrs(&input.attrs, trait_name)?;
     let trait_ident = format_ident!("{trait_name}");
+    let ident = &input.ident;
 
     // TODO: top-level attribute on enum or union.
-    let ctx = (&attrs, &trait_ident, trait_name);
+    let ctx = (&attrs, ident, &trait_ident, trait_name);
     let (bounds, fmt) = match &input.data {
         syn::Data::Struct(s) => expand_struct(s, ctx),
         syn::Data::Enum(e) => expand_enum(e, ctx),
         syn::Data::Union(u) => expand_union(u, ctx),
     }?;
 
-    let ident = &input.ident;
     let (impl_gens, ty_gens, where_clause) = input.generics.split_for_impl();
     let mut where_clause = where_clause.cloned().unwrap_or_else(|| parse_quote!(where));
     where_clause.predicates.extend(bounds);
@@ -814,7 +814,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
 
 fn expand_struct(
     s: &syn::DataStruct,
-    (attrs, trait_ident, trait_name): (&Attributes, &Ident, &str),
+    (attrs, ident, trait_ident, trait_name): (&Attributes, &Ident, &Ident, &str),
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let trait_ident = format_ident!("{trait_name}");
 
@@ -822,6 +822,7 @@ fn expand_struct(
         attrs,
         fields: &s.fields,
         trait_ident: &trait_ident,
+        ident,
     };
     let bounds = s.generate_bounds();
     let fmt = s.generate_fmt();
@@ -845,7 +846,7 @@ fn expand_struct(
 
 fn expand_enum(
     e: &syn::DataEnum,
-    (attrs, trait_ident, trait_name): (&Attributes, &Ident, &str),
+    (attrs, ident, trait_ident, trait_name): (&Attributes, &Ident, &Ident, &str),
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let trait_ident = format_ident!("{trait_name}");
 
@@ -853,16 +854,17 @@ fn expand_enum(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut fmt), variant| {
             let attrs = Attributes::parse_attrs(&variant.attrs, trait_name)?;
+            let ident = &variant.ident;
 
             let v = StructOrEnumVariant {
                 attrs: &attrs,
                 fields: &variant.fields,
                 trait_ident: &trait_ident,
+                ident,
             };
             let fmt_inner = v.generate_fmt();
             bounds.extend(v.generate_bounds());
 
-            let ident = &variant.ident;
             let fields_idents =
                 variant.fields.iter().enumerate().map(|(i, f)| {
                     f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"))
@@ -888,7 +890,7 @@ fn expand_enum(
 
 fn expand_union(
     u: &syn::DataUnion,
-    (attrs, trait_ident, trait_name): (&Attributes, &Ident, &str),
+    (attrs, ident, trait_ident, trait_name): (&Attributes, &Ident, &Ident, &str),
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let fmt_lit = attrs.display_literal.as_ref().ok_or_else(|| {
         Error::new(
@@ -1226,6 +1228,7 @@ struct StructOrEnumVariant<'a> {
     attrs: &'a Attributes,
     fields: &'a syn::Fields,
     trait_ident: &'a Ident,
+    ident: &'a Ident,
 }
 
 impl<'a> StructOrEnumVariant<'a> {
@@ -1244,7 +1247,8 @@ impl<'a> StructOrEnumVariant<'a> {
 
             quote! { ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f) }
         } else {
-            todo!("err")
+            let ident_str = self.ident.to_string();
+            quote! { ::core::write!(__derive_more_f, #ident_str) }
         }
     }
 
