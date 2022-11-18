@@ -78,9 +78,7 @@ struct SingleFieldGenericStruct<T> {
 
 #[test]
 fn single_field_generic_struct() {
-    let mut item = SingleFieldGenericStruct {
-        first: "test".into(),
-    };
+    let mut item = SingleFieldGenericStruct { first: "test" };
 
     assert!(ptr::eq(&mut item.first, item.as_mut()));
 }

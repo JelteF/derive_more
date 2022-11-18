@@ -57,8 +57,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let mut matchers = vec![];
         let vars = &numbered_vars(original_types.len(), "");
         for multi_field_data in multi_field_datas {
-            let patterns: Vec<_> =
-                vars.iter().map(|var| quote! { #pattern_ref #var }).collect();
+            let patterns: Vec<_> = vars
+                .iter()
+                .map(|var| quote! { #pattern_ref #var })
+                .collect();
             matchers.push(
                 multi_field_data.matcher(&multi_field_data.field_indexes, &patterns),
             );
