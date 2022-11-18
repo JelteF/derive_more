@@ -788,4 +788,31 @@ mod enums {
         const fn assert<T: Display>() {}
         const _: () = assert::<Void>();
     }
+
+    mod unit_variant {
+        use super::*;
+
+        #[derive(Display)]
+        enum Enum {
+            First,
+            FirstTuple(),
+            FirstStruct {},
+            #[display("SECOND")]
+            Second,
+            #[display("SECOND_TUPLE")]
+            SecondTuple(),
+            #[display("SECOND_STRUCT")]
+            SecondStruct {},
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::First.to_string(), "First");
+            assert_eq!(Enum::FirstTuple().to_string(), "FirstTuple");
+            assert_eq!(Enum::FirstStruct {}.to_string(), "FirstStruct");
+            assert_eq!(Enum::Second.to_string(), "SECOND");
+            assert_eq!(Enum::SecondTuple().to_string(), "SECOND_TUPLE");
+            assert_eq!(Enum::SecondStruct {}.to_string(), "SECOND_STRUCT");
+        }
+    }
 }
