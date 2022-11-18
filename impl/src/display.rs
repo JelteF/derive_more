@@ -1,3 +1,7 @@
+//! Description for [`fmt`]-like derive macros.
+//!
+//! [`fmt`]: std::fmt
+
 use std::mem;
 
 use proc_macro2::{Ident, TokenStream, TokenTree};
@@ -12,28 +16,31 @@ use syn::{
 
 use crate::parsing;
 
-fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
-    match trait_name {
-        "Display" => "display",
-        "Binary" => "binary",
-        "Octal" => "octal",
-        "LowerHex" => "lower_hex",
-        "UpperHex" => "upper_hex",
-        "LowerExp" => "lower_exp",
-        "UpperExp" => "upper_exp",
-        "Pointer" => "pointer",
-        "Debug" => "debug",
-        _ => unimplemented!(),
-    }
-}
-
-/// Provides the hook to expand `#[derive(Display)]` into an implementation of `From`
+/// Expands [`fmt`]-like derive macro.
+///
+/// Available macros:
+/// - [`Binary`]
+/// - [`Debug`]
+/// - [`Display`]
+/// - [`LowerExp`]
+/// - [`LowerHex`]
+/// - [`Octal`]
+/// - [`Pointer`]
+/// - [`UpperExp`]
+/// - [`UpperHex`]
+///
+/// [`fmt`]: std::fmt
+/// [`Binary`]: std::fmt::Binary
+/// [`Debug`]: std::fmt::Debug
+/// [`Display`]: std::fmt::Display
+/// [`LowerExp`]: std::fmt::LowerExp
+/// [`LowerHex`]: std::fmt::LowerHex
+/// [`Octal`]: std::fmt::Octal
+/// [`Pointer`]: std::fmt::Pointer
+/// [`UpperExp`]: std::fmt::UpperExp
+/// [`UpperHex`]: std::fmt::UpperHex
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
-    let trait_name = if trait_name == "DebugCustom" {
-        "Debug"
-    } else {
-        trait_name
-    };
+    let trait_name = normalize_trait_name(trait_name);
 
     let attrs = Attributes::parse_attrs(&input.attrs, trait_name)?;
     let trait_ident = format_ident!("{trait_name}");
@@ -70,8 +77,16 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     Ok(res)
 }
 
+/// Type alias for expansion context:
+/// - [`Attributes`]
+/// - Struct/enum/union [`Ident`]
+/// - Derived trait [`Ident`]
+/// - Derived trait `&`[`str`]
 type ExpansionCtx<'a> = (&'a Attributes, &'a Ident, &'a Ident, &'a str);
 
+/// Expands [`fmt`]-like derive macro for struct.
+///
+/// [`fmt`]: std::fmt
 fn expand_struct(
     s: &syn::DataStruct,
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
@@ -103,10 +118,17 @@ fn expand_struct(
 }
 
 // TODO: top-level attribute on enum.
+/// Expands [`fmt`]-like derive macro for enum.
+///
+/// [`fmt`]: std::fmt
 fn expand_enum(
     e: &syn::DataEnum,
-    (attrs, ident, trait_ident, trait_name): ExpansionCtx<'_>,
+    (attrs, _, trait_ident, trait_name): ExpansionCtx<'_>,
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+    if attrs.fmt_literal.is_some() {
+        todo!("https://github.com/JelteF/derive_more/issues/142");
+    }
+
     let (bounds, fmt) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut fmt), variant| {
@@ -150,11 +172,14 @@ fn expand_enum(
     Ok((bounds, fmt))
 }
 
+/// Expands [`fmt`]-like derive macro for union.
+///
+/// [`fmt`]: std::fmt
 fn expand_union(
     u: &syn::DataUnion,
     (attrs, _, _, trait_name): ExpansionCtx<'_>,
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    let fmt_lit = attrs.display_literal.as_ref().ok_or_else(|| {
+    let fmt_lit = attrs.fmt_literal.as_ref().ok_or_else(|| {
         Error::new(
             u.fields.span(),
             format!(
@@ -163,17 +188,27 @@ fn expand_union(
             ),
         )
     })?;
-    let fmt_args = &attrs.display_args;
+    let fmt_args = &attrs.fmt_args;
 
     let fmt = quote! { ::core::write!(__derive_more_f, #fmt_lit, #( #fmt_args ),*) };
 
     Ok((attrs.bounds.clone().into_iter().collect(), fmt))
 }
 
+/// [`fmt`]-like derive macro attributes:
+///
+/// ```rust, ignore
+/// `#[fmt_trait("<fmt_literal>", <fmt_args>)]`
+/// `#[bound(<bounds>)]`
+/// ```
+///
+///
+///
+/// [`fmt`]: std::fmt
 #[derive(Debug)]
 struct Attributes {
-    display_literal: Option<syn::LitStr>,
-    display_args: Vec<FmtArgument>,
+    fmt_literal: Option<syn::LitStr>,
+    fmt_args: Vec<FmtArgument>,
     bounds: Punctuated<syn::WherePredicate, syn::token::Comma>,
 }
 
@@ -221,8 +256,8 @@ impl Attributes {
             )?;
 
         Ok(Self {
-            display_literal,
-            display_args,
+            fmt_literal: display_literal,
+            fmt_args: display_args,
             bounds,
         })
     }
@@ -477,8 +512,8 @@ struct StructOrEnumVariant<'a> {
 
 impl<'a> StructOrEnumVariant<'a> {
     fn generate_fmt(&self) -> TokenStream {
-        if let Some(lit) = &self.attrs.display_literal {
-            let args = &self.attrs.display_args;
+        if let Some(lit) = &self.attrs.fmt_literal {
+            let args = &self.attrs.fmt_args;
             quote! { ::core::write!(__derive_more_f, #lit, #( #args ),*) }
         } else if self.fields.iter().count() == 1 {
             let field = self
@@ -497,7 +532,7 @@ impl<'a> StructOrEnumVariant<'a> {
     }
 
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
-        let Some(display_literal) = &self.attrs.display_literal else {
+        let Some(display_literal) = &self.attrs.fmt_literal else {
             return self.fields.iter().next().map(|f| {
                 let ty = &f.ty;
                 vec![parse_quote! { #ty: ::core::fmt::Display }]
@@ -515,7 +550,7 @@ impl<'a> StructOrEnumVariant<'a> {
                 let name = match placeholder.arg {
                     Parameter::Named(name) => self
                         .attrs
-                        .display_args
+                        .fmt_args
                         .iter()
                         .find_map(|a| (a.alias.as_ref()? == &name).then_some(&a.expr))
                         .map_or(Some(name), |expr| {
@@ -523,7 +558,7 @@ impl<'a> StructOrEnumVariant<'a> {
                         })?,
                     Parameter::Positional(i) => self
                         .attrs
-                        .display_args
+                        .fmt_args
                         .iter()
                         .nth(i)
                         .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))?
@@ -571,6 +606,36 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
             parsing::Argument::Integer(i) => Parameter::Positional(i),
             parsing::Argument::Identifier(i) => Parameter::Named(i.to_owned()),
         }
+    }
+}
+
+fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
+    match trait_name {
+        "Binary" => "binary",
+        "Debug" => "debug",
+        "Display" => "display",
+        "LowerExp" => "lower_exp",
+        "LowerHex" => "lower_hex",
+        "Octal" => "octal",
+        "Pointer" => "pointer",
+        "UpperExp" => "upper_exp",
+        "UpperHex" => "upper_hex",
+        _ => unimplemented!(),
+    }
+}
+
+fn normalize_trait_name(name: &str) -> &'static str {
+    match name {
+        "Binary" => "Binary",
+        "Debug" | "CustomDebug" => "Debug",
+        "Display" => "Display",
+        "LowerExp" => "LowerExp",
+        "LowerHex" => "LowerHex",
+        "Octal" => "Octal",
+        "Pointer" => "Pointer",
+        "UpperExp" => "UpperExp",
+        "UpperHex" => "UpperHex",
+        _ => unimplemented!(),
     }
 }
 
