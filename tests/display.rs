@@ -73,12 +73,12 @@ enum E {
 //     A,
 //     B,
 // }
-//
-// #[derive(Display)]
-// #[display("Hello there!")]
-// union U {
-//     i: u32,
-// }
+
+#[derive(Display)]
+#[display("Hello there!")]
+union U {
+    i: u32,
+}
 
 #[derive(Octal)]
 #[octal("7")]
@@ -138,7 +138,7 @@ fn check_display() {
     assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
     // assert_eq!(EE::A.to_string(), "Java EE");
     // assert_eq!(EE::B.to_string(), "Java EE");
-    // assert_eq!(U { i: 2 }.to_string(), "Hello there!");
+    assert_eq!(U { i: 2 }.to_string(), "Hello there!");
     assert_eq!(format!("{:o}", S), "7");
     assert_eq!(format!("{:X}", UH), "UpperHex");
     // assert_eq!(format!("{:?}", D), "MyDebug");

@@ -778,70 +778,12 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     let trait_ident = format_ident!("{trait_name}");
 
     // TODO: top-level attribute on enum or union.
+    let ctx = (&attrs, &trait_ident, trait_name);
     let (bounds, fmt) = match &input.data {
-        syn::Data::Struct(s) => {
-            let s = StructOrEnumVariant {
-                attr: &attrs,
-                fields: &s.fields,
-                trait_ident: &trait_ident,
-            };
-            let bounds = s.generate_bounds();
-            let fmt = s.generate_fmt();
-
-            let vars = s.fields.iter().enumerate().map(|(i, f)| {
-                let var = f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"));
-                let member = f
-                    .ident
-                    .clone()
-                    .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-                quote! { let #var = &self.#member; }
-            });
-
-            let fmt = quote! {
-                #( #vars )*
-                #fmt
-            };
-
-            (bounds, fmt)
-        }
-        syn::Data::Enum(e) => {
-            let (bounds, fmt) = e.variants.iter().try_fold(
-                (Vec::new(), TokenStream::new()),
-                |(mut bounds, mut fmt), variant| {
-                    let attrs = Attributes::parse_attrs(&variant.attrs, trait_name)?;
-
-                    let v = StructOrEnumVariant {
-                        attr: &attrs,
-                        fields: &variant.fields,
-                        trait_ident: &trait_ident,
-                    };
-                    let fmt_inner = v.generate_fmt();
-
-                    let ident = &variant.ident;
-                    let fields_idents =
-                        variant.fields.iter().enumerate().map(|(i, f)| {
-                            f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"))
-                        });
-                    let matcher = match variant.fields {
-                        syn::Fields::Named(_) => {
-                            quote! { Self::#ident { #( #fields_idents ),* } }
-                        }
-                        syn::Fields::Unnamed(_) => {
-                            quote! { Self::#ident ( #( #fields_idents ),* ) }
-                        }
-                        syn::Fields::Unit => todo!(),
-                    };
-
-                    bounds.extend(v.generate_bounds());
-                    fmt.extend([quote! { #matcher => { #fmt_inner }, }]);
-
-                    Result::Ok((bounds, fmt))
-                },
-            )?;
-            (bounds, quote! { match self { #fmt } })
-        }
-        syn::Data::Union(_) => todo!(),
-    };
+        syn::Data::Struct(s) => expand_struct(s, ctx),
+        syn::Data::Enum(e) => expand_enum(e, ctx),
+        syn::Data::Union(u) => expand_union(u, ctx),
+    }?;
 
     let ident = &input.ident;
     let (impl_gens, ty_gens, where_clause) = input.generics.split_for_impl();
@@ -849,8 +791,9 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     where_clause.predicates.extend(bounds);
 
     let res = quote! {
+        #[automatically_derived]
         impl #impl_gens core::fmt::#trait_ident for #ident #ty_gens
-            #where_clause
+             #where_clause
         {
             fn fmt(
                 &self, __derive_more_f: &mut core::fmt::Formatter<'_>
@@ -861,6 +804,100 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     };
 
     Ok(res)
+}
+
+fn expand_struct(
+    s: &syn::DataStruct,
+    (attrs, trait_ident, trait_name): (&Attributes, &Ident, &str),
+) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+    let trait_ident = format_ident!("{trait_name}");
+
+    let s = StructOrEnumVariant {
+        attrs,
+        fields: &s.fields,
+        trait_ident: &trait_ident,
+    };
+    let bounds = s.generate_bounds();
+    let fmt = s.generate_fmt();
+
+    let vars = s.fields.iter().enumerate().map(|(i, f)| {
+        let var = f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"));
+        let member = f
+            .ident
+            .clone()
+            .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
+        quote! { let #var = &self.#member; }
+    });
+
+    let fmt = quote! {
+        #( #vars )*
+        #fmt
+    };
+
+    Ok((bounds, fmt))
+}
+
+fn expand_enum(
+    e: &syn::DataEnum,
+    (attrs, trait_ident, trait_name): (&Attributes, &Ident, &str),
+) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+    let trait_ident = format_ident!("{trait_name}");
+
+    let (bounds, fmt) = e.variants.iter().try_fold(
+        (Vec::new(), TokenStream::new()),
+        |(mut bounds, mut fmt), variant| {
+            let attrs = Attributes::parse_attrs(&variant.attrs, trait_name)?;
+
+            let v = StructOrEnumVariant {
+                attrs: &attrs,
+                fields: &variant.fields,
+                trait_ident: &trait_ident,
+            };
+            let fmt_inner = v.generate_fmt();
+            bounds.extend(v.generate_bounds());
+
+            let ident = &variant.ident;
+            let fields_idents =
+                variant.fields.iter().enumerate().map(|(i, f)| {
+                    f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"))
+                });
+            let matcher = match variant.fields {
+                syn::Fields::Named(_) => {
+                    quote! { Self::#ident { #( #fields_idents ),* } }
+                }
+                syn::Fields::Unnamed(_) => {
+                    quote! { Self::#ident ( #( #fields_idents ),* ) }
+                }
+                syn::Fields::Unit => todo!(),
+            };
+
+            fmt.extend([quote! { #matcher => { #fmt_inner }, }]);
+
+            Result::Ok((bounds, fmt))
+        },
+    )?;
+
+    Ok((bounds, quote! { match self { #fmt } }))
+}
+
+fn expand_union(
+    u: &syn::DataUnion,
+    (attrs, trait_ident, trait_name): (&Attributes, &Ident, &str),
+) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+    let fmt_lit = attrs.display_literal.as_ref().ok_or_else(|| {
+        Error::new(
+            u.fields.span(),
+            format!(
+                "Unions must have `#[{}(\"...\", ...)]` attribute",
+                trait_name_to_attribute_name(trait_name),
+            ),
+        )
+    })?;
+    let fmt_args = &attrs.display_args;
+
+    let fmt = quote! { ::core::write!(__derive_more_f, #fmt_lit, #( #fmt_args ),*) };
+
+    Ok((attrs.bounds.clone().into_iter().collect(), fmt))
 }
 
 #[derive(Debug)]
@@ -910,9 +947,6 @@ impl Attributes {
         })
     }
 }
-
-// `"{alias}", alias = expr`.
-type Alias = Ident;
 
 #[derive(Debug)]
 enum Attribute {
@@ -1183,15 +1217,15 @@ impl Parse for Attribute {
 //                fields.iter().next().is_some()
 #[derive(Debug)]
 struct StructOrEnumVariant<'a> {
-    attr: &'a Attributes,
+    attrs: &'a Attributes,
     fields: &'a syn::Fields,
     trait_ident: &'a Ident,
 }
 
 impl<'a> StructOrEnumVariant<'a> {
     fn generate_fmt(&self) -> TokenStream {
-        if let Some(lit) = &self.attr.display_literal {
-            let args = &self.attr.display_args;
+        if let Some(lit) = &self.attrs.display_literal {
+            let args = &self.attrs.display_args;
             quote! { ::core::write!(__derive_more_f, #lit, #( #args ),*) }
         } else if self.fields.iter().count() == 1 {
             let field = self
@@ -1209,7 +1243,7 @@ impl<'a> StructOrEnumVariant<'a> {
     }
 
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
-        let Some(display_literal) = &self.attr.display_literal else {
+        let Some(display_literal) = &self.attrs.display_literal else {
             return self.fields.iter().next().map(|f| {
                 let ty = &f.ty;
                 vec![parse_quote! { #ty: ::core::fmt::Display }]
@@ -1226,7 +1260,7 @@ impl<'a> StructOrEnumVariant<'a> {
             .filter_map(|placeholder| {
                 let name = match placeholder.arg {
                     Parameter::Named(name) => self
-                        .attr
+                        .attrs
                         .display_args
                         .iter()
                         .find_map(|a| (a.alias.as_ref()? == &name).then_some(&a.expr))
@@ -1234,7 +1268,7 @@ impl<'a> StructOrEnumVariant<'a> {
                             expr.ident().map(ToString::to_string)
                         })?,
                     Parameter::Positional(i) => self
-                        .attr
+                        .attrs
                         .display_args
                         .iter()
                         .nth(i)
@@ -1256,7 +1290,7 @@ impl<'a> StructOrEnumVariant<'a> {
                 let tr = format_ident!("{}", placeholder.trait_name);
                 Some(parse_quote! { #ty: ::core::fmt::#tr })
             })
-            .chain(self.attr.bounds.clone())
+            .chain(self.attrs.bounds.clone())
             .collect()
     }
 }
