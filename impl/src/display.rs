@@ -794,7 +794,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
                     .ident
                     .clone()
                     .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-                quote! { let #var = &val.#member; }
+                quote! { let #var = &self.#member; }
             });
 
             let fmt = quote! {
@@ -844,20 +844,17 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     };
 
     let ident = &input.ident;
-    let trait_ident = Ident::new(trait_name, Span::call_site());
     let (impl_gens, ty_gens, where_clause) = input.generics.split_for_impl();
     let mut where_clause = where_clause.cloned().unwrap_or_else(|| parse_quote!(where));
     where_clause.predicates.extend(bounds);
 
     let res = quote! {
-        impl<#impl_gens> core::fmt::#trait_ident for #ident #ty_gens
+        impl #impl_gens core::fmt::#trait_ident for #ident #ty_gens
             #where_clause
         {
             fn fmt(
                 &self, __derive_more_f: &mut core::fmt::Formatter<'_>
             ) -> core::fmt::Result {
-                let val = self;
-
                 #fmt
             }
         }
@@ -870,7 +867,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
 struct Attributes {
     display_literal: Option<syn::LitStr>,
     display_args: Vec<FmtArgument>,
-    bounds: TokenStream,
+    bounds: Punctuated<syn::WherePredicate, syn::token::Comma>,
 }
 
 impl Attributes {
@@ -883,13 +880,13 @@ impl Attributes {
             .iter()
             .filter(|attr| attr.path.is_ident(trait_name_to_attribute_name(trait_name)))
             .try_fold(
-                (None, Vec::new(), TokenStream::new()),
+                (None, Vec::new(), Punctuated::new()),
                 |(lit, args, mut bounds), attr| {
                     let attribute =
                         Parser::parse2(Attribute::parse, attr.tokens.clone())?;
                     Result::Ok(match attribute {
                         Attribute::Bounds(more) => {
-                            bounds.extend([more]);
+                            bounds.extend(more);
                             (lit, args, bounds)
                         }
                         Attribute::Display {
@@ -923,7 +920,7 @@ enum Attribute {
         display_literal: syn::LitStr,
         display_arguments: Vec<FmtArgument>,
     },
-    Bounds(TokenStream),
+    Bounds(Punctuated<syn::WherePredicate, syn::token::Comma>),
 }
 
 #[derive(Debug)]
@@ -1176,7 +1173,9 @@ impl Parse for Attribute {
         let inner;
         syn::parenthesized!(inner in content);
 
-        Ok(Attribute::Bounds(inner.cursor().token_stream()))
+        inner
+            .parse_terminated(syn::WherePredicate::parse)
+            .map(Attribute::Bounds)
     }
 }
 
@@ -1257,6 +1256,7 @@ impl<'a> StructOrEnumVariant<'a> {
                 let tr = format_ident!("{}", placeholder.trait_name);
                 Some(parse_quote! { #ty: ::core::fmt::#tr })
             })
+            .chain(self.attr.bounds.clone())
             .collect()
     }
 }

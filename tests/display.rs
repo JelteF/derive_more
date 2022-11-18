@@ -100,10 +100,10 @@ struct UH;
 //
 // #[derive(Display)]
 // enum EmptyEnum {}
-//
-// #[derive(Display)]
-// #[display("Generic")]
-// struct Generic<T>(T);
+
+#[derive(Display)]
+#[display("Generic")]
+struct Generic<T>(T);
 
 #[derive(Display)]
 #[display("Here's a prefix for {} and a suffix")]
@@ -144,7 +144,7 @@ fn check_display() {
     // assert_eq!(format!("{:?}", D), "MyDebug");
     // assert_eq!(Unit.to_string(), "Unit");
     // assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
-    // assert_eq!(Generic(()).to_string(), "Generic");
+    assert_eq!(Generic(()).to_string(), "Generic");
     // assert_eq!(
     //     Affix::A(2).to_string(),
     //     "Here's a prefix for 2 and a suffix"
@@ -166,406 +166,406 @@ fn check_display() {
 //
 //     impl S for EmptyEnum {}
 // }
-//
-// mod generic {
-//     use derive_more::Display;
-//
-//     #[derive(Display)]
-//     #[display("Generic {}", field)]
-//     struct NamedGenericStruct<T> {
-//         field: T,
-//     }
-//     #[test]
-//     fn named_generic_struct() {
-//         assert_eq!(NamedGenericStruct { field: 1 }.to_string(), "Generic 1");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("Generic {field}")]
-//     struct InterpolatedNamedGenericStruct<T> {
-//         field: T,
-//     }
-//     #[test]
-//     fn interpolated_named_generic_struct() {
-//         assert_eq!(
-//             InterpolatedNamedGenericStruct { field: 1 }.to_string(),
-//             "Generic 1",
-//         );
-//     }
-//
-//     #[derive(Display)]
-//     #[display("Generic {field:<>width$.prec$} {field}")]
-//     struct InterpolatedNamedGenericStructWidthPrecision<T> {
-//         field: T,
-//         width: usize,
-//         prec: usize,
-//     }
-//     #[test]
-//     fn interpolated_named_generic_struct_width_precision() {
-//         assert_eq!(
-//             InterpolatedNamedGenericStructWidthPrecision {
-//                 field: 1.2345,
-//                 width: 9,
-//                 prec: 2,
-//             }
-//             .to_string(),
-//             "Generic <<<<<1.23 1.2345",
-//         );
-//     }
-//
-//     #[derive(Display)]
-//     struct AutoNamedGenericStruct<T> {
-//         field: T,
-//     }
-//     #[test]
-//     fn auto_named_generic_struct() {
-//         assert_eq!(AutoNamedGenericStruct { field: 1 }.to_string(), "1");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("Generic {}", _0)]
-//     struct UnnamedGenericStruct<T>(T);
-//     #[test]
-//     fn unnamed_generic_struct() {
-//         assert_eq!(UnnamedGenericStruct(2).to_string(), "Generic 2");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("Generic {_0}")]
-//     struct InterpolatedUnnamedGenericStruct<T>(T);
-//     #[test]
-//     fn interpolated_unnamed_generic_struct() {
-//         assert_eq!(InterpolatedUnnamedGenericStruct(2).to_string(), "Generic 2");
-//     }
-//
-//     #[derive(Display)]
-//     struct AutoUnnamedGenericStruct<T>(T);
-//     #[test]
-//     fn auto_unnamed_generic_struct() {
-//         assert_eq!(AutoUnnamedGenericStruct(2).to_string(), "2");
-//     }
-//
-//     #[derive(Display)]
-//     enum GenericEnum<A, B> {
-//         #[display("Gen::A {}", field)]
-//         A { field: A },
-//         #[display("Gen::B {}", _0)]
-//         B(B),
-//     }
-//     #[test]
-//     fn generic_enum() {
-//         assert_eq!(GenericEnum::A::<_, u8> { field: 1 }.to_string(), "Gen::A 1");
-//         assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Gen::B 2");
-//     }
-//
-//     #[derive(Display)]
-//     enum InterpolatedGenericEnum<A, B> {
-//         #[display("Gen::A {field}")]
-//         A { field: A },
-//         #[display("Gen::B {_0}")]
-//         B(B),
-//     }
-//     #[test]
-//     fn interpolated_generic_enum() {
-//         assert_eq!(
-//             InterpolatedGenericEnum::A::<_, u8> { field: 1 }.to_string(),
-//             "Gen::A 1",
-//         );
-//         assert_eq!(
-//             InterpolatedGenericEnum::B::<u8, _>(2).to_string(),
-//             "Gen::B 2",
-//         );
-//     }
-//
-//     #[derive(Display)]
-//     enum AutoGenericEnum<A, B> {
-//         A { field: A },
-//         B(B),
-//     }
-//     #[test]
-//     fn auto_generic_enum() {
-//         assert_eq!(AutoGenericEnum::A::<_, u8> { field: 1 }.to_string(), "1");
-//         assert_eq!(AutoGenericEnum::B::<u8, _>(2).to_string(), "2");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("{} {} <-> {0:o} {1:#x} <-> {0:?} {1:X?}", a, b)]
-//     struct MultiTraitNamedGenericStruct<A, B> {
-//         a: A,
-//         b: B,
-//     }
-//     #[test]
-//     fn multi_trait_named_generic_struct() {
-//         let s = MultiTraitNamedGenericStruct { a: 8u8, b: 255 };
-//         assert_eq!(s.to_string(), "8 255 <-> 10 0xff <-> 8 FF");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("{} {b} <-> {0:o} {1:#x} <-> {0:?} {1:X?}", a, b)]
-//     struct InterpolatedMultiTraitNamedGenericStruct<A, B> {
-//         a: A,
-//         b: B,
-//     }
-//     #[test]
-//     fn interpolated_multi_trait_named_generic_struct() {
-//         let s = InterpolatedMultiTraitNamedGenericStruct { a: 8u8, b: 255 };
-//         assert_eq!(s.to_string(), "8 255 <-> 10 0xff <-> 8 FF");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("{} {} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", _0, _1)]
-//     struct MultiTraitUnnamedGenericStruct<A, B>(A, B);
-//     #[test]
-//     fn multi_trait_unnamed_generic_struct() {
-//         let s = MultiTraitUnnamedGenericStruct(8u8, 255);
-//         assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("{} {_1} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", _0, _1)]
-//     struct InterpolatedMultiTraitUnnamedGenericStruct<A, B>(A, B);
-//     #[test]
-//     fn interpolated_multi_trait_unnamed_generic_struct() {
-//         let s = InterpolatedMultiTraitUnnamedGenericStruct(8u8, 255);
-//         assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
-//     }
-//
-//     #[derive(Display)]
-//     #[display("{}", 3 * 4)]
-//     struct UnusedGenericStruct<T>(T);
-//     #[test]
-//     fn unused_generic_struct() {
-//         let s = UnusedGenericStruct(());
-//         assert_eq!(s.to_string(), "12");
-//     }
-//
-//     mod associated_type_field_enumerator {
-//         use super::*;
-//
-//         trait Trait {
-//             type Type;
-//         }
-//
-//         struct Struct;
-//
-//         impl Trait for Struct {
-//             type Type = i32;
-//         }
-//
-//         #[test]
-//         fn auto_generic_named_struct_associated() {
-//             #[derive(Display)]
-//             struct AutoGenericNamedStructAssociated<T: Trait> {
-//                 field: <T as Trait>::Type,
-//             }
-//
-//             let s = AutoGenericNamedStructAssociated::<Struct> { field: 10 };
-//             assert_eq!(s.to_string(), "10");
-//         }
-//
-//         #[test]
-//         fn auto_generic_unnamed_struct_associated() {
-//             #[derive(Display)]
-//             struct AutoGenericUnnamedStructAssociated<T: Trait>(<T as Trait>::Type);
-//
-//             let s = AutoGenericUnnamedStructAssociated::<Struct>(10);
-//             assert_eq!(s.to_string(), "10");
-//         }
-//
-//         #[test]
-//         fn auto_generic_enum_associated() {
-//             #[derive(Display)]
-//             enum AutoGenericEnumAssociated<T: Trait> {
-//                 Enumerator(<T as Trait>::Type),
-//             }
-//
-//             let e = AutoGenericEnumAssociated::<Struct>::Enumerator(10);
-//             assert_eq!(e.to_string(), "10");
-//         }
-//     }
-//
-//     mod complex_type_field_enumerator {
-//         use super::*;
-//
-//         #[derive(Display)]
-//         struct Struct<T>(T);
-//
-//         #[test]
-//         fn auto_generic_named_struct_complex() {
-//             #[derive(Display)]
-//             struct AutoGenericNamedStructComplex<T> {
-//                 field: Struct<T>,
-//             }
-//
-//             let s = AutoGenericNamedStructComplex { field: Struct(10) };
-//             assert_eq!(s.to_string(), "10");
-//         }
-//
-//         #[test]
-//         fn auto_generic_unnamed_struct_complex() {
-//             #[derive(Display)]
-//             struct AutoGenericUnnamedStructComplex<T>(Struct<T>);
-//
-//             let s = AutoGenericUnnamedStructComplex(Struct(10));
-//             assert_eq!(s.to_string(), "10");
-//         }
-//
-//         #[test]
-//         fn auto_generic_enum_complex() {
-//             #[derive(Display)]
-//             enum AutoGenericEnumComplex<T> {
-//                 Enumerator(Struct<T>),
-//             }
-//
-//             let e = AutoGenericEnumComplex::Enumerator(Struct(10));
-//             assert_eq!(e.to_string(), "10")
-//         }
-//     }
-//
-//     mod reference {
-//         use super::*;
-//
-//         #[test]
-//         fn auto_generic_reference() {
-//             #[derive(Display)]
-//             struct AutoGenericReference<'a, T>(&'a T);
-//
-//             let s = AutoGenericReference(&10);
-//             assert_eq!(s.to_string(), "10");
-//         }
-//
-//         #[test]
-//         fn auto_generic_static_reference() {
-//             #[derive(Display)]
-//             struct AutoGenericStaticReference<T: 'static>(&'static T);
-//
-//             let s = AutoGenericStaticReference(&10);
-//             assert_eq!(s.to_string(), "10");
-//         }
-//     }
-//
-//     mod indirect {
-//         use super::*;
-//
-//         #[derive(Display)]
-//         struct Struct<T>(T);
-//
-//         #[test]
-//         fn auto_generic_indirect() {
-//             #[derive(Display)]
-//             struct AutoGenericIndirect<T: 'static>(Struct<&'static T>);
-//
-//             const V: i32 = 10;
-//             let s = AutoGenericIndirect(Struct(&V));
-//             assert_eq!(s.to_string(), "10");
-//         }
-//     }
-//
-//     mod bound {
-//         use super::*;
-//
-//         #[test]
-//         fn simple() {
-//             #[derive(Display)]
-//             #[display("{} {}", _0, _1)]
-//             struct Struct<T1, T2>(T1, T2);
-//
-//             let s = Struct(10, 20);
-//             assert_eq!(s.to_string(), "10 20");
-//         }
-//
-//         #[test]
-//         fn underscored_simple() {
-//             #[derive(Display)]
-//             #[display("{_0} {_1}")]
-//             struct Struct<T1, T2>(T1, T2);
-//
-//             let s = Struct(10, 20);
-//             assert_eq!(s.to_string(), "10 20");
-//         }
-//
-//         #[test]
-//         fn redundant() {
-//             #[derive(Display)]
-//             #[display(bound = "T1: ::core::fmt::Display, T2: ::core::fmt::Display")]
-//             #[display("{} {}", _0, _1)]
-//             struct Struct<T1, T2>(T1, T2);
-//
-//             let s = Struct(10, 20);
-//             assert_eq!(s.to_string(), "10 20");
-//         }
-//
-//         #[test]
-//         fn underscored_redundant() {
-//             #[derive(Display)]
-//             #[display(bound = "T1: ::core::fmt::Display, T2: ::core::fmt::Display")]
-//             #[display("{_0} {_1}")]
-//             struct Struct<T1, T2>(T1, T2);
-//
-//             let s = Struct(10, 20);
-//             assert_eq!(s.to_string(), "10 20");
-//         }
-//
-//         #[test]
-//         fn complex() {
-//             trait Trait1 {
-//                 fn function1(&self) -> &'static str;
-//             }
-//
-//             trait Trait2 {
-//                 fn function2(&self) -> &'static str;
-//             }
-//
-//             impl Trait1 for i32 {
-//                 fn function1(&self) -> &'static str {
-//                     "WHAT"
-//                 }
-//             }
-//
-//             impl Trait2 for i32 {
-//                 fn function2(&self) -> &'static str {
-//                     "EVER"
-//                 }
-//             }
-//
-//             #[derive(Display)]
-//             #[display(bound = "T1: Trait1 + Trait2, T2: Trait1 + Trait2")]
-//             #[display("{} {} {} {}", _0.function1(), _0, _1.function2(), _1)]
-//             struct Struct<T1, T2>(T1, T2);
-//
-//             let s = Struct(10, 20);
-//             assert_eq!(s.to_string(), "WHAT 10 EVER 20");
-//         }
-//
-//         #[test]
-//         fn underscored_complex() {
-//             trait Trait1 {
-//                 fn function1(&self) -> &'static str;
-//             }
-//
-//             trait Trait2 {
-//                 fn function2(&self) -> &'static str;
-//             }
-//
-//             impl Trait1 for i32 {
-//                 fn function1(&self) -> &'static str {
-//                     "WHAT"
-//                 }
-//             }
-//
-//             impl Trait2 for i32 {
-//                 fn function2(&self) -> &'static str {
-//                     "EVER"
-//                 }
-//             }
-//
-//             #[derive(Display)]
-//             #[display(bound = "T1: Trait1 + Trait2, T2: Trait1 + Trait2")]
-//             #[display("{} {_0} {} {_1}", _0.function1(), _1.function2())]
-//             struct Struct<T1, T2>(T1, T2);
-//
-//             let s = Struct(10, 20);
-//             assert_eq!(s.to_string(), "WHAT 10 EVER 20");
-//         }
-//     }
-// }
+
+mod generic {
+    use derive_more::Display;
+
+    #[derive(Display)]
+    #[display("Generic {}", field)]
+    struct NamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn named_generic_struct() {
+        assert_eq!(NamedGenericStruct { field: 1 }.to_string(), "Generic 1");
+    }
+
+    #[derive(Display)]
+    #[display("Generic {field}")]
+    struct InterpolatedNamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn interpolated_named_generic_struct() {
+        assert_eq!(
+            InterpolatedNamedGenericStruct { field: 1 }.to_string(),
+            "Generic 1",
+        );
+    }
+
+    #[derive(Display)]
+    #[display("Generic {field:<>width$.prec$} {field}")]
+    struct InterpolatedNamedGenericStructWidthPrecision<T> {
+        field: T,
+        width: usize,
+        prec: usize,
+    }
+    #[test]
+    fn interpolated_named_generic_struct_width_precision() {
+        assert_eq!(
+            InterpolatedNamedGenericStructWidthPrecision {
+                field: 1.2345,
+                width: 9,
+                prec: 2,
+            }
+            .to_string(),
+            "Generic <<<<<1.23 1.2345",
+        );
+    }
+
+    #[derive(Display)]
+    struct AutoNamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn auto_named_generic_struct() {
+        assert_eq!(AutoNamedGenericStruct { field: 1 }.to_string(), "1");
+    }
+
+    #[derive(Display)]
+    #[display("Generic {}", _0)]
+    struct UnnamedGenericStruct<T>(T);
+    #[test]
+    fn unnamed_generic_struct() {
+        assert_eq!(UnnamedGenericStruct(2).to_string(), "Generic 2");
+    }
+
+    #[derive(Display)]
+    #[display("Generic {_0}")]
+    struct InterpolatedUnnamedGenericStruct<T>(T);
+    #[test]
+    fn interpolated_unnamed_generic_struct() {
+        assert_eq!(InterpolatedUnnamedGenericStruct(2).to_string(), "Generic 2");
+    }
+
+    #[derive(Display)]
+    struct AutoUnnamedGenericStruct<T>(T);
+    #[test]
+    fn auto_unnamed_generic_struct() {
+        assert_eq!(AutoUnnamedGenericStruct(2).to_string(), "2");
+    }
+
+    #[derive(Display)]
+    enum GenericEnum<A, B> {
+        #[display("Gen::A {}", field)]
+        A { field: A },
+        #[display("Gen::B {}", _0)]
+        B(B),
+    }
+    #[test]
+    fn generic_enum() {
+        assert_eq!(GenericEnum::A::<_, u8> { field: 1 }.to_string(), "Gen::A 1");
+        assert_eq!(GenericEnum::B::<u8, _>(2).to_string(), "Gen::B 2");
+    }
+
+    #[derive(Display)]
+    enum InterpolatedGenericEnum<A, B> {
+        #[display("Gen::A {field}")]
+        A { field: A },
+        #[display("Gen::B {_0}")]
+        B(B),
+    }
+    #[test]
+    fn interpolated_generic_enum() {
+        assert_eq!(
+            InterpolatedGenericEnum::A::<_, u8> { field: 1 }.to_string(),
+            "Gen::A 1",
+        );
+        assert_eq!(
+            InterpolatedGenericEnum::B::<u8, _>(2).to_string(),
+            "Gen::B 2",
+        );
+    }
+
+    #[derive(Display)]
+    enum AutoGenericEnum<A, B> {
+        A { field: A },
+        B(B),
+    }
+    #[test]
+    fn auto_generic_enum() {
+        assert_eq!(AutoGenericEnum::A::<_, u8> { field: 1 }.to_string(), "1");
+        assert_eq!(AutoGenericEnum::B::<u8, _>(2).to_string(), "2");
+    }
+
+    #[derive(Display)]
+    #[display("{} {} <-> {0:o} {1:#x} <-> {0:?} {1:X?}", a, b)]
+    struct MultiTraitNamedGenericStruct<A, B> {
+        a: A,
+        b: B,
+    }
+    #[test]
+    fn multi_trait_named_generic_struct() {
+        let s = MultiTraitNamedGenericStruct { a: 8u8, b: 255 };
+        assert_eq!(s.to_string(), "8 255 <-> 10 0xff <-> 8 FF");
+    }
+
+    #[derive(Display)]
+    #[display("{} {b} <-> {0:o} {1:#x} <-> {0:?} {1:X?}", a, b)]
+    struct InterpolatedMultiTraitNamedGenericStruct<A, B> {
+        a: A,
+        b: B,
+    }
+    #[test]
+    fn interpolated_multi_trait_named_generic_struct() {
+        let s = InterpolatedMultiTraitNamedGenericStruct { a: 8u8, b: 255 };
+        assert_eq!(s.to_string(), "8 255 <-> 10 0xff <-> 8 FF");
+    }
+
+    #[derive(Display)]
+    #[display("{} {} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", _0, _1)]
+    struct MultiTraitUnnamedGenericStruct<A, B>(A, B);
+    #[test]
+    fn multi_trait_unnamed_generic_struct() {
+        let s = MultiTraitUnnamedGenericStruct(8u8, 255);
+        assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
+    }
+
+    #[derive(Display)]
+    #[display("{} {_1} {{}} {0:o} {1:#x} - {0:>4?} {1:^4X?}", _0, _1)]
+    struct InterpolatedMultiTraitUnnamedGenericStruct<A, B>(A, B);
+    #[test]
+    fn interpolated_multi_trait_unnamed_generic_struct() {
+        let s = InterpolatedMultiTraitUnnamedGenericStruct(8u8, 255);
+        assert_eq!(s.to_string(), "8 255 {} 10 0xff -    8  FF ");
+    }
+
+    #[derive(Display)]
+    #[display("{}", 3 * 4)]
+    struct UnusedGenericStruct<T>(T);
+    #[test]
+    fn unused_generic_struct() {
+        let s = UnusedGenericStruct(());
+        assert_eq!(s.to_string(), "12");
+    }
+
+    mod associated_type_field_enumerator {
+        use super::*;
+
+        trait Trait {
+            type Type;
+        }
+
+        struct Struct;
+
+        impl Trait for Struct {
+            type Type = i32;
+        }
+
+        #[test]
+        fn auto_generic_named_struct_associated() {
+            #[derive(Display)]
+            struct AutoGenericNamedStructAssociated<T: Trait> {
+                field: <T as Trait>::Type,
+            }
+
+            let s = AutoGenericNamedStructAssociated::<Struct> { field: 10 };
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_unnamed_struct_associated() {
+            #[derive(Display)]
+            struct AutoGenericUnnamedStructAssociated<T: Trait>(<T as Trait>::Type);
+
+            let s = AutoGenericUnnamedStructAssociated::<Struct>(10);
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_enum_associated() {
+            #[derive(Display)]
+            enum AutoGenericEnumAssociated<T: Trait> {
+                Enumerator(<T as Trait>::Type),
+            }
+
+            let e = AutoGenericEnumAssociated::<Struct>::Enumerator(10);
+            assert_eq!(e.to_string(), "10");
+        }
+    }
+
+    mod complex_type_field_enumerator {
+        use super::*;
+
+        #[derive(Display)]
+        struct Struct<T>(T);
+
+        #[test]
+        fn auto_generic_named_struct_complex() {
+            #[derive(Display)]
+            struct AutoGenericNamedStructComplex<T> {
+                field: Struct<T>,
+            }
+
+            let s = AutoGenericNamedStructComplex { field: Struct(10) };
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_unnamed_struct_complex() {
+            #[derive(Display)]
+            struct AutoGenericUnnamedStructComplex<T>(Struct<T>);
+
+            let s = AutoGenericUnnamedStructComplex(Struct(10));
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_enum_complex() {
+            #[derive(Display)]
+            enum AutoGenericEnumComplex<T> {
+                Enumerator(Struct<T>),
+            }
+
+            let e = AutoGenericEnumComplex::Enumerator(Struct(10));
+            assert_eq!(e.to_string(), "10")
+        }
+    }
+
+    mod reference {
+        use super::*;
+
+        #[test]
+        fn auto_generic_reference() {
+            #[derive(Display)]
+            struct AutoGenericReference<'a, T>(&'a T);
+
+            let s = AutoGenericReference(&10);
+            assert_eq!(s.to_string(), "10");
+        }
+
+        #[test]
+        fn auto_generic_static_reference() {
+            #[derive(Display)]
+            struct AutoGenericStaticReference<T: 'static>(&'static T);
+
+            let s = AutoGenericStaticReference(&10);
+            assert_eq!(s.to_string(), "10");
+        }
+    }
+
+    mod indirect {
+        use super::*;
+
+        #[derive(Display)]
+        struct Struct<T>(T);
+
+        #[test]
+        fn auto_generic_indirect() {
+            #[derive(Display)]
+            struct AutoGenericIndirect<T: 'static>(Struct<&'static T>);
+
+            const V: i32 = 10;
+            let s = AutoGenericIndirect(Struct(&V));
+            assert_eq!(s.to_string(), "10");
+        }
+    }
+
+    mod bound {
+        use super::*;
+
+        #[test]
+        fn simple() {
+            #[derive(Display)]
+            #[display("{} {}", _0, _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[test]
+        fn underscored_simple() {
+            #[derive(Display)]
+            #[display("{_0} {_1}")]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[test]
+        fn redundant() {
+            #[derive(Display)]
+            #[display(bound(T1: ::core::fmt::Display, T2: ::core::fmt::Display))]
+            #[display("{} {}", _0, _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[test]
+        fn underscored_redundant() {
+            #[derive(Display)]
+            #[display(bound(T1: ::core::fmt::Display, T2: ::core::fmt::Display))]
+            #[display("{_0} {_1}")]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "10 20");
+        }
+
+        #[test]
+        fn complex() {
+            trait Trait1 {
+                fn function1(&self) -> &'static str;
+            }
+
+            trait Trait2 {
+                fn function2(&self) -> &'static str;
+            }
+
+            impl Trait1 for i32 {
+                fn function1(&self) -> &'static str {
+                    "WHAT"
+                }
+            }
+
+            impl Trait2 for i32 {
+                fn function2(&self) -> &'static str {
+                    "EVER"
+                }
+            }
+
+            #[derive(Display)]
+            #[display(bound(T1: Trait1 + Trait2, T2: Trait1 + Trait2))]
+            #[display("{} {} {} {}", _0.function1(), _0, _1.function2(), _1)]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "WHAT 10 EVER 20");
+        }
+
+        #[test]
+        fn underscored_complex() {
+            trait Trait1 {
+                fn function1(&self) -> &'static str;
+            }
+
+            trait Trait2 {
+                fn function2(&self) -> &'static str;
+            }
+
+            impl Trait1 for i32 {
+                fn function1(&self) -> &'static str {
+                    "WHAT"
+                }
+            }
+
+            impl Trait2 for i32 {
+                fn function2(&self) -> &'static str {
+                    "EVER"
+                }
+            }
+
+            #[derive(Display)]
+            #[display(bound(T1: Trait1 + Trait2, T2: Trait1 + Trait2))]
+            #[display("{} {_0} {} {_1}", _0.function1(), _1.function2())]
+            struct Struct<T1, T2>(T1, T2);
+
+            let s = Struct(10, 20);
+            assert_eq!(s.to_string(), "WHAT 10 EVER 20");
+        }
+    }
+}
