@@ -8,7 +8,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote!(),
+        quote! {},
         "is_variant".into(),
         AttrParams {
             enum_: vec!["ignore"],
@@ -19,7 +19,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     )?;
     assert!(
         state.derive_type == DeriveType::Enum,
-        "IsVariant can only be derived for enums"
+        "IsVariant can only be derived for enums",
     );
 
     let enum_name = &input.ident;

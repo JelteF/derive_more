@@ -18,11 +18,11 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let (output_type, block) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
-                quote!(#input_type #ty_generics),
+                quote! { #input_type #ty_generics },
                 tuple_content(input_type, &unnamed_to_vec(fields), &method_ident),
             ),
             Fields::Named(ref fields) => (
-                quote!(#input_type #ty_generics),
+                quote! { #input_type #ty_generics },
                 struct_content(input_type, &named_to_vec(fields), &method_ident),
             ),
             _ => panic!("Unit structs cannot use derive({trait_name})"),
@@ -34,7 +34,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         _ => panic!("Only structs and enums can use derive({trait_name})"),
     };
 
-    quote!(
+    quote! {
         #[automatically_derived]
         impl #impl_generics ::core::ops::#trait_ident for #input_type #ty_generics #where_clause {
             type Output = #output_type;
@@ -44,7 +44,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
                 #block
             }
         }
-    )
+    }
 }
 
 fn tuple_content<T: ToTokens>(
@@ -57,11 +57,11 @@ fn tuple_content<T: ToTokens>(
     for i in 0..fields.len() {
         let i = Index::from(i);
         // generates `self.0.add()`
-        let expr = quote!(self.#i.#method_ident());
+        let expr = quote! { self.#i.#method_ident() };
         exprs.push(expr);
     }
 
-    quote!(#input_type(#(#exprs),*))
+    quote! { #input_type(#(#exprs),*) }
 }
 
 fn struct_content(
@@ -75,11 +75,11 @@ fn struct_content(
         // It's safe to unwrap because struct fields always have an identifier
         let field_id = field.ident.as_ref();
         // generates `x: self.x.not()`
-        let expr = quote!(#field_id: self.#field_id.#method_ident());
+        let expr = quote! { #field_id: self.#field_id.#method_ident() };
         exprs.push(expr)
     }
 
-    quote!(#input_type{#(#exprs),*})
+    quote! { #input_type{#(#exprs),*} }
 }
 
 fn enum_output_type_and_content(
@@ -96,7 +96,7 @@ fn enum_output_type_and_content(
 
     for variant in &data_enum.variants {
         let subtype = &variant.ident;
-        let subtype = quote!(#input_type::#subtype);
+        let subtype = quote! { #input_type::#subtype };
 
         match variant.fields {
             Fields::Unnamed(ref fields) => {
@@ -106,9 +106,9 @@ fn enum_output_type_and_content(
                 let vars: &Vec<_> =
                     &(0..size).map(|i| format_ident!("__{i}")).collect();
                 let method_iter = method_iter.by_ref();
-                let mut body = quote!(#subtype(#(#vars.#method_iter()),*));
+                let mut body = quote! { #subtype(#(#vars.#method_iter()),*) };
                 if has_unit_type {
-                    body = quote!(::core::result::Result::Ok(#body))
+                    body = quote! { ::core::result::Result::Ok(#body) }
                 }
                 let matcher = quote! {
                     #subtype(#(#vars),*) => {
@@ -131,10 +131,11 @@ fn enum_output_type_and_content(
                 let vars: &Vec<_> =
                     &(0..size).map(|i| format_ident!("__{i}")).collect();
                 let method_iter = method_iter.by_ref();
-                let mut body =
-                    quote!(#subtype{#(#field_names: #vars.#method_iter()),*});
+                let mut body = quote! {
+                    #subtype{#(#field_names: #vars.#method_iter()),*}
+                };
                 if has_unit_type {
-                    body = quote!(::core::result::Result::Ok(#body))
+                    body = quote! { ::core::result::Result::Ok(#body) }
                 }
                 let matcher = quote! {
                     #subtype{#(#field_names: #vars),*} => {
@@ -145,21 +146,22 @@ fn enum_output_type_and_content(
             }
             Fields::Unit => {
                 let message = format!("Cannot {method_ident}() unit variants");
-                matches.push(quote!(#subtype => ::core::result::Result::Err(#message)));
+                matches
+                    .push(quote! { #subtype => ::core::result::Result::Err(#message) });
             }
         }
     }
 
-    let body = quote!(
+    let body = quote! {
         match self {
             #(#matches),*
         }
-    );
+    };
 
     let output_type = if has_unit_type {
-        quote!(::core::result::Result<#input_type #ty_generics, &'static str>)
+        quote! { ::core::result::Result<#input_type #ty_generics, &'static str> }
     } else {
-        quote!(#input_type #ty_generics)
+        quote! { #input_type #ty_generics }
     };
 
     (output_type, body)

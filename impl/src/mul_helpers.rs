@@ -20,9 +20,9 @@ pub fn generics_and_exprs(
     let exprs: Vec<_> = casted_traits
         .iter()
         .zip(members)
-        .map(
-            |(casted_trait, member)| quote!(#casted_trait::#method_ident(#reference #member, rhs)),
-        )
+        .map(|(casted_trait, member)| {
+            quote! { #casted_trait::#method_ident(#reference #member, rhs) }
+        })
         .collect();
 
     let new_generics = add_where_clauses_for_new_ident(

@@ -37,41 +37,41 @@ pub enum RefType {
 impl RefType {
     pub fn lifetime(self) -> TokenStream {
         match self {
-            RefType::No => quote!(),
-            _ => quote!('__deriveMoreLifetime),
+            RefType::No => quote! {},
+            _ => quote! { '__deriveMoreLifetime },
         }
     }
 
     pub fn reference(self) -> TokenStream {
         match self {
-            RefType::No => quote!(),
-            RefType::Ref => quote!(&),
-            RefType::Mut => quote!(&mut),
+            RefType::No => quote! {},
+            RefType::Ref => quote! { & },
+            RefType::Mut => quote! { &mut },
         }
     }
 
     pub fn mutability(self) -> TokenStream {
         match self {
-            RefType::Mut => quote!(mut),
-            _ => quote!(),
+            RefType::Mut => quote! { mut },
+            _ => quote! {},
         }
     }
 
     pub fn pattern_ref(self) -> TokenStream {
         match self {
-            RefType::Ref => quote!(ref),
-            RefType::Mut => quote!(ref mut),
-            RefType::No => quote!(),
+            RefType::Ref => quote! { ref },
+            RefType::Mut => quote! { ref mut },
+            RefType::No => quote! {},
         }
     }
 
     pub fn reference_with_lifetime(self) -> TokenStream {
         if !self.is_ref() {
-            return quote!();
+            return quote! {};
         }
         let lifetime = self.lifetime();
         let mutability = self.mutability();
-        quote!(&#lifetime #mutability)
+        quote! { &#lifetime #mutability }
     }
 
     pub fn is_ref(self) -> bool {
@@ -83,7 +83,7 @@ impl RefType {
             "owned" => RefType::No,
             "ref" => RefType::Ref,
             "ref_mut" => RefType::Mut,
-            _ => panic!("'{name}' is not a RefType"),
+            _ => panic!("`{name}` is not a `RefType`"),
         }
     }
 }
@@ -133,7 +133,7 @@ pub fn add_extra_ty_param_bound_op<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
 ) -> Generics {
-    add_extra_ty_param_bound(generics, &quote!(::core::ops::#trait_ident))
+    add_extra_ty_param_bound(generics, &quote! { ::core::ops::#trait_ident })
 }
 
 pub fn add_extra_ty_param_bound<'a>(
@@ -162,9 +162,9 @@ pub fn add_extra_ty_param_bound_ref<'a>(
             let ref_with_lifetime = ref_type.reference_with_lifetime();
             add_extra_where_clauses(
                 &generics,
-                quote!(
+                quote! {
                     where #(#ref_with_lifetime #idents: #bound),*
-                ),
+                },
             )
         }
     }
@@ -224,11 +224,11 @@ pub fn add_where_clauses_for_new_ident<'a>(
     sized: bool,
 ) -> Generics {
     let generic_param = if fields.len() > 1 {
-        quote!(#type_ident: ::core::marker::Copy)
+        quote! { #type_ident: ::core::marker::Copy }
     } else if sized {
-        quote!(#type_ident)
+        quote! { #type_ident }
     } else {
-        quote!(#type_ident: ?::core::marker::Sized)
+        quote! { #type_ident: ?::core::marker::Sized }
     };
 
     let generics = add_extra_where_clauses(generics, type_where_clauses);
@@ -418,7 +418,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote!(#trait_module::#trait_ident);
+        let trait_path = quote! { #trait_module::#trait_ident };
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
                 Fields::Unnamed(ref fields) => {
@@ -564,7 +564,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote!(#trait_module::#trait_ident);
+        let trait_path = quote! { #trait_module::#trait_ident };
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {
                 (DeriveType::Unnamed, unnamed_to_vec(fields))
@@ -648,27 +648,27 @@ impl<'input> State<'input> {
         let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
         let members: Vec<_> = field_idents
             .iter()
-            .map(|ident| quote!(self.#ident))
+            .map(|ident| quote! { self.#ident })
             .collect();
         let trait_path = &self.trait_path;
         let trait_path_with_params = if !self.trait_path_params.is_empty() {
             let params = self.trait_path_params.iter();
-            quote!(#trait_path<#(#params),*>)
+            quote! { #trait_path<#(#params),*> }
         } else {
             self.trait_path.clone()
         };
 
         let casted_traits: Vec<_> = field_types
             .iter()
-            .map(|field_type| quote!(<#field_type as #trait_path_with_params>))
+            .map(|field_type| quote! { <#field_type as #trait_path_with_params> })
             .collect();
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
         let input_type = &self.input.ident;
         let (variant_name, variant_type) = self.variant.map_or_else(
-            || (None, quote!(#input_type)),
+            || (None, quote! { #input_type }),
             |v| {
                 let variant_name = &v.ident;
-                (Some(variant_name), quote!(#input_type::#variant_name))
+                (Some(variant_name), quote! { #input_type::#variant_name })
             },
         );
         MultiFieldData {
@@ -845,9 +845,9 @@ impl<'input, 'state> MultiFieldData<'input, 'state> {
             ..
         } = self;
         if self.state.derive_type == DeriveType::Named {
-            quote!(#variant_type{#(#field_idents: #initializers),*})
+            quote! { #variant_type{#(#field_idents: #initializers),*} }
         } else {
-            quote!(#variant_type(#(#initializers),*))
+            quote! { #variant_type(#(#initializers),*) }
         }
     }
     pub fn matcher<T: ToTokens>(
@@ -858,15 +858,15 @@ impl<'input, 'state> MultiFieldData<'input, 'state> {
         let MultiFieldData { variant_type, .. } = self;
         let full_bindings = (0..self.state.fields.len()).map(|i| {
             indexes.iter().position(|index| i == *index).map_or_else(
-                || quote!(_),
+                || quote! { _ },
                 |found_index| bindings[found_index].to_token_stream(),
             )
         });
         if self.state.derive_type == DeriveType::Named {
             let field_idents = self.state.field_idents();
-            quote!(#variant_type{#(#field_idents: #full_bindings),*})
+            quote! { #variant_type{#(#field_idents: #full_bindings),*} }
         } else {
-            quote!(#variant_type(#(#full_bindings),*))
+            quote! { #variant_type(#(#full_bindings),*) }
         }
     }
 }

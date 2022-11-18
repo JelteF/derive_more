@@ -9,10 +9,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let mut state = State::with_field_ignore(
         input,
         trait_name,
-        quote!(::core::ops),
+        quote! { ::core::ops },
         "index_mut".into(),
     )?;
-    state.add_trait_path_type_param(quote!(#index_type));
+    state.add_trait_path_type_param(quote! { #index_type });
     let SingleFieldData {
         field,
         field_type,

@@ -10,7 +10,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_type_bound(
         input,
         trait_name,
-        quote!(::core::convert),
+        quote! { ::core::convert },
         "as_mut".into(),
         AttrParams::ignore_and_forward(),
         false,
@@ -33,7 +33,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         .map(|((info, member), field)| {
             let field_type = &field.ty;
             if info.forward {
-                let trait_path = quote!(#trait_path<#as_mut_type>);
+                let trait_path = quote! { #trait_path<#as_mut_type> };
                 let type_where_clauses = quote! {
                     where #field_type: #trait_path
                 };
@@ -45,21 +45,21 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                     false,
                 );
                 let (impl_generics, _, where_clause) = new_generics.split_for_impl();
-                let casted_trait = quote!(<#field_type as #trait_path>);
+                let casted_trait = quote! { <#field_type as #trait_path> };
                 (
-                    quote!(#casted_trait::as_mut(&mut #member)),
-                    quote!(#impl_generics),
-                    quote!(#where_clause),
-                    quote!(#trait_path),
-                    quote!(#as_mut_type),
+                    quote! { #casted_trait::as_mut(&mut #member) },
+                    quote! { #impl_generics },
+                    quote! { #where_clause },
+                    quote! { #trait_path },
+                    quote! { #as_mut_type },
                 )
             } else {
                 (
-                    quote!(&mut #member),
-                    quote!(#impl_generics),
-                    quote!(#where_clause),
-                    quote!(#trait_path<#field_type>),
-                    quote!(#field_type),
+                    quote! { &mut #member },
+                    quote! { #impl_generics },
+                    quote! { #where_clause },
+                    quote! { #trait_path<#field_type> },
+                    quote! { #field_type },
                 )
             }
         })

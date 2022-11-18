@@ -27,7 +27,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         _ => panic!("Only structs can use derive({trait_name})"),
     };
 
-    quote!(
+    quote! {
         #[automatically_derived]
         impl #impl_generics ::core::ops::#trait_ident for #input_type #ty_generics #where_clause {
             #[inline]
@@ -35,5 +35,5 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
                 #( #exprs; )*
             }
         }
-    )
+    }
 }

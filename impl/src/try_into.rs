@@ -14,7 +14,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote!(::core::convert),
+        quote! { ::core::convert },
         "try_into".into(),
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
@@ -58,24 +58,24 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let vars = &numbered_vars(original_types.len(), "");
         for multi_field_data in multi_field_datas {
             let patterns: Vec<_> =
-                vars.iter().map(|var| quote!(#pattern_ref #var)).collect();
+                vars.iter().map(|var| quote! { #pattern_ref #var }).collect();
             matchers.push(
                 multi_field_data.matcher(&multi_field_data.field_indexes, &patterns),
             );
         }
 
         let vars = if vars.len() == 1 {
-            quote!(#(#vars)*)
+            quote! { #(#vars)* }
         } else {
-            quote!((#(#vars),*))
+            quote! { (#(#vars),*) }
         };
 
         let output_type = if original_types.len() == 1 {
-            quote!(#(#original_types)*).to_string()
+            quote! { #(#original_types)* }.to_string()
         } else {
             let types = original_types
                 .iter()
-                .map(|t| quote!(#t).to_string())
+                .map(|t| quote! { #t }.to_string())
                 .collect::<Vec<_>>();
             format!("({})", types.join(", "))
         };

@@ -10,7 +10,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::new(
         input,
         trait_name,
-        quote!(::core::str),
+        quote! { ::core::str },
         trait_name.to_lowercase(),
     )?;
 
@@ -39,7 +39,7 @@ pub fn struct_from(state: &State, trait_name: &'static str) -> TokenStream {
         ..
     } = single_field_data.clone();
 
-    let initializers = [quote!(#casted_trait::from_str(src)?)];
+    let initializers = [quote! { #casted_trait::from_str(src)? }];
     let body = single_field_data.initializer(&initializers);
 
     quote! {

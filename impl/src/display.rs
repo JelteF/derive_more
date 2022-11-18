@@ -18,7 +18,7 @@ const ALLOWED_ATTRIBUTE_ARGUMENTS: &[&str] = &["fmt", "bound"];
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_name = trait_name.trim_end_matches("Custom");
     let trait_ident = format_ident!("{trait_name}");
-    let trait_path = &quote!(::core::fmt::#trait_ident);
+    let trait_path = &quote! { ::core::fmt::#trait_ident };
     let trait_attr = trait_name_to_attribute_name(trait_name);
     let type_params = input
         .generics
@@ -44,12 +44,14 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             .map(|(ty, trait_names)| {
                 let bounds: Vec<_> = trait_names
                     .into_iter()
-                    .map(|bound| quote!(#bound))
+                    .map(|bound| quote! { #bound })
                     .collect();
-                quote!(#ty: #(#bounds)+*)
+                quote! { #ty: #(#bounds)+* }
             })
             .collect();
-        let where_clause = quote_spanned!(input.span()=> where #(#bounds),*);
+        let where_clause = quote_spanned! { input.span()=>
+            where #(#bounds),*
+        };
         utils::add_extra_where_clauses(&input.generics, where_clause)
     } else {
         input.generics.clone()
@@ -198,24 +200,18 @@ impl<'a, 'b> State<'a, 'b> {
         match fields {
             syn::Fields::Unit => TokenStream::new(),
             syn::Fields::Unnamed(fields) => {
-                let fields: TokenStream = (0..fields.unnamed.len())
-                    .map(|n| {
-                        let i = format_ident!("_{n}");
-                        quote!(ref #i,)
-                    })
-                    .collect();
-                quote!((#fields))
+                let fields = (0..fields.unnamed.len()).map(|n| {
+                    let i = format_ident!("_{n}");
+                    quote! { ref #i, }
+                });
+                quote! { (#(#fields)*) }
             }
             syn::Fields::Named(fields) => {
-                let fields: TokenStream = fields
-                    .named
-                    .iter()
-                    .map(|f| {
-                        let i = f.ident.as_ref().unwrap();
-                        quote!(ref #i,)
-                    })
-                    .collect();
-                quote!({#fields})
+                let fields = fields.named.iter().map(|f| {
+                    let i = f.ident.as_ref().unwrap();
+                    quote! { ref #i, }
+                });
+                quote! { { #(#fields)* } }
             }
         }
     }
@@ -392,7 +388,7 @@ impl<'a, 'b> State<'a, 'b> {
                             ));
                         }
                         if placeholders.len() == 1 {
-                            return Ok((quote_spanned!(fmt.span()=> #fmt), true));
+                            return Ok((quote_spanned! { fmt.span()=> #fmt }, true));
                         }
                     }
                     let args = list
@@ -403,7 +399,9 @@ impl<'a, 'b> State<'a, 'b> {
                             let arg = match arg {
                                 syn::NestedMeta::Lit(syn::Lit::Str(s)) => s,
                                 syn::NestedMeta::Meta(syn::Meta::Path(i)) => {
-                                    return Ok(quote_spanned!(list.span()=> #args #i,));
+                                    return Ok(
+                                        quote_spanned! { list.span()=> #args #i, },
+                                    );
                                 }
                                 _ => {
                                     return Err(Error::new(
@@ -414,7 +412,7 @@ impl<'a, 'b> State<'a, 'b> {
                             };
                             let arg: TokenStream =
                                 arg.parse().map_err(|e| Error::new(arg.span(), e))?;
-                            Ok(quote_spanned!(list.span()=> #args #arg,))
+                            Ok(quote_spanned! { list.span()=> #args #arg, })
                         })?;
 
                     let interpolated_args = placeholders
@@ -438,7 +436,9 @@ impl<'a, 'b> State<'a, 'b> {
                         .collect::<TokenStream>();
 
                     Ok((
-                        quote_spanned!(meta.span()=> write!(_derive_more_display_formatter, #fmt, #args #interpolated_args)),
+                        quote_spanned! { meta.span()=>
+                            write!(_derive_more_display_formatter, #fmt, #args #interpolated_args)
+                        },
                         false,
                     ))
                 }
@@ -456,17 +456,17 @@ impl<'a, 'b> State<'a, 'b> {
     fn infer_fmt(&self, fields: &syn::Fields, name: &Ident) -> Result<TokenStream> {
         let fields = match fields {
             syn::Fields::Unit => {
-                return Ok(quote!(
+                return Ok(quote! {
                     _derive_more_display_formatter.write_str(stringify!(#name))
-                ))
+                })
             }
             syn::Fields::Named(fields) => &fields.named,
             syn::Fields::Unnamed(fields) => &fields.unnamed,
         };
         if fields.is_empty() {
-            return Ok(quote!(
+            return Ok(quote! {
                 _derive_more_display_formatter.write_str(stringify!(#name))
-            ));
+            });
         } else if fields.len() > 1 {
             return Err(Error::new(
                 fields.span(),
@@ -476,18 +476,17 @@ impl<'a, 'b> State<'a, 'b> {
 
         let trait_path = self.trait_path;
         if let Some(ident) = &fields.iter().next().as_ref().unwrap().ident {
-            Ok(quote!(#trait_path::fmt(#ident, _derive_more_display_formatter)))
+            Ok(quote! { #trait_path::fmt(#ident, _derive_more_display_formatter) })
         } else {
-            Ok(quote!(#trait_path::fmt(_0, _derive_more_display_formatter)))
+            Ok(quote! { #trait_path::fmt(_0, _derive_more_display_formatter) })
         }
     }
     fn get_match_arms_and_extra_bounds(&self) -> Result<ParseResult> {
         let result: Result<_> = match &self.input.data {
             syn::Data::Enum(e) => {
-                match self
-                    .find_meta(&self.input.attrs, "fmt")
-                    .and_then(|m| m.map(|m| self.parse_meta_fmt(&m, true)).transpose())?
-                {
+                match self.find_meta(&self.input.attrs, "fmt").and_then(|m| {
+                    m.map(|m| self.parse_meta_fmt(&m, true)).transpose()
+                })? {
                     // #[display(fmt = "no placeholder")] on whole enum.
                     Some((fmt, false)) => {
                         e.variants.iter().try_for_each(|v| {
@@ -502,7 +501,7 @@ impl<'a, 'b> State<'a, 'b> {
                         })?;
 
                         Ok(ParseResult {
-                            arms: quote_spanned!(self.input.span()=> _ => #fmt,),
+                            arms: quote_spanned! { self.input.span()=> _ => #fmt, },
                             bounds: HashMap::default(),
                             requires_helper: false,
                         })
@@ -517,41 +516,57 @@ impl<'a, 'b> State<'a, 'b> {
                                 self.infer_fmt(&v.fields, &v.ident)?
                             };
                             let v_name = &v.ident;
-                            Ok(quote_spanned!(fmt.span()=> #arms Self::#v_name #matcher => write!(
-                                _derive_more_display_formatter,
-                                #outer_fmt,
-                                _derive_more_DisplayAs(|_derive_more_display_formatter| #fmt)
-                            ),))
+                            Ok(quote_spanned! { fmt.span()=>
+                                #arms Self::#v_name #matcher => write!(
+                                    _derive_more_display_formatter,
+                                    #outer_fmt,
+                                    _derive_more_DisplayAs(|_derive_more_display_formatter| #fmt)
+                                ),
+                            })
                         });
                         let fmt = fmt?;
                         Ok(ParseResult {
-                            arms: quote_spanned!(self.input.span()=> #fmt),
+                            arms: quote_spanned! { self.input.span()=> #fmt },
                             bounds: HashMap::default(),
                             requires_helper: true,
                         })
                     }
                     // No format attribute on whole enum.
-                    None => e.variants.iter().try_fold(ParseResult::default(), |result, v| {
-                        let ParseResult{ arms, mut bounds, requires_helper } = result;
-                        let matcher = self.get_matcher(&v.fields);
-                        let v_name = &v.ident;
-                        let fmt: TokenStream;
-                        let these_bounds: HashMap<_, _>;
+                    None => e.variants.iter().try_fold(
+                        ParseResult::default(),
+                        |result, v| {
+                            let ParseResult {
+                                arms,
+                                mut bounds,
+                                requires_helper,
+                            } = result;
+                            let matcher = self.get_matcher(&v.fields);
+                            let v_name = &v.ident;
+                            let fmt: TokenStream;
+                            let these_bounds: HashMap<_, _>;
 
-                        if let Some(meta) = self.find_meta(&v.attrs, "fmt")? {
-                            fmt = self.parse_meta_fmt(&meta, false)?.0;
-                            these_bounds = self.get_used_type_params_bounds(&v.fields, &meta);
-                        } else {
-                            fmt = self.infer_fmt(&v.fields, v_name)?;
-                            these_bounds = self.infer_type_params_bounds(&v.fields);
-                        };
-                        these_bounds.into_iter().for_each(|(ty, trait_names)| {
-                            bounds.entry(ty).or_default().extend(trait_names)
-                        });
-                        let arms = quote_spanned!(self.input.span()=> #arms Self::#v_name #matcher => #fmt,);
+                            if let Some(meta) = self.find_meta(&v.attrs, "fmt")? {
+                                fmt = self.parse_meta_fmt(&meta, false)?.0;
+                                these_bounds =
+                                    self.get_used_type_params_bounds(&v.fields, &meta);
+                            } else {
+                                fmt = self.infer_fmt(&v.fields, v_name)?;
+                                these_bounds = self.infer_type_params_bounds(&v.fields);
+                            };
+                            these_bounds.into_iter().for_each(|(ty, trait_names)| {
+                                bounds.entry(ty).or_default().extend(trait_names)
+                            });
+                            let arms = quote_spanned! { self.input.span()=>
+                                #arms Self::#v_name #matcher => #fmt,
+                            };
 
-                        Ok(ParseResult{ arms, bounds, requires_helper })
-                    }),
+                            Ok(ParseResult {
+                                arms,
+                                bounds,
+                                requires_helper,
+                            })
+                        },
+                    ),
                 }
             }
             syn::Data::Struct(s) => {
@@ -569,7 +584,7 @@ impl<'a, 'b> State<'a, 'b> {
                 }
 
                 Ok(ParseResult {
-                    arms: quote_spanned!(self.input.span()=> #name #matcher => #fmt,),
+                    arms: quote_spanned! { self.input.span()=> #name #matcher => #fmt, },
                     bounds,
                     requires_helper: false,
                 })
@@ -585,7 +600,7 @@ impl<'a, 'b> State<'a, 'b> {
                 let fmt = self.parse_meta_fmt(&meta, false)?.0;
 
                 Ok(ParseResult {
-                    arms: quote_spanned!(self.input.span()=> _ => #fmt,),
+                    arms: quote_spanned! { self.input.span()=> _ => #fmt, },
                     bounds: HashMap::default(),
                     requires_helper: false,
                 })

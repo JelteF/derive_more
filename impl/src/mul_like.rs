@@ -10,7 +10,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let mut state = State::with_attr_params(
         input,
         trait_name,
-        quote!(::core::ops),
+        quote! { ::core::ops },
         trait_name.to_lowercase(),
         AttrParams::struct_(vec!["forward"]),
     )?;
@@ -19,7 +19,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     }
 
     let scalar_ident = format_ident!("__RhsT");
-    state.add_trait_path_type_param(quote!(#scalar_ident));
+    state.add_trait_path_type_param(quote! { #scalar_ident });
     let multi_field_data = state.enabled_fields_data();
     let MultiFieldData {
         input_type,
@@ -48,7 +48,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     );
     let body = multi_field_data.initializer(&initializers);
     let (impl_generics, _, where_clause) = generics.split_for_impl();
-    Ok(quote!(
+    Ok(quote! {
         #[automatically_derived]
         impl #impl_generics  #trait_path_with_params for #input_type #ty_generics #where_clause {
             type Output = #input_type #ty_generics;
@@ -58,6 +58,5 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                 #body
             }
         }
-
-    ))
+    })
 }

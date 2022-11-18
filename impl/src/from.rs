@@ -14,7 +14,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote!(::core::convert),
+        quote! { ::core::convert },
         trait_name.to_lowercase(),
         AttrParams {
             enum_: vec!["forward", "ignore"],
