@@ -794,25 +794,25 @@ mod enums {
 
         #[derive(Display)]
         enum Enum {
-            First,
-            FirstTuple(),
-            FirstStruct {},
-            #[display("SECOND")]
-            Second,
-            #[display("SECOND_TUPLE")]
-            SecondTuple(),
-            #[display("SECOND_STRUCT")]
-            SecondStruct {},
+            Unit,
+            Unnamed(),
+            Named {},
+            #[display("STR_UNIT")]
+            StrUnit,
+            #[display("STR_UNNAMED")]
+            StrUnnamed(),
+            #[display("STR_NAMED")]
+            StrNamed {},
         }
 
         #[test]
         fn assert() {
-            assert_eq!(Enum::First.to_string(), "First");
-            assert_eq!(Enum::FirstTuple().to_string(), "FirstTuple");
-            assert_eq!(Enum::FirstStruct {}.to_string(), "FirstStruct");
-            assert_eq!(Enum::Second.to_string(), "SECOND");
-            assert_eq!(Enum::SecondTuple().to_string(), "SECOND_TUPLE");
-            assert_eq!(Enum::SecondStruct {}.to_string(), "SECOND_STRUCT");
+            assert_eq!(Enum::Unit.to_string(), "Unit");
+            assert_eq!(Enum::Unnamed().to_string(), "Unnamed");
+            assert_eq!(Enum::Named {}.to_string(), "Named");
+            assert_eq!(Enum::StrUnit.to_string(), "STR_UNIT");
+            assert_eq!(Enum::StrUnnamed().to_string(), "STR_UNNAMED");
+            assert_eq!(Enum::StrNamed {}.to_string(), "STR_NAMED");
         }
     }
 
@@ -821,24 +821,32 @@ mod enums {
 
         #[derive(Display)]
         enum Enum {
-            First(i32),
-            FirstNamed {
+            Unnamed(i32),
+            Named {
                 field: i32,
             },
-            #[display("Second: {_0} {}", _0)]
-            Second(i32),
-            #[display("Second: {field} {}", field)]
-            SecondNamed {
+            #[display("unnamed")]
+            StrUnnamed(i32),
+            #[display("named")]
+            StrNamed {
+                field: i32,
+            },
+            #[display("{_0} {}", _0)]
+            InterpolatedUnnamed(i32),
+            #[display("{field} {}", field)]
+            InterpolatedNamed {
                 field: i32,
             },
         }
 
         #[test]
         fn assert() {
-            assert_eq!(Enum::First(1).to_string(), "1");
-            assert_eq!(Enum::FirstNamed { field: 1 }.to_string(), "1");
-            assert_eq!(Enum::Second(1).to_string(), "Second: 1 1");
-            assert_eq!(Enum::SecondNamed { field: 1 }.to_string(), "Second: 1 1");
+            assert_eq!(Enum::Unnamed(1).to_string(), "1");
+            assert_eq!(Enum::Named { field: 1 }.to_string(), "1");
+            assert_eq!(Enum::StrUnnamed(1).to_string(), "unnamed");
+            assert_eq!(Enum::StrNamed { field: 1 }.to_string(), "named");
+            assert_eq!(Enum::InterpolatedUnnamed(1).to_string(), "1 1");
+            assert_eq!(Enum::InterpolatedNamed { field: 1 }.to_string(), "1 1");
         }
     }
 }
