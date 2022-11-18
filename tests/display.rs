@@ -67,6 +67,12 @@ enum E {
     Path(PathBuf),
 }
 
+#[derive(Display)]
+enum Lang {
+    Rust,
+    Go,
+}
+
 // #[derive(Display)]
 // #[display("Java EE")]
 // enum EE {
@@ -136,6 +142,8 @@ fn check_display() {
     assert_eq!(E::Uint(2).to_string(), "2");
     assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
     assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
+    assert_eq!(Lang::Rust.to_string(), "Rust");
+    assert_eq!(Lang::Go.to_string(), "Go");
     // assert_eq!(EE::A.to_string(), "Java EE");
     // assert_eq!(EE::B.to_string(), "Java EE");
     assert_eq!(U { i: 2 }.to_string(), "Hello there!");
