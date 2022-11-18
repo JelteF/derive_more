@@ -849,4 +849,48 @@ mod enums {
             assert_eq!(Enum::InterpolatedNamed { field: 1 }.to_string(), "1 1");
         }
     }
+
+    mod multi_field_variant {
+        use super::*;
+
+        #[derive(Display)]
+        enum Enum {
+            #[display("unnamed")]
+            StrUnnamed(i32, i32),
+            #[display("named")]
+            StrNamed { field1: i32, field2: i32 },
+            #[display(
+                "{_0} {ident} {_1} {} {}",
+                _1, _0 + _1, ident = 123, _1 = _0,
+            )]
+            InterpolatedUnnamed(i32, i32),
+            #[display(
+                "{field1} {ident} {field2} {} {}",
+                field2, field1 + field2, ident = 123, field2 = field1,
+            )]
+            InterpolatedNamed { field1: i32, field2: i32 },
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::StrUnnamed(1, 2).to_string(), "unnamed");
+            assert_eq!(
+                Enum::StrNamed {
+                    field1: 1,
+                    field2: 2,
+                }
+                .to_string(),
+                "named",
+            );
+            assert_eq!(Enum::InterpolatedUnnamed(1, 2).to_string(), "1 123 1 2 3");
+            assert_eq!(
+                Enum::InterpolatedNamed {
+                    field1: 1,
+                    field2: 2,
+                }
+                .to_string(),
+                "1 123 1 2 3",
+            );
+        }
+    }
 }
