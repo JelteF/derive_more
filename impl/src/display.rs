@@ -184,13 +184,13 @@ impl<'a, 'b> State<'a, 'b> {
     fn get_proper_fmt_syntax(&self) -> impl Display {
         format!(
             r#"Proper syntax: #[{}(fmt = "My format", "arg1", "arg2")]"#,
-            self.trait_attr
+            self.trait_attr,
         )
     }
     fn get_proper_bound_syntax(&self) -> impl Display {
         format!(
             "Proper syntax: #[{}(bound = \"T, U: Trait1 + Trait2, V: Trait3\")]",
-            self.trait_attr
+            self.trait_attr,
         )
     }
 
@@ -346,7 +346,7 @@ impl<'a, 'b> State<'a, 'b> {
             if bounds.is_empty() {
                 return Err(Error::new(
                     span,
-                    format!("No bounds specified for type parameter {}", ident),
+                    format!("No bounds specified for type parameter {ident}"),
                 ));
             }
         }
@@ -644,7 +644,7 @@ impl<'a, 'b> State<'a, 'b> {
                                 .ident
                                 .clone()
                                 .unwrap_or_else(|| {
-                                    Ident::new(&format!("_{}", i), Span::call_site())
+                                    Ident::new(&format!("_{i}"), Span::call_site())
                                 })
                                 .into(),
                             ty,

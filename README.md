@@ -38,7 +38,7 @@ struct Point2D {
 
 #[derive(PartialEq, From, Add, Display)]
 enum MyEnum {
-    #[display(fmt = "int: {}", _0)]
+    #[display(fmt = "int: {_0}")]
     Int(i32),
     Uint(u32),
     #[display(fmt = "nothing")]

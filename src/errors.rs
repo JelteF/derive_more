@@ -36,7 +36,7 @@ impl<T> fmt::Display for TryIntoError<T> {
         write!(
             f,
             "Only {} can be converted to {}",
-            self.variant_names, self.output_type
+            self.variant_names, self.output_type,
         )
     }
 }

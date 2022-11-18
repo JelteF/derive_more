@@ -71,21 +71,20 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         };
 
         let output_type = if original_types.len() == 1 {
-            format!("{}", quote!(#(#original_types)*))
+            quote!(#(#original_types)*).to_string()
         } else {
             let types = original_types
                 .iter()
-                .map(|t| format!("{}", quote!(#t)))
+                .map(|t| quote!(#t).to_string())
                 .collect::<Vec<_>>();
             format!("({})", types.join(", "))
         };
         let variant_names = multi_field_datas
             .iter()
             .map(|d| {
-                format!(
-                    "{}",
-                    d.variant_name.expect("Somehow there was no variant name")
-                )
+                d.variant_name
+                    .expect("Somehow there was no variant name")
+                    .to_string()
             })
             .collect::<Vec<_>>()
             .join(", ");

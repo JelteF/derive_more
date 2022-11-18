@@ -25,13 +25,13 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
                 quote!(#input_type #ty_generics),
                 struct_content(input_type, &named_to_vec(fields), method_ident),
             ),
-            _ => panic!("Unit structs cannot use derive({})", trait_name),
+            _ => panic!("Unit structs cannot use derive({trait_name})"),
         },
         Data::Enum(ref data_enum) => {
             enum_output_type_and_content(input, data_enum, method_ident)
         }
 
-        _ => panic!("Only structs and enums can use derive({})", trait_name),
+        _ => panic!("Only structs and enums can use derive({trait_name})"),
     };
 
     quote!(
@@ -104,7 +104,7 @@ fn enum_output_type_and_content(
                 // (Subtype(vars)) => Ok(TypePath(exprs))
                 let size = unnamed_to_vec(fields).len();
                 let vars: &Vec<_> = &(0..size)
-                    .map(|i| Ident::new(&format!("__{}", i), Span::call_site()))
+                    .map(|i| Ident::new(&format!("__{i}"), Span::call_site()))
                     .collect();
                 let method_iter = method_iter.by_ref();
                 let mut body = quote!(#subtype(#(#vars.#method_iter()),*));
@@ -130,7 +130,7 @@ fn enum_output_type_and_content(
                     .map(|f| f.ident.as_ref().unwrap())
                     .collect();
                 let vars: &Vec<_> = &(0..size)
-                    .map(|i| Ident::new(&format!("__{}", i), Span::call_site()))
+                    .map(|i| Ident::new(&format!("__{i}"), Span::call_site()))
                     .collect();
                 let method_iter = method_iter.by_ref();
                 let mut body =
@@ -146,7 +146,7 @@ fn enum_output_type_and_content(
                 matches.push(matcher);
             }
             Fields::Unit => {
-                let message = format!("Cannot {}() unit variants", method_ident);
+                let message = format!("Cannot {method_ident}() unit variants");
                 matches.push(quote!(#subtype => ::core::result::Result::Err(#message)));
             }
         }

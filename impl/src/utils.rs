@@ -83,14 +83,14 @@ impl RefType {
             "owned" => RefType::No,
             "ref" => RefType::Ref,
             "ref_mut" => RefType::Mut,
-            _ => panic!("'{}' is not a RefType", name),
+            _ => panic!("'{name}' is not a RefType"),
         }
     }
 }
 
 pub fn numbered_vars(count: usize, prefix: &str) -> Vec<Ident> {
     (0..count)
-        .map(|i| Ident::new(&format!("__{}{}", prefix, i), Span::call_site()))
+        .map(|i| Ident::new(&format!("__{prefix}{i}"), Span::call_site()))
         .collect()
 }
 
@@ -247,8 +247,8 @@ pub fn named_to_vec(fields: &FieldsNamed) -> Vec<&Field> {
 
 fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     panic!(
-        "derive({}) only works when forwarding to a single field. Try putting #[{}] or #[{}(ignore)] on the fields in the struct",
-        trait_name, trait_attr, trait_attr,
+        "derive({trait_name}) only works when forwarding to a single field. \
+         Try putting #[{trait_attr}] or #[{trait_attr}(ignore)] on the fields in the struct",
     )
 }
 
@@ -438,7 +438,7 @@ impl<'input> State<'input> {
                 data_enum.variants.iter().collect(),
             ),
             Data::Union(_) => {
-                panic!("cannot derive({}) for union", trait_name)
+                panic!("cannot derive({trait_name}) for union")
             }
         };
         let attrs: Vec<_> = if derive_type == DeriveType::Enum {

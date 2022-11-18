@@ -439,9 +439,8 @@ where
     let field = assert_iter_contains_zero_or_one_item(
         explicit_fields,
         &format!(
-            "Multiple `{}` attributes specified. \
+            "Multiple `{attr}` attributes specified. \
              Single attribute per struct/enum variant allowed.",
-            attr
         ),
     )?;
 
