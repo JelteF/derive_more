@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
 [![Rust Documentation](https://docs.rs/derive_more/badge.svg)](https://docs.rs/derive_more)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
-[![Rust 1.56+](https://img.shields.io/badge/rustc-1.56+-lightgray.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
+[![Rust 1.65+](https://img.shields.io/badge/rustc-1.65+-lightgray.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.65.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
 Rust has lots of builtin traits that are implemented for its basic types, such
@@ -139,7 +139,7 @@ These don't derive traits, but derive static methods instead.
 
 ## Installation
 
-This library requires Rust 1.56 or higher and it supports `no_std` out of the box.
+This library requires Rust 1.65 or higher and it supports `no_std` out of the box.
 Then add the following to `Cargo.toml`:
 
 ```toml
