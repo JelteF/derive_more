@@ -15,7 +15,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input,
         trait_name,
         quote!(::core::convert),
-        String::from("try_into"),
+        "try_into".into(),
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
             variant: vec!["ignore", "owned", "ref", "ref_mut"],

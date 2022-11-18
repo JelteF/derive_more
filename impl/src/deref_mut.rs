@@ -9,7 +9,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input,
         trait_name,
         quote!(::core::ops),
-        String::from("deref_mut"),
+        "deref_mut".into(),
     )?;
     let SingleFieldData {
         input_type,

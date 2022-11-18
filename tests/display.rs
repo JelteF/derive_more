@@ -151,7 +151,7 @@ fn check_display() {
     );
     assert_eq!(
         Affix::B {
-            wat: "things".to_owned(),
+            wat: "things".into(),
             stuff: false,
         }
         .to_string(),

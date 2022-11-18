@@ -11,7 +11,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input,
         trait_name,
         quote!(::core::iter),
-        String::from("into_iterator"),
+        "into_iterator".into(),
     )?;
     let SingleFieldData {
         input_type,

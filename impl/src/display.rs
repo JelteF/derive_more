@@ -763,7 +763,7 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
     fn from(arg: parsing::Argument<'a>) -> Self {
         match arg {
             parsing::Argument::Integer(i) => Parameter::Positional(i),
-            parsing::Argument::Identifier(i) => Parameter::Named(i.to_owned()),
+            parsing::Argument::Identifier(i) => Parameter::Named(i.into()),
         }
     }
 }
@@ -861,14 +861,14 @@ mod placeholder_parse_fmt_string_spec {
                     trait_name: "LowerHex",
                 },
                 Placeholder {
-                    arg: Parameter::Named("par".to_owned()),
+                    arg: Parameter::Named("par".into()),
                     width: None,
                     precision: None,
                     trait_name: "Debug",
                 },
                 Placeholder {
                     arg: Parameter::Positional(2),
-                    width: Some(Parameter::Named("width".to_owned())),
+                    width: Some(Parameter::Named("width".into())),
                     precision: None,
                     trait_name: "Display",
                 },

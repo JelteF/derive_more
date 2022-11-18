@@ -10,7 +10,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input,
         trait_name,
         quote!(::core::ops),
-        String::from("index_mut"),
+        "index_mut".into(),
     )?;
     state.add_trait_path_type_param(quote!(#index_type));
     let SingleFieldData {

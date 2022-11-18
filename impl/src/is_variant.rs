@@ -9,7 +9,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input,
         trait_name,
         quote!(),
-        String::from("is_variant"),
+        "is_variant".into(),
         AttrParams {
             enum_: vec!["ignore"],
             variant: vec!["ignore"],

@@ -11,7 +11,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input,
         trait_name,
         quote!(::core::convert),
-        String::from("as_ref"),
+        "as_ref".into(),
         AttrParams::ignore_and_forward(),
         false,
     )?;

@@ -180,7 +180,7 @@ struct Name(String);
 #[test]
 fn explicit_complex_types_name() {
     let name = "Eärendil";
-    let expected = Name(name.to_owned());
+    let expected = Name(name.into());
     assert_eq!(expected, name.to_owned().into());
     assert_eq!(expected, name.into());
     assert_eq!(expected, Cow::Borrowed(name).into());
