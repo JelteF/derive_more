@@ -200,7 +200,7 @@ impl<'a, 'b> State<'a, 'b> {
             syn::Fields::Unnamed(fields) => {
                 let fields: TokenStream = (0..fields.unnamed.len())
                     .map(|n| {
-                        let i = Ident::new(&format!("_{}", n), Span::call_site());
+                        let i = Ident::new(&format!("_{n}"), Span::call_site());
                         quote!(ref #i,)
                     })
                     .collect();
@@ -230,52 +230,46 @@ impl<'a, 'b> State<'a, 'b> {
             .filter(|attr| attr.path.is_ident(self.trait_attr))
         {
             let meta = attr.parse_meta()?;
-            let meta_list = match &meta {
-                syn::Meta::List(meta) => meta,
-                _ => continue,
+            let syn::Meta::List(meta_list) = &meta else {
+                continue;
             };
 
-            use syn::{Meta, NestedMeta};
-            let meta_nv = match meta_list.nested.first() {
-                Some(NestedMeta::Meta(Meta::NameValue(meta_nv))) => {
-                    if ALLOWED_ATTRIBUTE_ARGUMENTS
-                        .iter()
-                        .any(|attr| meta_nv.path.is_ident(attr))
-                    {
-                        meta_nv
-                    } else {
-                        return Err(Error::new(
-                            meta_nv.path.span(),
-                            format!(
-                                "Unknown `{}` attribute argument. \
-                                 Allowed arguments are: {}",
-                                meta_nv.path.to_token_stream(),
-                                ALLOWED_ATTRIBUTE_ARGUMENTS
-                                    .iter()
-                                    .fold(None, |acc, key| acc.map_or_else(
-                                        || Some(key.to_string()),
-                                        |acc| Some(format!("{}, {}", acc, key))
-                                    ))
-                                    .unwrap_or_default(),
-                            ),
-                        ));
-                    }
-                }
-                _ => {
-                    // If the given attribute is not MetaNameValue, it most likely implies that the
-                    // user is writing an incorrect format. For example:
+            let Some(syn::NestedMeta::Meta(syn::Meta::NameValue(meta_nv))) =
+                meta_list.nested.first() else {
+                    // If the given attribute is not `MetaNameValue`, it most likely implies that
+                    // the user is writing an incorrect format. For example:
                     // - `#[display()]`
                     // - `#[display("foo")]`
                     // - `#[display(foo)]`
                     return Err(Error::new(
                         meta.span(),
                         format!(
-                            r#"The format for this attribute cannot be parsed. Correct format: `#[{}({} = "...")]`"#,
-                            self.trait_attr, meta_key
+                            "The format for this attribute cannot be parsed. \
+                             Correct format: `#[{}({meta_key} = \"...\")]`",
+                            self.trait_attr,
                         ),
                     ));
-                }
-            };
+                };
+            if !ALLOWED_ATTRIBUTE_ARGUMENTS
+                .iter()
+                .any(|attr| meta_nv.path.is_ident(attr))
+            {
+                return Err(Error::new(
+                    meta_nv.path.span(),
+                    format!(
+                        "Unknown `{}` attribute argument. \
+                         Allowed arguments are: {}",
+                        meta_nv.path.to_token_stream(),
+                        ALLOWED_ATTRIBUTE_ARGUMENTS
+                            .iter()
+                            .fold(None, |acc, key| acc.map_or_else(
+                                || Some(key.to_string()),
+                                |acc| Some(format!("{acc}, {key}"))
+                            ))
+                            .unwrap_or_default(),
+                    ),
+                ));
+            }
 
             if meta_nv.path.is_ident(meta_key) {
                 metas.push(meta);
@@ -311,9 +305,8 @@ impl<'a, 'b> State<'a, 'b> {
         let mut bounds = HashMap::default();
 
         for generic_param in generic_params {
-            let type_param = match generic_param {
-                syn::GenericParam::Type(type_param) => type_param,
-                _ => return Err(Error::new(span, "Only trait bounds allowed")),
+            let syn::GenericParam::Type(type_param) = generic_param else {
+                return Err(Error::new(span, "Only trait bounds allowed"));
             };
 
             if !self.type_params.contains(&type_param.ident) {
@@ -336,9 +329,8 @@ impl<'a, 'b> State<'a, 'b> {
             let bounds = bounds.entry(ty).or_insert_with(HashSet::default);
 
             for bound in type_param.bounds {
-                let bound = match bound {
-                    syn::TypeParamBound::Trait(bound) => bound,
-                    _ => return Err(Error::new(span, "Only trait bounds allowed")),
+                let syn::TypeParamBound::Trait(bound) = bound else {
+                    return Err(Error::new(span, "Only trait bounds allowed"));
                 };
 
                 if bound.lifetimes.is_some() {
@@ -366,11 +358,8 @@ impl<'a, 'b> State<'a, 'b> {
         meta: &syn::Meta,
         outer_enum: bool,
     ) -> Result<(TokenStream, bool)> {
-        let list = match meta {
-            syn::Meta::List(list) => list,
-            _ => {
-                return Err(Error::new(meta.span(), self.get_proper_fmt_syntax()));
-            }
+        let syn::Meta::List(list) = meta else {
+            return Err(Error::new(meta.span(), self.get_proper_fmt_syntax()));
         };
 
         match &list.nested[0] {
@@ -605,30 +594,26 @@ impl<'a, 'b> State<'a, 'b> {
 
         let mut result = result?;
 
-        let meta = match self.find_meta(&self.input.attrs, "bound")? {
-            Some(meta) => meta,
-            _ => return Ok(result),
+        let Some(meta) = self.find_meta(&self.input.attrs, "bound")? else {
+            return Ok(result);
         };
 
         let span = meta.span();
 
-        let meta = match meta {
-            syn::Meta::List(meta) => meta.nested,
-            _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
+        let syn::Meta::List(syn::MetaList { nested: meta, .. }) = meta else {
+            return Err(Error::new(span, self.get_proper_bound_syntax()));
         };
 
         if meta.len() != 1 {
             return Err(Error::new(span, self.get_proper_bound_syntax()));
         }
 
-        let meta = match &meta[0] {
-            syn::NestedMeta::Meta(syn::Meta::NameValue(meta)) => meta,
-            _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
+        let syn::NestedMeta::Meta(syn::Meta::NameValue(meta)) = &meta[0] else {
+            return Err(Error::new(span, self.get_proper_bound_syntax()));
         };
 
-        let extra_bounds = match &meta.lit {
-            syn::Lit::Str(extra_bounds) => extra_bounds,
-            _ => return Err(Error::new(span, self.get_proper_bound_syntax())),
+        let syn::Lit::Str(extra_bounds) = &meta.lit else {
+            return Err(Error::new(span, self.get_proper_bound_syntax()));
         };
 
         let extra_bounds = self.parse_meta_bounds(extra_bounds)?;
@@ -671,10 +656,9 @@ impl<'a, 'b> State<'a, 'b> {
             return HashMap::default();
         }
 
-        let list = match meta {
-            syn::Meta::List(list) => list,
-            // This one has been checked already in get_meta_fmt() method.
-            _ => unreachable!(),
+        let syn::Meta::List(list) = meta else {
+            // This one has been checked already in `get_meta_fmt()` method.
+            unreachable!()
         };
         let fmt_args: HashMap<_, _> = list
             .nested
@@ -686,7 +670,7 @@ impl<'a, 'b> State<'a, 'b> {
                     syn::parse_str(&s.value()).ok().map(|id| (i, id))
                 }
                 syn::NestedMeta::Meta(syn::Meta::Path(ref id)) => Some((i, id.clone())),
-                // This one has been checked already in get_meta_fmt() method.
+                // This one has been checked already in `get_meta_fmt()` method.
                 _ => unreachable!(),
             })
             .collect();

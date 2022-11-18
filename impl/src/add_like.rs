@@ -87,7 +87,7 @@ fn enum_content(
 
         match variant.fields {
             Fields::Unnamed(ref fields) => {
-                // The patern that is outputted should look like this:
+                // The pattern that is outputted should look like this:
                 // (Subtype(left_vars), TypePath(right_vars)) => Ok(TypePath(exprs))
                 let size = unnamed_to_vec(fields).len();
                 let l_vars = &numbered_vars(size, "l_");

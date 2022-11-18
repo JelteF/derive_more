@@ -330,19 +330,17 @@ fn parse_fields<'input, 'state>(
 /// Checks if `ty` is [`syn::Type::Path`] and ends with segment matching `tail`
 /// and doesn't contain any generic parameters.
 fn is_type_path_ends_with_segment(ty: &syn::Type, tail: &str) -> bool {
-    let ty = match ty {
-        syn::Type::Path(ty) => ty,
-        _ => return false,
+    let syn::Type::Path(ty) = ty else {
+        return false;
     };
 
     // Unwrapping is safe, cause 'syn::TypePath.path.segments'
     // have to have at least one segment
     let segment = ty.path.segments.last().unwrap();
 
-    match segment.arguments {
-        syn::PathArguments::None => (),
-        _ => return false,
-    };
+    if !matches!(segment.arguments, syn::PathArguments::None) {
+        return false;
+    }
 
     segment.ident == tail
 }
@@ -463,9 +461,8 @@ fn assert_iter_contains_zero_or_one_item<'a>(
     mut iter: impl Iterator<Item = (usize, &'a syn::Field, &'a MetaInfo)>,
     error_msg: &str,
 ) -> Result<Option<(usize, &'a syn::Field, &'a MetaInfo)>> {
-    let item = match iter.next() {
-        Some(item) => item,
-        None => return Ok(None),
+    let Some(item) = iter.next() else {
+        return Ok(None);
     };
 
     if let Some((_, field, _)) = iter.next() {

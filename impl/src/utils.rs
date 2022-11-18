@@ -897,9 +897,7 @@ fn get_meta_info(
 
     let mut info = MetaInfo::default();
 
-    let meta = if let Some(meta) = it.next() {
-        meta
-    } else {
+    let Some(meta) = it.next() else {
         return Ok(info);
     };
 
@@ -1008,9 +1006,7 @@ fn parse_punctuated_nested_meta(
                         for meta in &list.nested {
                             let typ: syn::Type = match meta {
                                 NestedMeta::Meta(meta) => {
-                                    let path = if let Meta::Path(p) = meta {
-                                        p
-                                    } else {
+                                    let Meta::Path(path) = meta else {
                                         return Err(Error::new(
                                             meta.span(),
                                             format!(
@@ -1187,16 +1183,10 @@ pub fn get_if_type_parameter_used_in_type(
     type_parameters: &HashSet<syn::Ident>,
     ty: &syn::Type,
 ) -> Option<syn::Type> {
-    if is_type_parameter_used_in_type(type_parameters, ty) {
-        match ty {
-            syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => {
-                Some((**ty).clone())
-            }
-            ty => Some(ty.clone()),
-        }
-    } else {
-        None
-    }
+    is_type_parameter_used_in_type(type_parameters, ty).then(|| match ty {
+        syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => (**ty).clone(),
+        ty => ty.clone(),
+    })
 }
 
 pub fn is_type_parameter_used_in_type(
