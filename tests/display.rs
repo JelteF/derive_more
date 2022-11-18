@@ -582,10 +582,6 @@ mod generic {
     }
 }
 
-fn int() -> i32 {
-    0
-}
-
 mod structs {
     use super::*;
 
@@ -608,7 +604,7 @@ mod structs {
             assert_eq!(Struct {}.to_string(), "Struct");
         }
 
-        mod lower {
+        mod str {
             use super::*;
 
             #[derive(Display)]
@@ -631,19 +627,19 @@ mod structs {
             }
         }
 
-        mod lower_interpolated {
+        mod interpolated {
             use super::*;
 
             #[derive(Display)]
-            #[display("unit: {}", int())]
+            #[display("unit: {}", 0)]
             pub struct Unit;
 
             #[derive(Display)]
-            #[display("tuple: {}", int())]
+            #[display("tuple: {}", 0)]
             pub struct Tuple();
 
             #[derive(Display)]
-            #[display("struct: {}", int())]
+            #[display("struct: {}", 0)]
             pub struct Struct {}
 
             #[test]
@@ -651,6 +647,64 @@ mod structs {
                 assert_eq!(Unit.to_string(), "unit: 0");
                 assert_eq!(Tuple().to_string(), "tuple: 0");
                 assert_eq!(Struct {}.to_string(), "struct: 0");
+            }
+        }
+    }
+
+    mod single_field {
+        use super::*;
+
+        #[derive(Display)]
+        struct Tuple(i32);
+
+        #[derive(Display)]
+        struct Struct {
+            field: i32,
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Tuple(0).to_string(), "0");
+            assert_eq!(Struct { field: 0 }.to_string(), "0");
+        }
+
+        mod str {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("tuple")]
+            struct Tuple(i32);
+
+            #[derive(Display)]
+            #[display("struct")]
+            struct Struct {
+                field: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(0).to_string(), "tuple");
+                assert_eq!(Struct { field: 0 }.to_string(), "struct");
+            }
+        }
+
+        mod interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("tuple: {_0} {}", _0)]
+            struct Tuple(i32);
+
+            #[derive(Display)]
+            #[display("struct: {field} {}", field)]
+            struct Struct {
+                field: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(0).to_string(), "tuple: 0 0");
+                assert_eq!(Struct { field: 0 }.to_string(), "struct: 0 0");
             }
         }
     }
