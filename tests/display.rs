@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 // Here just to make sure that this doesn't conflict with
 // the derives in some way
-use std::fmt::Binary;
+use std::fmt::{Binary, Display};
 
 use derive_more::{Binary, DebugCustom, Display, Octal, UpperHex};
 
@@ -773,5 +773,19 @@ mod structs {
                 );
             }
         }
+    }
+}
+
+mod enums {
+    use super::*;
+
+    mod no_variants {
+        use super::*;
+
+        #[derive(Display)]
+        enum Void {}
+
+        const fn assert<T: Display>() {}
+        const _: () = assert::<Void>();
     }
 }
