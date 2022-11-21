@@ -10,7 +10,7 @@ In the case of an enum, each of its variants is matched.
 For each matched variant, a `write!` expression will be generated with
 the supplied format, or an automatically inferred one.
 
-You specify the format on each variant by writing e.g. `#[display(fmt = "my val: {}", "some_val * 2")]`.
+You specify the format on each variant by writing e.g. `#[display("my val: {}", "some_val * 2")]`.
 For enums, you can either specify it on each variant, or on the enum as a whole.
 
 For variants that don't have a format specified, it will simply defer to the format of the
@@ -21,7 +21,7 @@ inner variable. If there is no such variable, or there is more than 1, an error 
 
 ## The format of the format
 
-You supply a format by attaching an attribute of the syntax: `#[display(fmt = "...", args...)]`.
+You supply a format by attaching an attribute of the syntax: `#[display("...", args...)]`.
 The format supplied is passed verbatim to `write!`. The arguments supplied handled specially,
 due to constraints in the syntax of attributes. In the case of an argument being a simple
 identifier, it is passed verbatim. If an argument is a string, it is **parsed as an expression**,
@@ -34,7 +34,7 @@ i.e. `_0`, `_1`, `_2`, etc.
 Although [captured identifiers in format strings are supported since 1.58
 Rust](https://blog.rust-lang.org/2022/01/13/Rust-1.58.0.html#captured-identifiers-in-format-strings),
 we support this feature on earlier versions of Rust too. This means that
-`#[display(fmt = "Prefix: {field}")]` is completely valid on MSRV.
+`#[display("Prefix: {field}")]` is completely valid on MSRV.
 
 
 ### Other formatting traits
@@ -59,7 +59,7 @@ E.g., for a structure `Foo` defined like this:
 # trait Trait { type Type; }
 #
 #[derive(Display)]
-#[display(fmt = "{} {} {:?} {:p}", a, b, c, d)]
+#[display("{} {} {:?} {:p}", a, b, c, d)]
 struct Foo<'a, T1, T2: Trait, T3> {
     a: T1,
     b: <T2 as Trait>::Type,
@@ -105,7 +105,7 @@ write `c` without double-quotes.
 #
 #[derive(Display)]
 #[display(bound = "T: MyTrait, U: Display, V: Display")]
-#[display(fmt = "{} {} {}", "a.my_function()", "b.to_string().len()", "c")]
+#[display("{} {} {}", "a.my_function()", "b.to_string().len()", "c")]
 struct MyStruct<T, U, V> {
     a: T,
     b: U,
@@ -127,11 +127,11 @@ struct MyStruct<T, U, V> {
 struct MyInt(i32);
 
 #[derive(DebugCustom)]
-#[debug(fmt = "MyIntDbg(as hex: {_0:x}, as dec: {_0})")]
+#[debug("MyIntDbg(as hex: {_0:x}, as dec: {_0})")]
 struct MyIntDbg(i32);
 
 #[derive(Display)]
-#[display(fmt = "({x}, {y})")]
+#[display("({x}, {y})")]
 struct Point2D {
     x: i32,
     y: i32,
@@ -140,16 +140,16 @@ struct Point2D {
 #[derive(Display)]
 enum E {
     Uint(u32),
-    #[display(fmt = "I am B {:b}", i)]
+    #[display("I am B {:b}", i)]
     Binary {
         i: i8,
     },
-    #[display(fmt = "I am C {}", "_0.display()")]
+    #[display("I am C {}", "_0.display()")]
     Path(PathBuf),
 }
 
 #[derive(Display)]
-#[display(fmt = "Java EE: {}")]
+#[display("Java EE: {}")]
 enum EE {
     #[display(fmt="A")]
     A,
@@ -158,17 +158,17 @@ enum EE {
 }
 
 #[derive(Display)]
-#[display(fmt = "Hello there!")]
+#[display("Hello there!")]
 union U {
     i: u32,
 }
 
 #[derive(Octal)]
-#[octal(fmt = "7")]
+#[octal("7")]
 struct S;
 
 #[derive(UpperHex)]
-#[upper_hex(fmt = "UpperHex")]
+#[upper_hex("UpperHex")]
 struct UH;
 
 #[derive(Display)]
@@ -178,7 +178,7 @@ struct Unit;
 struct UnitStruct {}
 
 #[derive(Display)]
-#[display(fmt = "{}", "self.sign()")]
+#[display("{}", "self.sign()")]
 struct PositiveOrNegative {
     x: i32,
 }
