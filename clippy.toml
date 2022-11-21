@@ -3,13 +3,15 @@
 # https://rust-lang.github.io/rust-clippy/master/index.html
 
 msrv = "1.65.0"
+
+# Ensures consistent bracing for macro calls in the codebase.
+# Extends default settings:
+# https://github.com/rust-lang/rust-clippy/blob/master/clippy_lints/src/nonstandard_macro_braces.rs#L143-L184
 standard-macro-braces = [
     { name = "assert", brace = "(" },
     { name = "assert_eq", brace = "(" },
     { name = "assert_ne", brace = "(" },
-    { name = "format", brace = "(" },
     { name = "format_ident", brace = "(" },
-    { name = "matches", brace = "(" },
     { name = "panic", brace = "(" },
     { name = "parse_quote", brace = "{" },
     { name = "quote", brace = "{" },
@@ -17,5 +19,4 @@ standard-macro-braces = [
     { name = "todo", brace = "(" },
     { name = "unimplemented", brace = "(" },
     { name = "unreachable", brace = "(" },
-    { name = "vec", brace = "[" },
 ]
