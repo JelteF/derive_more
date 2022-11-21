@@ -137,11 +137,7 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
         .collect();
 
     // Should consume all tokens for a successful parse.
-    if input.is_empty() {
-        Some(FormatString { formats })
-    } else {
-        None
-    }
+    input.is_empty().then_some(FormatString { formats })
 }
 
 /// Parses a `maybe_format` as defined in the [grammar spec][1].
@@ -562,11 +558,10 @@ fn take_until1(
             if until(cur).is_some() {
                 break;
             }
-            if let Some(b) = basic(cur) {
-                cur = b;
-            } else {
+            let Some(b) = basic(cur) else {
                 break;
-            }
+            };
+            cur = b;
         }
 
         Some((
@@ -578,24 +573,12 @@ fn take_until1(
 
 /// Checks whether `input` starts with `s`.
 fn str(s: &str) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + '_ {
-    move |input| {
-        if input.starts_with(s) {
-            Some(&input[s.as_bytes().len()..])
-        } else {
-            None
-        }
-    }
+    move |input| input.starts_with(s).then(|| &input[s.as_bytes().len()..])
 }
 
 /// Checks whether `input` starts with `c`.
 fn char(c: char) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
-    move |input| {
-        if input.starts_with(c) {
-            Some(&input[c.len_utf8()..])
-        } else {
-            None
-        }
-    }
+    move |input| input.starts_with(c).then(|| &input[c.len_utf8()..])
 }
 
 /// Checks whether first [`char`] suits `check`.
@@ -603,13 +586,10 @@ fn check_char(
     mut check: impl FnMut(char) -> bool,
 ) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
     move |input| {
-        input.chars().next().and_then(|c| {
-            if check(c) {
-                Some(&input[c.len_utf8()..])
-            } else {
-                None
-            }
-        })
+        input
+            .chars()
+            .next()
+            .and_then(|c| check(c).then(|| &input[c.len_utf8()..]))
     }
 }
 

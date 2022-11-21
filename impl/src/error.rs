@@ -18,7 +18,7 @@ pub fn expand(
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote!(::std::error),
+        quote! { ::std::error },
         trait_name.to_lowercase(),
         allowed_attr_params(),
     )?;
@@ -141,7 +141,7 @@ fn render_enum(
 
     let render = |match_arms: &mut Vec<TokenStream>, unmatched| {
         if !match_arms.is_empty() && match_arms.len() < state.variants.len() {
-            match_arms.push(quote!(_ => #unmatched));
+            match_arms.push(quote! { _ => #unmatched });
         }
 
         (!match_arms.is_empty()).then(|| {
@@ -153,8 +153,8 @@ fn render_enum(
         })
     };
 
-    let source = render(&mut source_match_arms, quote!(None));
-    let provide = render(&mut provide_match_arms, quote!(()));
+    let source = render(&mut source_match_arms, quote! { None });
+    let provide = render(&mut provide_match_arms, quote! { () });
 
     Ok((bounds, source, provide))
 }
@@ -190,14 +190,14 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
         let source = self.source?;
         let ident = &self.data.members[source];
-        Some(render_some(quote!(&#ident)))
+        Some(render_some(quote! { &#ident }))
     }
 
     fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         let source = self.source?;
-        let pattern = self.data.matcher(&[source], &[quote!(source)]);
-        let expr = render_some(quote!(source));
-        Some(quote!(#pattern => #expr))
+        let pattern = self.data.matcher(&[source], &[quote! { source }]);
+        let expr = render_some(quote! { source });
+        Some(quote! { #pattern => #expr })
     }
 
     fn render_provide_as_struct(&self) -> Option<TokenStream> {
@@ -233,7 +233,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
 
         match self.source {
             Some(source) if source == backtrace => {
-                let pattern = self.data.matcher(&[source], &[quote!(source)]);
+                let pattern = self.data.matcher(&[source], &[quote! { source }]);
                 Some(quote! {
                     #pattern => {
                         ::std::error::Error::provide(source, demand);
@@ -243,7 +243,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
             Some(source) => {
                 let pattern = self.data.matcher(
                     &[source, backtrace],
-                    &[quote!(source), quote!(backtrace)],
+                    &[quote! { source }, quote! { backtrace }],
                 );
                 Some(quote! {
                     #pattern => {
@@ -253,7 +253,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 })
             }
             None => {
-                let pattern = self.data.matcher(&[backtrace], &[quote!(backtrace)]);
+                let pattern = self.data.matcher(&[backtrace], &[quote! { backtrace }]);
                 Some(quote! {
                     #pattern => {
                         demand.provide_ref::<std::backtrace::Backtrace>(backtrace);
@@ -268,7 +268,7 @@ fn render_some<T>(expr: T) -> TokenStream
 where
     T: quote::ToTokens,
 {
-    quote!(Some(#expr as &(dyn ::std::error::Error + 'static)))
+    quote! { Some(#expr as &(dyn ::std::error::Error + 'static)) }
 }
 
 fn parse_fields<'input, 'state>(
@@ -330,19 +330,17 @@ fn parse_fields<'input, 'state>(
 /// Checks if `ty` is [`syn::Type::Path`] and ends with segment matching `tail`
 /// and doesn't contain any generic parameters.
 fn is_type_path_ends_with_segment(ty: &syn::Type, tail: &str) -> bool {
-    let ty = match ty {
-        syn::Type::Path(ty) => ty,
-        _ => return false,
+    let syn::Type::Path(ty) = ty else {
+        return false;
     };
 
     // Unwrapping is safe, cause 'syn::TypePath.path.segments'
     // have to have at least one segment
     let segment = ty.path.segments.last().unwrap();
 
-    match segment.arguments {
-        syn::PathArguments::None => (),
-        _ => return false,
-    };
+    if !matches!(segment.arguments, syn::PathArguments::None) {
+        return false;
+    }
 
     segment.ident == tail
 }
@@ -441,9 +439,8 @@ where
     let field = assert_iter_contains_zero_or_one_item(
         explicit_fields,
         &format!(
-            "Multiple `{}` attributes specified. \
+            "Multiple `{attr}` attributes specified. \
              Single attribute per struct/enum variant allowed.",
-            attr
         ),
     )?;
 
@@ -463,9 +460,8 @@ fn assert_iter_contains_zero_or_one_item<'a>(
     mut iter: impl Iterator<Item = (usize, &'a syn::Field, &'a MetaInfo)>,
     error_msg: &str,
 ) -> Result<Option<(usize, &'a syn::Field, &'a MetaInfo)>> {
-    let item = match iter.next() {
-        Some(item) => item,
-        None => return Ok(None),
+    let Some(item) = iter.next() else {
+        return Ok(None);
     };
 
     if let Some((_, field, _)) = iter.next() {

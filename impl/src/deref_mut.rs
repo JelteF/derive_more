@@ -8,8 +8,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_field_ignore_and_forward(
         input,
         trait_name,
-        quote!(::core::ops),
-        String::from("deref_mut"),
+        quote! { ::core::ops },
+        "deref_mut".into(),
     )?;
     let SingleFieldData {
         input_type,
@@ -23,7 +23,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     } = state.assert_single_enabled_field();
     let (body, generics) = if info.forward {
         (
-            quote!(#casted_trait::deref_mut(&mut #member)),
+            quote! { #casted_trait::deref_mut(&mut #member) },
             add_extra_where_clauses(
                 &input.generics,
                 quote! {
@@ -32,7 +32,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             ),
         )
     } else {
-        (quote!(&mut #member), input.generics.clone())
+        (quote! { &mut #member }, input.generics.clone())
     };
     let (impl_generics, _, where_clause) = generics.split_for_impl();
 

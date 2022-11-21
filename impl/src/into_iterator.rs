@@ -10,8 +10,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_field_ignore_and_refs(
         input,
         trait_name,
-        quote!(::core::iter),
-        String::from("into_iterator"),
+        quote! { ::core::iter },
+        "into_iterator".into(),
     )?;
     let SingleFieldData {
         input_type,
@@ -40,8 +40,9 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             generics.split_for_impl()
         };
         // let generics = add_extra_ty_param_bound(&input.generics, trait_path);
-        let casted_trait =
-            &quote!(<#reference_with_lifetime #field_type as #trait_path>);
+        let casted_trait = &quote! {
+            <#reference_with_lifetime #field_type as #trait_path>
+        };
         let into_iterator = quote! {
             #[automatically_derived]
             impl #impl_generics #trait_path for #reference_with_lifetime #input_type #ty_generics
