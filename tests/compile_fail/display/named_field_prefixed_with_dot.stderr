@@ -1,5 +1,5 @@
-error: expected identifier or literal
- --> tests/compile_fail/display/named_field_prefixed_with_dot.rs:2:30
+error: expected expression, found `.`
+ --> tests/compile_fail/display/named_field_prefixed_with_dot.rs:2:24
   |
-2 | #[display(fmt = "Stuff({})", .bar)]
-  |                              ^
+2 | #[display("Stuff({})", .bar)]
+  |                        ^ expected expression

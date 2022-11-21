@@ -6,8 +6,9 @@ use std::mem;
 
 use proc_macro2::{Ident, TokenStream, TokenTree};
 use quote::{format_ident, quote, ToTokens};
+use syn::buffer::Cursor;
 use syn::{
-    parse::{Parse, ParseStream, Parser},
+    parse::{Parse, ParseStream},
     parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
@@ -249,262 +250,6 @@ impl Attributes {
     }
 }
 
-/// Single [`fmt`]-like display attribute.
-///
-/// [`fmt`]: std::fmt
-#[derive(Debug)]
-enum Attribute {
-    /// [`fmt`] attribute.
-    ///
-    /// [`fmt`]: std::fmt
-    Fmt {
-        /// Interpolation [`syn::LitStr`].
-        fmt_lit: syn::LitStr,
-
-        /// Interpolation arguments.
-        fmt_args: Vec<FmtArgument>,
-    },
-
-    /// Addition trait bounds.
-    Bounds(Punctuated<syn::WherePredicate, syn::token::Comma>),
-}
-
-/// [Named parameter][1]: `identifier '=' expression`.
-///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
-#[derive(Debug)]
-struct FmtArgument {
-    /// `identifier` [`Ident`].
-    alias: Option<Ident>,
-
-    /// `expression` [`FmtExpr`].
-    expr: FmtExpr,
-}
-
-impl ToTokens for FmtArgument {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        if let Some(alias) = &self.alias {
-            alias.to_tokens(tokens);
-            syn::token::Eq::default().to_tokens(tokens);
-        }
-        self.expr.to_tokens(tokens);
-    }
-}
-
-/// Expression of [`FmtArgument`].
-///
-/// This type is used instead of [`syn::Expr`] to avoid [`syn`]'s `full`
-/// feature.
-#[derive(Debug)]
-enum FmtExpr {
-    /// [`Ident`].
-    Ident(Ident),
-
-    /// Plain [`TokenStream`].
-    TokenStream(TokenStream),
-}
-
-impl FmtExpr {
-    /// Returns [`Ident`] in case this [`FmtExpr`] contains only it or [`None`]
-    /// otherwise.
-    fn ident(&self) -> Option<&Ident> {
-        match self {
-            Self::Ident(i) => Some(i),
-            Self::TokenStream(_) => None,
-        }
-    }
-}
-
-impl Default for FmtExpr {
-    fn default() -> Self {
-        Self::TokenStream(TokenStream::new())
-    }
-}
-
-impl ToTokens for FmtExpr {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Self::Ident(ident) => ident.to_tokens(tokens),
-            Self::TokenStream(ts) => ts.to_tokens(tokens),
-        }
-    }
-}
-
-impl Extend<TokenTree> for FmtExpr {
-    fn extend<T: IntoIterator<Item = TokenTree>>(&mut self, iter: T) {
-        *self = iter
-            .into_iter()
-            .fold(mem::take(self), |this, tt| match (this, tt) {
-                (Self::TokenStream(stream), TokenTree::Ident(ident))
-                    if stream.is_empty() =>
-                {
-                    Self::Ident(ident)
-                }
-                (Self::TokenStream(mut stream), tt) => {
-                    stream.extend([tt]);
-                    Self::TokenStream(stream)
-                }
-                (Self::Ident(ident), tt) => {
-                    let mut stream = ident.into_token_stream();
-                    stream.extend([tt]);
-                    Self::TokenStream(stream)
-                }
-            });
-    }
-}
-
-impl Parse for Attribute {
-    fn parse(input: ParseStream) -> Result<Self> {
-        use syn::buffer::Cursor;
-
-        /// Returns [`char`] in case provided one should have matching pair to
-        /// close it.
-        fn paired_punct(p: char) -> Option<char> {
-            [('<', '>'), ('|', '|')]
-                .iter()
-                .find_map(|(l, r)| (*l == p).then_some(*r))
-        }
-
-        /// Parses until `punct` returned from [`paired_punct()`] recursively.
-        fn parse_until_paired_punct(
-            punct: char,
-            mut cursor: Cursor<'_>,
-        ) -> Option<(TokenStream, Cursor<'_>)> {
-            let mut stream = TokenStream::new();
-
-            while let Some((tt, c)) = cursor.token_tree() {
-                match tt {
-                    TokenTree::Punct(p) if p.as_char() == punct => {
-                        stream.extend([TokenTree::Punct(p)]);
-                        return Some((stream, c));
-                    }
-                    TokenTree::Punct(p) if paired_punct(p.as_char()).is_some() => {
-                        let (more, c) = paired_punct(p.as_char())
-                            .and_then(|p| parse_until_paired_punct(p, c))?;
-                        stream.extend([TokenTree::Punct(p)]);
-                        stream.extend([more]);
-                        cursor = c;
-                    }
-                    tt => stream.extend([tt]),
-                }
-            }
-
-            None
-        }
-
-        let content;
-        syn::parenthesized!(content in input);
-
-        // Parses `"..."(,)? (expr),*`
-        if content.peek(syn::LitStr) {
-            let display_literal = content.parse()?;
-
-            if content.peek(syn::token::Comma) {
-                let _ = content.parse::<syn::token::Comma>()?;
-            }
-
-            let display_arguments = content.step(|cursor| {
-                let mut arguments = Vec::new();
-
-                let mut rest = *cursor;
-                while !rest.eof() {
-                    let mut alias = None;
-                    let mut expr = FmtExpr::default();
-
-                    // Tries to parse `ident = `
-                    if let Some((ident, c)) = rest.ident() {
-                        if let Some((_eq, c)) =
-                            c.punct().filter(|(p, _)| p.as_char() == '=')
-                        {
-                            alias = Some(ident);
-                            rest = c;
-                        }
-                    }
-
-                    // Tries to parses `(...)`, `{...}` or `[...]` groups.
-                    if let Some((gr @ TokenTree::Group(_), c)) = rest.token_tree() {
-                        expr.extend([gr]);
-                        rest = c;
-                    }
-
-                    // Tries to parse `ident(,|eof)`
-                    if let Some((ident, c)) = rest.ident() {
-                        if c.eof()
-                            || c.punct().filter(|(p, _)| p.as_char() == ',').is_some()
-                        {
-                            expr.extend([TokenTree::Ident(ident)]);
-                            rest = c;
-                        }
-                    }
-
-                    // TODO: fix binary expr: `ident < ident, ident > ident`
-                    // Tries to parse rest of tokens, until next `,`
-                    while let Some((tt, c)) = rest.token_tree() {
-                        rest = c;
-
-                        match tt {
-                            TokenTree::Punct(p) if p.as_char() == ',' => {
-                                break;
-                            }
-                            TokenTree::Punct(p)
-                                if paired_punct(p.as_char()).is_some() =>
-                            {
-                                let (more, c) = paired_punct(p.as_char())
-                                    .and_then(|p| parse_until_paired_punct(p, c))
-                                    .ok_or_else::<Error, _>(|| {
-                                        Error::new(
-                                            p.span(),
-                                            format!(
-                                                "Failed to find closing '{}' for '{}'",
-                                                paired_punct(p.as_char())
-                                                    .unwrap_or_else(|| unreachable!()),
-                                                p.as_char(),
-                                            ),
-                                        )
-                                    })?;
-                                rest = c;
-                                expr.extend(more);
-                            }
-                            tt => {
-                                expr.extend([tt]);
-                            }
-                        }
-                    }
-
-                    arguments.push(FmtArgument { alias, expr });
-                }
-
-                Ok((arguments, rest))
-            })?;
-
-            return Ok(Attribute::Fmt {
-                fmt_lit: display_literal,
-                fmt_args: display_arguments,
-            });
-        }
-
-        let _ = content.parse::<syn::Path>().and_then(|p| {
-            if ["bound", "bounds"].into_iter().any(|i| p.is_ident(i)) {
-                Ok(p)
-            } else {
-                Err(Error::new(
-                    p.span(),
-                    format!(
-                        "Unknown attribute. Expected `\"...\", ...` or `bound(...)`",
-                    ),
-                ))
-            }
-        })?;
-
-        let inner;
-        syn::parenthesized!(inner in content);
-
-        inner
-            .parse_terminated(syn::WherePredicate::parse)
-            .map(Attribute::Bounds)
-    }
-}
-
 /// Helper struct to [`StructOrEnumVariant::generate_fmt()`] or
 /// [`StructOrEnumVariant::generate_bounds()`].
 #[derive(Debug)]
@@ -577,13 +322,12 @@ impl<'a> StructOrEnumVariant<'a> {
                     Parameter::Positional(i) => self
                         .attrs
                         .fmt_args
-                        .iter()
-                        .nth(i)
+                        .get(i)
                         .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))?
                         .to_string(),
                 };
 
-                let unnamed = name.strip_prefix("_").and_then(|s| s.parse().ok());
+                let unnamed = name.strip_prefix('_').and_then(|s| s.parse().ok());
                 let ty = match (&self.fields, unnamed) {
                     (syn::Fields::Unnamed(f), Some(i)) => {
                         f.unnamed.iter().nth(i).map(|f| &f.ty)
@@ -599,6 +343,282 @@ impl<'a> StructOrEnumVariant<'a> {
             })
             .chain(self.attrs.bounds.clone())
             .collect()
+    }
+}
+
+/// Single [`fmt`]-like display attribute.
+///
+/// [`fmt`]: std::fmt
+#[derive(Debug)]
+enum Attribute {
+    /// [`fmt`] attribute.
+    ///
+    /// [`fmt`]: std::fmt
+    Fmt {
+        /// Interpolation [`syn::LitStr`].
+        fmt_lit: syn::LitStr,
+
+        /// Interpolation arguments.
+        fmt_args: Vec<FmtArgument>,
+    },
+
+    /// Addition trait bounds.
+    Bounds(Punctuated<syn::WherePredicate, syn::token::Comma>),
+}
+
+/// [Named parameter][1]: `identifier '=' expression`.
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
+#[derive(Debug, Default)]
+struct FmtArgument {
+    /// `identifier` [`Ident`].
+    alias: Option<Ident>,
+
+    /// `expression` [`FmtExpr`].
+    expr: FmtExpr,
+}
+
+impl ToTokens for FmtArgument {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        if let Some(alias) = &self.alias {
+            alias.to_tokens(tokens);
+            syn::token::Eq::default().to_tokens(tokens);
+        }
+        self.expr.to_tokens(tokens);
+    }
+}
+
+/// Expression of [`FmtArgument`].
+///
+/// This type is used instead of [`syn::Expr`] to avoid [`syn`]'s `full`
+/// feature.
+#[derive(Debug)]
+enum FmtExpr {
+    /// [`Ident`].
+    Ident(Ident),
+
+    /// Plain [`TokenStream`].
+    TokenStream(TokenStream),
+}
+
+impl FmtExpr {
+    /// Returns [`Ident`] in case this [`FmtExpr`] contains only it or [`None`]
+    /// otherwise.
+    fn ident(&self) -> Option<&Ident> {
+        match self {
+            Self::Ident(i) => Some(i),
+            Self::TokenStream(_) => None,
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        match self {
+            FmtExpr::Ident(_) => false,
+            FmtExpr::TokenStream(stream) => stream.is_empty(),
+        }
+    }
+}
+
+impl Default for FmtExpr {
+    fn default() -> Self {
+        Self::TokenStream(TokenStream::new())
+    }
+}
+
+impl ToTokens for FmtExpr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Self::Ident(ident) => ident.to_tokens(tokens),
+            Self::TokenStream(ts) => ts.to_tokens(tokens),
+        }
+    }
+}
+
+impl Extend<TokenTree> for FmtExpr {
+    fn extend<T: IntoIterator<Item = TokenTree>>(&mut self, iter: T) {
+        *self = iter
+            .into_iter()
+            .fold(mem::take(self), |this, tt| match (this, tt) {
+                (Self::TokenStream(stream), TokenTree::Ident(ident))
+                    if stream.is_empty() =>
+                {
+                    Self::Ident(ident)
+                }
+                (Self::TokenStream(mut stream), tt) => {
+                    stream.extend([tt]);
+                    Self::TokenStream(stream)
+                }
+                (Self::Ident(ident), tt) => {
+                    let mut stream = ident.into_token_stream();
+                    stream.extend([tt]);
+                    Self::TokenStream(stream)
+                }
+            });
+    }
+}
+
+impl Parse for Attribute {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        syn::parenthesized!(content in input);
+
+        // Parses `"..."(,)? (expr),*`
+        if content.peek(syn::LitStr) {
+            let display_literal = content.parse()?;
+
+            if content.peek(syn::token::Comma) {
+                let _ = content.parse::<syn::token::Comma>()?;
+            }
+
+            let display_arguments = content.step(|cursor| {
+                let mut cursor = *cursor;
+                let mut arguments = Vec::new();
+
+                while let Some((arg, c)) = FmtArgument::parse(cursor) {
+                    arguments.push(arg);
+                    cursor = c;
+                }
+
+                Ok((arguments, cursor))
+            })?;
+
+            return Ok(Attribute::Fmt {
+                fmt_lit: display_literal,
+                fmt_args: display_arguments,
+            });
+        }
+
+        let _ = content.parse::<syn::Path>().and_then(|p| {
+            if ["bound", "bounds"].into_iter().any(|i| p.is_ident(i)) {
+                Ok(p)
+            } else {
+                Err(Error::new(
+                    p.span(),
+                    "Unknown attribute. Expected `\"...\", ...` or `bound(...)`",
+                ))
+            }
+        })?;
+
+        let inner;
+        syn::parenthesized!(inner in content);
+
+        inner
+            .parse_terminated(syn::WherePredicate::parse)
+            .map(Attribute::Bounds)
+    }
+}
+
+impl FmtArgument {
+    fn parse(mut cursor: Cursor<'_>) -> Option<(FmtArgument, Cursor<'_>)> {
+        let mut arg = FmtArgument::default();
+
+        // `ident =`
+        if let Some((ident, c)) = cursor.ident() {
+            if let Some((_eq, c)) = c.punct().filter(|(p, _)| p.as_char() == '=') {
+                arg.alias = Some(ident);
+                cursor = c;
+            }
+        }
+
+        // `ident(,|eof)`
+        if let Some((ident, c)) = cursor.ident() {
+            if let Some(c) = c
+                .punct()
+                .and_then(|(p, c)| (p.as_char() == ',').then_some(c))
+                .or_else(|| c.eof().then_some(c))
+            {
+                arg.expr = FmtExpr::Ident(ident);
+                return Some((arg, c));
+            }
+        }
+
+        let (rest, c) = Self::parse_inner(cursor);
+        arg.expr.extend(rest);
+
+        (!arg.expr.is_empty()).then_some((arg, c))
+    }
+
+    fn parse_inner(mut cursor: Cursor<'_>) -> (TokenStream, Cursor<'_>) {
+        let mut out = TokenStream::new();
+
+        loop {
+            if let Some(extend) = Self::turbofish(cursor) {
+                cursor = extend(&mut out);
+                continue;
+            }
+            if let Some(extend) = Self::closure(cursor) {
+                cursor = extend(&mut out);
+                continue;
+            }
+
+            if let Some(c) = cursor
+                .punct()
+                .and_then(|(p, c)| (p.as_char() == ',').then_some(c))
+                .or_else(|| cursor.eof().then_some(cursor))
+            {
+                return (out, c);
+            }
+
+            let (tt, c) = cursor
+                .token_tree()
+                .unwrap_or_else(|| unreachable!("checked for eof"));
+            out.extend([tt]);
+            cursor = c;
+        }
+    }
+
+    fn closure<'a>(
+        cursor: Cursor<'a>,
+    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
+        let (open, c) = cursor.punct().filter(|(p, _)| p.as_char() == '|')?;
+
+        Some(move |stream: &mut TokenStream| {
+            stream.extend([TokenTree::Punct(open)]);
+            Self::parse_until_closing(stream, '|', '|', c)
+        })
+    }
+
+    fn turbofish<'a>(
+        cursor: Cursor<'a>,
+    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
+        use proc_macro2::Spacing;
+
+        let (colon1, c) = cursor
+            .punct()
+            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
+        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
+        let (less, c) = c.punct().filter(|(p, _)| p.as_char() == '<')?;
+
+        Some(move |stream: &mut TokenStream| {
+            stream.extend([colon1, colon2, less].map(TokenTree::Punct));
+            Self::parse_until_closing(stream, '<', '>', c)
+        })
+    }
+
+    fn parse_until_closing<'a>(
+        out: &mut TokenStream,
+        open: char,
+        close: char,
+        mut cursor: Cursor<'a>,
+    ) -> Cursor<'a> {
+        let mut count = 1;
+
+        while let Some((tt, c)) = cursor.token_tree().filter(|_| count != 0) {
+            match tt {
+                TokenTree::Punct(ref p) if p.as_char() == close => {
+                    count -= 1;
+                }
+                TokenTree::Punct(ref p) if p.as_char() == open => {
+                    count += 1;
+                }
+                _ => {}
+            }
+
+            out.extend([tt]);
+            cursor = c;
+        }
+
+        cursor
     }
 }
 

@@ -1,8 +1,8 @@
 error: unknown format trait `M`
- --> tests/compile_fail/display/wrong_formatting_argument.rs:2:26
+ --> tests/compile_fail/display/wrong_formatting_argument.rs:2:20
   |
-2 | #[display(fmt = "Stuff({:M})", bar)]
-  |                          ^
+2 | #[display("Stuff({:M})", bar)]
+  |                    ^
   |
   = note: the only appropriate formatting traits are:
           - ``, which uses the `Display` trait
