@@ -599,11 +599,11 @@ impl FmtArgument {
         })
     }
 
-    fn parse_until_closing<'a>(
+    fn parse_until_closing(
         open: char,
         close: char,
-        mut cursor: Cursor<'a>,
-    ) -> (TokenStream, Cursor<'a>) {
+        mut cursor: Cursor<'_>,
+    ) -> (TokenStream, Cursor<'_>) {
         let mut out = TokenStream::new();
         let mut count = 1;
 
