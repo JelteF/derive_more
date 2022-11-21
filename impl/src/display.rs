@@ -574,7 +574,9 @@ impl FmtArgument {
 
         Some(move |stream: &mut TokenStream| {
             stream.extend([TokenTree::Punct(open)]);
-            Self::parse_until_closing(stream, '|', '|', c)
+            let (more, c) = Self::parse_until_closing('|', '|', c);
+            stream.extend(more);
+            c
         })
     }
 
@@ -591,16 +593,18 @@ impl FmtArgument {
 
         Some(move |stream: &mut TokenStream| {
             stream.extend([colon1, colon2, less].map(TokenTree::Punct));
-            Self::parse_until_closing(stream, '<', '>', c)
+            let (more, c) = Self::parse_until_closing('<', '>', c);
+            stream.extend(more);
+            c
         })
     }
 
     fn parse_until_closing<'a>(
-        out: &mut TokenStream,
         open: char,
         close: char,
         mut cursor: Cursor<'a>,
-    ) -> Cursor<'a> {
+    ) -> (TokenStream, Cursor<'a>) {
+        let mut out = TokenStream::new();
         let mut count = 1;
 
         while let Some((tt, c)) = cursor.token_tree().filter(|_| count != 0) {
@@ -618,7 +622,7 @@ impl FmtArgument {
             cursor = c;
         }
 
-        cursor
+        (out, cursor)
     }
 }
 
@@ -665,7 +669,7 @@ fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
 fn normalize_trait_name(name: &str) -> &'static str {
     match name {
         "Binary" => "Binary",
-        "Debug" | "CustomDebug" => "Debug",
+        "Debug" | "DebugCustom" => "Debug",
         "Display" => "Display",
         "LowerExp" => "LowerExp",
         "LowerHex" => "LowerHex",
@@ -783,5 +787,81 @@ mod placeholder_parse_fmt_string_spec {
                 },
             ],
         );
+    }
+}
+
+#[cfg(test)]
+mod attribute_parse_fmt_args_spec {
+    use itertools::Itertools as _;
+    use quote::ToTokens;
+    use syn;
+
+    use super::Attribute;
+
+    fn assert<'a>(input: &'a str, parsed: impl AsRef<[&'a str]>) {
+        let parsed = parsed.as_ref();
+        match syn::parse_str::<Attribute>(&format!("(\"\", {})", input)).unwrap() {
+            Attribute::Fmt { fmt_args, .. } => {
+                let fmt_args = fmt_args
+                    .into_iter()
+                    .map(|arg| arg.into_token_stream().to_string())
+                    .collect::<Vec<String>>();
+                fmt_args.iter().zip_eq(parsed).enumerate().for_each(
+                    |(i, (found, expected))| {
+                        assert_eq!(
+                            *expected, found,
+                            "Mismatch at index {i}\n\
+                             Expected: {parsed:?}\n\
+                             Found: {fmt_args:?}",
+                        );
+                    },
+                );
+            }
+            attrs @ Attribute::Bounds(_) => {
+                panic!("Expected `Attribute::Fmt`, found: {attrs:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn cases() {
+        assert("", []);
+
+        let cases = [
+            "ident",
+            "alias = ident",
+            "[a , b , c , d]",
+            "counter += 1",
+            "async { fut . await }",
+            "a < b",
+            "a > b",
+            "{ let x = (a , b) ; }",
+            "invoke (a , b)",
+            "foo as f64",
+            "| a , b | a + b",
+            "obj . k",
+            "for pat in expr { break pat ; }",
+            "if expr { true } else { false }",
+            "vector [2]",
+            "1",
+            "\"foo\"",
+            "loop { break i ; }",
+            "format ! (\"{}\" , q)",
+            "match n { Some (n) => { } , None => { } }",
+            "x . foo ::< T > (a , b)",
+            "(a + b)",
+            "i32 :: MAX",
+            "1 .. 2",
+            "& a",
+            "[0u8 ; N]",
+            "(a , b , c , d)",
+        ];
+
+        for i in 0..4 {
+            for permutations in cases.into_iter().permutations(i) {
+                let input = permutations.clone().join(",");
+                assert(&input, &permutations);
+            }
+        }
     }
 }

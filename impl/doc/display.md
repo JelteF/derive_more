@@ -104,8 +104,8 @@ write `c` without double-quotes.
 # trait MyTrait { fn my_function(&self) -> i32; }
 #
 #[derive(Display)]
-#[display(bound = "T: MyTrait, U: Display, V: Display")]
-#[display("{} {} {}", "a.my_function()", "b.to_string().len()", "c")]
+#[display(bound(T: MyTrait, U: Display, V: Display))]
+#[display("{} {} {}", a.my_function(), b.to_string().len(), c)]
 struct MyStruct<T, U, V> {
     a: T,
     b: U,
@@ -144,17 +144,8 @@ enum E {
     Binary {
         i: i8,
     },
-    #[display("I am C {}", "_0.display()")]
+    #[display("I am C {}", _0.display())]
     Path(PathBuf),
-}
-
-#[derive(Display)]
-#[display("Java EE: {}")]
-enum EE {
-    #[display(fmt="A")]
-    A,
-    #[display(fmt="B")]
-    B,
 }
 
 #[derive(Display)]
@@ -178,7 +169,7 @@ struct Unit;
 struct UnitStruct {}
 
 #[derive(Display)]
-#[display("{}", "self.sign()")]
+#[display("{}", self.sign())]
 struct PositiveOrNegative {
     x: i32,
 }
@@ -198,8 +189,6 @@ assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
 assert_eq!(E::Uint(2).to_string(), "2");
 assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
 assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
-assert_eq!(EE::A.to_string(), "Java EE: A");
-assert_eq!(EE::B.to_string(), "Java EE: B");
 assert_eq!(U { i: 2 }.to_string(), "Hello there!");
 assert_eq!(format!("{:o}", S), "7");
 assert_eq!(format!("{:X}", UH), "UpperHex");
