@@ -125,7 +125,7 @@ fn expand_enum(
     e: &syn::DataEnum,
     (attrs, _, trait_ident, trait_name): ExpansionCtx<'_>,
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    if attrs.fmt_literal.is_some() {
+    if attrs.fmt_lit.is_some() {
         todo!("https://github.com/JelteF/derive_more/issues/142");
     }
 
@@ -179,7 +179,7 @@ fn expand_union(
     u: &syn::DataUnion,
     (attrs, _, _, trait_name): ExpansionCtx<'_>,
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    let fmt_lit = attrs.fmt_literal.as_ref().ok_or_else(|| {
+    let fmt_lit = attrs.fmt_lit.as_ref().ok_or_else(|| {
         Error::new(
             u.fields.span(),
             format!(
@@ -197,85 +197,88 @@ fn expand_union(
 
 /// [`fmt`]-like derive macro attributes:
 ///
-/// ```rust, ignore
-/// `#[fmt_trait("<fmt_literal>", <fmt_args>)]`
-/// `#[bound(<bounds>)]`
+/// ```rust,ignore
+/// #[<fmt_trait>("<fmt_literal>", <fmt_args>)]
+/// #[bound(<bounds>)]
 /// ```
 ///
-///
+/// `#[<fmt_trait>(...)]` can be specified only once, while multiple
+/// `#[bound(...)]` are allowed.
 ///
 /// [`fmt`]: std::fmt
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Attributes {
-    fmt_literal: Option<syn::LitStr>,
+    /// Interpolation [`syn::LitStr`].
+    fmt_lit: Option<syn::LitStr>,
+
+    /// Interpolation arguments.
     fmt_args: Vec<FmtArgument>,
+
+    /// Addition trait bounds.
     bounds: Punctuated<syn::WherePredicate, syn::token::Comma>,
 }
 
 impl Attributes {
+    /// Parses [`Attributes`] from `&[`[`syn::Attribute`]`]`.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         trait_name: &str,
     ) -> Result<Self> {
-        let (display_literal, display_args, bounds) = attrs
+        attrs
             .as_ref()
             .iter()
             .filter(|attr| attr.path.is_ident(trait_name_to_attribute_name(trait_name)))
-            .try_fold(
-                (None, Vec::new(), Punctuated::new()),
-                |(lit, args, mut bounds), attr| {
-                    let attribute =
-                        Parser::parse2(Attribute::parse, attr.tokens.clone())?;
-                    Ok(match attribute {
-                        Attribute::Bounds(more) => {
-                            bounds.extend(more);
-                            (lit, args, bounds)
-                        }
-                        Attribute::Display {
-                            display_literal,
-                            display_arguments,
-                        } => (
-                            // TODO: use `Span::join`, once resolved:
-                            //       https://github.com/rust-lang/rust/issues/54725
-                            if lit.is_some() {
-                                return Err(Error::new(
-                                    display_literal.span(),
-                                    format!(
-                                        "Duplicates for `#[{}(\"...\", ...)]` attribute aren't allowed",
-                                        trait_name_to_attribute_name(trait_name),
-                                    ),
-                                ));
-                            } else {
-                                Some(display_literal)
-                            },
-                            args.into_iter().chain(display_arguments).collect(),
-                            bounds,
-                        ),
-                    })
-                },
-            )?;
-
-        Ok(Self {
-            fmt_literal: display_literal,
-            fmt_args: display_args,
-            bounds,
-        })
+            .try_fold(Attributes::default(), |mut attrs, attr| {
+                let attr = syn::parse2::<Attribute>(attr.tokens.clone())?;
+               match attr {
+                   Attribute::Bounds(more) => {
+                       attrs.bounds.extend(more);
+                   }
+                   Attribute::Fmt { fmt_lit, fmt_args } => {
+                       attrs.fmt_lit.replace(fmt_lit).map_or(Ok(()), |dup| Err(Error::new(
+                           dup.span(),
+                           format!(
+                               "Multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
+                               trait_name_to_attribute_name(trait_name),
+                           ))))?;
+                       attrs.fmt_args.extend(fmt_args)
+                   }
+               };
+                Ok(attrs)
+            })
     }
 }
 
+/// Single [`fmt`]-like display attribute.
+///
+/// [`fmt`]: std::fmt
 #[derive(Debug)]
 enum Attribute {
-    Display {
-        display_literal: syn::LitStr,
-        display_arguments: Vec<FmtArgument>,
+    /// [`fmt`] attribute.
+    ///
+    /// [`fmt`]: std::fmt
+    Fmt {
+        /// Interpolation [`syn::LitStr`].
+        fmt_lit: syn::LitStr,
+
+        /// Interpolation arguments.
+        fmt_args: Vec<FmtArgument>,
     },
+
+    /// Addition trait bounds.
     Bounds(Punctuated<syn::WherePredicate, syn::token::Comma>),
 }
 
+/// [Named parameter][1]: `identifier '=' expression`.
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
 #[derive(Debug)]
 struct FmtArgument {
+    /// `identifier` [`Ident`].
     alias: Option<Ident>,
-    expr: IdentOrTokenStream,
+
+    /// `expression` [`FmtExpr`].
+    expr: FmtExpr,
 }
 
 impl ToTokens for FmtArgument {
@@ -288,28 +291,37 @@ impl ToTokens for FmtArgument {
     }
 }
 
+/// Expression of [`FmtArgument`].
+///
+/// This type is used instead of [`syn::Expr`] to avoid [`syn`]'s `full`
+/// feature.
 #[derive(Debug)]
-enum IdentOrTokenStream {
+enum FmtExpr {
+    /// [`Ident`].
     Ident(Ident),
+
+    /// Plain [`TokenStream`].
     TokenStream(TokenStream),
 }
 
-impl IdentOrTokenStream {
+impl FmtExpr {
+    /// Returns [`Ident`] in case this [`FmtExpr`] contains only it or [`None`]
+    /// otherwise.
     fn ident(&self) -> Option<&Ident> {
         match self {
-            IdentOrTokenStream::Ident(i) => Some(i),
-            IdentOrTokenStream::TokenStream(_) => None,
+            Self::Ident(i) => Some(i),
+            Self::TokenStream(_) => None,
         }
     }
 }
 
-impl Default for IdentOrTokenStream {
+impl Default for FmtExpr {
     fn default() -> Self {
         Self::TokenStream(TokenStream::new())
     }
 }
 
-impl ToTokens for IdentOrTokenStream {
+impl ToTokens for FmtExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Ident(ident) => ident.to_tokens(tokens),
@@ -318,34 +330,26 @@ impl ToTokens for IdentOrTokenStream {
     }
 }
 
-impl IdentOrTokenStream {
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn extend_ts(&mut self, stream: TokenStream) -> &mut Self {
-        let this = mem::take(self);
-        *self = Self::TokenStream(match this {
-            Self::Ident(ident) => {
-                let mut ident = ident.into_token_stream();
-                ident.extend([stream]);
-                ident
-            }
-            Self::TokenStream(mut old) => {
-                old.extend([stream]);
-                old
-            }
-        });
-        self
-    }
-
-    fn extend_tt(&mut self, tt: TokenTree) -> &mut Self {
-        self.extend_ts(tt.into())
-    }
-
-    fn push_ident(mut self, ident: Ident) -> Self {
-        self.extend_tt(ident.into());
-        self
+impl Extend<TokenTree> for FmtExpr {
+    fn extend<T: IntoIterator<Item = TokenTree>>(&mut self, iter: T) {
+        *self = iter
+            .into_iter()
+            .fold(mem::take(self), |this, tt| match (this, tt) {
+                (Self::TokenStream(stream), TokenTree::Ident(ident))
+                    if stream.is_empty() =>
+                {
+                    Self::Ident(ident)
+                }
+                (Self::TokenStream(mut stream), tt) => {
+                    stream.extend([tt]);
+                    Self::TokenStream(stream)
+                }
+                (Self::Ident(ident), tt) => {
+                    let mut stream = ident.into_token_stream();
+                    stream.extend([tt]);
+                    Self::TokenStream(stream)
+                }
+            });
     }
 }
 
@@ -353,14 +357,15 @@ impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
         use syn::buffer::Cursor;
 
-        const PAIRED_PUNCTS: [(char, char); 2] = [('<', '>'), ('|', '|')];
-
+        /// Returns [`char`] in case provided one should have matching pair to
+        /// close it.
         fn paired_punct(p: char) -> Option<char> {
-            PAIRED_PUNCTS
+            [('<', '>'), ('|', '|')]
                 .iter()
                 .find_map(|(l, r)| (*l == p).then_some(*r))
         }
 
+        /// Parses until `punct` returned from [`paired_punct()`] recursively.
         fn parse_until_paired_punct(
             punct: char,
             mut cursor: Cursor<'_>,
@@ -390,6 +395,7 @@ impl Parse for Attribute {
         let content;
         syn::parenthesized!(content in input);
 
+        // Parses `"..."(,)? (expr),*`
         if content.peek(syn::LitStr) {
             let display_literal = content.parse()?;
 
@@ -402,9 +408,10 @@ impl Parse for Attribute {
 
                 let mut rest = *cursor;
                 while !rest.eof() {
-                    let mut expr = None;
                     let mut alias = None;
+                    let mut expr = FmtExpr::default();
 
+                    // Tries to parse `ident = `
                     if let Some((ident, c)) = rest.ident() {
                         if let Some((_eq, c)) =
                             c.punct().filter(|(p, _)| p.as_char() == '=')
@@ -414,24 +421,24 @@ impl Parse for Attribute {
                         }
                     }
 
+                    // Tries to parses `(...)`, `{...}` or `[...]` groups.
                     if let Some((gr @ TokenTree::Group(_), c)) = rest.token_tree() {
-                        expr.get_or_insert_with(IdentOrTokenStream::new)
-                            .extend_tt(gr);
+                        expr.extend([gr]);
                         rest = c;
                     }
 
+                    // Tries to parse `ident(,|eof)`
                     if let Some((ident, c)) = rest.ident() {
                         if c.eof()
                             || c.punct().filter(|(p, _)| p.as_char() == ',').is_some()
                         {
-                            expr = Some(match expr.take() {
-                                None => IdentOrTokenStream::Ident(ident),
-                                Some(s) => s.push_ident(ident),
-                            });
+                            expr.extend([TokenTree::Ident(ident)]);
                             rest = c;
                         }
                     }
 
+                    // TODO: fix binary expr: `ident < ident, ident > ident`
+                    // Tries to parse rest of tokens, until next `,`
                     while let Some((tt, c)) = rest.token_tree() {
                         rest = c;
 
@@ -456,27 +463,23 @@ impl Parse for Attribute {
                                         )
                                     })?;
                                 rest = c;
-                                expr.get_or_insert_with(IdentOrTokenStream::new)
-                                    .extend_ts(more);
+                                expr.extend(more);
                             }
                             tt => {
-                                expr.get_or_insert_with(IdentOrTokenStream::new)
-                                    .extend_tt(tt);
+                                expr.extend([tt]);
                             }
                         }
                     }
 
-                    if let Some(expr) = expr {
-                        arguments.push(FmtArgument { alias, expr });
-                    }
+                    arguments.push(FmtArgument { alias, expr });
                 }
 
                 Ok((arguments, rest))
             })?;
 
-            return Ok(Attribute::Display {
-                display_literal,
-                display_arguments,
+            return Ok(Attribute::Fmt {
+                fmt_lit: display_literal,
+                fmt_args: display_arguments,
             });
         }
 
@@ -502,17 +505,31 @@ impl Parse for Attribute {
     }
 }
 
+/// Helper struct to [`StructOrEnumVariant::generate_fmt()`] or
+/// [`StructOrEnumVariant::generate_bounds()`].
 #[derive(Debug)]
 struct StructOrEnumVariant<'a> {
+    /// Derive macro [`Attributes`].
     attrs: &'a Attributes,
-    fields: &'a syn::Fields,
-    trait_ident: &'a Ident,
+
+    /// Struct or enum [`Ident`].
     ident: &'a Ident,
+
+    /// Struct or enum [`syn::Fields`].
+    fields: &'a syn::Fields,
+
+    /// [`fmt`] trait [`Ident`].
+    ///
+    /// [`fmt`]: std::fmt
+    trait_ident: &'a Ident,
 }
 
 impl<'a> StructOrEnumVariant<'a> {
+    /// Generates [`Display::fmt()`] impl for struct or enum variant.
+    ///
+    /// [`Display::fmt()`]: std::fmt::Display::fmt()
     fn generate_fmt(&self) -> TokenStream {
-        if let Some(lit) = &self.attrs.fmt_literal {
+        if let Some(lit) = &self.attrs.fmt_lit {
             let args = &self.attrs.fmt_args;
             quote! { ::core::write!(__derive_more_f, #lit, #( #args ),*) }
         } else if self.fields.iter().count() == 1 {
@@ -531,8 +548,9 @@ impl<'a> StructOrEnumVariant<'a> {
         }
     }
 
+    /// Generates trait bounds.
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
-        let Some(display_literal) = &self.attrs.fmt_literal else {
+        let Some(display_literal) = &self.attrs.fmt_lit else {
             return self.fields.iter().next().map(|f| {
                 let ty = &f.ty;
                 vec![parse_quote! { #ty: ::core::fmt::Display }]
