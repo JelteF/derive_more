@@ -120,7 +120,6 @@ fn expand_struct(
     Ok((bounds, fmt))
 }
 
-// TODO: top-level attribute on enum.
 /// Expands [`fmt`]-like derive macro for enum.
 ///
 /// [`fmt`]: std::fmt
