@@ -3,16 +3,16 @@ use crate::utils::{
     add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
     unnamed_to_vec,
 };
-use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident};
 
 pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let trait_name = trait_name.trim_end_matches("Self");
-    let trait_ident = Ident::new(trait_name, Span::call_site());
+    let trait_ident = format_ident!("{trait_name}");
     let method_name = trait_name.to_lowercase();
-    let method_ident = Ident::new(&method_name, Span::call_site());
+    let method_ident = format_ident!("{method_name}");
     let input_type = &input.ident;
 
     let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);
@@ -21,24 +21,24 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let (output_type, block) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
-                quote!(#input_type #ty_generics),
+                quote! { #input_type #ty_generics },
                 tuple_content(input_type, &unnamed_to_vec(fields), &method_ident),
             ),
             Fields::Named(ref fields) => (
-                quote!(#input_type #ty_generics),
+                quote! { #input_type #ty_generics },
                 struct_content(input_type, &named_to_vec(fields), &method_ident),
             ),
-            _ => panic!("Unit structs cannot use derive({})", trait_name),
+            _ => panic!("Unit structs cannot use derive({trait_name})"),
         },
         Data::Enum(ref data_enum) => (
-            quote!(::core::result::Result<#input_type #ty_generics, &'static str>),
+            quote! { ::core::result::Result<#input_type #ty_generics, &'static str> },
             enum_content(input_type, data_enum, &method_ident),
         ),
 
-        _ => panic!("Only structs and enums can use derive({})", trait_name),
+        _ => panic!("Only structs and enums can use derive({trait_name})"),
     };
 
-    quote!(
+    quote! {
         #[automatically_derived]
         impl #impl_generics ::core::ops::#trait_ident for #input_type #ty_generics #where_clause {
             type Output = #output_type;
@@ -48,7 +48,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
                 #block
             }
         }
-    )
+    }
 }
 
 fn tuple_content<T: ToTokens>(
@@ -57,7 +57,7 @@ fn tuple_content<T: ToTokens>(
     method_ident: &Ident,
 ) -> TokenStream {
     let exprs = tuple_exprs(fields, method_ident);
-    quote!(#input_type(#(#exprs),*))
+    quote! { #input_type(#(#exprs),*) }
 }
 
 fn struct_content(
@@ -69,7 +69,7 @@ fn struct_content(
     let exprs = struct_exprs(fields, method_ident);
     let field_names = field_idents(fields);
 
-    quote!(#input_type{#(#field_names: #exprs),*})
+    quote! { #input_type{#(#field_names: #exprs),*} }
 }
 
 #[allow(clippy::cognitive_complexity)]
@@ -83,11 +83,11 @@ fn enum_content(
 
     for variant in &data_enum.variants {
         let subtype = &variant.ident;
-        let subtype = quote!(#input_type::#subtype);
+        let subtype = quote! { #input_type::#subtype };
 
         match variant.fields {
             Fields::Unnamed(ref fields) => {
-                // The patern that is outputted should look like this:
+                // The pattern that is outputted should look like this:
                 // (Subtype(left_vars), TypePath(right_vars)) => Ok(TypePath(exprs))
                 let size = unnamed_to_vec(fields).len();
                 let l_vars = &numbered_vars(size, "l_");
@@ -121,8 +121,10 @@ fn enum_content(
                 matches.push(matcher);
             }
             Fields::Unit => {
-                let message = format!("Cannot {}() unit variants", method_ident);
-                matches.push(quote!((#subtype, #subtype) => ::core::result::Result::Err(#message)));
+                let message = format!("Cannot {method_ident}() unit variants");
+                matches.push(quote! {
+                    (#subtype, #subtype) => ::core::result::Result::Err(#message)
+                });
             }
         }
     }
@@ -130,12 +132,12 @@ fn enum_content(
     if data_enum.variants.len() > 1 {
         // In the strange case where there's only one enum variant this is would be an unreachable
         // match.
-        let message = format!("Trying to {} mismatched enum variants", method_ident);
-        matches.push(quote!(_ => ::core::result::Result::Err(#message)));
+        let message = format!("Trying to {method_ident} mismatched enum variants");
+        matches.push(quote! { _ => ::core::result::Result::Err(#message) });
     }
-    quote!(
+    quote! {
         match (self, rhs) {
             #(#matches),*
         }
-    )
+    }
 }

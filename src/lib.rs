@@ -30,6 +30,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
 #![forbid(non_ascii_idents, unsafe_code)]
+#![warn(clippy::nonstandard_macro_braces)]
 
 #[doc(inline)]
 pub use derive_more_impl::*;

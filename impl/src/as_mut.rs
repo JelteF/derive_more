@@ -1,17 +1,17 @@
 use crate::utils::{
     add_where_clauses_for_new_ident, AttrParams, MultiFieldData, State,
 };
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
-use syn::{parse::Result, DeriveInput, Ident};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use syn::{parse::Result, DeriveInput};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let as_mut_type = &Ident::new("__AsMutT", Span::call_site());
+    let as_mut_type = format_ident!("__AsMutT");
     let state = State::with_type_bound(
         input,
         trait_name,
-        quote!(::core::convert),
-        String::from("as_mut"),
+        quote! { ::core::convert },
+        "as_mut".into(),
         AttrParams::ignore_and_forward(),
         false,
     )?;
@@ -33,33 +33,33 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         .map(|((info, member), field)| {
             let field_type = &field.ty;
             if info.forward {
-                let trait_path = quote!(#trait_path<#as_mut_type>);
+                let trait_path = quote! { #trait_path<#as_mut_type> };
                 let type_where_clauses = quote! {
                     where #field_type: #trait_path
                 };
                 let new_generics = add_where_clauses_for_new_ident(
                     &input.generics,
                     &[field],
-                    as_mut_type,
+                    &as_mut_type,
                     type_where_clauses,
                     false,
                 );
                 let (impl_generics, _, where_clause) = new_generics.split_for_impl();
-                let casted_trait = quote!(<#field_type as #trait_path>);
+                let casted_trait = quote! { <#field_type as #trait_path> };
                 (
-                    quote!(#casted_trait::as_mut(&mut #member)),
-                    quote!(#impl_generics),
-                    quote!(#where_clause),
-                    quote!(#trait_path),
-                    quote!(#as_mut_type),
+                    quote! { #casted_trait::as_mut(&mut #member) },
+                    quote! { #impl_generics },
+                    quote! { #where_clause },
+                    quote! { #trait_path },
+                    quote! { #as_mut_type },
                 )
             } else {
                 (
-                    quote!(&mut #member),
-                    quote!(#impl_generics),
-                    quote!(#where_clause),
-                    quote!(#trait_path<#field_type>),
-                    quote!(#field_type),
+                    quote! { &mut #member },
+                    quote! { #impl_generics },
+                    quote! { #where_clause },
+                    quote! { #trait_path<#field_type> },
+                    quote! { #field_type },
                 )
             }
         })

@@ -1,17 +1,17 @@
 use crate::utils::{
     add_where_clauses_for_new_ident, AttrParams, MultiFieldData, State,
 };
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
-use syn::{parse::Result, DeriveInput, Ident};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use syn::{parse::Result, DeriveInput};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let as_ref_type = &Ident::new("__AsRefT", Span::call_site());
+    let as_ref_type = format_ident!("__AsRefT");
     let state = State::with_type_bound(
         input,
         trait_name,
-        quote!(::core::convert),
-        String::from("as_ref"),
+        quote! { ::core::convert },
+        "as_ref".into(),
         AttrParams::ignore_and_forward(),
         false,
     )?;
@@ -33,33 +33,33 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         .map(|((info, member), field)| {
             let field_type = &field.ty;
             if info.forward {
-                let trait_path = quote!(#trait_path<#as_ref_type>);
+                let trait_path = quote! { #trait_path<#as_ref_type> };
                 let type_where_clauses = quote! {
                     where #field_type: #trait_path
                 };
                 let new_generics = add_where_clauses_for_new_ident(
                     &input.generics,
                     &[field],
-                    as_ref_type,
+                    &as_ref_type,
                     type_where_clauses,
                     false,
                 );
                 let (impl_generics, _, where_clause) = new_generics.split_for_impl();
-                let casted_trait = quote!(<#field_type as #trait_path>);
+                let casted_trait = quote! { <#field_type as #trait_path> };
                 (
-                    quote!(#casted_trait::as_ref(&#member)),
-                    quote!(#impl_generics),
-                    quote!(#where_clause),
-                    quote!(#trait_path),
-                    quote!(#as_ref_type),
+                    quote! { #casted_trait::as_ref(&#member) },
+                    quote! { #impl_generics },
+                    quote! { #where_clause },
+                    quote! { #trait_path },
+                    quote! { #as_ref_type },
                 )
             } else {
                 (
-                    quote!(&#member),
-                    quote!(#impl_generics),
-                    quote!(#where_clause),
-                    quote!(#trait_path<#field_type>),
-                    quote!(#field_type),
+                    quote! { &#member },
+                    quote! { #impl_generics },
+                    quote! { #where_clause },
+                    quote! { #trait_path<#field_type> },
+                    quote! { #field_type },
                 )
             }
         })

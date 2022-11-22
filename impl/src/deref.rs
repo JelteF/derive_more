@@ -8,7 +8,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_field_ignore_and_forward(
         input,
         trait_name,
-        quote!(::core::ops),
+        quote! { ::core::ops },
         trait_name.to_lowercase(),
     )?;
     let SingleFieldData {
@@ -24,8 +24,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 
     let (target, body, generics) = if info.forward {
         (
-            quote!(#casted_trait::Target),
-            quote!(#casted_trait::deref(&#member)),
+            quote! { #casted_trait::Target },
+            quote! { #casted_trait::deref(&#member) },
             add_extra_where_clauses(
                 &input.generics,
                 quote! {
@@ -35,8 +35,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         )
     } else {
         (
-            quote!(#field_type),
-            quote!(&#member),
+            quote! { #field_type },
+            quote! { &#member },
             input.generics.clone(),
         )
     };
