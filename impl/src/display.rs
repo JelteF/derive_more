@@ -550,6 +550,10 @@ impl FmtArgument {
                 cursor = extend(&mut out);
                 continue;
             }
+            if let Some(extend) = Self::qself(cursor) {
+                cursor = extend(&mut out);
+                continue;
+            }
 
             if let Some(c) = cursor
                 .punct()
@@ -595,6 +599,26 @@ impl FmtArgument {
             stream.extend([colon1, colon2, less].map(TokenTree::Punct));
             let (more, c) = Self::parse_until_closing('<', '>', c);
             stream.extend(more);
+            c
+        })
+    }
+
+    fn qself<'a>(
+        cursor: Cursor<'a>,
+    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
+        use proc_macro2::Spacing;
+
+        let (less, c) = cursor.punct().filter(|(p, _)| p.as_char() == '<')?;
+        let (more, c) = Self::parse_until_closing('<', '>', c);
+        let (colon1, c) = c
+            .punct()
+            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
+        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
+
+        Some(move |stream: &mut TokenStream| {
+            stream.extend([less].map(TokenTree::Punct));
+            stream.extend(more);
+            stream.extend([colon1, colon2].map(TokenTree::Punct));
             c
         })
     }
@@ -825,8 +849,6 @@ mod attribute_parse_fmt_args_spec {
 
     #[test]
     fn cases() {
-        assert("", []);
-
         let cases = [
             "ident",
             "alias = ident",
@@ -849,17 +871,23 @@ mod attribute_parse_fmt_args_spec {
             "format ! (\"{}\" , q)",
             "match n { Some (n) => { } , None => { } }",
             "x . foo ::< T > (a , b)",
+            "x . foo ::< T < [T < T >; if a < b { 1 } else { 2 }] >, { a < b } > (a , b)",
             "(a + b)",
             "i32 :: MAX",
             "1 .. 2",
             "& a",
             "[0u8 ; N]",
             "(a , b , c , d)",
+            "< Ty as Trait > :: T",
+            "< Ty < Ty < T >, { a < b } > as Trait < T > > :: T",
         ];
 
-        for i in 0..4 {
+        assert("", []);
+        for i in 1..4 {
             for permutations in cases.into_iter().permutations(i) {
-                let input = permutations.clone().join(",");
+                let mut input = permutations.clone().join(",");
+                assert(&input, &permutations);
+                input.push(',');
                 assert(&input, &permutations);
             }
         }
