@@ -2,7 +2,7 @@
 //!
 //! [`fmt`]: std::fmt
 
-use std::mem;
+use std::{iter, mem};
 
 use proc_macro2::{Ident, TokenStream, TokenTree};
 use quote::{format_ident, quote, ToTokens};
@@ -93,7 +93,7 @@ fn expand_struct(
     s: &syn::DataStruct,
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    let s = StructOrEnumVariant {
+    let s = Expansion {
         attrs,
         fields: &s.fields,
         trait_ident,
@@ -137,7 +137,7 @@ fn expand_enum(
             let attrs = Attributes::parse_attrs(&variant.attrs, trait_name)?;
             let ident = &variant.ident;
 
-            let v = StructOrEnumVariant {
+            let v = Expansion {
                 attrs: &attrs,
                 fields: &variant.fields,
                 trait_ident,
@@ -251,10 +251,12 @@ impl Attributes {
     }
 }
 
-/// Helper struct to [`StructOrEnumVariant::generate_fmt()`] or
-/// [`StructOrEnumVariant::generate_bounds()`].
+/// Helper struct to generate [`Display::fmt()`] impl and trait bounds for
+/// struct or enum variant.
+///
+/// [`Display::fmt()`]: std::fmt::Display::fmt()
 #[derive(Debug)]
-struct StructOrEnumVariant<'a> {
+struct Expansion<'a> {
     /// Derive macro [`Attributes`].
     attrs: &'a Attributes,
 
@@ -270,7 +272,7 @@ struct StructOrEnumVariant<'a> {
     trait_ident: &'a Ident,
 }
 
-impl<'a> StructOrEnumVariant<'a> {
+impl<'a> Expansion<'a> {
     /// Generates [`Display::fmt()`] impl for struct or enum variant.
     ///
     /// [`Display::fmt()`]: std::fmt::Display::fmt()
@@ -294,12 +296,13 @@ impl<'a> StructOrEnumVariant<'a> {
         }
     }
 
-    /// Generates trait bounds.
+    /// Generates trait bounds for struct or enum variant.
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
         let Some(display_literal) = &self.attrs.fmt_lit else {
             return self.fields.iter().next().map(|f| {
                 let ty = &f.ty;
-                vec![parse_quote! { #ty: ::core::fmt::Display }]
+                let trait_ident = &self.trait_ident;
+                vec![parse_quote! { #ty: ::core::fmt::#trait_ident }]
             })
             .unwrap_or_default();
         };
@@ -412,6 +415,7 @@ impl FmtExpr {
         }
     }
 
+    /// Checks whether this [`FmtExpr`] is empty.
     fn is_empty(&self) -> bool {
         match self {
             FmtExpr::Ident(_) => false,
@@ -463,30 +467,26 @@ impl Parse for Attribute {
         let content;
         syn::parenthesized!(content in input);
 
-        // Parses `"..."(,)? (expr),*`
         if content.peek(syn::LitStr) {
-            let display_literal = content.parse()?;
+            let fmt_lit = content.parse()?;
 
             if content.peek(syn::token::Comma) {
                 let _ = content.parse::<syn::token::Comma>()?;
             }
 
-            let display_arguments = content.step(|cursor| {
+            let fmt_args = content.step(|cursor| {
                 let mut cursor = *cursor;
-                let mut arguments = Vec::new();
-
-                while let Some((arg, c)) = FmtArgument::parse(cursor) {
-                    arguments.push(arg);
+                let arguments = iter::from_fn(|| {
+                    let (arg, c) = FmtArgument::parse(cursor)?;
                     cursor = c;
-                }
+                    Some(arg)
+                })
+                .collect();
 
                 Ok((arguments, cursor))
             })?;
 
-            return Ok(Attribute::Fmt {
-                fmt_lit: display_literal,
-                fmt_args: display_arguments,
-            });
+            return Ok(Attribute::Fmt { fmt_lit, fmt_args });
         }
 
         let _ = content.parse::<syn::Path>().and_then(|p| {
@@ -510,10 +510,13 @@ impl Parse for Attribute {
 }
 
 impl FmtArgument {
+    /// Parses this [`FmtArgument`] and returns a new [`Cursor`], where parsing
+    /// can be continued.
+    ///
+    /// Returns [`None`] in case of eof or trailing comma.
     fn parse(mut cursor: Cursor<'_>) -> Option<(FmtArgument, Cursor<'_>)> {
         let mut arg = FmtArgument::default();
 
-        // `ident =`
         if let Some((ident, c)) = cursor.ident() {
             if let Some((_eq, c)) = c.punct().filter(|(p, _)| p.as_char() == '=') {
                 arg.alias = Some(ident);
@@ -521,7 +524,6 @@ impl FmtArgument {
             }
         }
 
-        // `ident(,|eof)`
         if let Some((ident, c)) = cursor.ident() {
             if let Some(c) = c
                 .punct()
@@ -533,13 +535,15 @@ impl FmtArgument {
             }
         }
 
-        let (rest, c) = Self::parse_inner(cursor);
+        let (rest, c) = Self::parse_rest(cursor);
         arg.expr.extend(rest);
 
         (!arg.expr.is_empty()).then_some((arg, c))
     }
 
-    fn parse_inner(mut cursor: Cursor<'_>) -> (TokenStream, Cursor<'_>) {
+    /// Parses the rest, until the end of this [`FmtArgument`] (comma or eof),
+    /// in case simplest case of `(ident =)? ident(,|eof)` wasn't parsed.
+    fn parse_rest(mut cursor: Cursor<'_>) -> (TokenStream, Cursor<'_>) {
         let mut out = TokenStream::new();
 
         loop {
@@ -547,7 +551,7 @@ impl FmtArgument {
                 cursor = extend(&mut out);
                 continue;
             }
-            if let Some(extend) = Self::closure(cursor) {
+            if let Some(extend) = Self::closure_args(cursor) {
                 cursor = extend(&mut out);
                 continue;
             }
@@ -572,19 +576,25 @@ impl FmtArgument {
         }
     }
 
-    fn closure<'a>(
+    /// Tries to parse `| (closure_arg),* |`.
+    fn closure_args<'a>(
         cursor: Cursor<'a>,
     ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
         let (open, c) = cursor.punct().filter(|(p, _)| p.as_char() == '|')?;
 
         Some(move |stream: &mut TokenStream| {
             stream.extend([TokenTree::Punct(open)]);
+            // We can ignore inner `|`, because only other place it can appear
+            // is in or pattern (ex. `Either::Left(v) | Either::Right(v)`),
+            // which must be parenthesized, so will be parsed as one
+            // `TokenTree`.
             let (more, c) = Self::parse_until_closing('|', '|', c);
             stream.extend(more);
             c
         })
     }
 
+    /// Tries to parse `::< ... >`.
     fn turbofish<'a>(
         cursor: Cursor<'a>,
     ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
@@ -604,6 +614,7 @@ impl FmtArgument {
         })
     }
 
+    /// Tries to parse `< ... as ... >::`.
     fn qself<'a>(
         cursor: Cursor<'a>,
     ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
@@ -624,6 +635,10 @@ impl FmtArgument {
         })
     }
 
+    /// Parses until balanced amount of `open` and `close` [`TokenTree::Punc`]
+    /// or eof.
+    ///
+    /// [`Cursor`] should be pointing **right after** the first `open`ing.
     fn parse_until_closing(
         open: char,
         close: char,
@@ -651,6 +666,38 @@ impl FmtArgument {
     }
 }
 
+/// Matches trait name to [`Attribute::Fmt`] argument name.
+fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
+    match trait_name {
+        "Binary" => "binary",
+        "Debug" => "debug",
+        "Display" => "display",
+        "LowerExp" => "lower_exp",
+        "LowerHex" => "lower_hex",
+        "Octal" => "octal",
+        "Pointer" => "pointer",
+        "UpperExp" => "upper_exp",
+        "UpperHex" => "upper_hex",
+        _ => unimplemented!(),
+    }
+}
+
+/// Matches derive macro name to actual trait name.
+fn normalize_trait_name(name: &str) -> &'static str {
+    match name {
+        "Binary" => "Binary",
+        "Debug" | "DebugCustom" => "Debug",
+        "Display" => "Display",
+        "LowerExp" => "LowerExp",
+        "LowerHex" => "LowerHex",
+        "Octal" => "Octal",
+        "Pointer" => "Pointer",
+        "UpperExp" => "UpperExp",
+        "UpperHex" => "UpperHex",
+        _ => unimplemented!(),
+    }
+}
+
 /// [Parameter][1] used in [`Placeholder`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-parameters
@@ -673,36 +720,6 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
             parsing::Argument::Integer(i) => Parameter::Positional(i),
             parsing::Argument::Identifier(i) => Parameter::Named(i.to_owned()),
         }
-    }
-}
-
-fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
-    match trait_name {
-        "Binary" => "binary",
-        "Debug" => "debug",
-        "Display" => "display",
-        "LowerExp" => "lower_exp",
-        "LowerHex" => "lower_hex",
-        "Octal" => "octal",
-        "Pointer" => "pointer",
-        "UpperExp" => "upper_exp",
-        "UpperHex" => "upper_hex",
-        _ => unimplemented!(),
-    }
-}
-
-fn normalize_trait_name(name: &str) -> &'static str {
-    match name {
-        "Binary" => "Binary",
-        "Debug" | "DebugCustom" => "Debug",
-        "Display" => "Display",
-        "LowerExp" => "LowerExp",
-        "LowerHex" => "LowerHex",
-        "Octal" => "Octal",
-        "Pointer" => "Pointer",
-        "UpperExp" => "UpperExp",
-        "UpperHex" => "UpperHex",
-        _ => unimplemented!(),
     }
 }
 
