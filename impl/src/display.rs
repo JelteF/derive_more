@@ -4,11 +4,11 @@
 
 use std::{iter, mem};
 
-use proc_macro2::{Ident, TokenStream, TokenTree};
+use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use quote::{format_ident, quote, ToTokens};
-use syn::buffer::Cursor;
 use syn::{
-    parse::{Parse, ParseStream},
+    buffer::Cursor,
+    parse::{Parse, ParseBuffer, ParseStream},
     parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
@@ -485,8 +485,12 @@ impl Extend<TokenTree> for FmtExpr {
 
 impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
+        let error_span = input.span();
+
         let content;
         syn::parenthesized!(content in input);
+
+        Self::check_legacy_fmt(&content, error_span)?;
 
         if content.peek(syn::LitStr) {
             let fmt_lit = content.parse()?;
@@ -527,6 +531,58 @@ impl Parse for Attribute {
         inner
             .parse_terminated(syn::WherePredicate::parse)
             .map(Attribute::Bounds)
+    }
+}
+
+impl Attribute {
+    /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*` or
+    /// `bound = "..."`.
+    fn check_legacy_fmt(input: &ParseBuffer<'_>, error_span: Span) -> Result<()> {
+        let fork = input.fork();
+
+        let path = fork
+            .parse::<syn::Path>()
+            .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
+
+        match path {
+            Ok(path) if path.is_ident("fmt") => (|| {
+                let args = fork
+                    .parse_terminated::<_, syn::token::Comma>(syn::Lit::parse)
+                    .ok()?
+                    .into_iter()
+                    .enumerate()
+                    .filter_map(|(i, lit)| match lit {
+                        syn::Lit::Str(str) => Some(if i == 0 {
+                            format!("\"{}\"", str.value())
+                        } else {
+                            str.value()
+                        }),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                (!args.is_empty()).then_some(args)
+            })()
+            .map_or(Ok(()), |fmt| {
+                Err(Error::new(
+                    error_span,
+                    format!("Legacy syntax, use: `{}`", fmt.join(", ")),
+                ))
+            }),
+            Ok(path) if path.is_ident("bound") => fork
+                .parse::<syn::Lit>()
+                .ok()
+                .and_then(|lit| match lit {
+                    syn::Lit::Str(s) => Some(s.value()),
+                    _ => None,
+                })
+                .map_or(Ok(()), |bound| {
+                    Err(Error::new(
+                        error_span,
+                        format!("Legacy syntax, use: `bound({bound})`"),
+                    ))
+                }),
+            Ok(_) | Err(_) => Ok(()),
+        }
     }
 }
 
