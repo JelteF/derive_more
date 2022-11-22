@@ -333,6 +333,14 @@ mod enums {
 mod generic {
     use derive_more::Display;
 
+    trait Bound {}
+
+    impl Bound for () {}
+
+    fn display_bound<T: Bound>(_: &T) -> &'static str {
+        "()"
+    }
+
     #[derive(Display)]
     #[display("Generic {}", field)]
     struct NamedGenericStruct<T> {
@@ -386,6 +394,45 @@ mod generic {
     }
 
     #[derive(Display)]
+    #[display("{alias}", alias = field)]
+    struct AliasedNamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn aliased_named_generic_struct() {
+        assert_eq!(AliasedNamedGenericStruct { field: 1 }.to_string(), "1");
+    }
+
+    #[derive(Display)]
+    #[display("{field1}", field1 = field2)]
+    struct AliasedFieldNamedGenericStruct<T> {
+        field1: T,
+        field2: i32,
+    }
+    #[test]
+    fn aliased_field_named_generic_struct() {
+        assert_eq!(
+            AliasedFieldNamedGenericStruct {
+                field1: (),
+                field2: 1,
+            }
+            .to_string(),
+            "1",
+        );
+    }
+
+    #[derive(Display)]
+    #[display("{}", display_bound(field))]
+    #[display(bound(T: Bound))]
+    struct BoundedNamedGenericStruct<T> {
+        field: T,
+    }
+    #[test]
+    fn bounded_named_generic_struct() {
+        assert_eq!(BoundedNamedGenericStruct { field: () }.to_string(), "()");
+    }
+
+    #[derive(Display)]
     #[display("Generic {}", _0)]
     struct UnnamedGenericStruct<T>(T);
     #[test]
@@ -406,6 +453,31 @@ mod generic {
     #[test]
     fn auto_unnamed_generic_struct() {
         assert_eq!(AutoUnnamedGenericStruct(2).to_string(), "2");
+    }
+
+    #[derive(Display)]
+    #[display("{alias}", alias = _0)]
+    struct AliasedUnnamedGenericStruct<T>(T);
+    #[test]
+    fn aliased_unnamed_generic_struct() {
+        assert_eq!(AliasedUnnamedGenericStruct(2).to_string(), "2");
+    }
+
+    #[derive(Display)]
+    #[display("{_0}", _0 = _1)]
+    struct AliasedFieldUnnamedGenericStruct<T>(T, i32);
+    #[test]
+    fn aliased_field_unnamed_generic_struct() {
+        assert_eq!(AliasedFieldUnnamedGenericStruct((), 2).to_string(), "2");
+    }
+
+    #[derive(Display)]
+    #[display("{}", display_bound(_0))]
+    #[display(bound(T: Bound))]
+    struct BoundedUnnamedGenericStruct<T>(T);
+    #[test]
+    fn bounded_unnamed_generic_struct() {
+        assert_eq!(BoundedUnnamedGenericStruct(()).to_string(), "()");
     }
 
     #[derive(Display)]
