@@ -56,8 +56,9 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
 
     let (impl_gens, ty_gens, where_clause) = {
         let (impl_gens, ty_gens, where_clause) = input.generics.split_for_impl();
-        let mut where_clause =
-            where_clause.cloned().unwrap_or_else(|| parse_quote!(where));
+        let mut where_clause = where_clause
+            .cloned()
+            .unwrap_or_else(|| parse_quote! { where });
         where_clause.predicates.extend(bounds);
         (impl_gens, ty_gens, where_clause)
     };
