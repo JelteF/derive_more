@@ -422,17 +422,6 @@ mod generic {
     }
 
     #[derive(Display)]
-    #[display("{}", display_bound(field))]
-    #[display(bound(T: Bound))]
-    struct BoundedNamedGenericStruct<T> {
-        field: T,
-    }
-    #[test]
-    fn bounded_named_generic_struct() {
-        assert_eq!(BoundedNamedGenericStruct { field: () }.to_string(), "()");
-    }
-
-    #[derive(Display)]
     #[display("Generic {}", _0)]
     struct UnnamedGenericStruct<T>(T);
     #[test]
@@ -469,15 +458,6 @@ mod generic {
     #[test]
     fn aliased_field_unnamed_generic_struct() {
         assert_eq!(AliasedFieldUnnamedGenericStruct((), 2).to_string(), "2");
-    }
-
-    #[derive(Display)]
-    #[display("{}", display_bound(_0))]
-    #[display(bound(T: Bound))]
-    struct BoundedUnnamedGenericStruct<T>(T);
-    #[test]
-    fn bounded_unnamed_generic_struct() {
-        assert_eq!(BoundedUnnamedGenericStruct(()).to_string(), "()");
     }
 
     #[derive(Display)]
