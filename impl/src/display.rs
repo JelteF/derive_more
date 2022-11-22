@@ -98,6 +98,7 @@ fn expand_struct(
         fields: &s.fields,
         trait_ident,
         ident,
+        on: ExpandedOn::Struct,
     };
     let bounds = s.generate_bounds();
     let fmt = s.generate_fmt();
@@ -142,6 +143,7 @@ fn expand_enum(
                 fields: &variant.fields,
                 trait_ident,
                 ident,
+                on: ExpandedOn::Variant,
             };
             let fmt_inner = v.generate_fmt();
             bounds.extend(v.generate_bounds());
@@ -270,6 +272,19 @@ struct Expansion<'a> {
     ///
     /// [`fmt`]: std::fmt
     trait_ident: &'a Ident,
+
+    /// Where this [`Expansion`] [`ExpandedOn`].
+    on: ExpandedOn,
+}
+
+/// Where [`Expansion`] is called.
+#[derive(Debug)]
+enum ExpandedOn {
+    /// Struct.
+    Struct,
+
+    /// Enum variant.
+    Variant,
 }
 
 impl<'a> Expansion<'a> {
@@ -291,8 +306,15 @@ impl<'a> Expansion<'a> {
 
             quote! { ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f) }
         } else {
-            let ident_str = self.ident.to_string();
-            quote! { ::core::write!(__derive_more_f, #ident_str) }
+            match &self.on {
+                ExpandedOn::Struct => {
+                    let ident_str = self.ident.to_string();
+                    quote! { ::core::write!(__derive_more_f, #ident_str) }
+                }
+                ExpandedOn::Variant => {
+                    todo!("https://github.com/JelteF/derive_more/issues/216")
+                }
+            }
         }
     }
 
