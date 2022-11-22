@@ -229,6 +229,9 @@ mod enums {
 
         #[derive(Display)]
         enum Enum {
+            Unit,
+            Unnamed(),
+            Named {},
             #[display("STR_UNIT")]
             StrUnit,
             #[display("STR_UNNAMED")]
@@ -239,6 +242,9 @@ mod enums {
 
         #[test]
         fn assert() {
+            assert_eq!(Enum::Unit.to_string(), "Unit");
+            assert_eq!(Enum::Unnamed().to_string(), "Unnamed");
+            assert_eq!(Enum::Named {}.to_string(), "Named");
             assert_eq!(Enum::StrUnit.to_string(), "STR_UNIT");
             assert_eq!(Enum::StrUnnamed().to_string(), "STR_UNNAMED");
             assert_eq!(Enum::StrNamed {}.to_string(), "STR_NAMED");
