@@ -14,8 +14,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote!(::core::convert),
-        String::from("try_into"),
+        quote! { ::core::convert },
+        "try_into".into(),
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
             variant: vec!["ignore", "owned", "ref", "ref_mut"],
@@ -57,40 +57,39 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let mut matchers = vec![];
         let vars = &numbered_vars(original_types.len(), "");
         for multi_field_data in multi_field_datas {
-            let patterns: Vec<_> =
-                vars.iter().map(|var| quote!(#pattern_ref #var)).collect();
+            let patterns: Vec<_> = vars
+                .iter()
+                .map(|var| quote! { #pattern_ref #var })
+                .collect();
             matchers.push(
                 multi_field_data.matcher(&multi_field_data.field_indexes, &patterns),
             );
         }
 
         let vars = if vars.len() == 1 {
-            quote!(#(#vars)*)
+            quote! { #(#vars)* }
         } else {
-            quote!((#(#vars),*))
+            quote! { (#(#vars),*) }
         };
 
         let output_type = if original_types.len() == 1 {
-            format!("{}", quote!(#(#original_types)*))
+            quote! { #(#original_types)* }.to_string()
         } else {
             let types = original_types
                 .iter()
-                .map(|t| format!("{}", quote!(#t)))
+                .map(|t| quote! { #t }.to_string())
                 .collect::<Vec<_>>();
             format!("({})", types.join(", "))
         };
         let variant_names = multi_field_datas
             .iter()
             .map(|d| {
-                format!(
-                    "{}",
-                    d.variant_name.expect("Somehow there was no variant name")
-                )
+                d.variant_name
+                    .expect("Somehow there was no variant name")
+                    .to_string()
             })
             .collect::<Vec<_>>()
             .join(", ");
-        let message =
-            format!("Only {} can be converted to {}", variant_names, output_type);
 
         let generics_impl;
         let (_, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -108,13 +107,13 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                  (#(#reference_with_lifetime #original_types),*)
                  #where_clause
             {
-                type Error = &'static str;
+                type Error = ::derive_more::TryIntoError<#reference_with_lifetime #input_type>;
 
                 #[inline]
                 fn try_from(value: #reference_with_lifetime #input_type #ty_generics) -> ::core::result::Result<Self, Self::Error> {
                     match value {
                         #(#matchers)|* => ::core::result::Result::Ok(#vars),
-                        _ => ::core::result::Result::Err(#message),
+                        _ => ::core::result::Result::Err(::derive_more::TryIntoError::new(value, #variant_names, #output_type)),
                     }
                 }
             }

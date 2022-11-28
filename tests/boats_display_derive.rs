@@ -9,8 +9,8 @@ struct UnitError;
 
 #[test]
 fn unit_struct() {
-    let s = format!("{}", UnitError);
-    assert_eq!(&s[..], "An error has occurred.");
+    let s = UnitError.to_string();
+    assert_eq!(s, "An error has occurred.");
 }
 
 #[derive(Display)]
@@ -21,8 +21,8 @@ struct RecordError {
 
 #[test]
 fn record_struct() {
-    let s = format!("{}", RecordError { code: 0 });
-    assert_eq!(&s[..], "Error code: 0");
+    let s = RecordError { code: 0 }.to_string();
+    assert_eq!(s, "Error code: 0");
 }
 
 #[derive(Display)]
@@ -31,8 +31,8 @@ struct TupleError(i32);
 
 #[test]
 fn tuple_struct() {
-    let s = format!("{}", TupleError(2));
-    assert_eq!(&s[..], "Error code: 2");
+    let s = TupleError(2).to_string();
+    assert_eq!(s, "Error code: 2");
 }
 
 #[derive(Display)]
@@ -47,10 +47,10 @@ enum EnumError {
 
 #[test]
 fn enum_error() {
-    let s = format!("{}", EnumError::StructVariant { code: 2 });
-    assert_eq!(&s[..], "Error code: 2");
-    let s = format!("{}", EnumError::TupleVariant("foobar"));
-    assert_eq!(&s[..], "Error: foobar");
-    let s = format!("{}", EnumError::UnitVariant);
-    assert_eq!(&s[..], "An error has occurred.");
+    let s = EnumError::StructVariant { code: 2 }.to_string();
+    assert_eq!(s, "Error code: 2");
+    let s = EnumError::TupleVariant("foobar").to_string();
+    assert_eq!(s, "Error: foobar");
+    let s = EnumError::UnitVariant.to_string();
+    assert_eq!(s, "An error has occurred.");
 }

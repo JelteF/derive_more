@@ -193,7 +193,7 @@ fn main() {
     assert_eq!(5, MyInt(5).into());
     assert_eq!(MyInt(5), MyInt::new(5));
     assert_eq!(-MyInt(5), (-5).into());
-    assert_eq!("30", format!("{}", MyInt(30)));
+    assert_eq!("30", MyInt(30).to_string());
     assert_eq!("36", format!("{:o}", MyInt(30)));
     assert_eq!("100", format!("{:b}", MyInt(4)));
     assert_eq!(!MyBool(true), false.into());
@@ -202,7 +202,7 @@ fn main() {
     assert_eq!(SimpleStruct { int1: 5 }, 5.into());
     assert_eq!(5u64, SimpleStruct { int1: 5 }.into());
     assert_eq!(Ok(SimpleStruct { int1: 5 }), "5".parse());
-    assert_eq!("5", format!("{}", SimpleStruct { int1: 5 }));
+    assert_eq!("5", SimpleStruct { int1: 5 }.to_string());
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, (5, 6).into());
     assert_eq!(SimpleStruct { int1: 5 }, SimpleStruct::new(5));
     assert_eq!(NormalStruct { int1: 5, int2: 6 }, NormalStruct::new(5, 6));

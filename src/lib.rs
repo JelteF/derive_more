@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
 //! [`From`]: crate::From
@@ -29,6 +30,12 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
 #![forbid(non_ascii_idents, unsafe_code)]
+#![warn(clippy::nonstandard_macro_braces)]
 
 #[doc(inline)]
 pub use derive_more_impl::*;
+
+#[cfg(feature = "try_into")]
+mod errors;
+#[cfg(feature = "try_into")]
+pub use crate::errors::TryIntoError;

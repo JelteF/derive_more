@@ -10,7 +10,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::new(
         input,
         trait_name,
-        quote!(::core::str),
+        quote! { ::core::str },
         trait_name.to_lowercase(),
     )?;
 
@@ -39,7 +39,7 @@ pub fn struct_from(state: &State, trait_name: &'static str) -> TokenStream {
         ..
     } = single_field_data.clone();
 
-    let initializers = [quote!(#casted_trait::from_str(src)?)];
+    let initializers = [quote! { #casted_trait::from_str(src)? }];
     let body = single_field_data.initializer(&initializers);
 
     quote! {
@@ -64,7 +64,7 @@ fn enum_from(
     for variant_state in state.enabled_variant_data().variant_states {
         let variant = variant_state.variant.unwrap();
         if !variant.fields.is_empty() {
-            panic!("Only enums with no fields can derive({})", trait_name)
+            panic!("Only enums with no fields can derive({trait_name})")
         }
 
         variants_caseinsensitive
@@ -76,7 +76,7 @@ fn enum_from(
     let input_type = &input.ident;
     let visibility = &input.vis;
 
-    let err_name = format_ident!("Parse{}Error", input_type);
+    let err_name = format_ident!("Parse{input_type}Error");
     let err_message =
         format!("invalid {}", input_type.to_string().to_case(Case::Lower));
 
@@ -130,5 +130,5 @@ fn enum_from(
 }
 
 fn panic_one_field(trait_name: &str) -> ! {
-    panic!("Only structs with one field can derive({})", trait_name)
+    panic!("Only structs with one field can derive({trait_name})")
 }

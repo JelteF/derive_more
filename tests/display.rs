@@ -139,9 +139,9 @@ fn check_display() {
     assert_eq!(EE::A.to_string(), "Java EE");
     assert_eq!(EE::B.to_string(), "Java EE");
     assert_eq!(U { i: 2 }.to_string(), "Hello there!");
-    assert_eq!(format!("{:o}", S), "7");
-    assert_eq!(format!("{:X}", UH), "UpperHex");
-    assert_eq!(format!("{:?}", D), "MyDebug");
+    assert_eq!(format!("{S:o}"), "7");
+    assert_eq!(format!("{UH:X}"), "UpperHex");
+    assert_eq!(format!("{D:?}"), "MyDebug");
     assert_eq!(Unit.to_string(), "Unit");
     assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
     assert_eq!(Generic(()).to_string(), "Generic");
@@ -151,7 +151,7 @@ fn check_display() {
     );
     assert_eq!(
         Affix::B {
-            wat: "things".to_owned(),
+            wat: "things".into(),
             stuff: false,
         }
         .to_string(),

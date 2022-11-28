@@ -10,7 +10,7 @@ struct SingleFieldTuple(String);
 
 #[test]
 fn single_field_tuple() {
-    let item = SingleFieldTuple(String::from("test"));
+    let item = SingleFieldTuple("test".into());
 
     assert!(ptr::eq(&item.0, item.as_ref()));
 }
@@ -33,7 +33,7 @@ struct SingleFieldStruct {
 #[test]
 fn single_field_struct() {
     let item = SingleFieldStruct {
-        first: String::from("test"),
+        first: "test".into(),
     };
 
     assert!(ptr::eq(&item.first, item.as_ref()));
@@ -44,7 +44,7 @@ struct MultiFieldTuple(#[as_ref] String, #[as_ref] PathBuf, Vec<usize>);
 
 #[test]
 fn multi_field_tuple() {
-    let item = MultiFieldTuple(String::from("test"), PathBuf::new(), vec![]);
+    let item = MultiFieldTuple("test".into(), PathBuf::new(), vec![]);
 
     assert!(ptr::eq(&item.0, item.as_ref()));
     assert!(ptr::eq(&item.1, item.as_ref()));
@@ -62,7 +62,7 @@ struct MultiFieldStruct {
 #[test]
 fn multi_field_struct() {
     let item = MultiFieldStruct {
-        first: String::from("test"),
+        first: "test".into(),
         second: PathBuf::new(),
         third: vec![],
     };
@@ -78,9 +78,7 @@ struct SingleFieldGenericStruct<T> {
 
 #[test]
 fn single_field_generic_struct() {
-    let item = SingleFieldGenericStruct {
-        first: String::from("test"),
-    };
+    let item = SingleFieldGenericStruct { first: "test" };
 
     assert!(ptr::eq(&item.first, item.as_ref()));
 }

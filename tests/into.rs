@@ -135,7 +135,7 @@ struct Name(String);
 #[test]
 fn explicit_complex_types_name() {
     let name = "Ñolofinwë";
-    let input = Name(name.to_owned());
-    assert_eq!(String::from(input.clone()), name.to_owned());
+    let input = Name(name.into());
+    assert_eq!(String::from(input.clone()), name);
     assert_eq!(Cow::from(input.clone()), Cow::Borrowed(name));
 }
