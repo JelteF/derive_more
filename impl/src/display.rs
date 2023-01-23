@@ -1,4 +1,4 @@
-//! Description for [`fmt`]-like derive macros.
+//! Implementation of [`fmt`]-like derive macros.
 //!
 //! [`fmt`]: std::fmt
 
@@ -48,7 +48,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
     let ident = &input.ident;
 
     let ctx = (&attrs, ident, &trait_ident, trait_name);
-    let (bounds, fmt) = match &input.data {
+    let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => expand_struct(s, ctx),
         syn::Data::Enum(e) => expand_enum(e, ctx),
         syn::Data::Union(u) => expand_union(u, ctx),
@@ -63,7 +63,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
         (impl_gens, ty_gens, where_clause)
     };
 
-    let res = quote! {
+    Ok(quote! {
         #[automatically_derived]
         impl #impl_gens ::core::fmt::#trait_ident for #ident #ty_gens
              #where_clause
@@ -71,22 +71,20 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
             fn fmt(
                 &self, __derive_more_f: &mut ::core::fmt::Formatter<'_>
             ) -> ::core::fmt::Result {
-                #fmt
+                #body
             }
         }
-    };
-
-    Ok(res)
+    })
 }
 
-/// Type alias for expansion context:
-/// - [`Attributes`]
-/// - Struct/enum/union [`Ident`]
-/// - Derived trait [`Ident`]
-/// - Derived trait `&`[`str`]
+/// Type alias for an expansion context:
+/// - [`Attributes`].
+/// - Struct/enum/union [`Ident`].
+/// - Derived trait [`Ident`].
+/// - Derived trait `&`[`str`].
 type ExpansionCtx<'a> = (&'a Attributes, &'a Ident, &'a Ident, &'a str);
 
-/// Expands [`fmt`]-like derive macro for struct.
+/// Expands a [`fmt`]-like derive macro for the provided struct.
 ///
 /// [`fmt`]: std::fmt
 fn expand_struct(
@@ -100,7 +98,7 @@ fn expand_struct(
         ident,
     };
     let bounds = s.generate_bounds();
-    let fmt = s.generate_fmt();
+    let body = s.generate_body();
 
     let vars = s.fields.iter().enumerate().map(|(i, f)| {
         let var = f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"));
@@ -108,18 +106,20 @@ fn expand_struct(
             .ident
             .clone()
             .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-        quote! { let #var = &self.#member; }
+        quote! {
+            let #var = &self.#member;
+        }
     });
 
-    let fmt = quote! {
+    let body = quote! {
         #( #vars )*
-        #fmt
+        #body
     };
 
-    Ok((bounds, fmt))
+    Ok((bounds, body))
 }
 
-/// Expands [`fmt`]-like derive macro for enum.
+/// Expands a [`fmt`]-like derive macro for the provided enum.
 ///
 /// [`fmt`]: std::fmt
 fn expand_enum(
@@ -130,9 +130,9 @@ fn expand_enum(
         todo!("https://github.com/JelteF/derive_more/issues/142");
     }
 
-    let (bounds, fmt) = e.variants.iter().try_fold(
+    let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
-        |(mut bounds, mut fmt), variant| {
+        |(mut bounds, mut arms), variant| {
             let attrs = Attributes::parse_attrs(&variant.attrs, trait_name)?;
             let ident = &variant.ident;
 
@@ -157,7 +157,7 @@ fn expand_enum(
                 trait_ident,
                 ident,
             };
-            let fmt_inner = v.generate_fmt();
+            let arm_body = v.generate_body();
             bounds.extend(v.generate_bounds());
 
             let fields_idents =
@@ -174,21 +174,21 @@ fn expand_enum(
                 syn::Fields::Unit => quote! { Self::#ident },
             };
 
-            fmt.extend([quote! { #matcher => { #fmt_inner }, }]);
+            arms.extend([quote! { #matcher => { #arm_body }, }]);
 
-            Ok::<_, Error>((bounds, fmt))
+            Ok::<_, Error>((bounds, arms))
         },
     )?;
 
-    let fmt = fmt
+    let body = match_arms
         .is_empty()
         .then(|| quote! { match *self {} })
-        .unwrap_or_else(|| quote! { match self { #fmt } });
+        .unwrap_or_else(|| quote! { match self { #match_arms } });
 
-    Ok((bounds, fmt))
+    Ok((bounds, body))
 }
 
-/// Expands [`fmt`]-like derive macro for union.
+/// Expands a [`fmt`]-like derive macro for the provided union.
 ///
 /// [`fmt`]: std::fmt
 fn expand_union(
@@ -206,12 +206,14 @@ fn expand_union(
     })?;
     let fmt_args = &attrs.fmt_args;
 
-    let fmt = quote! { ::core::write!(__derive_more_f, #fmt_lit, #( #fmt_args ),*) };
+    let body = quote! {
+        ::core::write!(__derive_more_f, #fmt_lit, #( #fmt_args ),*)
+    };
 
-    Ok((attrs.bounds.clone().into_iter().collect(), fmt))
+    Ok((attrs.bounds.clone().into_iter().collect(), body))
 }
 
-/// [`fmt`]-like derive macro attributes:
+/// Representation of a [`fmt`]-like derive macro attribute.
 ///
 /// ```rust,ignore
 /// #[<fmt_trait>("<fmt_literal>", <fmt_args>)]
@@ -235,7 +237,7 @@ struct Attributes {
 }
 
 impl Attributes {
-    /// Parses [`Attributes`] from `&[`[`syn::Attribute`]`]`.
+    /// Parses [`Attributes`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         trait_name: &str,
@@ -265,8 +267,8 @@ impl Attributes {
     }
 }
 
-/// Helper struct to generate [`Display::fmt()`] impl and trait bounds for
-/// struct or enum variant.
+/// Helper struct to generate [`Display::fmt()`] implementation body and trait
+/// bounds for a struct or an enum variant.
 ///
 /// [`Display::fmt()`]: std::fmt::Display::fmt()
 #[derive(Debug)]
@@ -287,13 +289,15 @@ struct Expansion<'a> {
 }
 
 impl<'a> Expansion<'a> {
-    /// Generates [`Display::fmt()`] impl for struct or enum variant.
+    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
     /// [`Display::fmt()`]: std::fmt::Display::fmt()
-    fn generate_fmt(&self) -> TokenStream {
+    fn generate_body(&self) -> TokenStream {
         if let Some(lit) = &self.attrs.fmt_lit {
             let args = &self.attrs.fmt_args;
-            quote! { ::core::write!(__derive_more_f, #lit, #( #args ),*) }
+            quote! {
+                ::core::write!(__derive_more_f, #lit, #( #args ),*)
+            }
         } else if self.fields.iter().count() == 1 {
             let field = self
                 .fields
@@ -302,15 +306,18 @@ impl<'a> Expansion<'a> {
                 .unwrap_or_else(|| unreachable!("count() == 1"));
             let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
             let trait_ident = self.trait_ident;
-
-            quote! { ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f) }
+            quote! {
+                ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+            }
         } else {
             let ident_str = self.ident.to_string();
-            quote! { ::core::write!(__derive_more_f, #ident_str) }
+            quote! {
+                ::core::write!(__derive_more_f, #ident_str)
+            }
         }
     }
 
-    /// Generates trait bounds for struct or enum variant.
+    /// Generates trait bounds for a struct or an enum variant.
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
         let Some(display_literal) = &self.attrs.fmt_lit else {
             return self.fields.iter().next().map(|f| {
@@ -323,8 +330,7 @@ impl<'a> Expansion<'a> {
 
         let placeholders = Placeholder::parse_fmt_string(&display_literal.value());
 
-        // We ignore unknown fields, as compiler will produce better error
-        // messages.
+        // We ignore unknown fields, as compiler will produce better error messages.
         placeholders
             .into_iter()
             .filter_map(|placeholder| {
@@ -357,14 +363,16 @@ impl<'a> Expansion<'a> {
                 }?;
 
                 let tr = format_ident!("{}", placeholder.trait_name);
-                Some(parse_quote! { #ty: ::core::fmt::#tr })
+                Some(parse_quote! {
+                    #ty: ::core::fmt::#tr
+                })
             })
             .chain(self.attrs.bounds.clone())
             .collect()
     }
 }
 
-/// Single [`fmt`]-like display attribute.
+/// Representation of a single [`fmt`]-like display attribute.
 ///
 /// [`fmt`]: std::fmt
 #[derive(Debug)]
@@ -406,10 +414,10 @@ impl ToTokens for FmtArgument {
     }
 }
 
-/// Expression of [`FmtArgument`].
+/// Expression of a [`FmtArgument`].
 ///
-/// This type is used instead of [`syn::Expr`] to avoid [`syn`]'s `full`
-/// feature.
+/// This type is used instead of a [`syn::Expr`] to avoid using [`syn`]'s
+/// `full` feature increasing compilation times.
 #[derive(Debug)]
 enum FmtExpr {
     /// [`Ident`].
@@ -420,7 +428,7 @@ enum FmtExpr {
 }
 
 impl FmtExpr {
-    /// Returns [`Ident`] in case this [`FmtExpr`] contains only it or [`None`]
+    /// Returns an [`Ident`] in case this [`FmtExpr`] contains only it, or [`None`]
     /// otherwise.
     fn ident(&self) -> Option<&Ident> {
         match self {
@@ -432,8 +440,8 @@ impl FmtExpr {
     /// Checks whether this [`FmtExpr`] is empty.
     fn is_empty(&self) -> bool {
         match self {
-            FmtExpr::Ident(_) => false,
-            FmtExpr::TokenStream(stream) => stream.is_empty(),
+            Self::Ident(_) => false,
+            Self::TokenStream(stream) => stream.is_empty(),
         }
     }
 }

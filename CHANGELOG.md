@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `TryFrom` derive now returns a dedicated error type instead of a
   `&'static str` on error.
 - The `Display` derive (and other `fmt`-like ones) now uses
-  `#[display("...", (<expr>),*)]` syntax instead of the
-  `#[display(fmt = "...", ("<expr>"),*)]` and `#[display(bound(<bound>))]`
-  instead of the `#[display(bound = "<bound>")]`.
+  `#[display("...", (<expr>),*)]` syntax instead of
+  `#[display(fmt = "...", ("<expr>"),*)]`, and `#[display(bound(<bound>))]`
+  instead of `#[display(bound = "<bound>")]`.
 
 ### New features
 
