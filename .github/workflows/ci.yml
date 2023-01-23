@@ -126,7 +126,7 @@ jobs:
       - run: rustup default nightly
 
       - name: Install tomljson
-        run: go get github.com/pelletier/go-toml/cmd/tomljson
+        run: go install github.com/pelletier/go-toml/cmd/tomljson@latest
 
       - run: ci/test_all_features.sh
         env:
