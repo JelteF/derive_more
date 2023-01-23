@@ -126,12 +126,11 @@ jobs:
       - run: rustup default nightly
 
       - name: Install tomljson
-        run: go get github.com/pelletier/go-toml/cmd/tomljson
+        run: |
+          go install github.com/pelletier/go-toml/cmd/tomljson@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
 
       - run: ci/test_all_features.sh
-        env:
-          GOBIN: "$HOME/go/bin"
-          PATH: "$PATH:$GOBIN"
 
 
 
@@ -160,7 +159,7 @@ jobs:
   #############
 
   release-github:
-    name: release on GitHub
+    name: release (GitHub)
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs:
       - clippy
