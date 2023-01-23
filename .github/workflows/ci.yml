@@ -133,7 +133,10 @@ jobs:
       - name: Install tomljson
         run: go install github.com/pelletier/go-toml/cmd/tomljson@latest
 
-      - run: tomljson Cargo.toml
+      - run: |
+          echo "$GOPATH"
+          echo "$PATH"
+          tomljson Cargo.toml
 
       - run: ci/test_all_features.sh
         env:
