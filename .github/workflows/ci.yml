@@ -21,7 +21,6 @@ jobs:
   ##########################
 
   clippy:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -33,7 +32,6 @@ jobs:
       - run: cargo clippy --workspace --all-features -- -D warnings
 
   rustfmt:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -52,7 +50,6 @@ jobs:
   ###########
 
   msrv:
-    if: false
     name: MSRV
     strategy:
       fail-fast: false
@@ -79,7 +76,6 @@ jobs:
       - run: cargo test --workspace --features testing-helpers
 
   no_std:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -99,7 +95,6 @@ jobs:
                    --no-default-features --features all_no_std
 
   test:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -145,7 +140,6 @@ jobs:
   #################
 
   rustdoc:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -165,7 +159,7 @@ jobs:
   #############
 
   release-github:
-    name: release on GitHub
+    name: release (GitHub)
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs:
       - clippy
