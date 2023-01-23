@@ -136,6 +136,7 @@ jobs:
       - run: |
           echo "$GOPATH"
           echo "$PATH"
+          find / -name tomljson
           tomljson Cargo.toml
 
       - run: ci/test_all_features.sh
