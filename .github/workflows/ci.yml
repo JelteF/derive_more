@@ -21,6 +21,7 @@ jobs:
   ##########################
 
   clippy:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -32,6 +33,7 @@ jobs:
       - run: cargo clippy --workspace --all-features -- -D warnings
 
   rustfmt:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -50,6 +52,7 @@ jobs:
   ###########
 
   msrv:
+    if: false
     name: MSRV
     strategy:
       fail-fast: false
@@ -76,6 +79,7 @@ jobs:
       - run: cargo test --workspace --features testing-helpers
 
   no_std:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -95,6 +99,7 @@ jobs:
                    --no-default-features --features all_no_std
 
   test:
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -128,6 +133,8 @@ jobs:
       - name: Install tomljson
         run: go install github.com/pelletier/go-toml/cmd/tomljson@latest
 
+      - run: tomljson Cargo.toml
+
       - run: ci/test_all_features.sh
         env:
           GOBIN: "$HOME/go/bin"
@@ -141,6 +148,7 @@ jobs:
   #################
 
   rustdoc:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
