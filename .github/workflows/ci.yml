@@ -135,9 +135,6 @@ jobs:
           go install github.com/pelletier/go-toml/cmd/tomljson@latest
           echo "${HOME}/go/bin" >> $GITHUB_PATH
 
-      - run: |
-          tomljson Cargo.toml
-
       - run: ci/test_all_features.sh
         env:
           GOBIN: "$HOME/go/bin"
