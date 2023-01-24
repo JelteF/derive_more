@@ -1,5 +1,5 @@
 error: 2 positional arguments in format string, but there is 1 argument
- --> tests/compile_fail/display/extra_placeholder.rs:2:24
+ --> tests/compile_fail/display/extra_placeholder.rs:2:18
   |
-2 | #[display(fmt = "Stuff({}): {}", bar)]
-  |                        ^^   ^^   ---
+2 | #[display("Stuff({}): {}", bar)]
+  |                  ^^   ^^   ---

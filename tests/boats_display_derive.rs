@@ -4,7 +4,7 @@
 use derive_more::Display;
 
 #[derive(Display)]
-#[display(fmt = "An error has occurred.")]
+#[display("An error has occurred.")]
 struct UnitError;
 
 #[test]
@@ -14,7 +14,7 @@ fn unit_struct() {
 }
 
 #[derive(Display)]
-#[display(fmt = "Error code: {}", code)]
+#[display("Error code: {}", code)]
 struct RecordError {
     code: u32,
 }
@@ -26,7 +26,7 @@ fn record_struct() {
 }
 
 #[derive(Display)]
-#[display(fmt = "Error code: {}", _0)]
+#[display("Error code: {}", _0)]
 struct TupleError(i32);
 
 #[test]
@@ -37,11 +37,11 @@ fn tuple_struct() {
 
 #[derive(Display)]
 enum EnumError {
-    #[display(fmt = "Error code: {}", code)]
+    #[display("Error code: {}", code)]
     StructVariant { code: i32 },
-    #[display(fmt = "Error: {}", _0)]
+    #[display("Error: {}", _0)]
     TupleVariant(&'static str),
-    #[display(fmt = "An error has occurred.")]
+    #[display("An error has occurred.")]
     UnitVariant,
 }
 

@@ -80,7 +80,7 @@ struct Tuple(Simple);
 struct WithoutSource(#[error(not(source))] i32);
 
 #[derive(Debug, Display, Error)]
-#[display(fmt="An error with a backtrace")]
+#[display("An error with a backtrace")]
 struct WithSourceAndBacktrace {
     source: Simple,
     backtrace: Backtrace,
@@ -98,7 +98,7 @@ enum CompoundError {
         #[error(backtrace)]
         source: Simple,
     },
-    #[display(fmt = "{source}")]
+    #[display("{source}")]
     WithDifferentBacktrace {
         source: Simple,
         backtrace: Backtrace,
