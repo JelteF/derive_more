@@ -85,7 +85,7 @@ mod structs {
         #[derive(Binary)]
         struct Binary(i32);
 
-        #[derive(Display)]
+        #[derive(Display, DebugCustom)]
         struct Struct {
             field: i32,
         }
@@ -100,6 +100,7 @@ mod structs {
             assert_eq!(Tuple(0).to_string(), "0");
             assert_eq!(format!("{:b}", Binary(10)), "1010");
             assert_eq!(Struct { field: 0 }.to_string(), "0");
+            assert_eq!(format!("{:?}", Struct { field: 0 }), "0");
             assert_eq!(format!("{:o}", Octal { field: 10 }).to_string(), "12");
         }
 
@@ -154,9 +155,16 @@ mod structs {
             #[display("tuple")]
             struct Tuple(i32, i32);
 
-            #[derive(Display)]
+            #[derive(Display, DebugCustom)]
             #[display("struct")]
+            #[debug("Struct: {field1} {field2}")]
             struct Struct {
+                field1: i32,
+                field2: i32,
+            }
+
+            #[derive(Display, DebugCustom)]
+            struct Struct2 {
                 field1: i32,
                 field2: i32,
             }
@@ -171,6 +179,33 @@ mod structs {
                     }
                     .to_string(),
                     "struct",
+                );
+                assert_eq!(
+                    format!(
+                        "{:?}",
+                        Struct {
+                            field1: 0,
+                            field2: 3
+                        }
+                    ),
+                    "Struct: 0 3"
+                );
+                assert_eq!(
+                    Struct2 {
+                        field1: 0,
+                        field2: 3
+                    }.to_string(),
+                    "Struct2"
+                );
+                assert_eq!(
+                    format!(
+                        "{:?}",
+                        Struct2 {
+                            field1: 0,
+                            field2: 3
+                        }
+                    ),
+                    "Struct2"
                 );
             }
         }
