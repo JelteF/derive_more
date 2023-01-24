@@ -72,8 +72,8 @@ The following where clauses would be generated:
 Sometimes you may want to specify additional trait bounds on your generic type parameters, so that they
 could be used during formatting. This can be done with a `#[display(bound(...))]` attribute.
 
-`#[display(bound(...))]` accepts a single string argument in a format similar to the format
-used in angle bracket list: `T: MyTrait, U: Trait1 + Trait2`.
+`#[display(bound(...))]` accepts code tokens in a format similar to the format
+used in angle bracket list (or `where` clause predicates): `T: MyTrait, U: Trait1 + Trait2`.
 
 Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
 by traits, i.e. no lifetime parameters or lifetime bounds allowed in bound-string.
