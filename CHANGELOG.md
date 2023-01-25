@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   `#[display("...", (<expr>),*)]` syntax instead of
   `#[display(fmt = "...", ("<expr>"),*)]`, and `#[display(bound(<bound>))]`
   instead of `#[display(bound = "<bound>")]`.
+- Add an `std` feature which should be disabled in `no_std` environments.
+- Disable all cargo features by default (except `std`) supporting and add a
+  `full` feature which can be used to get the old behaviour of supporting all derives.
 
 ### New features
 
