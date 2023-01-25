@@ -1,3 +1,5 @@
+//! Definitions used in derived implementations of [`core::convert`] traits.
+
 use core::fmt;
 
 /// Error returned by the derived [`TryInto`] implementation.

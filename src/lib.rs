@@ -35,9 +35,10 @@
 #[doc(inline)]
 pub use derive_more_impl::*;
 
-#[cfg(any(feature = "add", feature = "not", feature = "try_into"))]
-mod errors;
 #[cfg(feature = "try_into")]
-pub use self::errors::try_into::TryIntoError;
+mod convert;
+#[cfg(feature = "try_into")]
+pub use self::convert::TryIntoError;
+
 #[cfg(any(feature = "add", feature = "not"))]
-pub use self::errors::{ops::UnitError as OpsUnitError};
+pub mod ops;

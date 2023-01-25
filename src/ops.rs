@@ -1,3 +1,5 @@
+//! Definitions used in derived implementations of [`core::ops`] traits.
+
 use core::fmt;
 
 /// Error returned by the derived implementations when an arithmetic or logic
