@@ -35,7 +35,9 @@
 #[doc(inline)]
 pub use derive_more_impl::*;
 
-#[cfg(feature = "try_into")]
+#[cfg(any(feature = "add", feature = "not", feature = "try_into"))]
 mod errors;
 #[cfg(feature = "try_into")]
-pub use crate::errors::TryIntoError;
+pub use self::errors::try_into::TryIntoError;
+#[cfg(any(feature = "add", feature = "not"))]
+pub use self::errors::{ops::UnitError as OpsUnitError};
