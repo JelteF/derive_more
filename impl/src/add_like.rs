@@ -134,8 +134,12 @@ fn enum_content(
     if data_enum.variants.len() > 1 {
         // In the strange case where there's only one enum variant this is would be an unreachable
         // match.
-        let message = format!("Trying to {method_ident} mismatched enum variants");
-        matches.push(quote! { _ => ::core::result::Result::Err(#message) });
+        let operation_name = method_ident.to_string();
+        matches.push(quote! {
+            _ => ::core::result::Result::Err(
+                ::derive_more::ops::WrongVariantError::new(operation_name)
+            )
+        });
     }
     quote! {
         match (self, rhs) {
