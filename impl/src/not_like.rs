@@ -148,7 +148,7 @@ fn enum_output_type_and_content(
                 let operation_name = method_ident.to_string();
                 matches.push(quote! {
                     #subtype => ::core::result::Result::Err(
-                        ::derive_more::ops::UnitError::new(operation_name)
+                        ::derive_more::ops::UnitError::new(#operation_name)
                     )
                 });
             }

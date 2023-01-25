@@ -11,6 +11,7 @@ pub struct UnitError {
 
 impl UnitError {
     #[doc(hidden)]
+    #[must_use]
     #[inline]
     pub const fn new(operation_name: &'static str) -> Self {
         Self { operation_name }
@@ -29,6 +30,7 @@ impl std::error::Error for UnitError {}
 #[cfg(feature = "add")]
 /// Error returned by the derived implementations when an arithmetic or logic
 /// operation is invoked on mismatched enum variants.
+#[derive(Clone, Copy, Debug)]
 pub struct WrongVariantError {
     operation_name: &'static str,
 }
@@ -36,6 +38,7 @@ pub struct WrongVariantError {
 #[cfg(feature = "add")]
 impl WrongVariantError {
     #[doc(hidden)]
+    #[must_use]
     #[inline]
     pub const fn new(operation_name: &'static str) -> Self {
         Self { operation_name }

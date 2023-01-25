@@ -127,7 +127,7 @@ fn enum_content(
                 matches.push(quote! {
                     (#subtype, #subtype) => ::core::result::Result::Err(
                         ::derive_more::ops::BinaryError::Unit(
-                            ::derive_more::ops::UnitError::new(operation_name)
+                            ::derive_more::ops::UnitError::new(#operation_name)
                         )
                     )
                 });
@@ -141,7 +141,7 @@ fn enum_content(
         let operation_name = method_ident.to_string();
         matches.push(quote! {
             _ => ::core::result::Result::Err(::derive_more::ops::BinaryError::Mismatch(
-                ::derive_more::ops::WrongVariantError::new(operation_name)
+                ::derive_more::ops::WrongVariantError::new(#operation_name)
             ))
         });
     }
