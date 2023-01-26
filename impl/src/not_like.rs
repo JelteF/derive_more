@@ -145,9 +145,12 @@ fn enum_output_type_and_content(
                 matches.push(matcher);
             }
             Fields::Unit => {
-                let message = format!("Cannot {method_ident}() unit variants");
-                matches
-                    .push(quote! { #subtype => ::core::result::Result::Err(#message) });
+                let operation_name = method_ident.to_string();
+                matches.push(quote! {
+                    #subtype => ::core::result::Result::Err(
+                        ::derive_more::ops::UnitError::new(#operation_name)
+                    )
+                });
             }
         }
     }
@@ -159,7 +162,7 @@ fn enum_output_type_and_content(
     };
 
     let output_type = if has_unit_type {
-        quote! { ::core::result::Result<#input_type #ty_generics, &'static str> }
+        quote! { ::core::result::Result<#input_type #ty_generics, ::derive_more::ops::UnitError> }
     } else {
         quote! { #input_type #ty_generics }
     };

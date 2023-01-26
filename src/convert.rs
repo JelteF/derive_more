@@ -1,3 +1,5 @@
+//! Definitions used in derived implementations of [`core::convert`] traits.
+
 use core::fmt;
 
 /// Error returned by the derived [`TryInto`] implementation.
@@ -15,7 +17,7 @@ pub struct TryIntoError<T> {
 }
 
 impl<T> TryIntoError<T> {
-    /// Creates a new [`TryIntoError`].
+    #[doc(hidden)]
     #[must_use]
     #[inline]
     pub const fn new(

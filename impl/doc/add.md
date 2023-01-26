@@ -113,8 +113,8 @@ Code like this will be generated:
 #     Unit,
 # }
 impl ::core::ops::Add for MixedInts {
-    type Output = Result<MixedInts, &'static str>;
-    fn add(self, rhs: MixedInts) -> Result<MixedInts, &'static str> {
+    type Output = Result<MixedInts, ::derive_more::ops::BinaryError>;
+    fn add(self, rhs: MixedInts) -> Result<MixedInts, ::derive_more::ops::BinaryError> {
         match (self, rhs) {
             (MixedInts::SmallInt(__l_0), MixedInts::SmallInt(__r_0)) => {
                 Ok(MixedInts::SmallInt(__l_0.add(__r_0)))
@@ -138,8 +138,12 @@ impl ::core::ops::Add for MixedInts {
             (MixedInts::UnsignedTwo(__l_0), MixedInts::UnsignedTwo(__r_0)) => {
                 Ok(MixedInts::UnsignedTwo(__l_0.add(__r_0)))
             }
-            (MixedInts::Unit, MixedInts::Unit) => Err("Cannot add() unit variants"),
-            _ => Err("Trying to add mismatched enum variants"),
+            (MixedInts::Unit, MixedInts::Unit) => Err(::derive_more::ops::BinaryError::Unit(
+                ::derive_more::ops::UnitError::new("add"),
+            )),
+            _ => Err(::derive_more::ops::BinaryError::Mismatch(
+                ::derive_more::ops::WrongVariantError::new("add"),
+            )),
         }
     }
 }
