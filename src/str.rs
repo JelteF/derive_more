@@ -1,5 +1,6 @@
 use core::fmt;
 
+/// Error of parsing an enum value its string representation.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct FromStrError {
     type_name: &'static str,
@@ -16,7 +17,7 @@ impl FromStrError {
 
 impl fmt::Display for FromStrError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid `{}`", self.type_name)
+        write!(f, "Invalid `{}` string representation", self.type_name)
     }
 }
 
