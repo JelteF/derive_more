@@ -31,7 +31,9 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             _ => panic!("Unit structs cannot use derive({trait_name})"),
         },
         Data::Enum(ref data_enum) => (
-            quote! { ::core::result::Result<#input_type #ty_generics, &'static str> },
+            quote! {
+                ::core::result::Result<#input_type #ty_generics, ::derive_more::ops::BinaryError>
+            },
             enum_content(input_type, data_enum, &method_ident),
         ),
 
@@ -121,9 +123,13 @@ fn enum_content(
                 matches.push(matcher);
             }
             Fields::Unit => {
-                let message = format!("Cannot {method_ident}() unit variants");
+                let operation_name = method_ident.to_string();
                 matches.push(quote! {
-                    (#subtype, #subtype) => ::core::result::Result::Err(#message)
+                    (#subtype, #subtype) => ::core::result::Result::Err(
+                        ::derive_more::ops::BinaryError::Unit(
+                            ::derive_more::ops::UnitError::new(#operation_name)
+                        )
+                    )
                 });
             }
         }
@@ -132,8 +138,12 @@ fn enum_content(
     if data_enum.variants.len() > 1 {
         // In the strange case where there's only one enum variant this is would be an unreachable
         // match.
-        let message = format!("Trying to {method_ident} mismatched enum variants");
-        matches.push(quote! { _ => ::core::result::Result::Err(#message) });
+        let operation_name = method_ident.to_string();
+        matches.push(quote! {
+            _ => ::core::result::Result::Err(::derive_more::ops::BinaryError::Mismatch(
+                ::derive_more::ops::WrongVariantError::new(#operation_name)
+            ))
+        });
     }
     quote! {
         match (self, rhs) {

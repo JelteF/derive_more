@@ -1,6 +1,6 @@
 # What `#[derive(Not)]` generates
 
-The derived `Not` implementation simply negates all of the fields of a
+The derived `Not` implementation simply negates all the fields of a
 struct and returns that as a new instance of the struct.
 For enums all fields of the active variant of the enum are negated and a new
 instance of the same variant with these negated fields is returned.
@@ -148,11 +148,11 @@ Code like this will be generated:
 #     Unit,
 # }
 impl ::core::ops::Not for EnumWithUnit {
-    type Output = Result<EnumWithUnit, &'static str>;
-    fn not(self) -> Result<EnumWithUnit, &'static str> {
+    type Output = Result<EnumWithUnit, ::derive_more::ops::UnitError>;
+    fn not(self) -> Result<EnumWithUnit, ::derive_more::ops::UnitError> {
         match self {
             EnumWithUnit::SmallInt(__0) => Ok(EnumWithUnit::SmallInt(__0.not())),
-            EnumWithUnit::Unit => Err("Cannot not() unit variants"),
+            EnumWithUnit::Unit => Err(::derive_more::ops::UnitError::new("not")),
         }
     }
 }

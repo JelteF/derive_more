@@ -36,6 +36,9 @@
 pub use derive_more_impl::*;
 
 #[cfg(feature = "try_into")]
-mod errors;
+mod convert;
 #[cfg(feature = "try_into")]
-pub use crate::errors::TryIntoError;
+pub use self::convert::TryIntoError;
+
+#[cfg(any(feature = "add", feature = "not"))]
+pub mod ops;
