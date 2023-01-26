@@ -1,8 +1,7 @@
 use crate::utils::{DeriveType, HashMap};
 use crate::utils::{SingleFieldData, State};
-use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `FromStr`
@@ -74,11 +73,7 @@ fn enum_from(
     }
 
     let input_type = &input.ident;
-    let visibility = &input.vis;
-
-    let err_name = format_ident!("Parse{input_type}Error");
-    let err_message =
-        format!("invalid {}", input_type.to_string().to_case(Case::Lower));
+    let input_type_name = input_type.to_string();
 
     let mut cases = vec![];
 
@@ -103,26 +98,14 @@ fn enum_from(
     let trait_path = state.trait_path;
 
     quote! {
+        impl #trait_path for #input_type {
+            type Err = ::derive_more::FromStrError;
 
-        #[derive(Debug, Clone, PartialEq, Eq)]
-        #visibility struct #err_name;
-
-        impl std::fmt::Display for #err_name {
-            fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                fmt.write_str(#err_message)
-            }
-        }
-
-        impl std::error::Error for #err_name {}
-
-        impl #trait_path for #input_type
-        {
-            type Err = #err_name;
             #[inline]
             fn from_str(src: &str) -> ::core::result::Result<Self, Self::Err> {
                 Ok(match src.to_lowercase().as_str() {
                     #(#cases)*
-                    _ => return Err(#err_name{}),
+                    _ => return Err(::derive_more::FromStrError::new(#input_type_name)),
                 })
             }
         }
