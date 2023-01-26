@@ -26,7 +26,18 @@
 //! [`Constructor`]: crate::Constructor
 //! [`IsVariant`]: crate::IsVariant
 //! [`Unwrap`]: crate::Unwrap
-#![doc = include_str!("../README.md")]
+// The README includes doctests requiring these features. To make sure that
+// tests pass when not all features are provided we exclude it when the
+// required features are not available.
+#![cfg_attr(
+    all(
+        feature = "add",
+        feature = "display",
+        feature = "from",
+        feature = "into"
+    ),
+    doc = include_str!("../README.md")
+)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
 #![forbid(non_ascii_idents, unsafe_code)]

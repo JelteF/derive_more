@@ -73,7 +73,7 @@ jobs:
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
 
-      - run: cargo test --workspace --features testing-helpers
+      - run: cargo test --workspace --features full,testing-helpers
 
   no_std:
     runs-on: ubuntu-latest
@@ -92,7 +92,7 @@ jobs:
              #       https://github.com/japaric/trust/pull/137
 
       - run: cargo nono check --package derive_more
-                   --no-default-features --features all_no_std
+                   --no-default-features --features full
 
   test:
     strategy:

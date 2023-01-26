@@ -39,6 +39,8 @@ github = { repository = "JelteF/derive_more", workflow = "CI" }
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
+default = ["std"]
+
 add_assign = ["derive_more-impl/add_assign"]
 add = ["derive_more-impl/add"]
 as_mut = ["derive_more-impl/as_mut"]
@@ -61,15 +63,10 @@ not = ["derive_more-impl/not"]
 sum = ["derive_more-impl/sum"]
 try_into = ["derive_more-impl/try_into"]
 is_variant = ["derive_more-impl/is_variant"]
-std = []
 unwrap = ["derive_more-impl/unwrap"]
 
-default = [
-    "all_no_std",
-    "std",
-]
-
-all_no_std = [
+std = []
+full = [
     "add_assign",
     "add",
     "as_mut",
@@ -145,7 +142,7 @@ required-features = ["display"]
 [[test]]
 name = "error"
 path = "tests/error_tests.rs"
-required-features = ["error"]
+required-features = ["error", "std"]
 
 [[test]]
 name = "from"
@@ -220,97 +217,19 @@ required-features = ["display"]
 [[test]]
 name = "no_std"
 path = "tests/no_std.rs"
-required-features = [
-    "add_assign",
-    "add",
-    "as_mut",
-    "as_ref",
-    "constructor",
-    "deref",
-    "deref_mut",
-    "display",
-    "from",
-    "from_str",
-    "index",
-    "index_mut",
-    "into",
-    "into_iterator",
-    "mul_assign",
-    "mul",
-    "not",
-    "sum",
-    "try_into",
-    "is_variant",
-]
+required-features = ["full"]
 
 [[test]]
 name = "generics"
 path = "tests/generics.rs"
-required-features = [
-    "add_assign",
-    "add",
-    "as_mut",
-    "as_ref",
-    "constructor",
-    "deref",
-    "deref_mut",
-    "display",
-    "from",
-    "from_str",
-    "index",
-    "index_mut",
-    "into",
-    "mul_assign",
-    "mul",
-    "not",
-    "try_into",
-    "is_variant",
-]
+required-features = ["full"]
 
 [[test]]
 name = "lib"
 path = "tests/lib.rs"
-required-features = [
-    "add_assign",
-    "add",
-    "as_mut",
-    "as_ref",
-    "constructor",
-    "deref",
-    "deref_mut",
-    "display",
-    "from",
-    "from_str",
-    "index",
-    "index_mut",
-    "into",
-    "mul_assign",
-    "mul",
-    "not",
-    "try_into",
-    "is_variant",
-]
+required-features = ["full"]
 
 [[example]]
 name = "deny_missing_docs"
 path = "examples/deny_missing_docs.rs"
-required-features = [
-    "add_assign",
-    "add",
-    "as_mut",
-    "as_ref",
-    "constructor",
-    "deref",
-    "deref_mut",
-    "display",
-    "from",
-    "from_str",
-    "index",
-    "index_mut",
-    "into",
-    "mul_assign",
-    "mul",
-    "not",
-    "try_into",
-    "is_variant",
-]
+required-features = ["full"]

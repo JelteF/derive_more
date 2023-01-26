@@ -32,7 +32,7 @@ unicode-xid = { version = "0.2.2", optional = true }
 rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
-derive_more = { path = ".." }
+derive_more = { path = "..", features = ["add", "not", "try_into"] }
 itertools = "0.10.5"
 
 [badges]
@@ -42,6 +42,8 @@ github = { repository = "JelteF/derive_more", workflow = "CI" }
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
+default = []
+
 add_assign = []
 add = []
 as_mut = []
@@ -49,10 +51,10 @@ as_ref = []
 constructor = []
 deref = []
 deref_mut = []
-display = ["syn/extra-traits", "unicode-xid"]
+display = ["syn/extra-traits", "dep:unicode-xid"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
-from_str = ["convert_case"]
+from_str = ["dep:convert_case"]
 index = []
 index_mut = []
 into = ["syn/extra-traits"]
@@ -63,9 +65,7 @@ mul = ["syn/extra-traits"]
 not = ["syn/extra-traits"]
 sum = []
 try_into = ["syn/extra-traits"]
-is_variant = ["convert_case"]
-unwrap = ["convert_case"]
+is_variant = ["dep:convert_case"]
+unwrap = ["dep:convert_case"]
 
-default = []
-
-testing-helpers = ["rustc_version"]
+testing-helpers = ["dep:rustc_version"]

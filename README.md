@@ -139,16 +139,26 @@ These don't derive traits, but derive static methods instead.
 
 ## Installation
 
-This library requires Rust 1.65 or higher and it supports `no_std` out of the box.
-Then add the following to `Cargo.toml`:
+This library requires Rust 1.65 or higher. To avoid redundant compilation times, by
+default no derives are supported. You have to enable each type of derive as a feature
+in `Cargo.toml`:
 
 ```toml
 [dependencies]
 derive_more = "0.99.0"
 # You can specify the types of derives that you need for less time spent
-# compiling. For the full list of features see this crate its Cargo.toml.
-default-features = false
+# compiling. For the full list of features see this crate its `Cargo.toml`.
 features = ["from", "add", "iterator"]
+
+# If you don't care much about compilation times and simply want to have
+# support for all the possible derives, you can use the "full" feature.
+features = ["full"]
+
+# If you run in a `no_std` environment you should disable the default features,
+# because the only default feature is the "std" feature.
+# NOTE: You can combine this with "full" feature to get support for all the
+#       possible derives in a `no_std` environment.
+default-features = false
 ```
 
 And this to the top of your Rust file:
