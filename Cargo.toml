@@ -65,7 +65,6 @@ try_into = ["derive_more-impl/try_into"]
 is_variant = ["derive_more-impl/is_variant"]
 unwrap = ["derive_more-impl/unwrap"]
 
-
 std = []
 full = [
     "add_assign",
