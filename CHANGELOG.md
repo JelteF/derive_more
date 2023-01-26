@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `TryFrom`, `Add`, `Sub`, `BitAnd`, `BitOr`, `BitXor`, `Not` and `Neg`
   derives now return a dedicated error type instead of a `&'static str` on
   error.
+- The `FromStr` derive now uses a dedicated `FromStrError` error type instead
+  of generating unique one each time.
 - The `Display` derive (and other `fmt`-like ones) now uses
   `#[display("...", (<expr>),*)]` syntax instead of
   `#[display(fmt = "...", ("<expr>"),*)]`, and `#[display(bound(<bound>))]`

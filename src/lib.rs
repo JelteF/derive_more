@@ -53,3 +53,8 @@ pub use self::convert::TryIntoError;
 
 #[cfg(any(feature = "add", feature = "not"))]
 pub mod ops;
+
+#[cfg(feature = "from_str")]
+mod r#str;
+#[cfg(feature = "from_str")]
+pub use self::r#str::FromStrError;

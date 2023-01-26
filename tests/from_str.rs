@@ -24,12 +24,8 @@ fn enum_test() {
     assert_eq!("FOO".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
     assert_eq!("foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
     assert_eq!(
-        "other".parse::<EnumNoFields>().unwrap_err(),
-        ParseEnumNoFieldsError {}
-    );
-    assert_eq!(
-        ParseEnumNoFieldsError {}.to_string(),
-        "invalid enum no fields"
+        "other".parse::<EnumNoFields>().unwrap_err().to_string(),
+        "Invalid `EnumNoFields` string representation",
     );
 }
 
@@ -38,7 +34,7 @@ fn enum_test_case_sensitive() {
     assert_eq!("Baz".parse::<EnumNoFields>().unwrap(), EnumNoFields::Baz);
     assert_eq!("BaZ".parse::<EnumNoFields>().unwrap(), EnumNoFields::BaZ);
     assert_eq!(
-        "baz".parse::<EnumNoFields>().unwrap_err(),
-        ParseEnumNoFieldsError {}
+        "baz".parse::<EnumNoFields>().unwrap_err().to_string(),
+        "Invalid `EnumNoFields` string representation",
     );
 }

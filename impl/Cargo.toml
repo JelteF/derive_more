@@ -32,7 +32,7 @@ unicode-xid = { version = "0.2.2", optional = true }
 rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
-derive_more = { path = "..", features = ["add", "not", "try_into"] }
+derive_more = { path = "..", features = ["add", "from_str", "not", "try_into"] }
 itertools = "0.10.5"
 
 [badges]
@@ -54,7 +54,7 @@ deref_mut = []
 display = ["syn/extra-traits", "dep:unicode-xid"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
-from_str = ["dep:convert_case"]
+from_str = []
 index = []
 index_mut = []
 into = ["syn/extra-traits"]
