@@ -412,7 +412,7 @@ fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn integer(input: &str) -> Option<(LeftToParse<'_>, usize)> {
     and_then(
-        take_while1(check_char(|c| matches!(c, '0'..='9'))),
+        take_while1(check_char(|c| c.is_ascii_digit())),
         |(i, int)| int.parse().ok().map(|int| (i, int)),
     )(input)
 }
