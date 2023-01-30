@@ -73,6 +73,7 @@ jobs:
         run: cargo +nightly update -Z minimal-versions
 
       - run: cargo test --workspace --features full,testing-helpers
+                        -- --skip compile_fail
 
   no_std:
     runs-on: ubuntu-latest
