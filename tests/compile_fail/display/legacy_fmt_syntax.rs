@@ -1,5 +1,5 @@
 #[derive(derive_more::Display)]
-#[display("Stuff({})", bar)]
+#[display(fmt = "Stuff({}): {}", "bar")]
 pub struct Foo {
     bar: String,
 }

@@ -14,8 +14,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `From` derive doesn't derive `From<()>` for enum variants without any
   fields anymore. This feature was removed because it was considered useless in
   practice.
-- The `TryFrom` derive now returns a dedicated error type instead of a
-  `&'static str` on error.
+- The `TryFrom`, `Add`, `Sub`, `BitAnd`, `BitOr`, `BitXor`, `Not` and `Neg`
+  derives now return a dedicated error type instead of a `&'static str` on
+  error.
+- The `FromStr` derive now uses a dedicated `FromStrError` error type instead
+  of generating unique one each time.
+- The `Display` derive (and other `fmt`-like ones) now uses
+  `#[display("...", (<expr>),*)]` syntax instead of
+  `#[display(fmt = "...", ("<expr>"),*)]`, and `#[display(bound(<bound>))]`
+  instead of `#[display(bound = "<bound>")]`.
+- Add the `std` feature which should be disabled in `no_std` environments.
+- Disable all Cargo features by default (except `std`) supporting and add the
+  `full` feature which can be used to get the old behaviour of supporting all
+  possible derives.
 
 ### New features
 

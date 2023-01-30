@@ -1,5 +1,5 @@
 #[derive(derive_more::Display)]
-#[display("Stuff({:M})", bar)]
+#[display(bound = "String: std::fmt::Display")]
 pub struct Foo {
     bar: String,
 }

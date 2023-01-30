@@ -1,7 +1,7 @@
 error: argument never used
- --> tests/compile_fail/display/missing_placeholder.rs:2:28
+ --> tests/compile_fail/display/missing_placeholder.rs:2:22
   |
-2 | #[display(fmt = "Stuff()", bar)]
-  |                 ---------  ^^^ argument never used
-  |                 |
-  |                 formatting specifier missing
+2 | #[display("Stuff()", bar)]
+  |           ---------  ^^^ argument never used
+  |           |
+  |           formatting specifier missing

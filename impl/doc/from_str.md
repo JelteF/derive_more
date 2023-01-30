@@ -96,8 +96,8 @@ to the variant. If using a case insensitive match would give a unique variant
 insensitive matching will be used, otherwise it will fall back to exact string
 matching.
 
-Since the string may not match any vairants an error type is needed so one
-will be generated of the format `Parse{}Error`.
+Since the string may not match any variants an error type is needed, so the
+`derive_more::FromStrError` will be used for that purpose.
 
 e.g. Given the following enum:
 
@@ -121,25 +121,14 @@ Code like this will be generated:
 #     Baz,
 # }
 #
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct ParseEnumNoFieldsError;
-
-impl std::fmt::Display for ParseEnumNoFieldsError {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fmt.write_str("invalid enum no fields")
-    }
-}
-
-impl std::error::Error for ParseEnumNoFieldsError {}
-
 impl ::core::str::FromStr for EnumNoFields {
-    type Err = ParseEnumNoFieldsError;
+    type Err = ::derive_more::FromStrError;
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         Ok(match src.to_lowercase().as_str() {
             "foo" => EnumNoFields::Foo,
             "bar" => EnumNoFields::Bar,
             "baz" => EnumNoFields::Baz,
-            _ => return Err(ParseEnumNoFieldsError{}),
+            _ => return Err(::derive_more::FromStrError::new("EnumNoFields")),
         })
     }
 }
