@@ -71,17 +71,12 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         });
 
         let variant_name = stringify!(variant_ident);
-        let fn_signature = if cfg!(feature = "const") {
-            quote!( pub const fn #fn_name(self) -> #ret_type )
-        } else {
-            quote!( pub fn #fn_name(self) -> #ret_type )
-        };
         let func = quote! {
             #[track_caller]
             #[doc = "Unwraps this value to the `"]
             #[doc = #variant_name]
             #[doc = "` variant\n\nPanics if this value is of any other type"]
-            #fn_signature {
+            pub fn #fn_name(self) -> #ret_type {
                 match self {
                     #enum_name ::#variant_ident #data_pattern => #ret_value,
                     #(#other_arms),*

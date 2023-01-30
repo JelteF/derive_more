@@ -7,35 +7,7 @@ can now derive this method by using `#[derive(Constructor)]`, even though
 similar to the `from` method when deriving `From`, except that it takes multiple
 arguments instead of a tuple.
 
-## `Const` feature
 
-If `const` feature is enabled, the generated `new` method will be a `const fn`: 
-
-```rust
-# use derive_more::Constructor;
-#
-#[derive(Constructor)]
-struct GenericType<X: Clone, Y: AsRef<[u8]>> {
-    x: X,
-    y: Y,
-}
-```
-
-The generated output will be:
-
-```rust
-struct GenericType<X: Clone, Y: AsRef<[u8]>> {
-    x: X,
-    y: Y,
-}
-
-impl<X: Clone, Y: AsRef<[u8]>> GenericType<X, Y> {
-    #[inline]
-    pub const fn new(x: X, y: Y) -> GenericType<X, Y> {
-        GenericType { x: x, y: y }
-    }
-}
-```
 
 
 ## Tuple structs
