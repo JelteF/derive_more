@@ -26,7 +26,7 @@ Code like this will be generated:
 ```rust
 # struct MyInts(i32, i32);
 impl MyInts {
-    pub fn new(__0: i32, __1: i32) -> MyInts {
+    pub const fn new(__0: i32, __1: i32) -> MyInts {
         MyInts(__0, __1)
     }
 }
@@ -60,7 +60,7 @@ Code like this will be generated:
 #     y: i32,
 # }
 impl Point2D {
-    pub fn new(x: i32, y: i32) -> Point2D {
+    pub const fn new(x: i32, y: i32) -> Point2D {
         Point2D { x: x, y: y }
     }
 }

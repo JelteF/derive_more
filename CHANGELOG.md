@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `FromStr` derive support for enums that contain variants without fields.
   If you pass the name of the variant to `from_str` it will create the matching
   variant.
+- Use `const fn` in `Constructor` and `IsVariant` derives.
 
 ### Improvements
 

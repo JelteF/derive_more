@@ -29,7 +29,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
         #[automatically_derived]
         impl #impl_generics #input_type #ty_generics #where_clause {
             #[inline]
-            pub fn new(#(#vars: #original_types),*) -> #input_type #ty_generics {
+            pub const fn new(#(#vars: #original_types),*) -> #input_type #ty_generics {
                 #body
             }
         }
