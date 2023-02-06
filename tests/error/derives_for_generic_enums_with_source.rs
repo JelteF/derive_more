@@ -231,7 +231,7 @@ fn named_variant_ignore() {
 fn unnamed_variant_ignore() {
     let err = TestErr::<_, i32>::UnnamedVariantIgnore(SimpleErr);
 
-    assert!(err.source().is_none())
+    assert!(err.source().is_none());
 }
 
 #[test]
@@ -245,5 +245,53 @@ fn named_variant_ignore_redundant() {
 fn unnamed_variant_ignore_redundant() {
     let err = TestErr::<SimpleErr, _>::UnnamedVariantIgnoreRedundant(0, 0);
 
-    assert!(err.source().is_none())
+    assert!(err.source().is_none());
+}
+
+const fn works_with_various_generics_combinations() {
+    use derive_more::Display;
+
+    #[derive(Debug, Display, Error)]
+    enum Err {}
+
+    #[derive(Debug, Display, Error)]
+    enum ErrGeneric<E> {
+        Inner(E),
+    }
+
+    #[derive(Debug, Display, Error)]
+    enum ErrConst<const X: usize> {}
+
+    #[derive(Debug, Display, Error)]
+    enum ErrLifetime<'lt: 'static> {
+        Inner(&'lt Err),
+    }
+
+    #[derive(Debug, Display, Error)]
+    enum ErrConstGeneric<const X: usize, E> {
+        Inner(E),
+    }
+
+    #[derive(Debug, Display, Error)]
+    enum ErrGenericConst<E, const X: usize> {
+        Inner(E),
+    }
+    #[derive(Debug, Display, Error)]
+    enum ErrLifetimeGeneric<'lt: 'static, E> {
+        Inner(&'lt E),
+    }
+
+    #[derive(Debug, Display, Error)]
+    enum ErrLifetimeConst<'lt: 'static, const X: usize> {
+        Inner(&'lt ErrConst<X>),
+    }
+
+    #[derive(Debug, Display, Error)]
+    enum ErrLifetimeConstGeneric<'lt: 'static, const X: usize, E> {
+        Inner(&'lt E),
+    }
+    #[derive(Debug, Display, Error)]
+    enum ErrLifetimeGenericConst<'lt: 'static, E, const X: usize> {
+        Inner(&'lt E),
+    }
 }
