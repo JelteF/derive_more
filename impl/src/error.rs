@@ -56,13 +56,12 @@ pub fn expand(
     let mut generics = generics.clone();
 
     if !type_params.is_empty() {
-        // delegate generic parameters tokenization to `syn`
-        let (_, generic_parameters, _) = generics.split_for_impl();
+        let (_, ty_generics, _) = generics.split_for_impl();
         generics = utils::add_extra_where_clauses(
             &generics,
             quote! {
                 where
-                    #ident #generic_parameters: ::std::fmt::Debug + ::std::fmt::Display
+                    #ident #ty_generics: ::std::fmt::Debug + ::std::fmt::Display
             },
         );
     }
