@@ -48,20 +48,20 @@ pub fn expand(
     let provide = provide.map(|provide| {
         quote! {
             fn provide<'_demand>(&'_demand self, demand: &mut ::std::any::Demand<'_demand>) {
-                 #provide
-             }
+                #provide
+            }
         }
     });
 
     let mut generics = generics.clone();
 
     if !type_params.is_empty() {
-        let generic_parameters = generics.params.iter();
+        let (_, ty_generics, _) = generics.split_for_impl();
         generics = utils::add_extra_where_clauses(
             &generics,
             quote! {
                 where
-                    #ident<#(#generic_parameters),*>: ::std::fmt::Debug + ::std::fmt::Display
+                    #ident #ty_generics: ::std::fmt::Debug + ::std::fmt::Display
             },
         );
     }
