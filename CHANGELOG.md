@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Use a deterministic `HashSet` in all derives, this is needed for rust analyzer
   to work correctly.
 - Use `Provider` API for backtraces in `Error` derive.
-- Fix generic derives for `Error`
+- Fix `Error` derive not working with `const` generics.
 
 ## 0.99.10 - 2020-09-11
 
