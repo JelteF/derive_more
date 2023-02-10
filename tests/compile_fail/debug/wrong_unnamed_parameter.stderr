@@ -1,0 +1,5 @@
+error[E0425]: cannot find value `_1` in this scope
+ --> tests/compile_fail/debug/wrong_unnamed_parameter.rs:2:32
+  |
+2 | pub struct Foo(#[debug("Stuff({_1})")] String);
+  |                                ^^ help: a local variable with a similar name exists: `_0`

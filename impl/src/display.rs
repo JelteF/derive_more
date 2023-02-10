@@ -209,7 +209,7 @@ fn expand_union(
         ::core::write!(__derive_more_f, #lit, #( #args ),*)
     };
 
-    Ok((attrs.bounds.clone().into_iter().collect(), body))
+    Ok((attrs.bounds.0.clone().into_iter().collect(), body))
 }
 
 /// Representation of a [`fmt`]-like derive macro attribute.
@@ -229,7 +229,7 @@ struct Attributes {
     fmt: Option<FmtAttribute>,
 
     /// Addition trait bounds.
-    bounds: Punctuated<syn::WherePredicate, syn::token::Comma>,
+    bounds: BoundsAttribute,
 }
 
 impl Attributes {
@@ -246,7 +246,7 @@ impl Attributes {
                 let attr = syn::parse2::<Attribute>(attr.tokens.clone())?;
                match attr {
                    Attribute::Bounds(more) => {
-                       attrs.bounds.extend(more);
+                       attrs.bounds.0.extend(more.0);
                    }
                    Attribute::Fmt(fmt) => {
                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(Error::new(
@@ -328,7 +328,7 @@ impl<'a> Expansion<'a> {
                 let tr = format_ident!("{}", trait_name);
                 parse_quote! { #ty: ::core::fmt::#tr }
             })
-            .chain(self.attrs.bounds.clone())
+            .chain(self.attrs.bounds.0.clone())
             .collect()
     }
 }
@@ -344,7 +344,7 @@ enum Attribute {
     Fmt(FmtAttribute),
 
     /// Addition trait bounds.
-    Bounds(Punctuated<syn::WherePredicate, syn::token::Comma>),
+    Bounds(BoundsAttribute),
 }
 
 impl Parse for Attribute {
@@ -354,7 +354,8 @@ impl Parse for Attribute {
         let content;
         syn::parenthesized!(content in input);
 
-        Self::check_legacy_fmt(&content, error_span)?;
+        BoundsAttribute::check_legacy_fmt(&content, error_span)?;
+        FmtAttribute::check_legacy_fmt(&content, error_span)?;
 
         if content.peek(syn::LitStr) {
             return content.parse().map(Attribute::Fmt);
@@ -374,15 +375,16 @@ impl Parse for Attribute {
         let inner;
         syn::parenthesized!(inner in content);
 
-        inner
-            .parse_terminated(syn::WherePredicate::parse)
-            .map(Attribute::Bounds)
+        inner.parse().map(Attribute::Bounds)
     }
 }
 
-impl Attribute {
-    /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*` or
-    /// `bound = "..."`.
+/// Additional trait bounds attribute.
+#[derive(Debug, Default)]
+struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
+
+impl BoundsAttribute {
+    /// Errors in case legacy syntax is encountered: `bound = "..."`.
     fn check_legacy_fmt(input: &ParseBuffer<'_>, error_span: Span) -> Result<()> {
         let fork = input.fork();
 
@@ -391,29 +393,6 @@ impl Attribute {
             .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
 
         match path {
-            Ok(path) if path.is_ident("fmt") => (|| {
-                let args = fork
-                    .parse_terminated::<_, syn::token::Comma>(syn::Lit::parse)
-                    .ok()?
-                    .into_iter()
-                    .enumerate()
-                    .filter_map(|(i, lit)| match lit {
-                        syn::Lit::Str(str) => Some(if i == 0 {
-                            format!("\"{}\"", str.value())
-                        } else {
-                            str.value()
-                        }),
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>();
-                (!args.is_empty()).then_some(args)
-            })()
-            .map_or(Ok(()), |fmt| {
-                Err(Error::new(
-                    error_span,
-                    format!("Legacy syntax, use: `{}`", fmt.join(", ")),
-                ))
-            }),
             Ok(path) if path.is_ident("bound") => fork
                 .parse::<syn::Lit>()
                 .ok()
@@ -429,6 +408,12 @@ impl Attribute {
                 }),
             Ok(_) | Err(_) => Ok(()),
         }
+    }
+}
+
+impl Parse for BoundsAttribute {
+    fn parse(input: ParseStream) -> Result<Self> {
+        input.parse_terminated(syn::WherePredicate::parse).map(Self)
     }
 }
 
@@ -480,6 +465,42 @@ impl FmtAttribute {
 
             Some((ty, placeholder.trait_name))
         })
+    }
+
+    /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
+    fn check_legacy_fmt(input: &ParseBuffer<'_>, error_span: Span) -> Result<()> {
+        let fork = input.fork();
+
+        let path = fork
+            .parse::<syn::Path>()
+            .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
+
+        match path {
+            Ok(path) if path.is_ident("fmt") => (|| {
+                let args = fork
+                    .parse_terminated::<_, syn::token::Comma>(syn::Lit::parse)
+                    .ok()?
+                    .into_iter()
+                    .enumerate()
+                    .filter_map(|(i, lit)| match lit {
+                        syn::Lit::Str(str) => Some(if i == 0 {
+                            format!("\"{}\"", str.value())
+                        } else {
+                            str.value()
+                        }),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                (!args.is_empty()).then_some(args)
+            })()
+            .map_or(Ok(()), |fmt| {
+                Err(Error::new(
+                    error_span,
+                    format!("Legacy syntax, use: `{}`", fmt.join(", ")),
+                ))
+            }),
+            Ok(_) | Err(_) => Ok(()),
+        }
     }
 }
 
@@ -892,12 +913,11 @@ pub mod debug {
     use syn::{
         parse::{Error, Parse, ParseStream, Result},
         parse_quote,
-        punctuated::Punctuated,
         spanned::Spanned as _,
         Ident,
     };
 
-    use super::FmtAttribute;
+    use super::{BoundsAttribute, FmtAttribute};
 
     /// Expands [`fmt::Debug`] derive macro.
     ///
@@ -1032,7 +1052,7 @@ pub mod debug {
     #[derive(Debug, Default)]
     struct ContainerAttributes {
         /// Addition trait bounds.
-        bounds: Punctuated<syn::WherePredicate, syn::token::Comma>,
+        bounds: BoundsAttribute,
     }
 
     impl ContainerAttributes {
@@ -1045,7 +1065,7 @@ pub mod debug {
                 .filter(|attr| attr.path.is_ident("debug"))
                 .try_fold(ContainerAttributes::default(), |mut attrs, attr| {
                     let attr = syn::parse2::<ContainerAttributes>(attr.tokens.clone())?;
-                    attrs.bounds.extend(attr.bounds);
+                    attrs.bounds.0.extend(attr.bounds.0);
                     Ok(attrs)
                 })
         }
@@ -1053,8 +1073,12 @@ pub mod debug {
 
     impl Parse for ContainerAttributes {
         fn parse(input: ParseStream) -> Result<Self> {
+            let error_span = input.span();
+
             let content;
             syn::parenthesized!(content in input);
+
+            BoundsAttribute::check_legacy_fmt(&content, error_span)?;
 
             let _ = content.parse::<syn::Path>().and_then(|p| {
                 if ["bound", "bounds"].into_iter().any(|i| p.is_ident(i)) {
@@ -1070,9 +1094,7 @@ pub mod debug {
             let inner;
             syn::parenthesized!(inner in content);
 
-            inner
-                .parse_terminated(syn::WherePredicate::parse)
-                .map(|bounds| ContainerAttributes { bounds })
+            inner.parse().map(|bounds| ContainerAttributes { bounds })
         }
     }
 
@@ -1120,8 +1142,12 @@ pub mod debug {
 
     impl Parse for FieldAttribute {
         fn parse(input: ParseStream) -> Result<Self> {
+            let error_span = input.span();
+
             let content;
             syn::parenthesized!(content in input);
+
+            FmtAttribute::check_legacy_fmt(&content, error_span)?;
 
             if content.peek(syn::LitStr) {
                 content.parse().map(Self::Fmt)
@@ -1264,7 +1290,7 @@ pub mod debug {
         /// Generates trait bounds for a struct or an enum variant.
         fn generate_bounds(&self) -> Result<Vec<syn::WherePredicate>> {
             self.fields.iter().try_fold(
-                self.attr.bounds.clone().into_iter().collect::<Vec<_>>(),
+                self.attr.bounds.0.clone().into_iter().collect::<Vec<_>>(),
                 |mut out, field| {
                     let fmt_attr =
                         FieldAttribute::parse_attrs(&field.attrs)?.and_then(|attr| {
