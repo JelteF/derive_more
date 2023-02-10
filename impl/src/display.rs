@@ -21,7 +21,6 @@ use crate::parsing;
 ///
 /// Available macros:
 /// - [`Binary`]
-/// - [`Debug`]
 /// - [`Display`]
 /// - [`LowerExp`]
 /// - [`LowerHex`]
@@ -204,10 +203,10 @@ fn expand_union(
             ),
         )
     })?;
-    let (fmt_lit, fmt_args) = (&fmt.lit, &fmt.args);
+    let (lit, args) = (&fmt.lit, &fmt.args);
 
     let body = quote! {
-        ::core::write!(__derive_more_f, #fmt_lit, #( #fmt_args ),*)
+        ::core::write!(__derive_more_f, #lit, #( #args ),*)
     };
 
     Ok((attrs.bounds.clone().into_iter().collect(), body))
@@ -226,6 +225,7 @@ fn expand_union(
 /// [`fmt`]: std::fmt
 #[derive(Debug, Default)]
 struct Attributes {
+    /// Interpolation [`FmtAttribute`].
     fmt: Option<FmtAttribute>,
 
     /// Addition trait bounds.
@@ -248,7 +248,7 @@ impl Attributes {
                    Attribute::Bounds(more) => {
                        attrs.bounds.extend(more);
                    }
-                   Attribute::Fmt (fmt) => {
+                   Attribute::Fmt(fmt) => {
                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(Error::new(
                            dup.span(),
                            format!(
@@ -323,7 +323,7 @@ impl<'a> Expansion<'a> {
             .unwrap_or_default();
         };
 
-        fmt.used_types(&self.fields)
+        fmt.bounded_types(self.fields)
             .map(|(ty, trait_name)| {
                 let tr = format_ident!("{}", trait_name);
                 parse_quote! { #ty: ::core::fmt::#tr }
@@ -445,7 +445,8 @@ struct FmtAttribute {
 }
 
 impl FmtAttribute {
-    fn used_types<'a>(
+    /// Returns [`Iterator`] over bounded [`syn::Type`]s and trait names.
+    fn bounded_types<'a>(
         &'a self,
         fields: &'a syn::Fields,
     ) -> impl Iterator<Item = (&'a syn::Type, &'static str)> {
@@ -502,10 +503,10 @@ impl Parse for FmtAttribute {
             Ok((arguments, cursor))
         })?;
 
-        return Ok(Self {
+        Ok(Self {
             lit: fmt_lit,
             args: fmt_args,
-        });
+        })
     }
 }
 
@@ -772,7 +773,6 @@ impl Extend<TokenTree> for FmtExpr {
 fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
     match trait_name {
         "Binary" => "binary",
-        "Debug" => "debug",
         "Display" => "display",
         "LowerExp" => "lower_exp",
         "LowerHex" => "lower_hex",
@@ -788,7 +788,6 @@ fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
 fn normalize_trait_name(name: &str) -> &'static str {
     match name {
         "Binary" => "Binary",
-        "Debug" | "DebugCustom" => "Debug",
         "Display" => "Display",
         "LowerExp" => "LowerExp",
         "LowerHex" => "LowerHex",
@@ -884,6 +883,10 @@ impl Placeholder {
 }
 
 pub mod debug {
+    //! Implementation of [`fmt::Debug`] derive macro.
+    //!
+    //! [`fmt::Debug`]: std::fmt::Debug
+
     use proc_macro2::TokenStream;
     use quote::{format_ident, quote};
     use syn::{
@@ -896,6 +899,9 @@ pub mod debug {
 
     use super::FmtAttribute;
 
+    /// Expands [`fmt::Debug`] derive macro.
+    ///
+    /// [`fmt::Debug`]: std::fmt::Debug
     pub fn expand(input: &syn::DeriveInput, _: &str) -> Result<TokenStream> {
         let attrs = ContainerAttributes::parse_attrs(&input.attrs)?;
         let ident = &input.ident;
@@ -934,9 +940,9 @@ pub mod debug {
         })
     }
 
-    /// Expands a [`fmt`]-like derive macro for the provided struct.
+    /// Expands a [`fmt::Debug`] derive macro for the provided struct.
     ///
-    /// [`fmt`]: std::fmt
+    /// [`fmt::Debug`]: std::fmt::Debug
     fn expand_struct(
         attrs: ContainerAttributes,
         ident: &Ident,
@@ -969,9 +975,9 @@ pub mod debug {
         Ok((bounds, body))
     }
 
-    /// Expands a [`fmt`]-like derive macro for the provided enum.
+    /// Expands a [`fmt::Debug`] derive macro for the provided enum.
     ///
-    /// [`fmt`]: std::fmt
+    /// [`fmt::Debug`]: std::fmt::Debug
     fn expand_enum(
         attrs: ContainerAttributes,
         e: &syn::DataEnum,
@@ -1016,8 +1022,16 @@ pub mod debug {
         Ok((bounds, body))
     }
 
+    /// Representation of a [`fmt::Debug`] derive macro container attribute.
+    ///
+    /// ```rust,ignore
+    /// #[debug(bound(<bounds>))]
+    /// ```
+    ///
+    /// [`fmt::Debug`]: std::fmt::Debug
     #[derive(Debug, Default)]
     struct ContainerAttributes {
+        /// Addition trait bounds.
         bounds: Punctuated<syn::WherePredicate, syn::token::Comma>,
     }
 
@@ -1062,9 +1076,22 @@ pub mod debug {
         }
     }
 
+    /// Representation of a [`fmt::Debug`] derive macro field attribute.
+    ///
+    /// ```rust,ignore
+    /// #[debug("<fmt_literal>", <fmt_args>)]
+    /// #[debug(skip)]
+    /// ```
+    ///
+    /// [`fmt::Debug`]: std::fmt::Debug
     enum FieldAttribute {
+        /// [`fmt`] attribute.
+        ///
+        /// [`fmt`]: std::fmt
         Fmt(FmtAttribute),
-        Ignore,
+
+        /// Attribute for skipping field.
+        Skip,
     }
 
     impl FieldAttribute {
@@ -1110,7 +1137,7 @@ pub mod debug {
                     }
                 })?;
 
-                Ok(Self::Ignore)
+                Ok(Self::Skip)
             }
         }
     }
@@ -1161,7 +1188,7 @@ pub mod debug {
                         |out, (i, field)| match FieldAttribute::parse_attrs(
                             &field.attrs,
                         )? {
-                            Some(FieldAttribute::Ignore) => {
+                            Some(FieldAttribute::Skip) => {
                                 exhaustive = false;
                                 Ok::<_, Error>(out)
                             }
@@ -1209,7 +1236,7 @@ pub mod debug {
                         });
                         let field_str = field_ident.to_string();
                         match FieldAttribute::parse_attrs(&field.attrs)? {
-                            Some(FieldAttribute::Ignore) => {
+                            Some(FieldAttribute::Skip) => {
                                 exhaustive = false;
                                 Ok::<_, Error>(out)
                             }
@@ -1243,13 +1270,13 @@ pub mod debug {
                         FieldAttribute::parse_attrs(&field.attrs)?.and_then(|attr| {
                             match attr {
                                 FieldAttribute::Fmt(fmt) => Some(fmt),
-                                FieldAttribute::Ignore => None,
+                                FieldAttribute::Skip => None,
                             }
                         });
                     let ty = &field.ty;
 
                     if let Some(attr) = fmt_attr {
-                        out.extend(attr.used_types(&self.fields).map(
+                        out.extend(attr.bounded_types(self.fields).map(
                             |(ty, trait_name)| {
                                 let trait_name = format_ident!("{trait_name}");
                                 parse_quote! { #ty: ::core::fmt::#trait_name }
