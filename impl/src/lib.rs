@@ -90,13 +90,13 @@ impl Output for Result<proc_macro2::TokenStream, ParseError> {
 }
 
 macro_rules! create_derive(
-    ($feature:literal, $mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
+    ($feature:literal, $mod_:ident $(:: $mod_rest:ident)*, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
         #[cfg(feature = $feature)]
         #[proc_macro_derive($trait_, attributes($($attribute),*))]
         #[doc = include_str!(concat!("../doc/", $feature, ".md"))]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let ast = syn::parse(input).unwrap();
-            Output::process($mod_::expand(&ast, stringify!($trait_)))
+            Output::process($mod_$(:: $mod_rest)*::expand(&ast, stringify!($trait_)))
         }
     }
 );
@@ -194,7 +194,7 @@ create_derive!("display", display, UpperHex, upper_hex_derive, upper_hex);
 create_derive!("display", display, LowerExp, lower_exp_derive, lower_exp);
 create_derive!("display", display, UpperExp, upper_exp_derive, upper_exp);
 create_derive!("display", display, Pointer, pointer_derive, pointer);
-create_derive!("display", display, DebugCustom, debug_custom_derive, debug);
+create_derive!("display", display::debug, Debug, debug_derive, debug);
 
 create_derive!("index", index, Index, index_derive, index);
 create_derive!(

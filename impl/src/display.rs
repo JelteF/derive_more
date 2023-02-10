@@ -328,6 +328,7 @@ impl<'a> Expansion<'a> {
                 let tr = format_ident!("{}", trait_name);
                 parse_quote! { #ty: ::core::fmt::#tr }
             })
+            .chain(self.attrs.bounds.clone())
             .collect()
     }
 }
@@ -882,7 +883,7 @@ impl Placeholder {
     }
 }
 
-mod debug {
+pub mod debug {
     use proc_macro2::TokenStream;
     use quote::{format_ident, quote};
     use syn::{
@@ -895,14 +896,19 @@ mod debug {
 
     use super::FmtAttribute;
 
-    pub fn expand(input: &syn::DeriveInput) -> Result<TokenStream> {
+    pub fn expand(input: &syn::DeriveInput, _: &str) -> Result<TokenStream> {
         let attrs = ContainerAttributes::parse_attrs(&input.attrs)?;
         let ident = &input.ident;
 
         let (bounds, body) = match &input.data {
             syn::Data::Struct(s) => expand_struct(attrs, ident, s),
             syn::Data::Enum(e) => expand_enum(attrs, e),
-            syn::Data::Union(u) => todo!(),
+            syn::Data::Union(_) => {
+                return Err(Error::new(
+                    input.span(),
+                    "`Debug` cannot be derived for unions",
+                ));
+            }
         }?;
 
         let (impl_gens, ty_gens, where_clause) = {
@@ -937,14 +943,11 @@ mod debug {
         s: &syn::DataStruct,
     ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
         let s = Expansion {
+            attr: &attrs,
             fields: &s.fields,
             ident,
         };
-        let bounds = s
-            .generate_bounds()?
-            .into_iter()
-            .chain(attrs.bounds)
-            .collect();
+        let bounds = s.generate_bounds()?;
         let body = s.generate_body()?;
 
         let vars = s.fields.iter().enumerate().map(|(i, f)| {
@@ -974,14 +977,12 @@ mod debug {
         e: &syn::DataEnum,
     ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
         let (bounds, match_arms) = e.variants.iter().try_fold(
-            (
-                attrs.bounds.into_iter().collect::<Vec<_>>(),
-                TokenStream::new(),
-            ),
+            (Vec::new(), TokenStream::new()),
             |(mut bounds, mut arms), variant| {
                 let ident = &variant.ident;
 
                 let v = Expansion {
+                    attr: &attrs,
                     fields: &variant.fields,
                     ident,
                 };
@@ -1120,6 +1121,8 @@ mod debug {
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     #[derive(Debug)]
     struct Expansion<'a> {
+        attr: &'a ContainerAttributes,
+
         /// Struct or enum [`Ident`].
         ident: &'a Ident,
 
@@ -1145,12 +1148,12 @@ mod debug {
                 }
                 syn::Fields::Unnamed(unnamed) => {
                     let mut exhaustive = true;
-                    let ident = self.ident.to_string();
+                    let ident_str = self.ident.to_string();
 
                     let out = quote! {
                         &mut ::core::fmt::Formatter::debug_tuple(
                             __derive_more_f,
-                            #ident,
+                            #ident_str,
                         )
                     };
                     let mut out = unnamed.unnamed.iter().enumerate().try_fold(
@@ -1165,7 +1168,7 @@ mod debug {
                             Some(FieldAttribute::Fmt(fmt)) => Ok(quote! {
                                 ::core::fmt::DebugTuple::field(
                                     #out,
-                                    ::core::format_args!(#fmt),
+                                    &::core::format_args!(#fmt),
                                 )
                             }),
                             None => {
@@ -1177,8 +1180,15 @@ mod debug {
                         },
                     )?;
                     if !exhaustive {
+                        // TODO: `DebugTuple` doesn't have `finish_non_exhaustive()`,
+                        //       so we use `std::ops::RangeFull`'s `Debug` impl. This
+                        //       hack leaves trailing `,` in case of pretty printing,
+                        //       while `DebugStruct`'s `finish_non_exhaustive()` doesn't.
+                        //       Unfortunately, `core::fmt::Formatter` has insufficient
+                        //       public API to recreate `DebugTuple` outside of the standard
+                        //       library without additional overhead.
                         out = quote! {
-                            ::core::fmt::DebugTuple::field(#out, "..")
+                            ::core::fmt::DebugTuple::field(#out, &{..})
                         };
                     }
                     Ok(quote! { ::core::fmt::DebugTuple::finish(#out) })
@@ -1193,7 +1203,7 @@ mod debug {
                             #ident,
                         )
                     };
-                    let mut out = named.named.iter().try_fold(out, |out, field| {
+                    let out = named.named.iter().try_fold(out, |out, field| {
                         let field_ident = field.ident.as_ref().unwrap_or_else(|| {
                             unreachable!("`syn::Fields::Named`");
                         });
@@ -1207,7 +1217,7 @@ mod debug {
                                 ::core::fmt::DebugStruct::field(
                                     #out,
                                     #field_str,
-                                    ::core::format_args!(#fmt),
+                                    &::core::format_args!(#fmt),
                                 )
                             }),
                             None => Ok(quote! {
@@ -1227,7 +1237,7 @@ mod debug {
         /// Generates trait bounds for a struct or an enum variant.
         fn generate_bounds(&self) -> Result<Vec<syn::WherePredicate>> {
             self.fields.iter().try_fold(
-                Vec::with_capacity(self.fields.len()),
+                self.attr.bounds.clone().into_iter().collect::<Vec<_>>(),
                 |mut out, field| {
                     let fmt_attr =
                         FieldAttribute::parse_attrs(&field.attrs)?.and_then(|attr| {
