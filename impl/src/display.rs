@@ -1355,8 +1355,9 @@ mod attribute_parse_fmt_args_spec {
     fn assert<'a>(input: &'a str, parsed: impl AsRef<[&'a str]>) {
         let parsed = parsed.as_ref();
         match syn::parse_str::<Attribute>(&format!("(\"\", {})", input)).unwrap() {
-            Attribute::Fmt { fmt_args, .. } => {
-                let fmt_args = fmt_args
+            Attribute::Fmt(fmt) => {
+                let fmt_args = fmt
+                    .args
                     .into_iter()
                     .map(|arg| arg.into_token_stream().to_string())
                     .collect::<Vec<String>>();
