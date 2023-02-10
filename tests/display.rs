@@ -1031,6 +1031,49 @@ mod debug {
                     );
                 }
             }
+
+            mod ignore {
+                use derive_more::Debug;
+
+                #[derive(Debug)]
+                struct Tuple(#[debug(ignore)] i32, i32);
+
+                #[derive(Debug)]
+                struct Struct {
+                    field1: i32,
+                    #[debug(skip)]
+                    field2: i32,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:?}", Tuple(1, 2)), "Tuple(2, ..)");
+                    assert_eq!(
+                        format!("{:#?}", Tuple(1, 2)),
+                        "Tuple(\n    2,\n    ..,\n)",
+                    );
+                    assert_eq!(
+                        format!(
+                            "{:?}",
+                            Struct {
+                                field1: 1,
+                                field2: 2
+                            }
+                        ),
+                        "Struct { field1: 1, .. }",
+                    );
+                    assert_eq!(
+                        format!(
+                            "{:#?}",
+                            Struct {
+                                field1: 1,
+                                field2: 2
+                            }
+                        ),
+                        "Struct {\n    field1: 1,\n    ..\n}",
+                    );
+                }
+            }
         }
     }
 
@@ -1085,6 +1128,11 @@ mod debug {
                     #[debug("{field}.{}", field)]
                     field: i32,
                 },
+                SkippedUnnamed(#[debug(skip)] i32),
+                SkippedNamed {
+                    #[debug(skip)]
+                    field: i32,
+                },
             }
 
             #[test]
@@ -1128,6 +1176,22 @@ mod debug {
                     format!("{:#?}", Enum::InterpolatedNamed { field: 1 }),
                     "InterpolatedNamed {\n    field: 1.1,\n}",
                 );
+                assert_eq!(
+                    format!("{:?}", Enum::SkippedUnnamed(1)),
+                    "SkippedUnnamed(..)",
+                );
+                assert_eq!(
+                    format!("{:#?}", Enum::SkippedUnnamed(1)),
+                    "SkippedUnnamed(\n    ..,\n)",
+                );
+                assert_eq!(
+                    format!("{:?}", Enum::SkippedNamed { field: 1 }),
+                    "SkippedNamed { .. }",
+                );
+                assert_eq!(
+                    format!("{:#?}", Enum::SkippedNamed { field: 1 }),
+                    "SkippedNamed { .. }",
+                );
             }
         }
 
@@ -1150,6 +1214,12 @@ mod debug {
                 InterpolatedUnnamed(i32, #[debug("{_0}.{}", _1)] i32),
                 InterpolatedNamed {
                     #[debug("{field1}.{}", field2)]
+                    field1: i32,
+                    field2: i32,
+                },
+                SkippedUnnamed(i32, #[debug(skip)] i32),
+                SkippedNamed {
+                    #[debug(skip)]
                     field1: i32,
                     field2: i32,
                 },
@@ -1217,6 +1287,34 @@ mod debug {
                         }
                     ),
                     "InterpolatedNamed {\n    field1: 1.2,\n    field2: 2,\n}",
+                );
+                assert_eq!(
+                    format!("{:?}", Enum::SkippedUnnamed(1, 2)),
+                    "SkippedUnnamed(1, ..)",
+                );
+                assert_eq!(
+                    format!("{:#?}", Enum::SkippedUnnamed(1, 2)),
+                    "SkippedUnnamed(\n    1,\n    ..,\n)",
+                );
+                assert_eq!(
+                    format!(
+                        "{:?}",
+                        Enum::SkippedNamed {
+                            field1: 1,
+                            field2: 2,
+                        }
+                    ),
+                    "SkippedNamed { field2: 2, .. }",
+                );
+                assert_eq!(
+                    format!(
+                        "{:#?}",
+                        Enum::SkippedNamed {
+                            field1: 1,
+                            field2: 2,
+                        }
+                    ),
+                    "SkippedNamed {\n    field2: 2,\n    ..\n}",
                 );
             }
         }
