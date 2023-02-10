@@ -30,16 +30,6 @@ with members of tuple structs being named with a leading underscore and their in
 i.e. `_0`, `_1`, `_2`, etc.
 
 
-### Other formatting traits
-
-The syntax does not change, but the name of the attribute is the snake case version of the trait.
-E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
-
-A special case is the `DebugCustom` trait, which derives a `Debug` implementation instead of a `Display` implementation.
-The attribute for formatting is named `#[debug(..)]` when using `DebugCustom`.
-The arguments are the same as for `#[display(..)]`.
-
-
 ### Generic data types
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type
@@ -111,14 +101,10 @@ struct MyStruct<T, U, V> {
 ```rust
 # use std::path::PathBuf;
 #
-# use derive_more::{DebugCustom, Display, Octal, UpperHex};
+# use derive_more::{Display, Octal, UpperHex};
 #
 #[derive(Display)]
 struct MyInt(i32);
-
-#[derive(DebugCustom)]
-#[debug("MyIntDbg(as hex: {_0:x}, as dec: {_0})")]
-struct MyIntDbg(i32);
 
 #[derive(Display)]
 #[display("({x}, {y})")]
@@ -186,8 +172,45 @@ assert_eq!(Unit.to_string(), "Unit");
 assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
 assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
 assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
-assert_eq!(
-    format!("{:?}", MyIntDbg(-255)),
-    "MyIntDbg(as hex: ffffff01, as dec: -255)",
-);
+```
+
+
+### Other formatting traits
+
+The syntax does not change, but the name of the attribute is the snake case version of the trait.
+E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
+
+### `Debug`
+
+A special case is the `Debug` trait, as it's different in its purpose to another `Display`-like macros. Formatting
+attributes are allowed only on structs or enums fields, `#[debug(skip)]` allows to ignore certain fields and
+`#[debug(bound(..))]` works exactly like in `Display`-like macros. In other features it's a superset of derive macro
+from the standard library.
+
+```rust
+# use std::path::PathBuf;
+#
+use derive_more::Debug;
+
+#[derive(Debug)]
+struct MyInt(i32);
+
+#[derive(Debug)]
+struct MyIntHex(#[debug("{_0:x}")] i32);
+
+#[derive(Debug)]
+enum E {
+    Uint(u32),
+    Binary {
+        #[debug("{i:b}")]
+        i: i8,
+    },
+    Path(#[debug("{}", _0.display())] PathBuf),
+}
+
+assert_eq!(format!("{:?}", MyInt(-2)), "MyInt(-2)");
+assert_eq!(format!("{:?}", MyIntHex(-255)), "MyIntHex(ffffff01)");
+assert_eq!(format!("{:?}", E::Uint(2)), "Uint(2)");
+assert_eq!(format!("{:?}", E::Binary { i: -2 }), "Binary { i: 11111110 }");
+assert_eq!(format!("{:?}", E::Path("abc".into())), "Path(abc)");
 ```
