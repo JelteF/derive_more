@@ -54,7 +54,7 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     ///     "Foo(10, \"Hello World\")",
     /// );
     /// ```
-    pub fn field(&mut self, value: &dyn fmt::Debug) -> &mut Self {
+    pub fn field(&mut self, value: &dyn Debug) -> &mut Self {
         self.result = self.result.and_then(|_| {
             if self.is_pretty() {
                 if self.fields == 0 {
@@ -131,7 +131,7 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     ///
     /// assert_eq!(format!("{:?}", Bar(10, 1.0)), "Bar(10, ..)");
     /// ```
-    pub fn finish_non_exhaustive(&mut self) -> fmt::Result {
+    pub fn finish_non_exhaustive(&mut self) -> Result {
         self.result = self.result.and_then(|_| {
             if self.fields > 0 {
                 if self.is_pretty() {
