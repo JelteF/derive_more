@@ -1,9 +1,7 @@
 //! [`core::fmt::DebugTuple`] reimplementation with
 //! [`DebugTuple::finish_non_exhaustive()`] method.
 
-use core::fmt;
-
-pub use fmt::{Debug, Error, Formatter, Result, Write};
+pub use core::fmt::{Debug, Error, Formatter, Result, Write};
 
 /// Same as [`core::fmt::DebugTuple`], but with
 /// [`DebugTuple::finish_non_exhaustive()`] method.
