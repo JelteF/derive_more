@@ -358,24 +358,10 @@ impl Parse for Attribute {
         FmtAttribute::check_legacy_fmt(&content, error_span)?;
 
         if content.peek(syn::LitStr) {
-            return content.parse().map(Attribute::Fmt);
+            content.parse().map(Attribute::Fmt)
+        } else {
+            content.parse().map(Attribute::Bounds)
         }
-
-        let _ = content.parse::<syn::Path>().and_then(|p| {
-            if ["bound", "bounds"].into_iter().any(|i| p.is_ident(i)) {
-                Ok(p)
-            } else {
-                Err(Error::new(
-                    p.span(),
-                    "Unknown attribute. Expected `\"...\", ...` or `bound(...)`",
-                ))
-            }
-        })?;
-
-        let inner;
-        syn::parenthesized!(inner in content);
-
-        inner.parse().map(Attribute::Bounds)
     }
 }
 
@@ -413,7 +399,23 @@ impl BoundsAttribute {
 
 impl Parse for BoundsAttribute {
     fn parse(input: ParseStream) -> Result<Self> {
-        input.parse_terminated(syn::WherePredicate::parse).map(Self)
+        let _ = input.parse::<syn::Path>().and_then(|p| {
+            if ["bound", "bounds"].into_iter().any(|i| p.is_ident(i)) {
+                Ok(p)
+            } else {
+                Err(Error::new(
+                    p.span(),
+                    "Unknown attribute. Expected `bound(...)`",
+                ))
+            }
+        })?;
+
+        let content;
+        syn::parenthesized!(content in input);
+
+        content
+            .parse_terminated(syn::WherePredicate::parse)
+            .map(Self)
     }
 }
 
@@ -982,9 +984,7 @@ pub mod debug {
                 .ident
                 .clone()
                 .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-            quote! {
-                let #var = &self.#member;
-            }
+            quote! { let #var = &self.#member; }
         });
 
         let body = quote! {
@@ -1080,21 +1080,7 @@ pub mod debug {
 
             BoundsAttribute::check_legacy_fmt(&content, error_span)?;
 
-            let _ = content.parse::<syn::Path>().and_then(|p| {
-                if ["bound", "bounds"].into_iter().any(|i| p.is_ident(i)) {
-                    Ok(p)
-                } else {
-                    Err(Error::new(
-                        p.span(),
-                        "Unknown attribute. Expected `bound(...)`",
-                    ))
-                }
-            })?;
-
-            let inner;
-            syn::parenthesized!(inner in content);
-
-            inner.parse().map(|bounds| ContainerAttributes { bounds })
+            content.parse().map(|bounds| ContainerAttributes { bounds })
         }
     }
 
@@ -1204,12 +1190,12 @@ pub mod debug {
                     let ident_str = self.ident.to_string();
 
                     let out = quote! {
-                        &mut ::core::fmt::Formatter::debug_tuple(
+                        &mut ::derive_more::fmt::debug_tuple_new(
                             __derive_more_f,
                             #ident_str,
                         )
                     };
-                    let mut out = unnamed.unnamed.iter().enumerate().try_fold(
+                    let out = unnamed.unnamed.iter().enumerate().try_fold(
                         out,
                         |out, (i, field)| match FieldAttribute::parse_attrs(
                             &field.attrs,
@@ -1219,7 +1205,7 @@ pub mod debug {
                                 Ok::<_, Error>(out)
                             }
                             Some(FieldAttribute::Fmt(fmt)) => Ok(quote! {
-                                ::core::fmt::DebugTuple::field(
+                                ::derive_more::fmt::DebugTuple::field(
                                     #out,
                                     &::core::format_args!(#fmt),
                                 )
@@ -1227,24 +1213,16 @@ pub mod debug {
                             None => {
                                 let ident = format_ident!("_{i}");
                                 Ok(quote! {
-                                    ::core::fmt::DebugTuple::field(#out, #ident)
+                                    ::derive_more::fmt::DebugTuple::field(#out, #ident)
                                 })
                             }
                         },
                     )?;
-                    if !exhaustive {
-                        // TODO: `DebugTuple` doesn't have `finish_non_exhaustive()`,
-                        //       so we use `std::ops::RangeFull`'s `Debug` impl. This
-                        //       hack leaves trailing `,` in case of pretty printing,
-                        //       while `DebugStruct`'s `finish_non_exhaustive()` doesn't.
-                        //       Unfortunately, `core::fmt::Formatter` has insufficient
-                        //       public API to recreate `DebugTuple` outside of the standard
-                        //       library without additional overhead.
-                        out = quote! {
-                            ::core::fmt::DebugTuple::field(#out, &{..})
-                        };
-                    }
-                    Ok(quote! { ::core::fmt::DebugTuple::finish(#out) })
+                    Ok(if exhaustive {
+                        quote! { ::derive_more::fmt::DebugTuple::finish(#out) }
+                    } else {
+                        quote! { ::derive_more::fmt::DebugTuple::finish_non_exhaustive(#out) }
+                    })
                 }
                 syn::Fields::Named(named) => {
                     let mut exhaustive = true;

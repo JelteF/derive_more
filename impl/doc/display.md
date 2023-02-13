@@ -200,7 +200,11 @@ struct MyIntHex(#[debug("{_0:x}")] i32);
 
 #[derive(Debug)]
 enum E {
-    Uint(u32),
+    Skipped {
+        x: u32,
+        #[debug(skip)]
+        y: u32,
+    },
     Binary {
         #[debug("{i:b}")]
         i: i8,
@@ -210,7 +214,7 @@ enum E {
 
 assert_eq!(format!("{:?}", MyInt(-2)), "MyInt(-2)");
 assert_eq!(format!("{:?}", MyIntHex(-255)), "MyIntHex(ffffff01)");
-assert_eq!(format!("{:?}", E::Uint(2)), "Uint(2)");
+assert_eq!(format!("{:?}", E::Skipped { x: 10, y: 20 }), "Skipped { x: 10, .. }");
 assert_eq!(format!("{:?}", E::Binary { i: -2 }), "Binary { i: 11111110 }");
 assert_eq!(format!("{:?}", E::Path("abc".into())), "Path(abc)");
 ```

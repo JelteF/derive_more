@@ -51,6 +51,9 @@ mod convert;
 #[cfg(feature = "try_into")]
 pub use self::convert::TryIntoError;
 
+#[cfg(feature = "display")]
+pub mod fmt;
+
 #[cfg(any(feature = "add", feature = "not"))]
 pub mod ops;
 

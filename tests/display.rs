@@ -901,7 +901,7 @@ mod debug {
                 #[test]
                 fn assert() {
                     assert_eq!(format!("{:?}", Tuple(0)), "Tuple(..)");
-                    assert_eq!(format!("{:#?}", Tuple(0)), "Tuple(\n    ..,\n)");
+                    assert_eq!(format!("{:#?}", Tuple(0)), "Tuple(..)");
                     assert_eq!(format!("{:?}", Struct { field: 0 }), "Struct { .. }");
                     assert_eq!(format!("{:#?}", Struct { field: 0 }), "Struct { .. }");
                 }
@@ -1050,7 +1050,7 @@ mod debug {
                     assert_eq!(format!("{:?}", Tuple(1, 2)), "Tuple(2, ..)");
                     assert_eq!(
                         format!("{:#?}", Tuple(1, 2)),
-                        "Tuple(\n    2,\n    ..,\n)",
+                        "Tuple(\n    2,\n    ..\n)",
                     );
                     assert_eq!(
                         format!(
@@ -1182,7 +1182,7 @@ mod debug {
                 );
                 assert_eq!(
                     format!("{:#?}", Enum::SkippedUnnamed(1)),
-                    "SkippedUnnamed(\n    ..,\n)",
+                    "SkippedUnnamed(..)",
                 );
                 assert_eq!(
                     format!("{:?}", Enum::SkippedNamed { field: 1 }),
@@ -1294,7 +1294,7 @@ mod debug {
                 );
                 assert_eq!(
                     format!("{:#?}", Enum::SkippedUnnamed(1, 2)),
-                    "SkippedUnnamed(\n    1,\n    ..,\n)",
+                    "SkippedUnnamed(\n    1,\n    ..\n)",
                 );
                 assert_eq!(
                     format!(
@@ -1777,7 +1777,7 @@ mod debug {
 
                 let s = Struct(10, 20);
                 assert_eq!(format!("{s:?}"), "Struct(10.20, ..)");
-                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..,\n)");
+                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..\n)");
             }
 
             #[test]
@@ -1787,7 +1787,7 @@ mod debug {
 
                 let s = Struct(10, 20);
                 assert_eq!(format!("{s:?}"), "Struct(10.20, ..)");
-                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..,\n)");
+                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..\n)");
             }
 
             #[test]
@@ -1798,7 +1798,7 @@ mod debug {
 
                 let s = Struct(10, 20);
                 assert_eq!(format!("{s:?}"), "Struct(10.20, ..)");
-                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..,\n)");
+                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..\n)");
             }
 
             #[test]
@@ -1809,7 +1809,7 @@ mod debug {
 
                 let s = Struct(10, 20);
                 assert_eq!(format!("{s:?}"), "Struct(10.20, ..)");
-                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..,\n)");
+                assert_eq!(format!("{s:#?}"), "Struct(\n    10.20,\n    ..\n)");
             }
 
             #[test]
