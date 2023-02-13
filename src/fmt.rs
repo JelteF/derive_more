@@ -43,9 +43,9 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// impl fmt::Debug for Foo {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
     ///         fmt::debug_tuple_new(fmt, "Foo")
-    ///            .field(&self.0) // We add the first field.
-    ///            .field(&self.1) // We add the second field.
-    ///            .finish() // We're good to go!
+    ///             .field(&self.0) // We add the first field.
+    ///             .field(&self.1) // We add the second field.
+    ///             .finish() // We're good to go!
     ///     }
     /// }
     ///
@@ -87,10 +87,10 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// impl fmt::Debug for Foo {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
     ///         fmt::debug_tuple_new(fmt, "Foo")
-    ///            .field(&self.0)
-    ///            .field(&self.1)
-    ///            .finish() // You need to call it to "finish" the
-    ///                      // tuple formatting.
+    ///             .field(&self.0)
+    ///             .field(&self.1)
+    ///             .finish() // You need to call it to "finish" the
+    ///                       // tuple formatting.
     ///     }
     /// }
     ///
@@ -124,15 +124,12 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// impl fmt::Debug for Bar {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
     ///         fmt::debug_tuple_new(fmt, "Bar")
-    ///            .field(&self.0)
-    ///            .finish_non_exhaustive() // Show that some other field(s) exist.
+    ///             .field(&self.0)
+    ///             .finish_non_exhaustive() // Show that some other field(s) exist.
     ///     }
     /// }
     ///
-    /// assert_eq!(
-    ///     format!("{:?}", Bar(10, 1.0)),
-    ///     "Bar(10, ..)",
-    /// );
+    /// assert_eq!(format!("{:?}", Bar(10, 1.0)), "Bar(10, ..)");
     /// ```
     pub fn finish_non_exhaustive(&mut self) -> fmt::Result {
         self.result = self.result.and_then(|_| {
