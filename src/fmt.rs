@@ -15,7 +15,7 @@ pub struct DebugTuple<'a, 'b: 'a> {
 }
 
 /// Creates a new [`DebugTuple`].
-pub fn debug_tuple_new<'a, 'b>(
+pub fn debug_tuple<'a, 'b>(
     fmt: &'a mut Formatter<'b>,
     name: &str,
 ) -> DebugTuple<'a, 'b> {
@@ -33,14 +33,14 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust
     /// use derive_more::fmt;
     ///
     /// struct Foo(i32, String);
     ///
     /// impl fmt::Debug for Foo {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         fmt::debug_tuple_new(fmt, "Foo")
+    ///         fmt::debug_tuple(fmt, "Foo")
     ///             .field(&self.0) // We add the first field.
     ///             .field(&self.1) // We add the second field.
     ///             .finish() // We're good to go!
@@ -84,7 +84,7 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     ///
     /// impl fmt::Debug for Foo {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         fmt::debug_tuple_new(fmt, "Foo")
+    ///         fmt::debug_tuple(fmt, "Foo")
     ///             .field(&self.0)
     ///             .field(&self.1)
     ///             .finish() // You need to call it to "finish" the
@@ -110,18 +110,19 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     }
 
     /// Marks the struct as non-exhaustive, indicating to the reader that there are some other
-    /// fields that are not shown in the debug representation.
+    /// fields that are not shown in the debug representation, and finishes output, returning any
+    /// error encountered.
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust
     /// use derive_more::fmt;
     ///
     /// struct Bar(i32, f32);
     ///
     /// impl fmt::Debug for Bar {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         fmt::debug_tuple_new(fmt, "Bar")
+    ///         fmt::debug_tuple(fmt, "Bar")
     ///             .field(&self.0)
     ///             .finish_non_exhaustive() // Show that some other field(s) exist.
     ///     }
@@ -151,7 +152,7 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     }
 }
 
-/// Wrapper for [`Formatter`], which adds 4 spaces on newlines for inner pretty
+/// Wrapper for a [`Formatter`] adding 4 spaces on newlines for inner pretty
 /// printed [`Debug`] values.
 struct Padded<'a, 'b> {
     formatter: &'a mut Formatter<'b>,

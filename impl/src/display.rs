@@ -432,7 +432,7 @@ struct FmtAttribute {
 }
 
 impl FmtAttribute {
-    /// Returns [`Iterator`] over bounded [`syn::Type`]s and trait names.
+    /// Returns an [`Iterator`] over bounded [`syn::Type`]s and trait names.
     fn bounded_types<'a>(
         &'a self,
         fields: &'a syn::Fields,
@@ -1190,7 +1190,7 @@ pub mod debug {
                     let ident_str = self.ident.to_string();
 
                     let out = quote! {
-                        &mut ::derive_more::fmt::debug_tuple_new(
+                        &mut ::derive_more::fmt::debug_tuple(
                             __derive_more_f,
                             #ident_str,
                         )
