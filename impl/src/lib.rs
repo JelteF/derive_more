@@ -31,10 +31,10 @@ mod constructor;
 mod deref;
 #[cfg(feature = "deref_mut")]
 mod deref_mut;
-#[cfg(feature = "display")]
-mod display;
 #[cfg(feature = "error")]
 mod error;
+#[cfg(any(feature = "debug", feature = "display"))]
+mod fmt;
 #[cfg(feature = "from")]
 mod from;
 #[cfg(feature = "from_str")]
@@ -57,8 +57,6 @@ mod mul_helpers;
 mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
-#[cfg(feature = "display")]
-mod parsing;
 #[cfg(feature = "sum")]
 mod sum_like;
 #[cfg(feature = "try_into")]
@@ -93,6 +91,43 @@ macro_rules! create_derive(
     ($feature:literal, $mod_:ident $(:: $mod_rest:ident)*, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
         #[cfg(feature = $feature)]
         #[proc_macro_derive($trait_, attributes($($attribute),*))]
+        // These links overwrite the ones in `$feature.md`
+        // to become proper intra-doc links in Rust docs.
+        /// [`From`]: crate::From
+        /// [`Into`]: crate::Into
+        /// [`FromStr`]: crate::FromStr
+        /// [`TryInto`]: crate::TryInto
+        /// [`IntoIterator`]: crate::IntoIterator
+        /// [`AsRef`]: crate::AsRef
+        ///
+        /// [`Display`-like]: crate::Display
+        /// [`Binary`]: crate::Binary
+        /// [`Display`]: crate::Display
+        /// [`LowerExp`]: crate::LowerExp
+        /// [`LowerHex`]: crate::LowerHex
+        /// [`Octal`]: crate::Octal
+        /// [`Pointer`]: crate::Pointer
+        /// [`UpperExp`]: crate::UpperExp
+        /// [`UpperHex`]: crate::UpperHex
+        ///
+        /// [`Debug`]: crate::Debug
+        ///
+        /// [`Error`]: crate::Error
+        ///
+        /// [`Index`]: crate::Index
+        /// [`Deref`]: crate::Deref
+        /// [`Not`-like]: crate::Not
+        /// [`Add`-like]: crate::Add
+        /// [`Mul`-like]: crate::Mul
+        /// [`Sum`-like]: crate::Sum
+        /// [`IndexMut`]: crate::IndexMut
+        /// [`DerefMut`]: crate::DerefMut
+        /// [`AddAssign`-like]: crate::AddAssign
+        /// [`MulAssign`-like]: crate::MulAssign
+        ///
+        /// [`Constructor`]: crate::Constructor
+        /// [`IsVariant`]: crate::IsVariant
+        /// [`Unwrap`]: crate::Unwrap
         #[doc = include_str!(concat!("../doc/", $feature, ".md"))]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let ast = syn::parse(input).unwrap();
@@ -186,15 +221,40 @@ create_derive!("error", error, Error, error_derive, error);
 
 create_derive!("from_str", from_str, FromStr, from_str_derive);
 
-create_derive!("display", display, Display, display_derive, display);
-create_derive!("display", display, Binary, binary_derive, binary);
-create_derive!("display", display, Octal, octal_derive, octal);
-create_derive!("display", display, LowerHex, lower_hex_derive, lower_hex);
-create_derive!("display", display, UpperHex, upper_hex_derive, upper_hex);
-create_derive!("display", display, LowerExp, lower_exp_derive, lower_exp);
-create_derive!("display", display, UpperExp, upper_exp_derive, upper_exp);
-create_derive!("display", display, Pointer, pointer_derive, pointer);
-create_derive!("display", display::debug, Debug, debug_derive, debug);
+create_derive!("display", fmt::display, Display, display_derive, display);
+create_derive!("display", fmt::display, Binary, binary_derive, binary);
+create_derive!("display", fmt::display, Octal, octal_derive, octal);
+create_derive!(
+    "display",
+    fmt::display,
+    LowerHex,
+    lower_hex_derive,
+    lower_hex,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    UpperHex,
+    upper_hex_derive,
+    upper_hex,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    LowerExp,
+    lower_exp_derive,
+    lower_exp,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    UpperExp,
+    upper_exp_derive,
+    upper_exp,
+);
+create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
+
+create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
 
 create_derive!("index", index, Index, index_derive, index);
 create_derive!(
@@ -232,7 +292,7 @@ create_derive!(
     is_variant,
     IsVariant,
     is_variant_derive,
-    is_variant
+    is_variant,
 );
 
 create_derive!("unwrap", unwrap, Unwrap, unwrap_derive, unwrap);

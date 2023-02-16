@@ -1,3 +1,5 @@
+//! Parsing of [`format_args`]-like macros.
+
 use std::{convert::identity, iter};
 
 use unicode_xid::UnicodeXID as XID;

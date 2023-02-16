@@ -46,6 +46,7 @@ add = ["derive_more-impl/add"]
 as_mut = ["derive_more-impl/as_mut"]
 as_ref = ["derive_more-impl/as_ref"]
 constructor = ["derive_more-impl/constructor"]
+debug = ["derive_more-impl/debug"]
 deref = ["derive_more-impl/deref"]
 deref_mut = ["derive_more-impl/deref_mut"]
 display = ["derive_more-impl/display"]
@@ -72,6 +73,7 @@ full = [
     "as_mut",
     "as_ref",
     "constructor",
+    "debug",
     "deref",
     "deref_mut",
     "display",
@@ -123,6 +125,11 @@ required-features = ["display"]
 name = "constructor"
 path = "tests/constructor.rs"
 required-features = ["constructor"]
+
+[[test]]
+name = "debug"
+path = "tests/debug.rs"
+required-features = ["debug"]
 
 [[test]]
 name = "deref"
@@ -212,7 +219,7 @@ required-features = ["unwrap"]
 [[test]]
 name = "compile_fail"
 path = "tests/compile_fail/mod.rs"
-required-features = ["display"]
+required-features = ["debug", "display"]
 
 [[test]]
 name = "no_std"

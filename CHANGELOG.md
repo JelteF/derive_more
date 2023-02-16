@@ -27,8 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Disable all Cargo features by default (except `std`) supporting and add the
   `full` feature which can be used to get the old behaviour of supporting all
   possible derives.
-- `DebugCustom` renamed to `Debug` and changed its behaviour to be a superset
-  of standard library variant.
+- `DebugCustom` renamed to `Debug`, changed its behaviour to be a superset
+  of standard library variant and gated under separate `debug` feature.
 
 ### New features
 

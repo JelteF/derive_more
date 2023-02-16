@@ -10,6 +10,8 @@
 //!
 //! [`Display`-like]: crate::Display
 //!
+//! [`Debug`]: crate::Debug
+//!
 //! [`Error`]: crate::Error
 //!
 //! [`Index`]: crate::Index
@@ -51,7 +53,7 @@ mod convert;
 #[cfg(feature = "try_into")]
 pub use self::convert::TryIntoError;
 
-#[cfg(feature = "display")]
+#[cfg(feature = "debug")]
 pub mod fmt;
 
 #[cfg(any(feature = "add", feature = "not"))]

@@ -30,6 +30,14 @@ with members of tuple structs being named with a leading underscore and their in
 i.e. `_0`, `_1`, `_2`, etc.
 
 
+### Other formatting traits
+
+The syntax does not change, but the name of the attribute is the snake case version of the trait.
+E.g. [`Octal`] -> `octal`, [`Pointer`] -> `pointer`, [`UpperHex`] -> `upper_hex`.
+
+Note that [`Debug`] has a slightly different API described in its docs and requires a separate `debug`
+feature.
+
 ### Generic data types
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type
@@ -174,47 +182,7 @@ assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
 assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
 ```
 
-
-### Other formatting traits
-
-The syntax does not change, but the name of the attribute is the snake case version of the trait.
-E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
-
-### `Debug`
-
-A special case is the `Debug` trait, as it's different in its purpose to another `Display`-like macros. Formatting
-attributes are allowed only on structs or enums fields, `#[debug(skip)]` allows to ignore certain fields and
-`#[debug(bound(..))]` works exactly like in `Display`-like macros. In other features it's a superset of derive macro
-from the standard library.
-
-```rust
-# use std::path::PathBuf;
-#
-use derive_more::Debug;
-
-#[derive(Debug)]
-struct MyInt(i32);
-
-#[derive(Debug)]
-struct MyIntHex(#[debug("{_0:x}")] i32);
-
-#[derive(Debug)]
-enum E {
-    Skipped {
-        x: u32,
-        #[debug(skip)]
-        y: u32,
-    },
-    Binary {
-        #[debug("{i:b}")]
-        i: i8,
-    },
-    Path(#[debug("{}", _0.display())] PathBuf),
-}
-
-assert_eq!(format!("{:?}", MyInt(-2)), "MyInt(-2)");
-assert_eq!(format!("{:?}", MyIntHex(-255)), "MyIntHex(ffffff01)");
-assert_eq!(format!("{:?}", E::Skipped { x: 10, y: 20 }), "Skipped { x: 10, .. }");
-assert_eq!(format!("{:?}", E::Binary { i: -2 }), "Binary { i: 11111110 }");
-assert_eq!(format!("{:?}", E::Path("abc".into())), "Path(abc)");
-```
+[`Debug`]: https://jeltef.github.io/derive_more/derive_more/debug.html
+[`Octal`]: https://doc.rust-lang.org/stable/std/fmt/trait.Octal.html
+[`Pointer`]: https://doc.rust-lang.org/stable/std/fmt/trait.Pointer.html
+[`UpperHex`]: https://doc.rust-lang.org/stable/std/fmt/trait.UpperHex.html

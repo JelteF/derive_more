@@ -95,8 +95,9 @@ These are traits that are used to convert automatically between types.
 
 These traits are used for converting a struct to a string in different ways.
 
-1. [`Display`-like], contains `Display`, `Debug`, `Binary`, `Octal`,
-   `LowerHex`, `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
+1. [`Display`-like], contains `Display`, `Binary`, `Octal`, `LowerHex`,
+   `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
+2. [`Debug`]
 
 
 ### Error-handling traits
