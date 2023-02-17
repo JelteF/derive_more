@@ -232,134 +232,28 @@ impl FmtArgument {
             }
         }
 
-        let (rest, c) = Self::parse_rest(cursor);
+        let (rest, c) = Self::parse_rest(cursor)?;
         arg.expr.extend(rest);
 
-        (!arg.expr.is_empty()).then_some((arg, c))
+        Some((arg, c))
     }
 
     /// Parses the rest, until the end of this [`FmtArgument`] (comma or eof),
     /// in case simplest case of `(ident =)? ident(,|eof)` wasn't parsed.
-    fn parse_rest(mut cursor: Cursor<'_>) -> (TokenStream, Cursor<'_>) {
-        let mut out = TokenStream::new();
+    fn parse_rest(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+        use crate::parsing::{
+            alt, balanced_pair, colon2, punct, qself, seq, take_until1, token_tree,
+        };
 
-        loop {
-            if let Some(extend) = Self::turbofish(cursor) {
-                cursor = extend(&mut out);
-                continue;
-            }
-            if let Some(extend) = Self::closure_args(cursor) {
-                cursor = extend(&mut out);
-                continue;
-            }
-            if let Some(extend) = Self::qself(cursor) {
-                cursor = extend(&mut out);
-                continue;
-            }
-
-            if let Some(c) = cursor
-                .punct()
-                .and_then(|(p, c)| (p.as_char() == ',').then_some(c))
-                .or_else(|| cursor.eof().then_some(cursor))
-            {
-                return (out, c);
-            }
-
-            let (tt, c) = cursor
-                .token_tree()
-                .unwrap_or_else(|| unreachable!("checked for eof"));
-            out.extend([tt]);
-            cursor = c;
-        }
-    }
-
-    /// Tries to parse `| (closure_arg),* |`.
-    fn closure_args<'a>(
-        cursor: Cursor<'a>,
-    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
-        let (open, c) = cursor.punct().filter(|(p, _)| p.as_char() == '|')?;
-
-        Some(move |stream: &mut TokenStream| {
-            stream.extend([TokenTree::Punct(open)]);
-            // We can ignore inner `|`, because only other place it can appear
-            // is in or pattern (ex. `Either::Left(v) | Either::Right(v)`),
-            // which must be parenthesized, so will be parsed as one
-            // `TokenTree`.
-            let (more, c) = Self::parse_until_closing('|', '|', c);
-            stream.extend(more);
-            c
-        })
-    }
-
-    /// Tries to parse `::< ... >`.
-    fn turbofish<'a>(
-        cursor: Cursor<'a>,
-    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
-        use proc_macro2::Spacing;
-
-        let (colon1, c) = cursor
-            .punct()
-            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
-        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
-        let (less, c) = c.punct().filter(|(p, _)| p.as_char() == '<')?;
-
-        Some(move |stream: &mut TokenStream| {
-            stream.extend([colon1, colon2, less].map(TokenTree::Punct));
-            let (more, c) = Self::parse_until_closing('<', '>', c);
-            stream.extend(more);
-            c
-        })
-    }
-
-    /// Tries to parse `< ... as ... >::`.
-    fn qself<'a>(
-        cursor: Cursor<'a>,
-    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
-        use proc_macro2::Spacing;
-
-        let (less, c) = cursor.punct().filter(|(p, _)| p.as_char() == '<')?;
-        let (more, c) = Self::parse_until_closing('<', '>', c);
-        let (colon1, c) = c
-            .punct()
-            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
-        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
-
-        Some(move |stream: &mut TokenStream| {
-            stream.extend([less].map(TokenTree::Punct));
-            stream.extend(more);
-            stream.extend([colon1, colon2].map(TokenTree::Punct));
-            c
-        })
-    }
-
-    /// Parses until balanced amount of `open` and `close` [`TokenTree::Punc`]
-    /// or eof.
-    ///
-    /// [`Cursor`] should be pointing **right after** the first `open`ing.
-    fn parse_until_closing(
-        open: char,
-        close: char,
-        mut cursor: Cursor<'_>,
-    ) -> (TokenStream, Cursor<'_>) {
-        let mut out = TokenStream::new();
-        let mut count = 1;
-
-        while let Some((tt, c)) = cursor.token_tree().filter(|_| count != 0) {
-            match tt {
-                TokenTree::Punct(ref p) if p.as_char() == close => {
-                    count -= 1;
-                }
-                TokenTree::Punct(ref p) if p.as_char() == open => {
-                    count += 1;
-                }
-                _ => {}
-            }
-
-            out.extend([tt]);
-            cursor = c;
-        }
-
-        (out, cursor)
+        take_until1(
+            alt([
+                &mut seq([&mut colon2, &mut qself]),
+                &mut seq([&mut qself, &mut colon2]),
+                &mut balanced_pair(punct('|'), punct('|')),
+                &mut token_tree,
+            ]),
+            punct(','),
+        )(c)
     }
 }
 
@@ -393,14 +287,6 @@ impl FmtExpr {
         match self {
             Self::Ident(i) => Some(i),
             Self::TokenStream(_) => None,
-        }
-    }
-
-    /// Checks whether this [`FmtExpr`] is empty.
-    fn is_empty(&self) -> bool {
-        match self {
-            Self::Ident(_) => false,
-            Self::TokenStream(stream) => stream.is_empty(),
         }
     }
 }

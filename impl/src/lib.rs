@@ -63,6 +63,7 @@ mod sum_like;
 mod try_into;
 #[cfg(feature = "unwrap")]
 mod unwrap;
+mod parsing;
 
 // This trait describes the possible return types of
 // the derives. A derive can generally be infallible and
