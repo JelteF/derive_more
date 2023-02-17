@@ -70,6 +70,14 @@ enum MixedIntsForward {
     },
 }
 
+mod test {
+    use super::*;
+
+    #[derive(From)]
+    #[from(types("&'_ String"))]
+    struct MyIntsExplicit(String, String);
+}
+
 #[test]
 fn forward_enum() {
     assert_eq!(MixedIntsForward::SmallInt(42), 42i32.into());

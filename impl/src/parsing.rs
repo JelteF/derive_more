@@ -6,6 +6,44 @@ use proc_macro2::{Delimiter, Spacing, TokenStream, TokenTree};
 use quote::ToTokens as _;
 use syn::buffer::Cursor;
 
+#[derive(Debug)]
+pub struct Type(pub TokenStream);
+
+impl Type {
+    pub fn parse(c: Cursor<'_>) -> Option<(Self, Cursor<'_>)> {
+        take_until1(
+            alt([&mut balanced_pair(punct('<'), punct('>')), &mut token_tree]),
+            punct(','),
+        )(c)
+        .map(|(stream, c)| (Self(stream), c))
+    }
+}
+
+#[derive(Debug)]
+pub struct Expr(pub TokenStream);
+
+impl Expr {
+    pub fn parse(c: Cursor<'_>) -> Option<(Self, Cursor<'_>)> {
+        take_until1(
+            alt([
+                &mut seq([&mut colon2, &mut qself]),
+                &mut seq([&mut qself, &mut colon2]),
+                &mut balanced_pair(punct('|'), punct('|')),
+                &mut token_tree,
+            ]),
+            punct(','),
+        )(c)
+        .map(|(stream, c)| (Self(stream), c))
+    }
+}
+
+pub fn type_hack(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+    take_until1(
+        alt([&mut balanced_pair(punct('<'), punct('>')), &mut token_tree]),
+        punct(','),
+    )(c)
+}
+
 pub fn r#type(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
     alt([
         &mut type_array_or_slice,

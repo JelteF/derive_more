@@ -212,6 +212,8 @@ impl FmtArgument {
     ///
     /// Returns [`None`] in case of eof or trailing comma.
     fn parse(mut cursor: Cursor<'_>) -> Option<(FmtArgument, Cursor<'_>)> {
+        use crate::parsing::Expr;
+
         let mut arg = FmtArgument::default();
 
         if let Some((ident, c)) = cursor.ident() {
@@ -232,28 +234,10 @@ impl FmtArgument {
             }
         }
 
-        let (rest, c) = Self::parse_rest(cursor)?;
-        arg.expr.extend(rest);
+        let (expr, c) = Expr::parse(cursor)?;
+        arg.expr.extend(expr.0);
 
         Some((arg, c))
-    }
-
-    /// Parses the rest, until the end of this [`FmtArgument`] (comma or eof),
-    /// in case simplest case of `(ident =)? ident(,|eof)` wasn't parsed.
-    fn parse_rest(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-        use crate::parsing::{
-            alt, balanced_pair, colon2, punct, qself, seq, take_until1, token_tree,
-        };
-
-        take_until1(
-            alt([
-                &mut seq([&mut colon2, &mut qself]),
-                &mut seq([&mut qself, &mut colon2]),
-                &mut balanced_pair(punct('|'), punct('|')),
-                &mut token_tree,
-            ]),
-            punct(','),
-        )(c)
     }
 }
 
