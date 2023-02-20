@@ -196,8 +196,7 @@ enum FieldAttribute {
 }
 
 impl FieldAttribute {
-    /// Parses [`ContainerAttributes`] from the provided
-    /// [`syn::Attribute`]s.
+    /// Parses [`FieldAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
         Ok(attrs
             .as_ref()
