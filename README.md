@@ -95,9 +95,9 @@ These are traits that are used to convert automatically between types.
 
 These traits are used for converting a struct to a string in different ways.
 
-1. [`Display`-like], contains `Display`, `Binary`, `Octal`, `LowerHex`,
+1. [`Debug`]
+2. [`Display`-like], contains `Display`, `Binary`, `Octal`, `LowerHex`,
    `UpperHex`, `LowerExp`, `UpperExp`, `Pointer`
-2. [`Debug`]
 
 
 ### Error-handling traits
@@ -186,6 +186,7 @@ extern crate derive_more;
 [`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
 [`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
 
+[`Debug`]: https://github.com/JelteF/derive_more/blob/master/impl/doc/debug.md
 [`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
 
 [`Error`]: https://jeltef.github.io/derive_more/derive_more/error.html

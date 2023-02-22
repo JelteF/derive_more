@@ -1,6 +1,7 @@
-//! Implementation of [`fmt`]-like derive macros.
-//!
-//! [`fmt`]: std::fmt
+//! Implementation of [`fmt::Display`]-like derive macros.
+
+#[cfg(doc)]
+use std::fmt;
 
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
@@ -13,28 +14,17 @@ use syn::{
 
 use super::{BoundsAttribute, FmtAttribute};
 
-/// Expands [`fmt`]-like derive macro.
+/// Expands a [`fmt::Display`]-like derive macro.
 ///
 /// Available macros:
-/// - [`Binary`]
-/// - [`Display`]
-/// - [`LowerExp`]
-/// - [`LowerHex`]
-/// - [`Octal`]
-/// - [`Pointer`]
-/// - [`UpperExp`]
-/// - [`UpperHex`]
-///
-/// [`fmt`]: std::fmt
-/// [`Binary`]: std::fmt::Binary
-/// [`Debug`]: std::fmt::Debug
-/// [`Display`]: std::fmt::Display
-/// [`LowerExp`]: std::fmt::LowerExp
-/// [`LowerHex`]: std::fmt::LowerHex
-/// [`Octal`]: std::fmt::Octal
-/// [`Pointer`]: std::fmt::Pointer
-/// [`UpperExp`]: std::fmt::UpperExp
-/// [`UpperHex`]: std::fmt::UpperHex
+/// - [`Binary`](fmt::Binary)
+/// - [`Display`](fmt::Display)
+/// - [`LowerExp`](fmt::LowerExp)
+/// - [`LowerHex`](fmt::LowerHex)
+/// - [`Octal`](fmt::Octal)
+/// - [`Pointer`](fmt::Pointer)
+/// - [`UpperExp`](fmt::UpperExp)
+/// - [`UpperHex`](fmt::UpperHex)
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
     let trait_name = normalize_trait_name(trait_name);
 
@@ -79,9 +69,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream>
 /// - Derived trait `&`[`str`].
 type ExpansionCtx<'a> = (&'a Attributes, &'a Ident, &'a Ident, &'a str);
 
-/// Expands a [`fmt`]-like derive macro for the provided struct.
-///
-/// [`fmt`]: std::fmt
+/// Expands a [`fmt::Display`]-like derive macro for the provided struct.
 fn expand_struct(
     s: &syn::DataStruct,
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
@@ -115,8 +103,6 @@ fn expand_struct(
 }
 
 /// Expands a [`fmt`]-like derive macro for the provided enum.
-///
-/// [`fmt`]: std::fmt
 fn expand_enum(
     e: &syn::DataEnum,
     (attrs, _, trait_ident, trait_name): ExpansionCtx<'_>,
@@ -138,9 +124,9 @@ fn expand_enum(
                 return Err(Error::new(
                     e.variants.span(),
                     format!(
-                        "Implicit formatting of unit enum variant is supported \
-                         only for `Display` macro. Use `#[{}(\"...\")]` to \
-                         explicitly specify the formatting.",
+                        "implicit formatting of unit enum variant is supported \
+                         only for `Display` macro, use `#[{}(\"...\")]` to \
+                         explicitly specify the formatting",
                         trait_name_to_attribute_name(trait_name),
                     ),
                 ));
@@ -183,9 +169,7 @@ fn expand_enum(
     Ok((bounds, body))
 }
 
-/// Expands a [`fmt`]-like derive macro for the provided union.
-///
-/// [`fmt`]: std::fmt
+/// Expands a [`fmt::Display`]-like derive macro for the provided union.
 fn expand_union(
     u: &syn::DataUnion,
     (attrs, _, _, trait_name): ExpansionCtx<'_>,
@@ -194,7 +178,7 @@ fn expand_union(
         Error::new(
             u.fields.span(),
             format!(
-                "Unions must have `#[{}(\"...\", ...)]` attribute",
+                "unions must have `#[{}(\"...\", ...)]` attribute",
                 trait_name_to_attribute_name(trait_name),
             ),
         )
@@ -208,7 +192,7 @@ fn expand_union(
     Ok((attrs.bounds.0.clone().into_iter().collect(), body))
 }
 
-/// Representation of a [`fmt`]-like derive macro attribute.
+/// Representation of a [`fmt::Display`]-like derive macro attribute.
 ///
 /// ```rust,ignore
 /// #[<fmt_trait>("<fmt_literal>", <fmt_args>)]
@@ -216,9 +200,7 @@ fn expand_union(
 /// ```
 ///
 /// `#[<fmt_trait>(...)]` can be specified only once, while multiple
-/// `#[bound(...)]` are allowed.
-///
-/// [`fmt`]: std::fmt
+/// `#[<fmt_trait>(bound(...))]` are allowed.
 #[derive(Debug, Default)]
 struct Attributes {
     /// Interpolation [`FmtAttribute`].
@@ -258,10 +240,38 @@ impl Attributes {
     }
 }
 
+/// Representation of a single [`fmt::Display`]-like derive macro attribute.
+#[derive(Debug)]
+enum Attribute {
+    /// [`fmt`] attribute.
+    Fmt(FmtAttribute),
+
+    /// Addition trait bounds.
+    Bounds(BoundsAttribute),
+}
+
+impl Parse for Attribute {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let error_span = input.span();
+
+        let content;
+        syn::parenthesized!(content in input);
+
+        BoundsAttribute::check_legacy_fmt(&content, error_span)?;
+        FmtAttribute::check_legacy_fmt(&content, error_span)?;
+
+        if content.peek(syn::LitStr) {
+            content.parse().map(Attribute::Fmt)
+        } else {
+            content.parse().map(Attribute::Bounds)
+        }
+    }
+}
+
 /// Helper struct to generate [`Display::fmt()`] implementation body and trait
 /// bounds for a struct or an enum variant.
 ///
-/// [`Display::fmt()`]: std::fmt::Display::fmt()
+/// [`Display::fmt()`]: fmt::Display::fmt()
 #[derive(Debug)]
 struct Expansion<'a> {
     /// Derive macro [`Attributes`].
@@ -274,15 +284,13 @@ struct Expansion<'a> {
     fields: &'a syn::Fields,
 
     /// [`fmt`] trait [`Ident`].
-    ///
-    /// [`fmt`]: std::fmt
     trait_ident: &'a Ident,
 }
 
 impl<'a> Expansion<'a> {
     /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
-    /// [`Display::fmt()`]: std::fmt::Display::fmt()
+    /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> TokenStream {
         if let Some(fmt) = &self.attrs.fmt {
             let (lit, args) = (&fmt.lit, &fmt.args);
@@ -329,39 +337,7 @@ impl<'a> Expansion<'a> {
     }
 }
 
-/// Representation of a single [`fmt`]-like display attribute.
-///
-/// [`fmt`]: std::fmt
-#[derive(Debug)]
-enum Attribute {
-    /// [`fmt`] attribute.
-    ///
-    /// [`fmt`]: std::fmt
-    Fmt(FmtAttribute),
-
-    /// Addition trait bounds.
-    Bounds(BoundsAttribute),
-}
-
-impl Parse for Attribute {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let error_span = input.span();
-
-        let content;
-        syn::parenthesized!(content in input);
-
-        BoundsAttribute::check_legacy_fmt(&content, error_span)?;
-        FmtAttribute::check_legacy_fmt(&content, error_span)?;
-
-        if content.peek(syn::LitStr) {
-            content.parse().map(Attribute::Fmt)
-        } else {
-            content.parse().map(Attribute::Bounds)
-        }
-    }
-}
-
-/// Matches trait name to [`Attribute::Fmt`] argument name.
+/// Matches the provided `trait_name` to appropriate [`Attribute::Fmt`] argument name.
 fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
     match trait_name {
         "Binary" => "binary",
@@ -376,7 +352,7 @@ fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
     }
 }
 
-/// Matches derive macro name to actual trait name.
+/// Matches the provided derive macro `name` to appropriate actual trait name.
 fn normalize_trait_name(name: &str) -> &'static str {
     match name {
         "Binary" => "Binary",

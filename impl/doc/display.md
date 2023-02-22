@@ -33,10 +33,11 @@ i.e. `_0`, `_1`, `_2`, etc.
 ### Other formatting traits
 
 The syntax does not change, but the name of the attribute is the snake case version of the trait.
-E.g. [`Octal`] -> `octal`, [`Pointer`] -> `pointer`, [`UpperHex`] -> `upper_hex`.
+E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
 
-Note that [`Debug`] has a slightly different API described in its docs and requires a separate `debug`
-feature.
+Note, that `Debug` has a slightly different API and semantics, described in its docs, and so,
+requires a separate `debug` feature.
+
 
 ### Generic data types
 
@@ -181,8 +182,3 @@ assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
 assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
 assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
 ```
-
-[`Debug`]: https://jeltef.github.io/derive_more/derive_more/debug.html
-[`Octal`]: https://doc.rust-lang.org/stable/std/fmt/trait.Octal.html
-[`Pointer`]: https://doc.rust-lang.org/stable/std/fmt/trait.Pointer.html
-[`UpperHex`]: https://doc.rust-lang.org/stable/std/fmt/trait.UpperHex.html

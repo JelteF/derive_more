@@ -31,7 +31,7 @@ pub fn debug_tuple<'a, 'b>(
 impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// Adds a new field to the generated tuple struct output.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```rust
     /// use derive_more::fmt;
@@ -75,7 +75,7 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
 
     /// Finishes output and returns any error encountered.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use derive_more::fmt;
@@ -113,7 +113,7 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// fields that are not shown in the debug representation, and finishes output, returning any
     /// error encountered.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```rust
     /// use derive_more::fmt;

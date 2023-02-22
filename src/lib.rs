@@ -8,9 +8,8 @@
 //! [`IntoIterator`]: crate::IntoIterator
 //! [`AsRef`]: crate::AsRef
 //!
-//! [`Display`-like]: crate::Display
-//!
 //! [`Debug`]: crate::Debug
+//! [`Display`-like]: crate::Display
 //!
 //! [`Error`]: crate::Error
 //!
