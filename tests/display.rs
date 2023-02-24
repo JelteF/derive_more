@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use derive_more::{Binary, DebugCustom, Display, Octal, UpperHex};
+use derive_more::{Binary, Display, Octal, UpperHex};
 
 mod structs {
     use super::*;

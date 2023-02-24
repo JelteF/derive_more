@@ -1,0 +1,5 @@
+error: only single `#[debug(...)]` attribute is allowed here
+ --> tests/compile_fail/debug/both_fmt_and_skip_on_field.rs:3:7
+  |
+3 |     #[debug("Stuff({}): {}", bar)]
+  |       ^^^^^

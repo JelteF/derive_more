@@ -1,0 +1,5 @@
+error[E0425]: cannot find value `bars` in this scope
+ --> tests/compile_fail/debug/wrong_named_parameter.rs:3:21
+  |
+3 |     #[debug("Stuff({bars})")]
+  |                     ^^^^ help: a local variable with a similar name exists: `bar`

@@ -1,0 +1,5 @@
+error: 2 positional arguments in format string, but there is 1 argument
+ --> tests/compile_fail/debug/extra_placeholder.rs:3:20
+  |
+3 |     #[debug("Stuff({}): {}", bar)]
+  |                    ^^   ^^   ---

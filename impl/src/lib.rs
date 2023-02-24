@@ -31,10 +31,10 @@ mod constructor;
 mod deref;
 #[cfg(feature = "deref_mut")]
 mod deref_mut;
-#[cfg(feature = "display")]
-mod display;
 #[cfg(feature = "error")]
 mod error;
+#[cfg(any(feature = "debug", feature = "display"))]
+mod fmt;
 #[cfg(feature = "from")]
 mod from;
 #[cfg(feature = "from_str")]
@@ -57,8 +57,6 @@ mod mul_helpers;
 mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
-#[cfg(feature = "display")]
-mod parsing;
 #[cfg(feature = "sum")]
 mod sum_like;
 #[cfg(feature = "try_into")]
@@ -90,13 +88,13 @@ impl Output for Result<proc_macro2::TokenStream, ParseError> {
 }
 
 macro_rules! create_derive(
-    ($feature:literal, $mod_:ident, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
+    ($feature:literal, $mod_:ident $(:: $mod_rest:ident)*, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
         #[cfg(feature = $feature)]
         #[proc_macro_derive($trait_, attributes($($attribute),*))]
         #[doc = include_str!(concat!("../doc/", $feature, ".md"))]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let ast = syn::parse(input).unwrap();
-            Output::process($mod_::expand(&ast, stringify!($trait_)))
+            Output::process($mod_$(:: $mod_rest)*::expand(&ast, stringify!($trait_)))
         }
     }
 );
@@ -186,15 +184,40 @@ create_derive!("error", error, Error, error_derive, error);
 
 create_derive!("from_str", from_str, FromStr, from_str_derive);
 
-create_derive!("display", display, Display, display_derive, display);
-create_derive!("display", display, Binary, binary_derive, binary);
-create_derive!("display", display, Octal, octal_derive, octal);
-create_derive!("display", display, LowerHex, lower_hex_derive, lower_hex);
-create_derive!("display", display, UpperHex, upper_hex_derive, upper_hex);
-create_derive!("display", display, LowerExp, lower_exp_derive, lower_exp);
-create_derive!("display", display, UpperExp, upper_exp_derive, upper_exp);
-create_derive!("display", display, Pointer, pointer_derive, pointer);
-create_derive!("display", display, DebugCustom, debug_custom_derive, debug);
+create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
+
+create_derive!("display", fmt::display, Display, display_derive, display);
+create_derive!("display", fmt::display, Binary, binary_derive, binary);
+create_derive!("display", fmt::display, Octal, octal_derive, octal);
+create_derive!(
+    "display",
+    fmt::display,
+    LowerHex,
+    lower_hex_derive,
+    lower_hex,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    UpperHex,
+    upper_hex_derive,
+    upper_hex,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    LowerExp,
+    lower_exp_derive,
+    lower_exp,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    UpperExp,
+    upper_exp_derive,
+    upper_exp,
+);
+create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
 
 create_derive!("index", index, Index, index_derive, index);
 create_derive!(
@@ -232,7 +255,7 @@ create_derive!(
     is_variant,
     IsVariant,
     is_variant_derive,
-    is_variant
+    is_variant,
 );
 
 create_derive!("unwrap", unwrap, Unwrap, unwrap_derive, unwrap);

@@ -1,4 +1,4 @@
-error: Unknown attribute. Expected `"...", ...` or `bound(...)`
+error: unknown attribute, expected `bound(...)`
  --> tests/compile_fail/display/unknown_attribute.rs:3:11
   |
 3 | #[display(unknown = "unknown")]

@@ -1,0 +1,5 @@
+error: `Debug` cannot be derived for unions
+ --> tests/compile_fail/debug/union.rs:2:1
+  |
+2 | pub union Foo {
+  | ^^^

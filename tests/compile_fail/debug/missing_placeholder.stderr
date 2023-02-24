@@ -1,0 +1,7 @@
+error: argument never used
+ --> tests/compile_fail/debug/missing_placeholder.rs:3:24
+  |
+3 |     #[debug("Stuff()", bar)]
+  |             ---------  ^^^ argument never used
+  |             |
+  |             formatting specifier missing

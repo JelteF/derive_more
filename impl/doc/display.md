@@ -35,9 +35,8 @@ i.e. `_0`, `_1`, `_2`, etc.
 The syntax does not change, but the name of the attribute is the snake case version of the trait.
 E.g. `Octal` -> `octal`, `Pointer` -> `pointer`, `UpperHex` -> `upper_hex`.
 
-A special case is the `DebugCustom` trait, which derives a `Debug` implementation instead of a `Display` implementation.
-The attribute for formatting is named `#[debug(..)]` when using `DebugCustom`.
-The arguments are the same as for `#[display(..)]`.
+Note, that `Debug` has a slightly different API and semantics, described in its docs, and so,
+requires a separate `debug` feature.
 
 
 ### Generic data types
@@ -111,14 +110,10 @@ struct MyStruct<T, U, V> {
 ```rust
 # use std::path::PathBuf;
 #
-# use derive_more::{DebugCustom, Display, Octal, UpperHex};
+# use derive_more::{Display, Octal, UpperHex};
 #
 #[derive(Display)]
 struct MyInt(i32);
-
-#[derive(DebugCustom)]
-#[debug("MyIntDbg(as hex: {_0:x}, as dec: {_0})")]
-struct MyIntDbg(i32);
 
 #[derive(Display)]
 #[display("({x}, {y})")]
@@ -186,8 +181,4 @@ assert_eq!(Unit.to_string(), "Unit");
 assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
 assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
 assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
-assert_eq!(
-    format!("{:?}", MyIntDbg(-255)),
-    "MyIntDbg(as hex: ffffff01, as dec: -255)",
-);
 ```

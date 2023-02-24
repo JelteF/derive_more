@@ -1,0 +1,5 @@
+error: float literals must have an integer part
+ --> tests/compile_fail/debug/unnamed_field_prefixed_with_dot.rs:2:37
+  |
+2 | pub struct Foo(#[debug("Stuff({})", .0)] String);
+  |                                     ^^ help: must have an integer part: `0.0`

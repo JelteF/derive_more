@@ -1,0 +1,5 @@
+error: unknown attribute, expected `bound(...)`
+ --> tests/compile_fail/debug/unknown_attribute.rs:2:9
+  |
+2 | #[debug(unknown = "unknown")]
+  |         ^^^^^^^

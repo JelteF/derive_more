@@ -8,6 +8,7 @@
 //! [`IntoIterator`]: crate::IntoIterator
 //! [`AsRef`]: crate::AsRef
 //!
+//! [`Debug`]: crate::Debug
 //! [`Display`-like]: crate::Display
 //!
 //! [`Error`]: crate::Error
@@ -50,6 +51,9 @@ pub use derive_more_impl::*;
 mod convert;
 #[cfg(feature = "try_into")]
 pub use self::convert::TryIntoError;
+
+#[cfg(feature = "debug")]
+pub mod fmt;
 
 #[cfg(any(feature = "add", feature = "not"))]
 pub mod ops;
