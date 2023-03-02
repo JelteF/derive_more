@@ -81,7 +81,7 @@ fn expand_struct(
         ident,
     };
     let bounds = s.generate_bounds();
-    let body = s.generate_body();
+    let body = s.generate_body()?;
 
     let vars = s.fields.iter().enumerate().map(|(i, f)| {
         let var = f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"));
@@ -138,7 +138,7 @@ fn expand_enum(
                 trait_ident,
                 ident,
             };
-            let arm_body = v.generate_body();
+            let arm_body = v.generate_body()?;
             bounds.extend(v.generate_bounds());
 
             let fields_idents =
@@ -290,29 +290,46 @@ struct Expansion<'a> {
 impl<'a> Expansion<'a> {
     /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
+    /// # Errors
+    ///
+    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is
+    /// greater than 1.
+    ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
-    fn generate_body(&self) -> TokenStream {
-        if let Some(fmt) = &self.attrs.fmt {
-            let (lit, args) = (&fmt.lit, &fmt.args);
-            quote! {
-                ::core::write!(__derive_more_f, #lit, #( #args ),*)
+    fn generate_body(&self) -> Result<TokenStream> {
+        match &self.attrs.fmt {
+            Some(fmt) => {
+                let (lit, args) = (&fmt.lit, &fmt.args);
+                Ok(quote! {
+                    ::core::write!(__derive_more_f, #lit, #( #args ),*)
+                })
             }
-        } else if self.fields.iter().count() == 1 {
-            let field = self
-                .fields
-                .iter()
-                .next()
-                .unwrap_or_else(|| unreachable!("count() == 1"));
-            let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
-            let trait_ident = self.trait_ident;
-            quote! {
-                ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+            None if self.fields.is_empty() => {
+                let ident_str = self.ident.to_string();
+                Ok(quote! {
+                    ::core::write!(__derive_more_f, #ident_str)
+                })
             }
-        } else {
-            let ident_str = self.ident.to_string();
-            quote! {
-                ::core::write!(__derive_more_f, #ident_str)
+            None if self.fields.len() == 1 => {
+                let field = self
+                    .fields
+                    .iter()
+                    .next()
+                    .unwrap_or_else(|| unreachable!("count() == 1"));
+                let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
+                let trait_ident = self.trait_ident;
+                Ok(quote! {
+                    ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+                })
             }
+            _ => Err(Error::new(
+                self.fields.span(),
+                format!(
+                    "struct or enum variant with more than 1 field must have \
+                     `#[{}(\"...\", ...)]` attribute",
+                    trait_name_to_attribute_name(self.trait_ident),
+                ),
+            )),
         }
     }
 
@@ -338,16 +355,19 @@ impl<'a> Expansion<'a> {
 }
 
 /// Matches the provided `trait_name` to appropriate [`Attribute::Fmt`] argument name.
-fn trait_name_to_attribute_name(trait_name: &str) -> &'static str {
-    match trait_name {
-        "Binary" => "binary",
-        "Display" => "display",
-        "LowerExp" => "lower_exp",
-        "LowerHex" => "lower_hex",
-        "Octal" => "octal",
-        "Pointer" => "pointer",
-        "UpperExp" => "upper_exp",
-        "UpperHex" => "upper_hex",
+fn trait_name_to_attribute_name<T>(trait_name: T) -> &'static str
+where
+    T: for<'a> PartialEq<&'a str>,
+{
+    match () {
+        _ if trait_name == "Binary" => "binary",
+        _ if trait_name == "Display" => "display",
+        _ if trait_name == "LowerExp" => "lower_exp",
+        _ if trait_name == "LowerHex" => "lower_hex",
+        _ if trait_name == "Octal" => "octal",
+        _ if trait_name == "Pointer" => "pointer",
+        _ if trait_name == "UpperExp" => "upper_exp",
+        _ if trait_name == "UpperHex" => "upper_hex",
         _ => unimplemented!(),
     }
 }

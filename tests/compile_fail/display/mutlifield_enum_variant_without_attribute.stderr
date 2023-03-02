@@ -1,0 +1,5 @@
+error: struct or enum variant with more than 1 field must have `#[display("...", ...)]` attribute
+ --> tests/compile_fail/display/mutlifield_enum_variant_without_attribute.rs:3:13
+  |
+3 |     Variant { foo: String, bar: String },
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
