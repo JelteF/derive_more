@@ -325,7 +325,7 @@ impl<'a> Expansion<'a> {
             _ => Err(Error::new(
                 self.fields.span(),
                 format!(
-                    "Struct or enum variants with more than 1 field must have \
+                    "struct or enum variant with more than 1 field must have \
                      `#[{}(\"...\", ...)]` attribute",
                     trait_name_to_attribute_name(self.trait_ident),
                 ),
