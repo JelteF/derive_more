@@ -30,7 +30,8 @@ impl Parse for Type {
                     }
                 }
                 if items.len() == 1 && !items.trailing_punct() {
-                    // TODO: docs
+                    // `(Inner)` is equivalent to `Inner`, so isn't top-level
+                    // tuple.
                     let stream = outer
                         .token_tree()
                         .unwrap_or_else(|| unreachable!())
