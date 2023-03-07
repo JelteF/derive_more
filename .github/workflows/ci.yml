@@ -145,7 +145,7 @@ jobs:
         with:
           toolchain: nightly
 
-      - run: cargo +nightly doc --workspace
+      - run: cargo +nightly doc --workspace --all-features
         env:
           RUSTDOCFLAGS: --cfg docsrs
 
