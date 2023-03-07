@@ -1,4 +1,6 @@
-//! Parsing of [`format_args`]-like macros.
+//! Parsing of [Rust `fmt` syntax][0].
+//!
+//! [0]: std::fmt#syntax
 
 use std::{convert::identity, iter};
 
@@ -11,6 +13,8 @@ pub(crate) struct FormatString<'a> {
 }
 
 /// Output of the [`format`] parser.
+///
+/// [`format`]: fn@format
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) struct Format<'a> {
     pub(crate) arg: Option<Argument<'a>>,
@@ -158,6 +162,7 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
 /// {par:-^#.0$?}
 /// ```
 ///
+/// [`format`]: fn@format
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
     alt(&mut [
@@ -181,6 +186,7 @@ fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
 /// {par:-^#.0$?}
 /// ```
 ///
+/// [`format`]: fn@format
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
 fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
     let input = char('{')(input)?;
@@ -224,7 +230,7 @@ fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
 ///
 /// # Grammar
 ///
-/// [`format_spec`]` := [[fill]align][sign]['#']['0'][`[`width`]`]`
+/// [`format_spec`]` := [[fill]align][sign]['#']['0'][width]`
 ///                     `['.' `[`precision`]`]`[`type`]
 ///
 /// # Example
@@ -547,6 +553,8 @@ fn take_while1(
 /// Parses with `basic` while `until` returns [`None`]. Returns [`None`] in case
 /// `until` succeeded initially or `basic` never succeeded. Doesn't consume
 /// [`char`]s parsed by `until`.
+///
+/// [`char`]: fn@char
 fn take_until1(
     mut basic: impl FnMut(&str) -> Option<&str>,
     mut until: impl FnMut(&str) -> Option<&str>,
@@ -584,6 +592,8 @@ fn char(c: char) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
 }
 
 /// Checks whether first [`char`] suits `check`.
+///
+/// [`char`]: fn@char
 fn check_char(
     mut check: impl FnMut(char) -> bool,
 ) -> impl FnMut(&str) -> Option<LeftToParse<'_>> {
@@ -596,11 +606,15 @@ fn check_char(
 }
 
 /// Checks whether first [`char`] of input is present in `chars`.
+///
+/// [`char`]: fn@char
 fn one_of(chars: &str) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + '_ {
     move |input: &str| chars.chars().find_map(|c| char(c)(input))
 }
 
 /// Parses any [`char`].
+///
+/// [`char`]: fn@char
 fn any_char(input: &str) -> Option<LeftToParse<'_>> {
     input.chars().next().map(|c| &input[c.len_utf8()..])
 }

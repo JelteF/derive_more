@@ -128,86 +128,70 @@ fn enum_from(input: &DeriveInput, state: State) -> TokenStream {
 }
 
 mod new {
-    use std::iter;
-
     use syn::{
         parse::{Parse, ParseStream},
+        punctuated::Punctuated,
         spanned::Spanned as _,
-        Error, Result,
+        token, Error, Result,
     };
 
     use crate::parsing::Type;
 
-    enum StructContainerAttribute {
-        Types(Vec<Type>),
+    enum StructAttribute {
+        Types(Punctuated<Type, token::Comma>),
         Forward,
     }
 
-    impl StructContainerAttribute {
-        /// Parses [`StructContainerAttribute`] from the provided [`syn::Attribute`]s.
+    impl StructAttribute {
+        /// Parses [`StructAttribute`] from the provided [`syn::Attribute`]s.
         fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
             Ok(attrs
                 .as_ref()
                 .iter()
                 .filter(|attr| attr.path.is_ident("from"))
-                .try_fold(None, |mut attrs, attr| {
+                .try_fold(None, |attrs, attr| {
                     let field_attr =
-                        syn::parse2::<StructContainerAttribute>(attr.tokens.clone())?;
-                    if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
-                        Err(Error::new(
-                            path.span(),
+                        syn::parse2::<StructAttribute>(attr.tokens.clone())?;
+                    match (attrs, field_attr) {
+                        (
+                            Some((path, StructAttribute::Types(mut tys))),
+                            StructAttribute::Types(more),
+                        ) => {
+                            tys.extend(more);
+                            Ok(Some((path, StructAttribute::Types(tys))))
+                        }
+                        (None, field_attr) => Ok(Some((&attr.path, field_attr))),
+                        _ => Err(Error::new(
+                            attr.path.span(),
                             "Only single `#[from(...)]` attribute is allowed here",
-                        ))
-                    } else {
-                        Ok(attrs)
+                        )),
                     }
                 })?
                 .map(|(_, attr)| attr))
         }
     }
 
-    impl Parse for StructContainerAttribute {
+    impl Parse for StructAttribute {
         fn parse(input: ParseStream) -> Result<Self> {
             let content;
             syn::parenthesized!(content in input);
 
-            match content.parse::<syn::Path>()? {
-                p if p.is_ident("forward") => Ok(Self::Forward),
-                p if p.is_ident("types") => {
-                    let inner;
-                    syn::parenthesized!(inner in content);
-
-                    inner
-                        .step(|c| {
-                            let mut cursor = *c;
-
-                            let types = iter::from_fn(|| {
-                                let (ty, c) = Type::parse(cursor)?;
-                                cursor = c;
-                                Some(ty)
-                            })
-                            .collect();
-
-                            Ok((types, cursor))
-                        })
-                        .map(|types| Self::Types(types))
-                }
-                p => Err(Error::new(
-                    p.span(),
-                    "Unknown attribute. Expected `types` or `forward`",
-                )),
+            match content.fork().parse::<syn::Path>() {
+                Ok(p) if p.is_ident("forward") => Ok(Self::Forward),
+                _ => content.parse_terminated(Type::parse).map(Self::Types),
             }
         }
     }
 
-    enum EnumVariantAttribute {
-        Types(Vec<Type>),
+    enum VariantAttribute {
+        Types(Punctuated<Type, token::Comma>),
         Forward,
         Skip,
+        From,
     }
 
-    impl EnumVariantAttribute {
-        /// Parses [`EnumVariantAttribute`] from the provided [`syn::Attribute`]s.
+    impl VariantAttribute {
+        /// Parses [`VariantAttribute`] from the provided [`syn::Attribute`]s.
         fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
             Ok(attrs
                 .as_ref()
@@ -215,7 +199,7 @@ mod new {
                 .filter(|attr| attr.path.is_ident("from"))
                 .try_fold(None, |mut attrs, attr| {
                     let field_attr =
-                        syn::parse2::<EnumVariantAttribute>(attr.tokens.clone())?;
+                        syn::parse2::<VariantAttribute>(attr.tokens.clone())?;
                     if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
                         Err(Error::new(
                             path.span(),
@@ -229,37 +213,16 @@ mod new {
         }
     }
 
-    impl Parse for EnumVariantAttribute {
+    impl Parse for VariantAttribute {
         fn parse(input: ParseStream) -> Result<Self> {
             let content;
             syn::parenthesized!(content in input);
 
-            match content.parse::<syn::Path>()? {
-                p if p.is_ident("forward") => Ok(Self::Forward),
-                p if p.is_ident("skip") || p.is_ident("ignore") => Ok(Self::Skip),
-                p if p.is_ident("types") => {
-                    let inner;
-                    syn::parenthesized!(inner in content);
-
-                    inner
-                        .step(|c| {
-                            let mut cursor = *c;
-
-                            let types = iter::from_fn(|| {
-                                let (ty, c) = Type::parse(cursor)?;
-                                cursor = c;
-                                Some(ty)
-                            })
-                            .collect();
-
-                            Ok((types, cursor))
-                        })
-                        .map(|types| Self::Types(types))
-                }
-                p => Err(Error::new(
-                    p.span(),
-                    "Unknown attribute. Expected `types`, `forward` or `skip`",
-                )),
+            match content.fork().parse::<syn::Path>() {
+                Ok(p) if p.is_ident("forward") => Ok(Self::Forward),
+                Ok(p) if p.is_ident("skip") || p.is_ident("ignore") => Ok(Self::Skip),
+                _ if content.is_empty() => Ok(Self::From),
+                _ => content.parse_terminated(Type::parse).map(Self::Types),
             }
         }
     }
