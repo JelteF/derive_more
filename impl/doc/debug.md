@@ -1,10 +1,10 @@
 # What `#[derive(Debug)]` generates
 
-This derive macro is a superset of `Debug` from standard library. Additional features include:
-
+This derive macro is a clever superset of `Debug` from standard library. Additional features include:
+- not imposing redudant trait bounds;
 - `#[debug(skip)]` attribute to skip formatting struct field or enum variant;
-- `#[debug("...", args...)]` to specify custom formatting for particular struct or enum variant field;
-- `#[debug(bounds(...))]` to impose additional trait bounds.
+- `#[debug("...", args...)]` to specify custom formatting for a particular struct or enum variant field;
+- `#[debug(bounds(...))]` to impose additional custom trait bounds.
 
 
 
@@ -22,8 +22,8 @@ named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
 
 ### Generic data types
 
-When deriving `Debug` for a generic struct/enum, all generic type arguments used during formatting are bound by
-respective formatting trait.
+When deriving `Debug` for a generic struct/enum, all generic type arguments _used_ during formatting
+are bound by respective formatting trait.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
@@ -42,9 +42,8 @@ struct Foo<'a, T1, T2: Trait, T3, T4> {
     #[debug(skip)]
     e: T4,
 }
-#
-# trait Trait { type Type; }
-#
+
+trait Trait { type Type; }
 ```
 
 The following where clauses would be generated:
@@ -64,12 +63,11 @@ during formatting. This can be done with a `#[debug(bound(...))]` attribute.
 clause predicates): `T: MyTrait, U: Trait1 + Trait2`.
 
 Using `#[debug("...", ...)]` formatting we'll try our best to infer trait bounds, but in more advanced cases this isn't
-possible. Our aim is to avoid imposing additional bounds, as they can be added with `#[debug(bound(...))]`. In example
-below we inferred only that `V: Display`, other bounds have to be supplied by the user:
+possible. Our aim is to avoid imposing additional bounds, as they can be added with `#[debug(bound(...))]`.
+In the example below, we can infer only that `V: Display`, other bounds have to be supplied by the user:
 
 ```rust
-# use std::fmt::Display;
-#
+use std::fmt::Display;
 use derive_more::Debug;
 
 #[derive(Debug)]
@@ -84,9 +82,8 @@ struct MyStruct<T, U, V, F> {
     #[debug(skip)]
     d: F,
 }
-#
-# trait MyTrait { fn my_function(&self) -> i32; }
-#
+
+trait MyTrait { fn my_function(&self) -> i32; }
 ```
 
 
@@ -95,8 +92,7 @@ struct MyStruct<T, U, V, F> {
 ## Example usage
 
 ```rust
-# use std::path::PathBuf;
-#
+use std::path::PathBuf;
 use derive_more::Debug;
 
 #[derive(Debug)]

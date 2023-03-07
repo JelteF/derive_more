@@ -1,3 +1,7 @@
+//! Implementations of [`fmt`]-like derive macros.
+//!
+//! [`fmt`]: std::fmt
+
 #[cfg(feature = "debug")]
 pub(crate) mod debug;
 #[cfg(feature = "display")]
@@ -16,7 +20,7 @@ use syn::{
     Error, Result,
 };
 
-/// Additional trait bounds attribute.
+/// Representation of a macro attribute expressing additional trait bounds.
 #[derive(Debug, Default)]
 struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
 
@@ -40,7 +44,7 @@ impl BoundsAttribute {
                 .map_or(Ok(()), |bound| {
                     Err(Error::new(
                         error_span,
-                        format!("Legacy syntax, use: `bound({bound})`"),
+                        format!("legacy syntax, use `bound({bound})` instead"),
                     ))
                 }),
             Ok(_) | Err(_) => Ok(()),
@@ -51,12 +55,15 @@ impl BoundsAttribute {
 impl Parse for BoundsAttribute {
     fn parse(input: ParseStream) -> Result<Self> {
         let _ = input.parse::<syn::Path>().and_then(|p| {
-            if ["bound", "bounds"].into_iter().any(|i| p.is_ident(i)) {
+            if ["bound", "bounds", "where"]
+                .into_iter()
+                .any(|i| p.is_ident(i))
+            {
                 Ok(p)
             } else {
                 Err(Error::new(
                     p.span(),
-                    "Unknown attribute. Expected `bound(...)`",
+                    "unknown attribute, expected `bound(...)`",
                 ))
             }
         })?;
@@ -70,12 +77,14 @@ impl Parse for BoundsAttribute {
     }
 }
 
-/// [`fmt`] attribute.
+/// Representation of a [`fmt`]-like attribute.
 ///
 /// [`fmt`]: std::fmt
 #[derive(Debug)]
 struct FmtAttribute {
     /// Interpolation [`syn::LitStr`].
+    ///
+    /// [`syn::LitStr`]: struct@syn::LitStr
     lit: syn::LitStr,
 
     /// Interpolation arguments.
@@ -83,7 +92,7 @@ struct FmtAttribute {
 }
 
 impl FmtAttribute {
-    /// Returns [`Iterator`] over bounded [`syn::Type`]s and trait names.
+    /// Returns an [`Iterator`] over bounded [`syn::Type`]s and trait names.
     fn bounded_types<'a>(
         &'a self,
         fields: &'a syn::Fields,
@@ -149,7 +158,7 @@ impl FmtAttribute {
             .map_or(Ok(()), |fmt| {
                 Err(Error::new(
                     error_span,
-                    format!("Legacy syntax, use: `{}`", fmt.join(", ")),
+                    format!("legacy syntax, use `{}` instead", fmt.join(", ")),
                 ))
             }),
             Ok(_) | Err(_) => Ok(()),
@@ -194,7 +203,8 @@ impl ToTokens for FmtAttribute {
     }
 }
 
-/// [Named parameter][1]: `identifier '=' expression`.
+/// Representation of a [named parameter][1] (`identifier '=' expression`) in
+/// in a [`FmtAttribute`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
 #[derive(Debug, Default)]
@@ -207,13 +217,11 @@ struct FmtArgument {
 }
 
 impl FmtArgument {
-    /// Parses this [`FmtArgument`] and returns a new [`Cursor`], where parsing
+    /// Parses a [`FmtArgument`] and returns a new [`Cursor`], where parsing
     /// can be continued.
     ///
     /// Returns [`None`] in case of eof or trailing comma.
     fn parse(mut cursor: Cursor<'_>) -> Option<(FmtArgument, Cursor<'_>)> {
-        use crate::parsing::Expr;
-
         let mut arg = FmtArgument::default();
 
         if let Some((ident, c)) = cursor.ident() {
@@ -234,10 +242,134 @@ impl FmtArgument {
             }
         }
 
-        let (expr, c) = Expr::parse(cursor)?;
-        arg.expr.extend(expr.0);
+        let (rest, c) = Self::parse_rest(cursor);
+        arg.expr.extend(rest);
 
-        Some((arg, c))
+        (!arg.expr.is_empty()).then_some((arg, c))
+    }
+
+    /// Parses the rest, until the end of a [`FmtArgument`] (comma or eof),
+    /// in case simplest case of `(ident =)? ident(,|eof)` wasn't parsed.
+    fn parse_rest(mut cursor: Cursor<'_>) -> (TokenStream, Cursor<'_>) {
+        let mut out = TokenStream::new();
+
+        loop {
+            if let Some(extend) = Self::turbofish(cursor) {
+                cursor = extend(&mut out);
+                continue;
+            }
+            if let Some(extend) = Self::closure_args(cursor) {
+                cursor = extend(&mut out);
+                continue;
+            }
+            if let Some(extend) = Self::qself(cursor) {
+                cursor = extend(&mut out);
+                continue;
+            }
+
+            if let Some(c) = cursor
+                .punct()
+                .and_then(|(p, c)| (p.as_char() == ',').then_some(c))
+                .or_else(|| cursor.eof().then_some(cursor))
+            {
+                return (out, c);
+            }
+
+            let (tt, c) = cursor
+                .token_tree()
+                .unwrap_or_else(|| unreachable!("checked for eof"));
+            out.extend([tt]);
+            cursor = c;
+        }
+    }
+
+    /// Tries to parse `| (closure_arg),* |`.
+    fn closure_args<'a>(
+        cursor: Cursor<'a>,
+    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
+        let (open, c) = cursor.punct().filter(|(p, _)| p.as_char() == '|')?;
+
+        Some(move |stream: &mut TokenStream| {
+            stream.extend([TokenTree::Punct(open)]);
+            // We can ignore inner `|`, because only other place it can appear
+            // is in or pattern (ex. `Either::Left(v) | Either::Right(v)`),
+            // which must be parenthesized, so will be parsed as one
+            // `TokenTree`.
+            let (more, c) = Self::parse_until_closing('|', '|', c);
+            stream.extend(more);
+            c
+        })
+    }
+
+    /// Tries to parse `::< ... >`.
+    fn turbofish<'a>(
+        cursor: Cursor<'a>,
+    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
+        use proc_macro2::Spacing;
+
+        let (colon1, c) = cursor
+            .punct()
+            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
+        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
+        let (less, c) = c.punct().filter(|(p, _)| p.as_char() == '<')?;
+
+        Some(move |stream: &mut TokenStream| {
+            stream.extend([colon1, colon2, less].map(TokenTree::Punct));
+            let (more, c) = Self::parse_until_closing('<', '>', c);
+            stream.extend(more);
+            c
+        })
+    }
+
+    /// Tries to parse `< ... as ... >::`.
+    fn qself<'a>(
+        cursor: Cursor<'a>,
+    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
+        use proc_macro2::Spacing;
+
+        let (less, c) = cursor.punct().filter(|(p, _)| p.as_char() == '<')?;
+        let (more, c) = Self::parse_until_closing('<', '>', c);
+        let (colon1, c) = c
+            .punct()
+            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
+        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
+
+        Some(move |stream: &mut TokenStream| {
+            stream.extend([less].map(TokenTree::Punct));
+            stream.extend(more);
+            stream.extend([colon1, colon2].map(TokenTree::Punct));
+            c
+        })
+    }
+
+    /// Parses until balanced amount of `open` and `close` [`TokenTree::Punct`]
+    /// or eof.
+    ///
+    /// [`Cursor`] should be pointing **right after** the first `open`ing.
+    fn parse_until_closing(
+        open: char,
+        close: char,
+        mut cursor: Cursor<'_>,
+    ) -> (TokenStream, Cursor<'_>) {
+        let mut out = TokenStream::new();
+        let mut count = 1;
+
+        while let Some((tt, c)) = cursor.token_tree().filter(|_| count != 0) {
+            match tt {
+                TokenTree::Punct(ref p) if p.as_char() == close => {
+                    count -= 1;
+                }
+                TokenTree::Punct(ref p) if p.as_char() == open => {
+                    count += 1;
+                }
+                _ => {}
+            }
+
+            out.extend([tt]);
+            cursor = c;
+        }
+
+        (out, cursor)
     }
 }
 
@@ -251,10 +383,10 @@ impl ToTokens for FmtArgument {
     }
 }
 
-/// Expression of a [`FmtArgument`].
+/// Representation of an expression being a [`FmtArgument`].
 ///
-/// This type is used instead of a [`syn::Expr`] to avoid using [`syn`]'s
-/// `full` feature increasing compilation times.
+/// **NOTE**: This type is used instead of a [`syn::Expr`] to avoid using
+///           [`syn`]'s `full` feature significantly blowing up compilation times.
 #[derive(Debug)]
 enum FmtExpr {
     /// [`Ident`].
@@ -271,6 +403,14 @@ impl FmtExpr {
         match self {
             Self::Ident(i) => Some(i),
             Self::TokenStream(_) => None,
+        }
+    }
+
+    /// Checks whether this [`FmtExpr`] is empty.
+    fn is_empty(&self) -> bool {
+        match self {
+            Self::Ident(_) => false,
+            Self::TokenStream(stream) => stream.is_empty(),
         }
     }
 }
@@ -313,7 +453,7 @@ impl Extend<TokenTree> for FmtExpr {
     }
 }
 
-/// [Parameter][1] used in [`Placeholder`].
+/// Representation of a [parameter][1] used in a [`Placeholder`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-parameters
 #[derive(Debug, Eq, PartialEq)]
@@ -332,13 +472,13 @@ enum Parameter {
 impl<'a> From<parsing::Argument<'a>> for Parameter {
     fn from(arg: parsing::Argument<'a>) -> Self {
         match arg {
-            parsing::Argument::Integer(i) => Parameter::Positional(i),
-            parsing::Argument::Identifier(i) => Parameter::Named(i.to_owned()),
+            parsing::Argument::Integer(i) => Self::Positional(i),
+            parsing::Argument::Identifier(i) => Self::Named(i.to_owned()),
         }
     }
 }
 
-/// Representation of formatting placeholder.
+/// Representation of a formatting placeholder.
 #[derive(Debug, PartialEq, Eq)]
 struct Placeholder {
     /// Formatting argument (either named or positional) to be used by this placeholder.
@@ -359,7 +499,7 @@ struct Placeholder {
 }
 
 impl Placeholder {
-    /// Parses [`Placeholder`]s from a given formatting string.
+    /// Parses [`Placeholder`]s from the provided formatting string.
     fn parse_fmt_string(s: &str) -> Vec<Self> {
         let mut n = 0;
         parsing::format_string(s)
@@ -417,8 +557,8 @@ mod fmt_attribute_spec {
                 assert_eq!(
                     *expected, found,
                     "Mismatch at index {i}\n\
-                             Expected: {parsed:?}\n\
-                             Found: {fmt_args:?}",
+                     Expected: {parsed:?}\n\
+                     Found: {fmt_args:?}",
                 );
             },
         );
@@ -473,7 +613,7 @@ mod fmt_attribute_spec {
 
 #[cfg(test)]
 mod placeholder_parse_fmt_string_spec {
-    use super::*;
+    use super::{Parameter, Placeholder};
 
     #[test]
     fn indicates_position_and_trait_name_for_each_fmt_placeholder() {

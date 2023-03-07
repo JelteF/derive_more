@@ -1,4 +1,4 @@
-//! Implementation of [`fmt::Debug`] derive macro.
+//! Implementation of a [`fmt::Debug`] derive macro.
 //!
 //! [`fmt::Debug`]: std::fmt::Debug
 
@@ -13,7 +13,7 @@ use syn::{
 
 use super::{BoundsAttribute, FmtAttribute};
 
-/// Expands [`fmt::Debug`] derive macro.
+/// Expands a [`fmt::Debug`] derive macro.
 ///
 /// [`fmt::Debug`]: std::fmt::Debug
 pub fn expand(input: &syn::DeriveInput, _: &str) -> Result<TokenStream> {
@@ -144,13 +144,12 @@ fn expand_enum(
 /// [`fmt::Debug`]: std::fmt::Debug
 #[derive(Debug, Default)]
 struct ContainerAttributes {
-    /// Addition trait bounds.
+    /// Additional trait bounds.
     bounds: BoundsAttribute,
 }
 
 impl ContainerAttributes {
-    /// Parses [`ContainerAttributes`] from the provided
-    /// [`syn::Attribute`]s.
+    /// Parses [`ContainerAttributes`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Self> {
         attrs
             .as_ref()
@@ -196,7 +195,7 @@ enum FieldAttribute {
 }
 
 impl FieldAttribute {
-    /// Parses [`FieldAttribute`] from the provided [`syn::Attribute`]s.
+    /// Parses [`ContainerAttributes`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
         Ok(attrs
             .as_ref()
@@ -207,7 +206,7 @@ impl FieldAttribute {
                 if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
                     Err(Error::new(
                         path.span(),
-                        "Only single `#[debug(...)]` attribute is allowed here",
+                        "only single `#[debug(...)]` attribute is allowed here",
                     ))
                 } else {
                     Ok(attrs)
@@ -235,7 +234,7 @@ impl Parse for FieldAttribute {
                 } else {
                     Err(Error::new(
                         p.span(),
-                        "Unknown attribute. Expected `skip` or `ignore`",
+                        "unknown attribute, expected `skip` or `ignore`",
                     ))
                 }
             })?;
@@ -253,7 +252,7 @@ impl Parse for FieldAttribute {
 struct Expansion<'a> {
     attr: &'a ContainerAttributes,
 
-    /// Struct or enum [`Ident`].
+    /// Struct or enum [`Ident`](struct@Ident).
     ident: &'a Ident,
 
     /// Struct or enum [`syn::Fields`].
@@ -261,8 +260,7 @@ struct Expansion<'a> {
 }
 
 impl<'a> Expansion<'a> {
-    /// Generates [`Debug::fmt()`] implementation for a struct or an enum
-    /// variant.
+    /// Generates [`Debug::fmt()`] implementation for a struct or an enum variant.
     ///
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> Result<TokenStream> {

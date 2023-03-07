@@ -1,0 +1,9 @@
+error: struct or enum variant with more than 1 field must have `#[display("...", ...)]` attribute
+ --> tests/compile_fail/display/mutlifield_struct_without_attribute.rs:2:16
+  |
+2 |   pub struct Foo {
+  |  ________________^
+3 | |     foo: String,
+4 | |     bar: String,
+5 | | }
+  | |_^
