@@ -62,3 +62,34 @@ pub mod ops;
 mod r#str;
 #[cfg(feature = "from_str")]
 pub use self::r#str::FromStrError;
+
+#[cfg(not(any(
+    feature = "full",
+    feature = "add_assign",
+    feature = "add",
+    feature = "as_mut",
+    feature = "as_ref",
+    feature = "constructor",
+    feature = "debug",
+    feature = "deref",
+    feature = "deref_mut",
+    feature = "display",
+    feature = "error",
+    feature = "from",
+    feature = "from_str",
+    feature = "index",
+    feature = "index_mut",
+    feature = "into",
+    feature = "into_iterator",
+    feature = "is_variant",
+    feature = "iterator",
+    feature = "mul_assign",
+    feature = "mul",
+    feature = "not",
+    feature = "sum",
+    feature = "try_into",
+    feature = "unwrap"
+)))]
+compile_error!(
+    "at least one derive feature must be enabled (or the \"full\" one enabling all the derives)"
+);
