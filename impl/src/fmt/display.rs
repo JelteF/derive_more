@@ -183,13 +183,11 @@ fn expand_union(
             ),
         )
     })?;
-    let (lit, args) = (&fmt.lit, &fmt.args);
 
-    let body = quote! {
-        ::core::write!(__derive_more_f, #lit, #( #args ),*)
-    };
-
-    Ok((attrs.bounds.0.clone().into_iter().collect(), body))
+    Ok((
+        attrs.bounds.0.clone().into_iter().collect(),
+        quote! { ::core::write!(__derive_more_f, #fmt) },
+    ))
 }
 
 /// Representation of a [`fmt::Display`]-like derive macro attribute.
@@ -298,17 +296,10 @@ impl<'a> Expansion<'a> {
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> Result<TokenStream> {
         match &self.attrs.fmt {
-            Some(fmt) => {
-                let (lit, args) = (&fmt.lit, &fmt.args);
-                Ok(quote! {
-                    ::core::write!(__derive_more_f, #lit, #( #args ),*)
-                })
-            }
+            Some(fmt) => Ok(quote! { ::core::write!(__derive_more_f, #fmt) }),
             None if self.fields.is_empty() => {
                 let ident_str = self.ident.to_string();
-                Ok(quote! {
-                    ::core::write!(__derive_more_f, #ident_str)
-                })
+                Ok(quote! { ::core::write!(__derive_more_f, #ident_str) })
             }
             None if self.fields.len() == 1 => {
                 let field = self

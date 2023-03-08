@@ -11,8 +11,6 @@
 //! [`Debug`]: crate::Debug
 //! [`Display`-like]: crate::Display
 //!
-//! [`Debug`]: crate::Debug
-//!
 //! [`Error`]: crate::Error
 //!
 //! [`Index`]: crate::Index

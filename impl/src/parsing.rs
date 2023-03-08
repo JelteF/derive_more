@@ -4,9 +4,12 @@ use std::iter;
 
 use proc_macro2::{Delimiter, Spacing, TokenStream, TokenTree};
 use quote::ToTokens;
-use syn::parse::{Parse, ParseStream};
 use syn::{
-    buffer::Cursor, punctuated::Punctuated, spanned::Spanned as _, token, Error, Result,
+    buffer::Cursor,
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
+    spanned::Spanned as _,
+    token, Error, Ident, Result,
 };
 
 impl Parse for Type {
@@ -86,29 +89,52 @@ impl Type {
 }
 
 #[derive(Debug)]
-pub struct Expr(pub TokenStream);
+pub enum Expr {
+    Ident(Ident),
+    Other(TokenStream),
+}
+
+impl Expr {
+    pub fn ident(&self) -> Option<&Ident> {
+        match self {
+            Self::Ident(ident) => Some(ident),
+            Self::Other(_) => None,
+        }
+    }
+}
 
 impl Parse for Expr {
     fn parse(input: ParseStream) -> Result<Self> {
-        input.step(|c| {
-            take_until1(
-                alt([
-                    &mut seq([&mut colon2, &mut qself]),
-                    &mut seq([&mut qself, &mut colon2]),
-                    &mut balanced_pair(punct('|'), punct('|')),
-                    &mut token_tree,
-                ]),
-                punct(','),
-            )(*c)
-            .map(|(stream, cursor)| (Self(stream), cursor))
-            .ok_or_else(|| Error::new(c.span(), "failed to parse expression"))
-        })
+        if let Ok(ident) = input.step(|c| {
+            c.ident()
+                .filter(|(_, c)| c.eof() || punct(',')(*c).is_some())
+                .ok_or_else(|| Error::new(c.span(), "expected `ident(,|eof)`"))
+        }) {
+            Ok(Self::Ident(ident))
+        } else {
+            input.step(|c| {
+                take_until1(
+                    alt([
+                        &mut seq([&mut colon2, &mut qself]),
+                        &mut seq([&mut qself, &mut colon2]),
+                        &mut balanced_pair(punct('|'), punct('|')),
+                        &mut token_tree,
+                    ]),
+                    punct(','),
+                )(*c)
+                .map(|(stream, cursor)| (Self::Other(stream), cursor))
+                .ok_or_else(|| Error::new(c.span(), "failed to parse expression"))
+            })
+        }
     }
 }
 
 impl ToTokens for Expr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.0.to_tokens(tokens);
+        match self {
+            Self::Ident(ident) => ident.to_tokens(tokens),
+            Self::Other(other) => other.to_tokens(tokens),
+        }
     }
 }
 
