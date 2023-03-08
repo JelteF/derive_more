@@ -2,4 +2,4 @@ error: legacy syntax, use `bound(String: std::fmt::Display)` instead
  --> tests/compile_fail/debug/legacy_bound_syntax.rs:2:8
   |
 2 | #[debug(bound = "String: std::fmt::Display")]
-  |        ^
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
