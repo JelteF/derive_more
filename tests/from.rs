@@ -111,7 +111,7 @@ fn auto_ignore_with_forward_field2() {
 
 #[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
-#[from(types(u8, u16, u32))]
+#[from(u8, u16, u32, u64)]
 struct MyIntExplicit(u64);
 
 #[test]
@@ -124,7 +124,7 @@ fn explicit_types_struct() {
 
 #[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
-#[from(types(i8, i16))]
+#[from((i8, i8), (i16, i16), (i32, i32))]
 struct MyIntsExplicit(i32, i32);
 
 #[test]
@@ -137,13 +137,12 @@ fn explicit_types_struct_tupled() {
 #[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
 enum MixedIntsExplicit {
-    #[from(types(i8))]
+    #[from(i8, i32)]
     SmallInt(i32),
-    #[from(types(i16, i64))]
+    #[from(i16, i64, i128)]
     AnotherInt(i128),
-    NamedBigInt {
-        int: i64,
-    },
+    #[from(skip)]
+    NamedBigInt { int: i64 },
 }
 
 #[test]
@@ -158,7 +157,7 @@ fn explicit_types_enum() {
 
 #[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
-#[from(types(i8, i16))]
+#[from((i8, i8), (i16, i16), (i32, i32))]
 struct Point2DExplicit {
     x: i32,
     y: i32,
@@ -172,9 +171,8 @@ fn explicit_types_point_2d() {
     assert_eq!(expected, (42i16, 42i16).into());
 }
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(From)]
-#[from(types("Cow<'_, str>", "&str"))]
+#[derive(Debug, Eq, From, PartialEq)]
+#[from(String, Cow<'_, str>, &str)]
 struct Name(String);
 
 #[test]
