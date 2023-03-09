@@ -53,18 +53,29 @@ mod structs {
             struct Tuple(i32);
 
             #[derive(Debug, From, PartialEq)]
-            #[from(i16)]
+            #[from(&str, Cow<'_, str>)]
             struct Struct {
-                field: i32,
+                field: String,
             }
 
             #[test]
             fn assert() {
                 assert_not_impl_any!(Tuple: From<i32>);
-                assert_not_impl_any!(Struct: From<i32>);
+                assert_not_impl_any!(Struct: From<String>);
 
                 assert_eq!(Tuple(42), 42_i16.into());
-                assert_eq!(Struct { field: 42 }, 42_i16.into());
+                assert_eq!(
+                    Struct {
+                        field: "42".to_string(),
+                    },
+                    "42".into(),
+                );
+                assert_eq!(
+                    Struct {
+                        field: "42".to_string(),
+                    },
+                    Cow::Borrowed("42").into(),
+                );
             }
         }
 
@@ -78,7 +89,7 @@ mod structs {
             #[derive(Debug, From, PartialEq)]
             #[from(forward)]
             struct Struct {
-                field: i32,
+                field: String,
             }
 
             #[test]
@@ -86,9 +97,54 @@ mod structs {
                 assert_eq!(Tuple(42), 42_i8.into());
                 assert_eq!(Tuple(42), 42_i16.into());
                 assert_eq!(Tuple(42), 42_i32.into());
-                assert_eq!(Struct { field: 42 }, 42_i8.into());
-                assert_eq!(Struct { field: 42 }, 42_i16.into());
-                assert_eq!(Struct { field: 42 }, 42_i32.into());
+                assert_eq!(
+                    Struct {
+                        field: "42".to_string(),
+                    },
+                    "42".into(),
+                );
+                assert_eq!(
+                    Struct {
+                        field: "42".to_string(),
+                    },
+                    Cow::Borrowed("42").into(),
+                );
+            }
+        }
+
+        mod generic {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            struct Tuple<T>(T);
+
+            #[derive(Debug, From, PartialEq)]
+            struct Struct<T> {
+                field: T,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(42), 42.into());
+                assert_eq!(Struct { field: 42 }, 42.into());
+            }
+
+            mod bounds {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<T: Clone>(T);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<T: Clone> {
+                    field: T,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple(42), 42.into());
+                    assert_eq!(Struct { field: 42 }, 42.into());
+                }
             }
         }
     }
@@ -111,9 +167,9 @@ mod structs {
             assert_eq!(
                 Struct {
                     field1: 0,
-                    field2: 1
+                    field2: 1,
                 },
-                (0, 1_i16).into()
+                (0, 1_i16).into(),
             );
         }
 
@@ -213,185 +269,450 @@ mod structs {
                 );
             }
         }
+
+        mod generic {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            struct Tuple<A, B>(A, B);
+
+            #[derive(Debug, From, PartialEq)]
+            struct Struct<A, B> {
+                field1: A,
+                field2: B,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(0, 1_i16), (0, 1_i16).into());
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1_i16,
+                    },
+                    (0, 1_i16).into(),
+                );
+            }
+
+            mod bounds {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<A: Clone, B>(A, B);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<A: Clone, B> {
+                    field1: A,
+                    field2: B,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple(0, 1_i16), (0, 1_i16).into());
+                    assert_eq!(
+                        Struct {
+                            field1: 0,
+                            field2: 1_i16,
+                        },
+                        (0, 1_i16).into(),
+                    );
+                }
+            }
+        }
     }
 }
 
-#[derive(From)]
-struct EmptyTuple();
+mod enums {
+    use super::*;
 
-#[derive(From)]
-struct EmptyStruct {}
+    mod unit_variant {
+        use super::*;
 
-#[derive(From)]
-struct EmptyUnit;
+        #[derive(Debug, From, PartialEq)]
+        enum Enum {
+            #[from]
+            Unit,
+            Unnamed(),
+            Named {},
+        }
 
-#[derive(From)]
-struct MyInt(i32);
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::Unit, ().into());
+        }
+    }
 
-#[derive(From)]
-struct MyInts(i32, i32);
+    mod single_field_variant {
+        use super::*;
 
-#[derive(From)]
-struct Point1D {
-    x: i32,
-}
+        #[derive(Debug, From, PartialEq)]
+        enum Enum {
+            Unnamed(i8),
+            Named { field: i16 },
+        }
 
-#[derive(From)]
-struct Point2D {
-    x: i32,
-    y: i32,
-}
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::Unnamed(1), 1_i8.into());
+            assert_eq!(Enum::Named { field: 1 }, 1_i16.into());
+        }
 
-#[derive(From)]
-enum MixedInts {
-    SmallInt(i32),
-    NamedBigInt {
-        int: i64,
-    },
-    TwoSmallInts(i32, i32),
-    NamedBigInts {
-        x: i64,
-        y: i64,
-    },
-    #[from(ignore)]
-    Unsigned(u32),
-    NamedUnsigned {
-        x: u32,
-    },
-}
+        mod skip {
+            use super::*;
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(From)]
-#[from(forward)]
-struct MyIntForward(u64);
+            #[derive(Debug, From, PartialEq)]
+            enum Enum {
+                Unnamed(i8),
+                #[from(skip)]
+                UnnamedSkipped(i8),
+                Named {
+                    field: i16,
+                },
+                #[from(skip)]
+                NamedSkipped {
+                    field: i16,
+                },
+            }
 
-#[test]
-fn forward_struct() {
-    assert_eq!(MyIntForward(42), 42u32.into());
-    assert_eq!(MyIntForward(42), 42u16.into());
-    assert_eq!(MyIntForward(42), 42u64.into());
-}
+            #[test]
+            fn assert() {
+                assert_eq!(Enum::Unnamed(1), 1_i8.into());
+                assert_eq!(Enum::Named { field: 1 }, 1_i16.into());
+            }
+        }
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(From)]
-enum MixedIntsForward {
-    #[from(forward)]
-    SmallInt(i32),
-    NamedBigInt {
-        int: i64,
-    },
-}
+        mod types {
+            use super::*;
 
-#[test]
-fn forward_enum() {
-    assert_eq!(MixedIntsForward::SmallInt(42), 42i32.into());
-    assert_eq!(MixedIntsForward::SmallInt(42), 42i16.into());
-}
+            #[derive(Debug, From, PartialEq)]
+            enum Enum {
+                #[from(i8)]
+                Unnamed(i16),
+                #[from(i16)]
+                Named {
+                    field: i32,
+                },
+                NoAttribute(i32),
+            }
 
-#[derive(From, PartialEq)]
-enum AutoIgnore {
-    SmallInt(i32),
-    Uninteresting,
-    Uninteresting2,
-}
+            #[test]
+            fn assert() {
+                assert_eq!(Enum::Unnamed(1), 1_i8.into());
+                assert_eq!(Enum::Named { field: 1 }, 1_i16.into());
+                assert_eq!(Enum::NoAttribute(1), 1.into());
+            }
+        }
 
-#[test]
-fn auto_ignore_variants() {
-    assert!(AutoIgnore::SmallInt(42) == 42i32.into());
-}
+        mod forward {
+            use super::*;
 
-#[derive(From, PartialEq)]
-enum AutoIgnoreWithDefaultTrue {
-    #[from(ignore)]
-    SmallInt(i32),
-    Uninteresting,
-    Uninteresting2,
-}
+            #[derive(Debug, From, PartialEq)]
+            enum Unnamed {
+                #[from(forward)]
+                Variant(i32),
+                AutomaticallyIgnored(i32),
+            }
 
-#[derive(From, PartialEq)]
-enum AutoIgnoreWithForwardFields2 {
-    #[from(forward)]
-    SmallInt(i32),
-    SmallIntIgnore(i32),
-}
+            #[derive(Debug, From, PartialEq)]
+            enum Named {
+                #[from(forward)]
+                Variant {
+                    field: i32,
+                },
+                AutomaticallyIgnored {
+                    field: i32,
+                },
+            }
 
-#[test]
-fn auto_ignore_with_forward_field2() {
-    assert!(AutoIgnoreWithForwardFields2::SmallInt(42) == 42i32.into());
-    assert!(AutoIgnoreWithForwardFields2::SmallInt(42) == 42i16.into());
-}
+            #[test]
+            fn assert() {
+                assert_eq!(Unnamed::Variant(1), 1_i8.into());
+                assert_eq!(Unnamed::Variant(1), 1_i16.into());
+                assert_eq!(Unnamed::Variant(1), 1_i32.into());
+                assert_eq!(Named::Variant { field: 1 }, 1_i8.into());
+                assert_eq!(Named::Variant { field: 1 }, 1_i16.into());
+                assert_eq!(Named::Variant { field: 1 }, 1_i32.into());
+            }
+        }
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(From)]
-#[from(u8, u16, u32, u64)]
-struct MyIntExplicit(u64);
+        mod generic {
+            use super::*;
 
-#[test]
-fn explicit_types_struct() {
-    assert_eq!(MyIntExplicit(42), 42u8.into());
-    assert_eq!(MyIntExplicit(42), 42u16.into());
-    assert_eq!(MyIntExplicit(42), 42u32.into());
-    assert_eq!(MyIntExplicit(42), 42u64.into());
-}
+            #[derive(Debug, From, PartialEq)]
+            enum Tuple<T> {
+                Variant(T),
+                #[from(skip)]
+                Skipped(T),
+            }
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(From)]
-#[from((i8, i8), (i16, i16), (i32, i32))]
-struct MyIntsExplicit(i32, i32);
+            #[derive(Debug, From, PartialEq)]
+            enum Struct<T> {
+                Variant {
+                    field: T,
+                },
+                #[from(skip)]
+                Skipped {
+                    field: T,
+                },
+            }
 
-#[test]
-fn explicit_types_struct_tupled() {
-    assert_eq!(MyIntsExplicit(42, 42), (42i32, 42i32).into());
-    assert_eq!(MyIntsExplicit(42, 42), (42i8, 42i8).into());
-    assert_eq!(MyIntsExplicit(42, 42), (42i16, 42i16).into());
-}
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple::Variant(1), 1.into());
+                assert_eq!(Struct::Variant { field: 1 }, 1.into());
+            }
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(From)]
-enum MixedIntsExplicit {
-    #[from(i8, i32)]
-    SmallInt(i32),
-    #[from(i16, i64, i128)]
-    AnotherInt(i128),
-    #[from(skip)]
-    NamedBigInt { int: i64 },
-}
+            mod bounds {
+                use super::*;
 
-#[test]
-fn explicit_types_enum() {
-    assert_eq!(MixedIntsExplicit::SmallInt(42), 42i32.into());
-    assert_eq!(MixedIntsExplicit::SmallInt(42), 42i8.into());
+                #[derive(Debug, From, PartialEq)]
+                enum Tuple<T: Clone> {
+                    Variant(T),
+                    #[from(skip)]
+                    Skipped(T),
+                }
 
-    assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i128.into());
-    assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i64.into());
-    assert_eq!(MixedIntsExplicit::AnotherInt(42), 42i16.into());
-}
+                #[derive(Debug, From, PartialEq)]
+                enum Struct<T: Clone> {
+                    Variant {
+                        field: T,
+                    },
+                    #[from(skip)]
+                    Skipped {
+                        field: T,
+                    },
+                }
 
-#[derive(Debug, Eq, PartialEq)]
-#[derive(From)]
-#[from((i8, i8), (i16, i16), (i32, i32))]
-struct Point2DExplicit {
-    x: i32,
-    y: i32,
-}
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::Variant(1), 1.into());
+                    assert_eq!(Struct::Variant { field: 1 }, 1.into());
+                }
+            }
+        }
+    }
 
-#[test]
-fn explicit_types_point_2d() {
-    let expected = Point2DExplicit { x: 42, y: 42 };
-    assert_eq!(expected, (42i32, 42i32).into());
-    assert_eq!(expected, (42i8, 42i8).into());
-    assert_eq!(expected, (42i16, 42i16).into());
-}
+    mod multi_field_variant {
+        use super::*;
 
-#[derive(Debug, Eq, From, PartialEq)]
-#[from(String, Cow<'_, str>, &str)]
-struct Name(String);
+        #[derive(Debug, From, PartialEq)]
+        enum Enum {
+            Tuple(i8, i8),
+            Struct { field1: i16, field2: i16 },
+        }
 
-#[test]
-fn explicit_complex_types_name() {
-    let name = "Eärendil";
-    let expected = Name(name.into());
-    assert_eq!(expected, name.to_owned().into());
-    assert_eq!(expected, name.into());
-    assert_eq!(expected, Cow::Borrowed(name).into());
+        #[test]
+        fn assert() {
+            assert_eq!(Enum::Tuple(0, 1), (0_i8, 1_i8).into());
+            assert_eq!(
+                Enum::Struct {
+                    field1: 0,
+                    field2: 1
+                },
+                (0_i16, 1_i16).into(),
+            );
+        }
+
+        mod skip {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Enum {
+                Tuple(i8, i8),
+                #[from(skip)]
+                TupleSkipped(i8, i8),
+                Struct {
+                    field1: i16,
+                    field2: i16,
+                },
+                #[from(skip)]
+                StructSkipped {
+                    field1: i16,
+                    field2: i16,
+                },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Enum::Tuple(0, 1), (0_i8, 1_i8).into());
+                assert_eq!(
+                    Enum::Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i16, 1_i16).into(),
+                );
+            }
+        }
+
+        mod types {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Enum {
+                #[from((i8, i8))]
+                Tuple(i16, i16),
+                #[from((i16, i16))]
+                Struct {
+                    field1: i32,
+                    field2: i32,
+                },
+                StructNoAttribute {
+                    field1: i32,
+                    field2: i32,
+                },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Enum::Tuple(0, 1), (0_i8, 1_i8).into());
+                assert_eq!(
+                    Enum::Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i16, 1_i16).into(),
+                );
+                assert_eq!(
+                    Enum::StructNoAttribute {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i32, 1_i32).into(),
+                );
+            }
+        }
+
+        mod forward {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Unnamed {
+                #[from(forward)]
+                Variant(i16, i16),
+                AutomaticallyIgnored(i16, i16),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum Named {
+                #[from(forward)]
+                Variant {
+                    field1: i16,
+                    field2: i16,
+                },
+                AutomaticallyIgnored {
+                    field1: i16,
+                    field2: i16,
+                },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Unnamed::Variant(0, 1), (0_i8, 1_i8).into());
+                assert_eq!(Unnamed::Variant(0, 1), (0_i8, 1_i16).into());
+                assert_eq!(Unnamed::Variant(0, 1), (0_i16, 1_i8).into());
+                assert_eq!(Unnamed::Variant(0, 1), (0_i16, 1_i16).into());
+                assert_eq!(
+                    Named::Variant {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i8, 1_i8).into(),
+                );
+                assert_eq!(
+                    Named::Variant {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i8, 1_i16).into(),
+                );
+                assert_eq!(
+                    Named::Variant {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i16, 1_i8).into(),
+                );
+                assert_eq!(
+                    Named::Variant {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i16, 1_i16).into(),
+                );
+            }
+        }
+
+        mod generic {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Tuple<A, B> {
+                Variant(A, B),
+                #[from(skip)]
+                Skipped(A, B),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum Struct<A, B> {
+                Variant {
+                    field1: A,
+                    field2: B,
+                },
+                #[from(skip)]
+                Skipped {
+                    field1: A,
+                    field2: B,
+                },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
+                assert_eq!(
+                    Struct::Variant {
+                        field1: 1,
+                        field2: 2_i16,
+                    },
+                    (1, 2_i16).into(),
+                );
+            }
+
+            mod bounds {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                enum Tuple<A: Clone, B> {
+                    Variant(A, B),
+                    #[from(skip)]
+                    Skipped(A, B),
+                }
+
+                #[derive(Debug, From, PartialEq)]
+                enum Struct<A: Clone, B> {
+                    Variant {
+                        field1: A,
+                        field2: B,
+                    },
+                    #[from(skip)]
+                    Skipped {
+                        field1: A,
+                        field2: B,
+                    },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
+                    assert_eq!(
+                        Struct::Variant {
+                            field1: 1,
+                            field2: 2_i16,
+                        },
+                        (1, 2_i16).into(),
+                    );
+                }
+            }
+        }
+    }
 }
