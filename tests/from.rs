@@ -3,6 +3,218 @@
 use std::borrow::Cow;
 
 use derive_more::From;
+use static_assertions::assert_not_impl_any;
+
+mod structs {
+    use super::*;
+
+    mod unit {
+        use super::*;
+
+        #[derive(Debug, From, PartialEq)]
+        struct Unit;
+
+        #[derive(Debug, From, PartialEq)]
+        struct Tuple();
+
+        #[derive(Debug, From, PartialEq)]
+        struct Struct {}
+
+        #[test]
+        fn assert() {
+            assert_eq!(Unit, ().into());
+            assert_eq!(Tuple(), ().into());
+            assert_eq!(Struct {}, ().into());
+        }
+    }
+
+    mod single_field {
+        use super::*;
+
+        #[derive(Debug, From, PartialEq)]
+        struct Tuple(i32);
+
+        #[derive(Debug, From, PartialEq)]
+        struct Struct {
+            field: i32,
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Tuple(42), 42.into());
+            assert_eq!(Struct { field: 42 }, 42.into());
+        }
+
+        mod types {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            #[from(i16)]
+            struct Tuple(i32);
+
+            #[derive(Debug, From, PartialEq)]
+            #[from(i16)]
+            struct Struct {
+                field: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_not_impl_any!(Tuple: From<i32>);
+                assert_not_impl_any!(Struct: From<i32>);
+
+                assert_eq!(Tuple(42), 42_i16.into());
+                assert_eq!(Struct { field: 42 }, 42_i16.into());
+            }
+        }
+
+        mod forward {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            #[from(forward)]
+            struct Tuple(i32);
+
+            #[derive(Debug, From, PartialEq)]
+            #[from(forward)]
+            struct Struct {
+                field: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(42), 42_i8.into());
+                assert_eq!(Tuple(42), 42_i16.into());
+                assert_eq!(Tuple(42), 42_i32.into());
+                assert_eq!(Struct { field: 42 }, 42_i8.into());
+                assert_eq!(Struct { field: 42 }, 42_i16.into());
+                assert_eq!(Struct { field: 42 }, 42_i32.into());
+            }
+        }
+    }
+
+    mod multi_field {
+        use super::*;
+
+        #[derive(Debug, From, PartialEq)]
+        struct Tuple(i32, i16);
+
+        #[derive(Debug, From, PartialEq)]
+        struct Struct {
+            field1: i32,
+            field2: i16,
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(Tuple(0, 1), (0, 1_i16).into());
+            assert_eq!(
+                Struct {
+                    field1: 0,
+                    field2: 1
+                },
+                (0, 1_i16).into()
+            );
+        }
+
+        mod types {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            #[from((i16, i16))]
+            struct Tuple(i32, i16);
+
+            #[derive(Debug, From, PartialEq)]
+            #[from((i16, i16))]
+            struct Struct {
+                field1: i32,
+                field2: i16,
+            }
+
+            #[test]
+            fn assert() {
+                assert_not_impl_any!(Tuple: From<(i32, i16)>);
+                assert_not_impl_any!(Struct: From<(i32, i16)>);
+
+                assert_eq!(Tuple(0, 1), (0_i16, 1_i16).into());
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i16, 1_i16).into(),
+                );
+            }
+        }
+
+        mod forward {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            #[from(forward)]
+            struct Tuple(i32, i16);
+
+            #[derive(Debug, From, PartialEq)]
+            #[from(forward)]
+            struct Struct {
+                field1: i32,
+                field2: i16,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple(0, 1), (0_i8, 1_i8).into());
+                assert_eq!(Tuple(0, 1), (0_i8, 1_i16).into());
+                assert_eq!(Tuple(0, 1), (0_i16, 1_i8).into());
+                assert_eq!(Tuple(0, 1), (0_i16, 1_i16).into());
+                assert_eq!(Tuple(0, 1), (0_i32, 1_i8).into());
+                assert_eq!(Tuple(0, 1), (0_i32, 1_i16).into());
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i8, 1_i8).into(),
+                );
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i8, 1_i16).into(),
+                );
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i16, 1_i8).into(),
+                );
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i16, 1_i16).into(),
+                );
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i32, 1_i8).into(),
+                );
+                assert_eq!(
+                    Struct {
+                        field1: 0,
+                        field2: 1
+                    },
+                    (0_i32, 1_i16).into(),
+                );
+            }
+        }
+    }
+}
 
 #[derive(From)]
 struct EmptyTuple();
