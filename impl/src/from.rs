@@ -22,18 +22,25 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
             variant: None,
             fields: &data.fields,
             generics: &input.generics,
-            has_forward: false,
+            has_explicit_from_or_forward: false,
         }
         .expand(),
         syn::Data::Enum(data) => {
-            let mut has_forward = false;
+            let mut has_explicit_from_or_forward = false;
             let attrs = data
                 .variants
                 .iter()
                 .map(|variant| {
                     let attrs = VariantAttribute::parse_attrs(&variant.attrs)?;
-                    if matches!(attrs, Some(VariantAttribute::Forward)) {
-                        has_forward = true;
+                    if matches!(
+                        attrs,
+                        Some(
+                            VariantAttribute::From
+                                | VariantAttribute::Types(_)
+                                | VariantAttribute::Forward
+                        ),
+                    ) {
+                        has_explicit_from_or_forward = true;
                     }
                     Ok(attrs)
                 })
@@ -49,7 +56,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
                         variant: Some(&variant.ident),
                         fields: &variant.fields,
                         generics: &input.generics,
-                        has_forward,
+                        has_explicit_from_or_forward,
                     }
                     .expand()
                 })
@@ -189,7 +196,7 @@ struct Expansion<'a> {
     variant: Option<&'a Ident>,
     fields: &'a syn::Fields,
     generics: &'a syn::Generics,
-    has_forward: bool,
+    has_explicit_from_or_forward: bool,
 }
 
 impl<'a> Expansion<'a> {
@@ -199,8 +206,8 @@ impl<'a> Expansion<'a> {
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
 
         // TODO: docs
-        let skip_variant =
-            self.has_forward || (self.variant.is_some() && self.fields.is_empty());
+        let skip_variant = self.has_explicit_from_or_forward
+            || (self.variant.is_some() && self.fields.is_empty());
         match (self.attrs, skip_variant) {
             (Some(VariantAttribute::Types(tys)), _) => {
                 tys.iter().map(|ty| {

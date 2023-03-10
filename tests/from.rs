@@ -518,18 +518,21 @@ mod enums {
             enum Unit {
                 #[from]
                 Variant,
+                AutomaticallySkipped,
             }
 
             #[derive(Debug, From, PartialEq)]
             enum Tuple {
                 #[from]
                 Variant(),
+                AutomaticallySkipped(),
             }
 
             #[derive(Debug, From, PartialEq)]
             enum Struct {
                 #[from]
                 Variant {},
+                AutomaticallySkipped {},
             }
 
             #[test]
@@ -682,6 +685,34 @@ mod enums {
                     assert_eq!(Tuple::Variant::<_, 1>(1), 1.into());
                     assert_eq!(Struct::Variant::<1, _> { field: 1 }, 1.into());
                 }
+            }
+        }
+
+        mod from {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Tuple {
+                #[from]
+                Variant(i8),
+                AutomaticallySkipped(i8),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum Struct {
+                #[from]
+                Variant {
+                    field: i8,
+                },
+                AutomaticallySkipped {
+                    field: i8,
+                },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple::Variant(1), 1_i8.into());
+                assert_eq!(Struct::Variant { field: 1 }, 1_i8.into());
             }
         }
 
@@ -1009,14 +1040,14 @@ mod enums {
                 Named {
                     field: i32,
                 },
-                NoAttribute(i32),
+                AutomaticallySkipped(i32),
             }
 
             #[test]
             fn assert() {
+                assert_not_impl_any!(Enum: From<i32>);
                 assert_eq!(Enum::Unnamed(1), 1_i8.into());
                 assert_eq!(Enum::Named { field: 1 }, 1_i16.into());
-                assert_eq!(Enum::NoAttribute(1), 1.into());
             }
         }
 
@@ -1204,6 +1235,42 @@ mod enums {
                         (1, 2_i16).into(),
                     );
                 }
+            }
+        }
+
+        mod from {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Tuple {
+                #[from]
+                Variant(i8, i16),
+                AutomaticallySkipped(i8, i16),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum Struct {
+                #[from]
+                Variant {
+                    field1: i8,
+                    field2: i16,
+                },
+                AutomaticallySkipped {
+                    field1: i8,
+                    field2: i16,
+                },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple::Variant(1, 2), (1_i8, 2_i16).into());
+                assert_eq!(
+                    Struct::Variant {
+                        field1: 1,
+                        field2: 2,
+                    },
+                    (1_i8, 2_i16).into(),
+                );
             }
         }
 
@@ -1629,7 +1696,7 @@ mod enums {
                     field1: i32,
                     field2: i32,
                 },
-                StructNoAttribute {
+                AutomaticallySkipped {
                     field1: i32,
                     field2: i32,
                 },
@@ -1637,6 +1704,7 @@ mod enums {
 
             #[test]
             fn assert() {
+                assert_not_impl_any!(Enum: From<(i32, i32)>);
                 assert_eq!(Enum::Tuple(0, 1), (0_i8, 1_i8).into());
                 assert_eq!(
                     Enum::Struct {
@@ -1644,13 +1712,6 @@ mod enums {
                         field2: 1
                     },
                     (0_i16, 1_i16).into(),
-                );
-                assert_eq!(
-                    Enum::StructNoAttribute {
-                        field1: 0,
-                        field2: 1
-                    },
-                    (0_i32, 1_i32).into(),
                 );
             }
         }

@@ -53,9 +53,9 @@ enum MyEnum2 {
 // And even specify additional conversions for them
 #[derive(From, PartialEq)]
 enum MyEnum3 {
-    #[from(types(i8))]
+    #[from(i8, i32)]
     SmallInt(i32),
-    #[from(types(i16))]
+    #[from(i16, i64)]
     NamedBigInt { int: i64 },
     NoFromImpl(i64),
 }
