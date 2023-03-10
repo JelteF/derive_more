@@ -161,7 +161,10 @@ impl FmtAttribute {
             .map_or(Ok(()), |fmt| {
                 Err(Error::new(
                     error_span,
-                    format!("legacy syntax, use `{}` instead", fmt.join(", ")),
+                    format!(
+                        "legacy syntax, remove `fmt =` and use `{}` instead",
+                        fmt.join(", "),
+                    ),
                 ))
             }),
             Ok(_) | Err(_) => Ok(()),

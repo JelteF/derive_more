@@ -165,10 +165,12 @@ impl ContainerAttributes {
 
 impl Parse for ContainerAttributes {
     fn parse(input: ParseStream) -> Result<Self> {
-        let error_span = input.span();
+        use proc_macro2::Delimiter::Parenthesis;
 
+        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
         let content;
         syn::parenthesized!(content in input);
+        let error_span = error_span.unwrap_or_else(|| unreachable!());
 
         BoundsAttribute::check_legacy_fmt(&content, error_span)?;
 
@@ -218,10 +220,12 @@ impl FieldAttribute {
 
 impl Parse for FieldAttribute {
     fn parse(input: ParseStream) -> Result<Self> {
-        let error_span = input.span();
+        use proc_macro2::Delimiter::Parenthesis;
 
+        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
         let content;
         syn::parenthesized!(content in input);
+        let error_span = error_span.unwrap_or_else(|| unreachable!());
 
         FmtAttribute::check_legacy_fmt(&content, error_span)?;
 
