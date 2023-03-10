@@ -156,8 +156,11 @@ impl ToTokens for Expr {
     }
 }
 
+/// Result of the parsing.
+type ParsingResult<'a> = Option<(TokenStream, Cursor<'a>)>;
+
 /// Tries to parse [`syn::token::Colon2`].
-pub fn colon2(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+pub fn colon2(c: Cursor<'_>) -> ParsingResult<'_> {
     seq([
         &mut punct_with_spacing(':', Spacing::Joint),
         &mut punct(':'),
@@ -168,7 +171,7 @@ pub fn colon2(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
 pub fn punct_with_spacing(
     p: char,
     spacing: Spacing,
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> {
     move |c| {
         c.punct().and_then(|(punct, c)| {
             (punct.as_char() == p && punct.spacing() == spacing)
@@ -180,7 +183,7 @@ pub fn punct_with_spacing(
 /// Tries to parse [`Punct`].
 ///
 /// [`Punct`]: proc_macro2::Punct
-pub fn punct(p: char) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+pub fn punct(p: char) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> {
     move |c| {
         c.punct().and_then(|(punct, c)| {
             (punct.as_char() == p).then(|| (punct.into_token_stream(), c))
@@ -191,7 +194,7 @@ pub fn punct(p: char) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'
 /// Tries to parse any [`TokenTree`].
 ///
 /// [`TokenTree`]: proc_macro2::TokenTree
-pub fn token_tree(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+pub fn token_tree(c: Cursor<'_>) -> ParsingResult<'_> {
     c.token_tree().map(|(tt, c)| (tt.into_token_stream(), c))
 }
 
@@ -199,9 +202,9 @@ pub fn token_tree(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
 ///
 /// [`Cursor`] should be pointing **right after** the first `open`ing.
 pub fn balanced_pair(
-    mut open: impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
-    mut close: impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+    mut open: impl FnMut(Cursor<'_>) -> ParsingResult<'_>,
+    mut close: impl FnMut(Cursor<'_>) -> ParsingResult<'_>,
+) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> {
     move |c| {
         let (mut out, mut c) = open(c)?;
         let mut count = 1;
@@ -227,8 +230,8 @@ pub fn balanced_pair(
 
 /// Tries to execute sequence of parsers.
 pub fn seq<const N: usize>(
-    mut parsers: [&mut dyn FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>; N],
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> + '_ {
+    mut parsers: [&mut dyn FnMut(Cursor<'_>) -> ParsingResult<'_>; N],
+) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> + '_ {
     move |c| {
         parsers
             .iter_mut()
@@ -244,8 +247,8 @@ pub fn seq<const N: usize>(
 
 /// Tries to execute first successful parser.
 pub fn alt<const N: usize>(
-    mut parsers: [&mut dyn FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>; N],
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> + '_ {
+    mut parsers: [&mut dyn FnMut(Cursor<'_>) -> ParsingResult<'_>; N],
+) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> + '_ {
     move |c| {
         parsers
             .iter_mut()
@@ -259,10 +262,10 @@ pub fn alt<const N: usize>(
 pub fn take_until1<P, U>(
     mut parser: P,
     mut until: U,
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>
+) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_>
 where
-    P: FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
-    U: FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
+    P: FnMut(Cursor<'_>) -> ParsingResult<'_>,
+    U: FnMut(Cursor<'_>) -> ParsingResult<'_>,
 {
     move |mut cursor| {
         let mut out = TokenStream::new();

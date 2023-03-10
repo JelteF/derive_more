@@ -1,6 +1,6 @@
 //! Implementation of a [`From`] derive macro.
 
-use std::iter;
+use std::{cmp, iter};
 
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, ToTokens as _, TokenStreamExt as _};
@@ -417,53 +417,57 @@ impl<'a> Expansion<'a> {
     ) -> Result<impl Iterator<Item = &'t TokenStream>> {
         match ty {
             Type::Tuple { items, .. } if self.fields.len() > 1 => {
-                if self.fields.len() > items.len() {
-                    return Err(Error::new(
-                        ty.span(),
-                        format!(
-                            "Wrong tuple length: expected {}, found {}. \
-                             Consider adding {} more type{}: `({})`",
-                            self.fields.len(),
-                            items.len(),
-                            self.fields.len() - items.len(),
-                            if self.fields.len() - items.len() > 1 {
-                                "s"
-                            } else {
-                                ""
-                            },
-                            items
-                                .iter()
-                                .map(|item| item.to_string())
-                                .chain(
-                                    (0..(self.fields.len() - items.len()))
-                                        .map(|_| "_".to_string())
-                                )
-                                .collect::<Vec<_>>()
-                                .join(", "),
-                        ),
-                    ));
-                } else if self.fields.len() < items.len() {
-                    return Err(Error::new(
-                        ty.span(),
-                        format!(
-                            "Wrong tuple length: expected {}, found {}. \
-                             Consider removing last {} type{}: `({})`",
-                            self.fields.len(),
-                            items.len(),
-                            items.len() - self.fields.len(),
-                            if items.len() - self.fields.len() > 1 {
-                                "s"
-                            } else {
-                                ""
-                            },
-                            items
-                                .iter()
-                                .take(self.fields.len())
-                                .map(|item| item.to_string())
-                                .collect::<Vec<_>>()
-                                .join(", "),
-                        ),
-                    ));
+                match self.fields.len().cmp(&items.len()) {
+                    cmp::Ordering::Greater => {
+                        return Err(Error::new(
+                            ty.span(),
+                            format!(
+                                "Wrong tuple length: expected {}, found {}. \
+                                 Consider adding {} more type{}: `({})`",
+                                self.fields.len(),
+                                items.len(),
+                                self.fields.len() - items.len(),
+                                if self.fields.len() - items.len() > 1 {
+                                    "s"
+                                } else {
+                                    ""
+                                },
+                                items
+                                    .iter()
+                                    .map(|item| item.to_string())
+                                    .chain(
+                                        (0..(self.fields.len() - items.len()))
+                                            .map(|_| "_".to_string())
+                                    )
+                                    .collect::<Vec<_>>()
+                                    .join(", "),
+                            ),
+                        ));
+                    }
+                    cmp::Ordering::Less => {
+                        return Err(Error::new(
+                            ty.span(),
+                            format!(
+                                "Wrong tuple length: expected {}, found {}. \
+                                 Consider removing last {} type{}: `({})`",
+                                self.fields.len(),
+                                items.len(),
+                                items.len() - self.fields.len(),
+                                if items.len() - self.fields.len() > 1 {
+                                    "s"
+                                } else {
+                                    ""
+                                },
+                                items
+                                    .iter()
+                                    .take(self.fields.len())
+                                    .map(|item| item.to_string())
+                                    .collect::<Vec<_>>()
+                                    .join(", "),
+                            ),
+                        ));
+                    }
+                    cmp::Ordering::Equal => {}
                 }
             }
             Type::Other(other) if self.fields.len() > 1 => {
@@ -472,7 +476,7 @@ impl<'a> Expansion<'a> {
                         other.span(),
                         format!(
                             "Expected tuple: `({}, {})`",
-                            other.to_string(),
+                            other,
                             (0..(self.fields.len() - 1))
                                 .map(|_| "_")
                                 .collect::<Vec<_>>()

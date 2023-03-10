@@ -199,7 +199,7 @@ impl ToTokens for FmtAttribute {
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
 #[derive(Debug)]
 struct FmtArgument {
-    /// `identifier` [`Ident`].
+    /// `identifier =` [`Ident`].
     alias: Option<(Ident, token::Eq)>,
 
     /// `expression` [`Expr`].

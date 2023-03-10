@@ -69,6 +69,7 @@ mod structs {
             use super::*;
 
             #[derive(Debug, From, PartialEq)]
+            #[from(i8)]
             #[from(i16)]
             struct Tuple(i32);
 
@@ -83,6 +84,7 @@ mod structs {
                 assert_not_impl_any!(Tuple: From<i32>);
                 assert_not_impl_any!(Struct: From<String>);
 
+                assert_eq!(Tuple(42), 42_i8.into());
                 assert_eq!(Tuple(42), 42_i16.into());
                 assert_eq!(
                     Struct {

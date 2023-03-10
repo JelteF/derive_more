@@ -30,7 +30,7 @@ derive_more-impl = { version = "=0.99.17", path = "impl" }
 
 [dev-dependencies]
 rustversion = "1.0"
-static_assertions = "1.1.0"
+static_assertions = "1.1"
 trybuild = "1.0.56"
 
 [badges]
