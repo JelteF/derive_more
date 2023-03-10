@@ -1,4 +1,4 @@
-error: legacy syntax, remove `types` and use `i32, &str` instead
+error: legacy syntax, remove `types` and use `i32, &str, String` instead
  --> tests/compile_fail/from/legacy_enum_attribute.rs:3:11
   |
 3 |     #[from(types(i32, "&str"))]

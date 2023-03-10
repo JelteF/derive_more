@@ -5,7 +5,7 @@ use std::{cmp, iter};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, ToTokens as _, TokenStreamExt as _};
 use syn::{
-    parse::{discouraged::Speculative as _, Parse, ParseStream},
+    parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
     parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
@@ -18,7 +18,7 @@ use crate::parsing::Type;
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
     match &input.data {
         syn::Data::Struct(data) => Expansion {
-            attrs: StructAttribute::parse_attrs(&input.attrs)?
+            attrs: StructAttribute::parse_attrs(&input.attrs, &data.fields)?
                 .map(Into::into)
                 .as_ref(),
             ident: &input.ident,
@@ -34,7 +34,8 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
                 .variants
                 .iter()
                 .map(|variant| {
-                    let attrs = VariantAttribute::parse_attrs(&variant.attrs)?;
+                    let attrs =
+                        VariantAttribute::parse_attrs(&variant.attrs, &variant.fields)?;
                     if matches!(
                         attrs,
                         Some(
@@ -88,13 +89,26 @@ enum StructAttribute {
 
 impl StructAttribute {
     /// Parses [`StructAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
+    fn parse_attrs(
+        attrs: impl AsRef<[syn::Attribute]>,
+        fields: &syn::Fields,
+    ) -> Result<Option<Self>> {
+        fn infer<T>(v: T) -> T
+        where
+            T: for<'a> FnOnce(ParseStream<'a>) -> Result<StructAttribute>,
+        {
+            v
+        }
+
         Ok(attrs
             .as_ref()
             .iter()
             .filter(|attr| attr.path.is_ident("from"))
             .try_fold(None, |attrs, attr| {
-                let field_attr = syn::parse2::<StructAttribute>(attr.tokens.clone())?;
+                let field_attr = Parser::parse2(
+                    infer(|stream| Self::parse(stream, fields)),
+                    attr.tokens.clone(),
+                )?;
                 match (attrs, field_attr) {
                     (
                         Some((path, StructAttribute::Types(mut tys))),
@@ -112,10 +126,9 @@ impl StructAttribute {
             })?
             .map(|(_, attr)| attr))
     }
-}
 
-impl Parse for StructAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
+    /// Parses single [`StructAttribute`].
+    fn parse(input: ParseStream, fields: &syn::Fields) -> Result<Self> {
         use proc_macro2::Delimiter::Parenthesis;
 
         let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
@@ -129,7 +142,7 @@ impl Parse for StructAttribute {
                 content.advance_to(&ahead);
                 Ok(Self::Forward)
             }
-            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span),
+            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
             _ => content.parse_terminated(Type::parse).map(Self::Types),
         }
     }
@@ -159,13 +172,26 @@ enum VariantAttribute {
 
 impl VariantAttribute {
     /// Parses [`VariantAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
+    fn parse_attrs(
+        attrs: impl AsRef<[syn::Attribute]>,
+        fields: &syn::Fields,
+    ) -> Result<Option<Self>> {
+        fn infer<T>(v: T) -> T
+        where
+            T: for<'a> FnOnce(ParseStream<'a>) -> Result<VariantAttribute>,
+        {
+            v
+        }
+
         Ok(attrs
             .as_ref()
             .iter()
             .filter(|attr| attr.path.is_ident("from"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = syn::parse2::<VariantAttribute>(attr.tokens.clone())?;
+                let field_attr = Parser::parse2(
+                    infer(|stream| Self::parse(stream, fields)),
+                    attr.tokens.clone(),
+                )?;
                 if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
                     Err(Error::new(
                         path.span(),
@@ -177,10 +203,9 @@ impl VariantAttribute {
             })?
             .map(|(_, attr)| attr))
     }
-}
 
-impl Parse for VariantAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
+    /// Parses [`VariantAttribute`].
+    fn parse(input: ParseStream, fields: &syn::Fields) -> Result<Self> {
         use proc_macro2::Delimiter::Parenthesis;
 
         if input.is_empty() {
@@ -202,7 +227,7 @@ impl Parse for VariantAttribute {
                 content.advance_to(&ahead);
                 Ok(Self::Skip)
             }
-            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span),
+            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
             _ => content.parse_terminated(Type::parse).map(Self::Types),
         }
     }
@@ -522,7 +547,11 @@ where
 }
 
 /// Constructs [`Error`] for legacy syntax: `#[from(types(i32, "&str"))]`.
-fn legacy_error<T>(tokens: ParseStream<'_>, span: Span) -> Result<T> {
+fn legacy_error<T>(
+    tokens: ParseStream<'_>,
+    span: Span,
+    fields: &syn::Fields,
+) -> Result<T> {
     let content;
     syn::parenthesized!(content in tokens);
 
@@ -533,6 +562,26 @@ fn legacy_error<T>(tokens: ParseStream<'_>, span: Span) -> Result<T> {
             syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
             syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
             syn::NestedMeta::Lit(_) => unreachable!(),
+        })
+        .chain(match fields.len() {
+            0 => Either::Left(iter::empty()),
+            1 => Either::Right(iter::once(
+                fields
+                    .iter()
+                    .next()
+                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
+                    .ty
+                    .to_token_stream()
+                    .to_string(),
+            )),
+            _ => Either::Right(iter::once(format!(
+                "({})",
+                fields
+                    .iter()
+                    .map(|f| f.ty.to_token_stream().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))),
         })
         .collect::<Vec<_>>()
         .join(", ");

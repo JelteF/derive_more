@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `DebugCustom` derive is renamed to just `Debug` (gated now under a separate
   `debug` feature), and its semantics were changed to be a superset of `std` variant
   of `Debug`.
+- The `From` derive now uses `#[from(<types>)]` instead of `#[from(types(<types>))]`
+  and ignores field type itself.
 
 ### New features
 
