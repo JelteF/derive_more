@@ -143,40 +143,82 @@ mod structs {
                 field: T,
             }
 
-            #[derive(Debug, From, PartialEq)]
-            struct RefTuple<'a, T>(&'a T);
-
-            #[derive(Debug, From, PartialEq)]
-            struct RefStruct<'a, T> {
-                field: &'a T,
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            struct BoundedTuple<T: Clone>(T);
-
-            #[derive(Debug, From, PartialEq)]
-            struct BoundedStruct<T: Clone> {
-                field: T,
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            struct ConstTuple<const N: usize, T>(T);
-
-            #[derive(Debug, From, PartialEq)]
-            struct ConstStruct<T, const N: usize> {
-                field: T,
-            }
-
             #[test]
             fn assert() {
                 assert_eq!(Tuple(42), 42.into());
                 assert_eq!(Struct { field: 42 }, 42.into());
-                assert_eq!(RefTuple(&42), (&42).into());
-                assert_eq!(RefStruct { field: &42 }, (&42).into());
-                assert_eq!(BoundedTuple(42), 42.into());
-                assert_eq!(BoundedStruct { field: 42 }, 42.into());
-                assert_eq!(ConstTuple::<1, _>(1), 1.into());
-                assert_eq!(ConstStruct::<_, 1> { field: 1 }, 1.into());
+            }
+
+            mod reference {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<'a, T>(&'a T);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<'a, T> {
+                    field: &'a T,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple(&42), (&42).into());
+                    assert_eq!(Struct { field: &42 }, (&42).into());
+                }
+            }
+
+            mod indirect {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<T: 'static>(&'static T);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<T: 'static> {
+                    field: &'static T,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple(&42), (&42).into());
+                    assert_eq!(Struct { field: &42 }, (&42).into());
+                }
+            }
+
+            mod bounded {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<T: Clone>(T);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<T: Clone> {
+                    field: T,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple(42), 42.into());
+                    assert_eq!(Struct { field: 42 }, 42.into());
+                }
+            }
+
+            mod r#const {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<const N: usize, T>(T);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<T, const N: usize> {
+                    field: T,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::<1, _>(1), 1.into());
+                    assert_eq!(Struct::<_, 1> { field: 1 }, 1.into());
+                }
             }
         }
     }
@@ -314,33 +356,6 @@ mod structs {
                 field2: B,
             }
 
-            #[derive(Debug, From, PartialEq)]
-            struct RefTuple<'a, A, B>(&'a A, &'a B);
-
-            #[derive(Debug, From, PartialEq)]
-            struct RefStruct<'a, A, B> {
-                field1: &'a A,
-                field2: &'a B,
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            struct BoundedTuple<A: Clone, B>(A, B);
-
-            #[derive(Debug, From, PartialEq)]
-            struct BoundedStruct<A: Clone, B> {
-                field1: A,
-                field2: B,
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            struct ConstTuple<const N: usize, A, B>(A, B);
-
-            #[derive(Debug, From, PartialEq)]
-            struct ConstStruct<const N: usize, A, B> {
-                field1: A,
-                field2: B,
-            }
-
             #[test]
             fn assert() {
                 assert_eq!(Tuple(1, 2_i8), (1, 2_i8).into());
@@ -351,30 +366,81 @@ mod structs {
                     },
                     (1, 2_i8).into(),
                 );
-                assert_eq!(RefTuple(&1, &2_i8), (&1, &2_i8).into());
-                assert_eq!(
-                    RefStruct {
-                        field1: &1,
-                        field2: &2_i8,
-                    },
-                    (&1, &2_i8).into(),
-                );
-                assert_eq!(BoundedTuple(1, 2_i8), (1, 2_i8).into());
-                assert_eq!(
-                    BoundedStruct {
-                        field1: 1,
-                        field2: 2_i8,
-                    },
-                    (1, 2_i8).into(),
-                );
-                assert_eq!(ConstTuple::<1, _, _>(1, 2_i8), (1, 2_i8).into());
-                assert_eq!(
-                    ConstStruct::<1, _, _> {
-                        field1: 1,
-                        field2: 2_i8,
-                    },
-                    (1, 2_i8).into(),
-                );
+            }
+
+            mod reference {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<'a, A, B>(&'a A, &'a B);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<'a, A, B> {
+                    field1: &'a A,
+                    field2: &'a B,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple(&1, &2_i8), (&1, &2_i8).into());
+                    assert_eq!(
+                        Struct {
+                            field1: &1,
+                            field2: &2_i8,
+                        },
+                        (&1, &2_i8).into(),
+                    );
+                }
+            }
+
+            mod bounded {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct Tuple<A: Clone, B>(A, B);
+
+                #[derive(Debug, From, PartialEq)]
+                struct Struct<A: Clone, B> {
+                    field1: A,
+                    field2: B,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple(1, 2_i8), (1, 2_i8).into());
+                    assert_eq!(
+                        Struct {
+                            field1: 1,
+                            field2: 2_i8,
+                        },
+                        (1, 2_i8).into(),
+                    );
+                }
+            }
+
+            mod r#const {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                struct ConstTuple<const N: usize, A, B>(A, B);
+
+                #[derive(Debug, From, PartialEq)]
+                struct ConstStruct<const N: usize, A, B> {
+                    field1: A,
+                    field2: B,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(ConstTuple::<1, _, _>(1, 2_i8), (1, 2_i8).into());
+                    assert_eq!(
+                        ConstStruct::<1, _, _> {
+                            field1: 1,
+                            field2: 2_i8,
+                        },
+                        (1, 2_i8).into(),
+                    );
+                }
             }
         }
     }
