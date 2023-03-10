@@ -116,12 +116,6 @@ enum Int {
     Derived(i32),
     NotDerived(i32),
 }
-
-# #[test]
-# fn assert() {
-todo!();
-assert_eq!(Int::Derived(1), 1.into());
-# }
 # }
 
 // Is equivalent to:
@@ -134,11 +128,6 @@ enum Int {
     #[from(skip)]
     NotDerived(i32),
 }
-
-# #[test]
-# fn assert() {
-assert_eq!(Int::Derived(1), 1.into());
-# }
 # }
 ```
 
