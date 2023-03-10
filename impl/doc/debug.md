@@ -1,7 +1,7 @@
 # What `#[derive(Debug)]` generates
 
 This derive macro is a clever superset of `Debug` from standard library. Additional features include:
-- not imposing redudant trait bounds;
+- not imposing redundant trait bounds;
 - `#[debug(skip)]` attribute to skip formatting struct field or enum variant;
 - `#[debug("...", args...)]` to specify custom formatting for a particular struct or enum variant field;
 - `#[debug(bounds(...))]` to impose additional custom trait bounds.
