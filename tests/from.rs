@@ -1074,6 +1074,139 @@ mod enums {
             );
         }
 
+        mod generic {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Tuple<A, B> {
+                Variant(A, B),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum Struct<A, B> {
+                Variant { field1: A, field2: B },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
+                assert_eq!(
+                    Struct::Variant {
+                        field1: 1,
+                        field2: 2_i16,
+                    },
+                    (1, 2_i16).into(),
+                );
+            }
+
+            mod reference {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                enum Tuple<'a, A, B> {
+                    Variant(&'a A, &'a B),
+                }
+
+                #[derive(Debug, From, PartialEq)]
+                enum Struct<'a, A, B> {
+                    Variant { field1: &'a A, field2: &'a B },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::Variant(&1, &2_i16), (&1, &2_i16).into());
+                    assert_eq!(
+                        Struct::Variant {
+                            field1: &1,
+                            field2: &2_i16,
+                        },
+                        (&1, &2_i16).into(),
+                    );
+                }
+            }
+
+            mod indirect {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                enum Tuple<A: 'static, B: 'static> {
+                    Variant(&'static A, &'static B),
+                }
+
+                #[derive(Debug, From, PartialEq)]
+                enum Struct<A: 'static, B: 'static> {
+                    Variant {
+                        field1: &'static A,
+                        field2: &'static B,
+                    },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::Variant(&1, &2_i16), (&1, &2_i16).into());
+                    assert_eq!(
+                        Struct::Variant {
+                            field1: &1,
+                            field2: &2_i16,
+                        },
+                        (&1, &2_i16).into(),
+                    );
+                }
+            }
+
+            mod bounded {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                enum Tuple<A: Clone, B> {
+                    Variant(A, B),
+                }
+
+                #[derive(Debug, From, PartialEq)]
+                enum Struct<A, B: Clone> {
+                    Variant { field1: A, field2: B },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
+                    assert_eq!(
+                        Struct::Variant {
+                            field1: 1,
+                            field2: 2_i16,
+                        },
+                        (1, 2_i16).into(),
+                    );
+                }
+            }
+
+            mod r#const {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                enum Tuple<const N: usize, A, B> {
+                    Variant(A, B),
+                }
+
+                #[derive(Debug, From, PartialEq)]
+                enum Struct<A, const N: usize, B> {
+                    Variant { field1: A, field2: B },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::Variant::<0, _, _>(1, 2_i16), (1, 2_i16).into());
+                    assert_eq!(
+                        Struct::<_, 1, _>::Variant {
+                            field1: 1,
+                            field2: 2_i16,
+                        },
+                        (1, 2_i16).into(),
+                    );
+                }
+            }
+        }
+
         mod skip {
             use super::*;
 
@@ -1103,6 +1236,384 @@ mod enums {
                     },
                     (0_i16, 1_i16).into(),
                 );
+            }
+
+            mod generic {
+                use super::*;
+
+                #[derive(Debug, From, PartialEq)]
+                enum Tuple<A, B> {
+                    Variant(A, B),
+                    #[from(skip)]
+                    Skipped(A, B),
+                }
+
+                #[derive(Debug, From, PartialEq)]
+                enum Struct<A, B> {
+                    Variant {
+                        field1: A,
+                        field2: B,
+                    },
+                    #[from(skip)]
+                    Skipped {
+                        field1: A,
+                        field2: B,
+                    },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
+                    assert_eq!(
+                        Struct::Variant {
+                            field1: 1,
+                            field2: 2_i16,
+                        },
+                        (1, 2_i16).into(),
+                    );
+                }
+
+                mod reference {
+                    use super::*;
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Tuple<'a, A, B> {
+                        Variant(&'a A, &'a B),
+                        #[from(skip)]
+                        Skipped(&'a A, &'a B),
+                    }
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Struct<'a, A, B> {
+                        Variant {
+                            field1: &'a A,
+                            field2: &'a B,
+                        },
+                        #[from(skip)]
+                        Skipped {
+                            field1: &'a A,
+                            field2: &'a B,
+                        },
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(Tuple::Variant(&1, &2_i16), (&1, &2_i16).into());
+                        assert_eq!(
+                            Struct::Variant {
+                                field1: &1,
+                                field2: &2_i16,
+                            },
+                            (&1, &2_i16).into(),
+                        );
+                    }
+                }
+
+                mod indirect {
+                    use super::*;
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Tuple<A: 'static, B: 'static> {
+                        Variant(&'static A, &'static B),
+                        #[from(skip)]
+                        Skipped(&'static A, &'static B),
+                    }
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Struct<A: 'static, B: 'static> {
+                        Variant {
+                            field1: &'static A,
+                            field2: &'static B,
+                        },
+                        #[from(skip)]
+                        Skipped {
+                            field1: &'static A,
+                            field2: &'static B,
+                        },
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(Tuple::Variant(&1, &2_i16), (&1, &2_i16).into());
+                        assert_eq!(
+                            Struct::Variant {
+                                field1: &1,
+                                field2: &2_i16,
+                            },
+                            (&1, &2_i16).into(),
+                        );
+                    }
+                }
+
+                mod bounded {
+                    use super::*;
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Tuple<A: Clone, B> {
+                        Variant(A, B),
+                        #[from(skip)]
+                        Skipped(A, B),
+                    }
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Struct<A, B: Clone> {
+                        Variant {
+                            field1: A,
+                            field2: B,
+                        },
+                        #[from(skip)]
+                        Skipped {
+                            field1: A,
+                            field2: B,
+                        },
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
+                        assert_eq!(
+                            Struct::Variant {
+                                field1: 1,
+                                field2: 2_i16,
+                            },
+                            (1, 2_i16).into(),
+                        );
+                    }
+                }
+
+                mod r#const {
+                    use super::*;
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Tuple<const N: usize, A, B> {
+                        Variant(A, B),
+                        #[from(skip)]
+                        Skipped(A, B),
+                    }
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Struct<A, const N: usize, B> {
+                        Variant {
+                            field1: A,
+                            field2: B,
+                        },
+                        #[from(skip)]
+                        Skipped {
+                            field1: A,
+                            field2: B,
+                        },
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(
+                            Tuple::Variant::<0, _, _>(1, 2_i16),
+                            (1, 2_i16).into()
+                        );
+                        assert_eq!(
+                            Struct::<_, 1, _>::Variant {
+                                field1: 1,
+                                field2: 2_i16,
+                            },
+                            (1, 2_i16).into(),
+                        );
+                    }
+                }
+
+                mod concrete {
+                    use super::*;
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Tuple<A, B> {
+                        Variant(i32, i16),
+                        #[from(skip)]
+                        Skipped(A, B),
+                    }
+
+                    #[derive(Debug, From, PartialEq)]
+                    enum Struct<A, B> {
+                        Variant {
+                            field1: i32,
+                            field2: i16,
+                        },
+                        #[from(skip)]
+                        Skipped {
+                            field1: A,
+                            field2: B,
+                        },
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(
+                            Tuple::Variant::<i32, i16>(1, 2_i16),
+                            (1, 2_i16).into(),
+                        );
+                        assert_eq!(
+                            Struct::Variant::<i32, i16> {
+                                field1: 1,
+                                field2: 2_i16,
+                            },
+                            (1, 2_i16).into(),
+                        );
+                    }
+
+                    mod reference {
+                        use super::*;
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Tuple<'a, A, B> {
+                            Variant(&'a i32, &'a i16),
+                            #[from(skip)]
+                            Skipped(&'a A, &'a B),
+                        }
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Struct<'a, A, B> {
+                            Variant {
+                                field1: &'a i32,
+                                field2: &'a i16,
+                            },
+                            #[from(skip)]
+                            Skipped {
+                                field1: &'a A,
+                                field2: &'a B,
+                            },
+                        }
+
+                        #[test]
+                        fn assert() {
+                            assert_eq!(
+                                Tuple::Variant::<i32, i16>(&1, &2_i16),
+                                (&1, &2_i16).into(),
+                            );
+                            assert_eq!(
+                                Struct::Variant::<i32, i16> {
+                                    field1: &1,
+                                    field2: &2_i16,
+                                },
+                                (&1, &2_i16).into(),
+                            );
+                        }
+                    }
+
+                    mod indirect {
+                        use super::*;
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Tuple<A: 'static, B: 'static> {
+                            Variant(&'static i32, &'static i16),
+                            #[from(skip)]
+                            Skipped(&'static A, &'static B),
+                        }
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Struct<A: 'static, B: 'static> {
+                            Variant {
+                                field1: &'static i32,
+                                field2: &'static i16,
+                            },
+                            #[from(skip)]
+                            Skipped {
+                                field1: &'static A,
+                                field2: &'static B,
+                            },
+                        }
+
+                        #[test]
+                        fn assert() {
+                            assert_eq!(
+                                Tuple::Variant::<i32, i16>(&1, &2_i16),
+                                (&1, &2_i16).into(),
+                            );
+                            assert_eq!(
+                                Struct::Variant::<i32, i16> {
+                                    field1: &1,
+                                    field2: &2_i16,
+                                },
+                                (&1, &2_i16).into(),
+                            );
+                        }
+                    }
+
+                    mod bounded {
+                        use super::*;
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Tuple<A: Clone, B> {
+                            Variant(i32, i16),
+                            #[from(skip)]
+                            Skipped(A, B),
+                        }
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Struct<A, B: Clone> {
+                            Variant {
+                                field1: i32,
+                                field2: i16,
+                            },
+                            #[from(skip)]
+                            Skipped {
+                                field1: A,
+                                field2: B,
+                            },
+                        }
+
+                        #[test]
+                        fn assert() {
+                            assert_eq!(
+                                Tuple::Variant::<i32, i16>(1, 2_i16),
+                                (1, 2_i16).into(),
+                            );
+                            assert_eq!(
+                                Struct::Variant::<i32, i16> {
+                                    field1: 1,
+                                    field2: 2_i16,
+                                },
+                                (1, 2_i16).into(),
+                            );
+                        }
+                    }
+
+                    mod r#const {
+                        use super::*;
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Tuple<const N: usize, A, B> {
+                            Variant(i32, i16),
+                            #[from(skip)]
+                            Skipped(A, B),
+                        }
+
+                        #[derive(Debug, From, PartialEq)]
+                        enum Struct<A, const N: usize, B> {
+                            Variant {
+                                field1: i32,
+                                field2: i16,
+                            },
+                            #[from(skip)]
+                            Skipped {
+                                field1: A,
+                                field2: B,
+                            },
+                        }
+
+                        #[test]
+                        fn assert() {
+                            assert_eq!(
+                                Tuple::Variant::<0, i32, i16>(1, 2_i16),
+                                (1, 2_i16).into()
+                            );
+                            assert_eq!(
+                                Struct::<i32, 1, i16>::Variant {
+                                    field1: 1,
+                                    field2: 2_i16,
+                                },
+                                (1, 2_i16).into(),
+                            );
+                        }
+                    }
+                }
             }
         }
 
@@ -1200,126 +1711,6 @@ mod enums {
                         field2: 1
                     },
                     (0_i16, 1_i16).into(),
-                );
-            }
-        }
-
-        mod generic {
-            use super::*;
-
-            #[derive(Debug, From, PartialEq)]
-            enum Tuple<A, B> {
-                Variant(A, B),
-                #[from(skip)]
-                Skipped(A, B),
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            enum Struct<A, B> {
-                Variant {
-                    field1: A,
-                    field2: B,
-                },
-                #[from(skip)]
-                Skipped {
-                    field1: A,
-                    field2: B,
-                },
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            enum RefTuple<'a, A, B> {
-                Variant(&'a A, &'a B),
-                #[from(skip)]
-                Skipped(&'a A, &'a B),
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            enum RefStruct<'a, A, B> {
-                Variant {
-                    field1: &'a A,
-                    field2: &'a B,
-                },
-                #[from(skip)]
-                Skipped {
-                    field1: &'a A,
-                    field2: &'a B,
-                },
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            enum BoundedTuple<A: Clone, B> {
-                Variant(A, B),
-                #[from(skip)]
-                Skipped(A, B),
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            enum BoundedStruct<A, B: Clone> {
-                Variant {
-                    field1: A,
-                    field2: B,
-                },
-                #[from(skip)]
-                Skipped {
-                    field1: A,
-                    field2: B,
-                },
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            enum ConstTuple<const N: usize, A, B> {
-                Variant(A, B),
-                #[from(skip)]
-                Skipped(A, B),
-            }
-
-            #[derive(Debug, From, PartialEq)]
-            enum ConstStruct<A, const N: usize, B> {
-                Variant {
-                    field1: A,
-                    field2: B,
-                },
-                #[from(skip)]
-                Skipped {
-                    field1: A,
-                    field2: B,
-                },
-            }
-
-            #[test]
-            fn assert() {
-                assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
-                assert_eq!(
-                    Struct::Variant {
-                        field1: 1,
-                        field2: 2_i16,
-                    },
-                    (1, 2_i16).into(),
-                );
-                assert_eq!(RefTuple::Variant(&1, &2_i16), (&1, &2_i16).into());
-                assert_eq!(
-                    RefStruct::Variant {
-                        field1: &1,
-                        field2: &2_i16,
-                    },
-                    (&1, &2_i16).into(),
-                );
-                assert_eq!(BoundedTuple::Variant(1, 2_i16), (1, 2_i16).into());
-                assert_eq!(
-                    BoundedStruct::Variant {
-                        field1: 1,
-                        field2: 2_i16,
-                    },
-                    (1, 2_i16).into(),
-                );
-                assert_eq!(ConstTuple::Variant::<0, _, _>(1, 2_i16), (1, 2_i16).into());
-                assert_eq!(
-                    ConstStruct::<_, 1, _>::Variant {
-                        field1: 1,
-                        field2: 2_i16,
-                    },
-                    (1, 2_i16).into(),
                 );
             }
         }
