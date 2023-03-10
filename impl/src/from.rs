@@ -558,10 +558,24 @@ fn legacy_error<T>(
     let types = content
         .parse_terminated::<_, token::Comma>(syn::NestedMeta::parse)?
         .into_iter()
-        .map(|meta| match meta {
-            syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
-            syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
-            syn::NestedMeta::Lit(_) => unreachable!(),
+        .map(|meta| {
+            let value = match meta {
+                syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
+                syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
+                syn::NestedMeta::Lit(_) => unreachable!(),
+            };
+            if fields.len() > 1 {
+                format!(
+                    "({})",
+                    fields
+                        .iter()
+                        .map(|_| value.clone())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                )
+            } else {
+                value
+            }
         })
         .chain(match fields.len() {
             0 => Either::Left(iter::empty()),
