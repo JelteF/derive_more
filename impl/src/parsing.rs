@@ -12,6 +12,15 @@ use syn::{
     token, Error, Ident, Result,
 };
 
+#[derive(Debug)]
+pub enum Type {
+    Tuple {
+        paren: token::Paren,
+        items: Punctuated<TokenStream, token::Comma>,
+    },
+    Other(TokenStream),
+}
+
 impl Parse for Type {
     fn parse(input: ParseStream) -> Result<Self> {
         input.step(|c| {
@@ -57,15 +66,6 @@ impl Parse for Type {
             }
         })
     }
-}
-
-#[derive(Debug)]
-pub enum Type {
-    Tuple {
-        paren: token::Paren,
-        items: Punctuated<TokenStream, token::Comma>,
-    },
-    Other(TokenStream),
 }
 
 impl ToTokens for Type {
@@ -479,13 +479,40 @@ mod spec {
         use super::*;
 
         #[test]
+        fn zst_is_tuple() {
+            let zst = "()";
+            match syn::parse_str::<Type>(zst).unwrap() {
+                Type::Tuple { items, .. } => {
+                    assert!(items.is_empty(), "Expected empty tuple, found: {items:?}");
+                }
+                other => panic!("Expected `Type::Tuple {{ .. }}`, found: {other:?}"),
+            }
+        }
+
+        #[test]
         fn group_not_tuple() {
-            let group_not_tuple = "(Type)";
-            match syn::parse_str::<Type>(group_not_tuple).unwrap() {
-                Type::Other(group) => {
-                    assert_eq!(group.to_string(), group_not_tuple);
+            let group = "(Type)";
+            match syn::parse_str::<Type>(group).unwrap() {
+                Type::Other(tokens) => {
+                    assert_eq!(tokens.to_string(), group);
                 }
                 tuple => panic!("Expected `Type::Other(_)`, found: {tuple:?}"),
+            }
+        }
+
+        #[test]
+        fn single_element_tuple() {
+            let tuple = "(Type,)";
+            match syn::parse_str::<Type>(tuple).unwrap() {
+                Type::Tuple { items, .. } => {
+                    assert_eq!(
+                        items.len(),
+                        1,
+                        "Expected empty tuple, found: {items:?}",
+                    );
+                    assert_eq!(items.first().unwrap().to_string(), "Type");
+                }
+                other => panic!("Expected `Type::Tuple {{ .. }}`, found: {other:?}"),
             }
         }
 

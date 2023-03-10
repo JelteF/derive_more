@@ -212,23 +212,26 @@ impl<'a> Expansion<'a> {
                         let index = index.into_iter();
                         let from_ty = from_tys.next().unwrap_or_else(|| unreachable!());
                         quote! {
-                                #( #ident: )* <#ty as ::core::convert::From<#from_ty>>::from(value #( .#index )*),
-                            }
+                            #( #ident: )* <#ty as ::core::convert::From<#from_ty>>::from(
+                                value #( .#index )*
+                            ),
+                        }
                     });
 
                     Ok(quote! {
-                            #[automatically_derived]
-                            impl #impl_gens ::core::convert::From<#ty> for #ident #ty_gens
+                        #[automatically_derived]
+                        impl #impl_gens ::core::convert::From<#ty>
+                            for #ident #ty_gens
                             #where_clause
-                            {
-                                #[inline]
-                                fn from(value: #ty) -> Self {
-                                    #ident #( :: #variant )* #init
-                                }
+                        {
+                            #[inline]
+                            fn from(value: #ty) -> Self {
+                                #ident #( :: #variant )* #init
                             }
-                        })
+                        }
+                    })
                 })
-                    .collect()
+                .collect()
             }
             (Some(VariantAttribute::From), _) | (None, false) => {
                 let variant = self.variant.iter();
@@ -239,17 +242,17 @@ impl<'a> Expansion<'a> {
                 });
 
                 Ok(quote! {
-                        #[automatically_derived]
-                        impl #impl_gens ::core::convert::From<(#( #field_tys ),*)>
-                            for #ident #ty_gens
-                            #where_clause
-                        {
-                            #[inline]
-                            fn from(value: (#( #field_tys ),*)) -> Self {
-                                #ident #( :: #variant )* #init
-                            }
+                    #[automatically_derived]
+                    impl #impl_gens ::core::convert::From<(#( #field_tys ),*)>
+                        for #ident #ty_gens
+                        #where_clause
+                    {
+                        #[inline]
+                        fn from(value: (#( #field_tys ),*)) -> Self {
+                            #ident #( :: #variant )* #init
                         }
-                    })
+                    }
+                })
             }
             (Some(VariantAttribute::Forward), _) => {
                 let mut i = 0;
@@ -259,8 +262,10 @@ impl<'a> Expansion<'a> {
                     let index = index.into_iter();
                     let gen_ident = format_ident!("__FromT{i}");
                     let out = quote! {
-                            #( #ident: )* <#ty as ::core::convert::From<#gen_ident>>::from(value #( .#index )*),
-                        };
+                        #( #ident: )* <#ty as ::core::convert::From<#gen_ident>>::from(
+                            value #( .#index )*
+                        ),
+                    };
                     gen_idents.push(gen_ident);
                     i += 1;
                     out
@@ -282,19 +287,19 @@ impl<'a> Expansion<'a> {
                 let (impl_gens, _, where_clause) = generics.split_for_impl();
 
                 Ok(quote! {
-                        #[automatically_derived]
-                        impl #impl_gens ::core::convert::From<(#( #gen_idents ),*)>
-                            for #ident #ty_gens
-                            #where_clause
-                        {
-                            #[inline]
-                            fn from(value: (#( #gen_idents ),*)) -> Self {
-                                #ident #(:: #variant)* #init
-                            }
+                    #[automatically_derived]
+                    impl #impl_gens ::core::convert::From<(#( #gen_idents ),*)>
+                        for #ident #ty_gens
+                        #where_clause
+                    {
+                        #[inline]
+                        fn from(value: (#( #gen_idents ),*)) -> Self {
+                            #ident #(:: #variant)* #init
                         }
-                    })
+                    }
+                })
             }
-            (Some(VariantAttribute::Skip), _) | (None, _) => {
+            (Some(VariantAttribute::Skip), _) | (None, true) => {
                 Ok(TokenStream::new())
             }
         }
@@ -354,13 +359,13 @@ impl<'a> Expansion<'a> {
         ty: &'t Type,
     ) -> Result<impl Iterator<Item = &'t TokenStream>> {
         match ty {
-            Type::Tuple { items, .. } => {
+            Type::Tuple { items, .. } if self.fields.len() > 1 => {
                 if self.fields.len() > items.len() {
                     return Err(Error::new(
                         ty.span(),
                         format!(
                             "Wrong tuple length: expected {}, found {}. \
-                                 Consider adding {} more type{}: `({})`",
+                             Consider adding {} more type{}: `({})`",
                             self.fields.len(),
                             items.len(),
                             self.fields.len() - items.len(),
@@ -385,7 +390,7 @@ impl<'a> Expansion<'a> {
                         ty.span(),
                         format!(
                             "Wrong tuple length: expected {}, found {}. \
-                                 Consider removing last {} type{}: `({})`",
+                             Consider removing last {} type{}: `({})`",
                             self.fields.len(),
                             items.len(),
                             items.len() - self.fields.len(),
@@ -404,7 +409,7 @@ impl<'a> Expansion<'a> {
                     ));
                 }
             }
-            Type::Other(other) => {
+            Type::Other(other) if self.fields.len() > 1 => {
                 if self.fields.len() > 1 {
                     return Err(Error::new(
                         other.span(),
@@ -419,6 +424,7 @@ impl<'a> Expansion<'a> {
                     ));
                 }
             }
+            Type::Tuple { .. } | Type::Other(_) => {}
         }
         Ok(match ty {
             Type::Tuple { items, .. } => Either::Left(items.iter()),
