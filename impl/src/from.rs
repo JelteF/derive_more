@@ -1,3 +1,5 @@
+//! Implementation of a [`From`] derive macro.
+
 use std::iter;
 
 use proc_macro2::{Span, TokenStream};
@@ -12,6 +14,7 @@ use syn::{
 
 use crate::parsing::Type;
 
+/// Expands a [`From`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
     match &input.data {
         syn::Data::Struct(data) => Expansion {
@@ -22,11 +25,11 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
             variant: None,
             fields: &data.fields,
             generics: &input.generics,
-            has_explicit_from_or_forward: false,
+            has_explicit_from: false,
         }
         .expand(),
         syn::Data::Enum(data) => {
-            let mut has_explicit_from_or_forward = false;
+            let mut has_explicit_from = false;
             let attrs = data
                 .variants
                 .iter()
@@ -40,7 +43,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
                                 | VariantAttribute::Forward
                         ),
                     ) {
-                        has_explicit_from_or_forward = true;
+                        has_explicit_from = true;
                     }
                     Ok(attrs)
                 })
@@ -56,7 +59,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
                         variant: Some(&variant.ident),
                         fields: &variant.fields,
                         generics: &input.generics,
-                        has_explicit_from_or_forward,
+                        has_explicit_from,
                     }
                     .expand()
                 })
@@ -69,8 +72,17 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
     }
 }
 
+/// Representation of a [`From`] derive macro struct container attribute.
+///
+/// ```rust,ignore
+/// #[from(<types>)]
+/// #[from(forward)]
+/// ```
 enum StructAttribute {
+    /// [`Type`]s to derive [`From`].
     Types(Punctuated<Type, token::Comma>),
+
+    /// Forward [`From`] implementation.
     Forward,
 }
 
@@ -123,11 +135,26 @@ impl Parse for StructAttribute {
     }
 }
 
+/// Representation of a [`From`] derive macro enum variant attribute.
+///
+/// ```rust,ignore
+/// #[from]
+/// #[from(<types>)]
+/// #[from(forward)]
+/// #[from(skip)]
+/// ```
 enum VariantAttribute {
-    Types(Punctuated<Type, token::Comma>),
-    Forward,
-    Skip,
+    /// Explicitly derive [`From`].
     From,
+
+    /// [`Type`]s to derive [`From`].
+    Types(Punctuated<Type, token::Comma>),
+
+    /// Forward [`From`] implementation.
+    Forward,
+
+    /// Skip variant.
+    Skip,
 }
 
 impl VariantAttribute {
@@ -190,23 +217,42 @@ impl From<StructAttribute> for VariantAttribute {
     }
 }
 
+/// Helper struct to generate [`From`] implementation a struct or enum.
 struct Expansion<'a> {
+    /// [`From`] attributes.
+    ///
+    /// As [`VariantAttribute`] is superset of [`StructAttribute`], we use it
+    /// for both derives.
     attrs: Option<&'a VariantAttribute>,
+
+    /// Struct or enum [`Ident`].
     ident: &'a Ident,
+
+    /// Variant [`Ident`] in case of enum expansion.
     variant: Option<&'a Ident>,
+
+    /// Struct or variant [`syn::Fields`].
     fields: &'a syn::Fields,
+
+    /// Struct or enum [`syn::Generics`].
     generics: &'a syn::Generics,
-    has_explicit_from_or_forward: bool,
+
+    /// Indicator whether one of the enum variants has
+    /// [`VariantAttribute::From`], [`VariantAttribute::Types`] or
+    /// [`VariantAttribute::Forward`].
+    ///
+    /// Always [`false`] for structs.
+    has_explicit_from: bool,
 }
 
 impl<'a> Expansion<'a> {
+    /// Expands [`From`] implementations for struct or enum variant.
     fn expand(&self) -> Result<TokenStream> {
         let ident = self.ident;
         let field_tys = self.fields.iter().map(|f| &f.ty).collect::<Vec<_>>();
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
 
-        // TODO: docs
-        let skip_variant = self.has_explicit_from_or_forward
+        let skip_variant = self.has_explicit_from
             || (self.variant.is_some() && self.fields.is_empty());
         match (self.attrs, skip_variant) {
             (Some(VariantAttribute::Types(tys)), _) => {
@@ -312,6 +358,9 @@ impl<'a> Expansion<'a> {
         }
     }
 
+    /// Expands fields initialization wrapped into [`token::Brace`] in case of
+    /// [`syn::FieldsNamed`] or [`token::Paren`] in case of
+    /// [`syn::FieldsUnnamed`].
     fn expand_fields(
         &self,
         mut wrap: impl FnMut(Option<&Ident>, &syn::Type, Option<syn::Index>) -> TokenStream,
@@ -361,6 +410,7 @@ impl<'a> Expansion<'a> {
             .unwrap_or_default()
     }
 
+    /// Validates [`Type`] against [`syn::Fields`].
     fn validate_type<'t>(
         &self,
         ty: &'t Type,
@@ -440,8 +490,15 @@ impl<'a> Expansion<'a> {
     }
 }
 
+/// Either [`Left`] or [`Right`].
+///
+/// [`Left`]: Either::Left
+/// [`Right`]: Either::Right
 enum Either<L, R> {
+    /// Left variant.
     Left(L),
+
+    /// Right variant.
     Right(R),
 }
 
@@ -460,6 +517,7 @@ where
     }
 }
 
+/// Constructs [`Error`] for legacy syntax: `#[from(types(i32, "&str"))]`.
 fn legacy_error<T>(tokens: ParseStream<'_>, span: Span) -> Result<T> {
     let content;
     syn::parenthesized!(content in tokens);

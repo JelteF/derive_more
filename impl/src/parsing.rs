@@ -1,8 +1,11 @@
-#![allow(dead_code)]
+//! Common parsing utilities for derive macros.
+//!
+//! Fair parsing of [`syn::Type`] and [`syn::Expr`] requires [`syn`]'s `full`
+//! feature to be enabled, which unnecessary increases compile times. As we
+//! don't have complex AST manipulation, usually requiring only understanding
+//! where syntax item begins and ends, simpler manual parsing is implemented.
 
-use std::iter;
-
-use proc_macro2::{Delimiter, Spacing, TokenStream, TokenTree};
+use proc_macro2::{Delimiter, Spacing, TokenStream};
 use quote::ToTokens;
 use syn::{
     buffer::Cursor,
@@ -12,12 +15,16 @@ use syn::{
     token, Error, Ident, Result,
 };
 
+/// [`syn::Type`] [`Parse`]ing polyfill.
 #[derive(Debug)]
-pub enum Type {
+pub(crate) enum Type {
+    /// [`syn::Type::Tuple`] [`Parse`]ing polyfill.
     Tuple {
         paren: token::Paren,
         items: Punctuated<TokenStream, token::Comma>,
     },
+
+    /// Every other [`syn::Type`] variant.
     Other(TokenStream),
 }
 
@@ -31,7 +38,7 @@ impl Parse for Type {
             {
                 let mut items = Punctuated::new();
                 while !cursor.eof() {
-                    let (stream, c) = Self::parse_one(cursor).ok_or_else(|| {
+                    let (stream, c) = Self::parse_other(cursor).ok_or_else(|| {
                         Error::new(cursor.span(), "failed to parse type")
                     })?;
                     items.push_value(stream);
@@ -41,9 +48,8 @@ impl Parse for Type {
                         cursor = c;
                     }
                 }
+                // `(Type)` is equivalent to `Type`, so isn't top-level tuple.
                 if items.len() == 1 && !items.trailing_punct() {
-                    // `(Inner)` is equivalent to `Inner`, so isn't top-level
-                    // tuple.
                     let stream = outer
                         .token_tree()
                         .unwrap_or_else(|| unreachable!())
@@ -60,7 +66,7 @@ impl Parse for Type {
                     ))
                 }
             } else {
-                Self::parse_one(outer)
+                Self::parse_other(outer)
                     .map(|(s, c)| (Self::Other(s), c))
                     .ok_or_else(|| Error::new(outer.span(), "failed to parse type"))
             }
@@ -80,7 +86,8 @@ impl ToTokens for Type {
 }
 
 impl Type {
-    pub fn parse_one(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
+    /// Parses a single [`Type::Other`].
+    pub fn parse_other(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
         take_until1(
             alt([&mut balanced_pair(punct('<'), punct('>')), &mut token_tree]),
             punct(','),
@@ -88,14 +95,19 @@ impl Type {
     }
 }
 
+/// [`syn::Expr`] [`Parse`]ing polyfill.
 #[derive(Debug)]
-pub enum Expr {
+pub(crate) enum Expr {
+    /// [`syn::Expr::Path`] of length 1 [`Parse`]ing polyfill.
     Ident(Ident),
+
+    /// Every other [`syn::Expr`] variant.
     Other(TokenStream),
 }
 
 impl Expr {
-    pub fn ident(&self) -> Option<&Ident> {
+    /// Returns [`Ident`] in case this [`Expr`] is represented only by it.
+    pub(crate) fn ident(&self) -> Option<&Ident> {
         match self {
             Self::Ident(ident) => Some(ident),
             Self::Other(_) => None,
@@ -115,8 +127,14 @@ impl Parse for Expr {
             input.step(|c| {
                 take_until1(
                     alt([
-                        &mut seq([&mut colon2, &mut qself]),
-                        &mut seq([&mut qself, &mut colon2]),
+                        &mut seq([
+                            &mut colon2,
+                            &mut balanced_pair(punct('<'), punct('>')),
+                        ]),
+                        &mut seq([
+                            &mut balanced_pair(punct('<'), punct('>')),
+                            &mut colon2,
+                        ]),
                         &mut balanced_pair(punct('|'), punct('|')),
                         &mut token_tree,
                     ]),
@@ -138,94 +156,6 @@ impl ToTokens for Expr {
     }
 }
 
-pub fn type_hack(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    take_until1(
-        alt([&mut balanced_pair(punct('<'), punct('>')), &mut token_tree]),
-        punct(','),
-    )(c)
-}
-
-pub fn r#type(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    alt([
-        &mut type_array_or_slice,
-        &mut type_path,
-        &mut type_ptr,
-        &mut type_reference,
-        &mut type_trait_object,
-        &mut type_tuple,
-    ])(c)
-}
-
-pub fn type_tuple(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    c.token_tree().and_then(|(tt, c)| {
-        matches!(&tt, TokenTree::Group(g) if g.delimiter() == Delimiter::Parenthesis)
-            .then(|| (tt.into_token_stream(), c))
-    })
-}
-
-pub fn type_trait_object(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    seq([&mut ident("dyn"), &mut r#type])(c)
-}
-
-pub fn type_reference(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    seq([
-        &mut punct('&'),
-        &mut opt(lifetime),
-        &mut opt(ident("mut")),
-        &mut r#type,
-    ])(c)
-}
-
-pub fn lifetime(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    seq([
-        &mut punct_with_spacing('\'', Spacing::Joint),
-        &mut any_ident,
-    ])(c)
-}
-
-pub fn type_ptr(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    seq([
-        &mut punct('*'),
-        &mut opt(alt([&mut ident("const"), &mut ident("mut")])),
-        &mut r#type,
-    ])(c)
-}
-
-/// Tries to parse [`syn::TypePath`].
-pub fn type_path(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    seq([&mut opt(qself), &mut path])(c)
-}
-
-/// Tries to parse [`syn::QSelf`].
-pub fn qself(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    balanced_pair(punct('<'), punct('>'))(c)
-}
-
-/// Tries to parse [`syn::Path`].
-pub fn path(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    seq([&mut opt(colon2), &mut punctuated1(path_segment, colon2)])(c)
-}
-
-/// Tries to parse [`syn::PathSegment`].
-pub fn path_segment(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    seq([&mut any_ident, &mut path_arguments])(c)
-}
-
-/// Tries to parse [`syn::PathArguments`].
-pub fn path_arguments(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    opt(alt([
-        &mut group(Delimiter::Parenthesis),
-        &mut balanced_pair(punct('<'), punct('>')),
-    ]))(c)
-}
-
-pub fn type_array_or_slice(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    c.token_tree().and_then(|(tt, c)| {
-        matches!(&tt, TokenTree::Group(g) if g.delimiter() == Delimiter::Bracket)
-            .then(|| (tt.into_token_stream(), c))
-    })
-}
-
 /// Tries to parse [`syn::token::Colon2`].
 pub fn colon2(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
     seq([
@@ -234,20 +164,7 @@ pub fn colon2(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
     ])(c)
 }
 
-pub fn ident(
-    n: &'static str,
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    move |c| {
-        let (ident, c) = c.ident().filter(|(i, _)| i == n)?;
-        Some((ident.into_token_stream(), c))
-    }
-}
-
-pub fn any_ident(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    let (ident, c) = c.ident()?;
-    Some((ident.into_token_stream(), c))
-}
-
+/// Tries to parse [`punct`] with [`Spacing`].
 pub fn punct_with_spacing(
     p: char,
     spacing: Spacing,
@@ -260,6 +177,9 @@ pub fn punct_with_spacing(
     }
 }
 
+/// Tries to parse [`Punct`].
+///
+/// [`Punct`]: proc_macro2::Punct
 pub fn punct(p: char) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
     move |c| {
         c.punct().and_then(|(punct, c)| {
@@ -268,35 +188,14 @@ pub fn punct(p: char) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'
     }
 }
 
-pub fn any_group() -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    move |c| {
-        c.token_tree().and_then(|(tt, c)| {
-            matches!(&tt, TokenTree::Group(_)).then(|| (tt.into_token_stream(), c))
-        })
-    }
-}
-
-pub fn group(
-    d: Delimiter,
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    move |c| {
-        c.token_tree().and_then(|(tt, c)| {
-            matches!(&tt, TokenTree::Group(g) if g.delimiter() == d)
-                .then(|| (tt.into_token_stream(), c))
-        })
-    }
-}
-
+/// Tries to parse any [`TokenTree`].
+///
+/// [`TokenTree`]: proc_macro2::TokenTree
 pub fn token_tree(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
     c.token_tree().map(|(tt, c)| (tt.into_token_stream(), c))
 }
 
-pub fn eof(c: Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> {
-    c.eof().then(|| (TokenStream::new(), c))
-}
-
-/// Parses until balanced amount of `open` and `close` [`TokenTree::Punct`] or
-/// eof.
+/// Parses until balanced amount of `open` and `close` or eof.
 ///
 /// [`Cursor`] should be pointing **right after** the first `open`ing.
 pub fn balanced_pair(
@@ -326,6 +225,7 @@ pub fn balanced_pair(
     }
 }
 
+/// Tries to execute sequence of parsers.
 pub fn seq<const N: usize>(
     mut parsers: [&mut dyn FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>; N],
 ) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> + '_ {
@@ -342,6 +242,7 @@ pub fn seq<const N: usize>(
     }
 }
 
+/// Tries to execute first successful parser.
 pub fn alt<const N: usize>(
     mut parsers: [&mut dyn FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>; N],
 ) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)> + '_ {
@@ -352,30 +253,9 @@ pub fn alt<const N: usize>(
     }
 }
 
-pub fn punctuated1<P, S>(
-    mut parser: P,
-    mut sep: S,
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>
-where
-    P: FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
-    S: FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
-{
-    move |c| {
-        let (mut out, mut c) = parser(c)?;
-        while let Some((stream, cursor)) = sep(c) {
-            out.extend(stream);
-            c = cursor;
-            if let Some((stream, cursor)) = parser(c) {
-                out.extend(stream);
-                c = cursor;
-            } else {
-                break;
-            }
-        }
-        Some((out, c))
-    }
-}
-
+/// Parses with `basic` while `until` fails. Returns [`None`] in case
+/// `until` succeeded initially or `basic` never succeeded. Doesn't consume
+/// tokens parsed by `until`.
 pub fn take_until1<P, U>(
     mut parser: P,
     mut until: U,
@@ -399,33 +279,6 @@ where
             parsed = true;
         }
     }
-}
-
-pub fn take_while1<F>(
-    mut f: F,
-) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>
-where
-    F: FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
-{
-    move |mut c| {
-        let mut out = TokenStream::new();
-
-        iter::from_fn(|| {
-            let (stream, cursor) = f(c)?;
-            out.extend(stream);
-            c = cursor;
-            Some(())
-        })
-        .last()
-        .map(|_| (out, c))
-    }
-}
-
-pub fn opt<F>(mut f: F) -> impl FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>
-where
-    F: FnMut(Cursor<'_>) -> Option<(TokenStream, Cursor<'_>)>,
-{
-    move |c| Some(f(c).unwrap_or_else(|| (TokenStream::new(), c)))
 }
 
 #[cfg(test)]
