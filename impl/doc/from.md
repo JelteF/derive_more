@@ -6,6 +6,8 @@ should contain. This is done by implementing the `From` trait for the type
 that is passed to the derive.
 
 
+
+
 ## Structs
 
 For structs with a single field you can call `.into()` on the desired content
@@ -77,6 +79,9 @@ assert_eq!(Str { inner: "String".into() }, "String".to_owned().into());
 assert_eq!(Str { inner: "Cow".into() }, Cow::Borrowed("Cow").to_owned().into());
 ```
 
+
+
+
 ## Enums
 
 For enums `.into()` works for each variant as if they were structs. This
@@ -136,6 +141,8 @@ assert_eq!(Int::Derived(1), 1.into());
 # }
 # }
 ```
+
+
 
 
 ## Example usage
