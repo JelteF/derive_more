@@ -398,6 +398,23 @@ mod enums {
         fn assert() {
             assert_eq!(Enum::Unit, ().into());
         }
+
+        mod generic {
+            use super::*;
+
+            #[derive(Debug, From, PartialEq)]
+            enum Enum<const N: usize> {
+                #[from]
+                Unit,
+                Unnamed(),
+                Named {},
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Enum::<0>::Unit, ().into());
+            }
+        }
     }
 
     mod single_field_variant {
@@ -514,38 +531,70 @@ mod enums {
                 },
             }
 
+            #[derive(Debug, From, PartialEq)]
+            enum RefTuple<'a, T> {
+                Variant(&'a T),
+                #[from(skip)]
+                Skipped(&'a T),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum RefStruct<'a, T> {
+                Variant {
+                    field: &'a T,
+                },
+                #[from(skip)]
+                Skipped {
+                    field: &'a T,
+                },
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum BoundedTuple<T: Clone> {
+                Variant(T),
+                #[from(skip)]
+                Skipped(T),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum BoundedStruct<T: Clone> {
+                Variant {
+                    field: T,
+                },
+                #[from(skip)]
+                Skipped {
+                    field: T,
+                },
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum ConstTuple<T, const N: usize> {
+                Variant(T),
+                #[from(skip)]
+                Skipped(T),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum ConstStruct<const N: usize, T> {
+                Variant {
+                    field: T,
+                },
+                #[from(skip)]
+                Skipped {
+                    field: T,
+                },
+            }
+
             #[test]
             fn assert() {
                 assert_eq!(Tuple::Variant(1), 1.into());
                 assert_eq!(Struct::Variant { field: 1 }, 1.into());
-            }
-
-            mod bounds {
-                use super::*;
-
-                #[derive(Debug, From, PartialEq)]
-                enum Tuple<T: Clone> {
-                    Variant(T),
-                    #[from(skip)]
-                    Skipped(T),
-                }
-
-                #[derive(Debug, From, PartialEq)]
-                enum Struct<T: Clone> {
-                    Variant {
-                        field: T,
-                    },
-                    #[from(skip)]
-                    Skipped {
-                        field: T,
-                    },
-                }
-
-                #[test]
-                fn assert() {
-                    assert_eq!(Tuple::Variant(1), 1.into());
-                    assert_eq!(Struct::Variant { field: 1 }, 1.into());
-                }
+                assert_eq!(RefTuple::Variant(&1), (&1).into());
+                assert_eq!(RefStruct::Variant { field: &1 }, (&1).into());
+                assert_eq!(BoundedTuple::Variant(1), 1.into());
+                assert_eq!(BoundedStruct::Variant { field: 1 }, 1.into());
+                assert_eq!(ConstTuple::Variant::<_, 1>(1), 1.into());
+                assert_eq!(ConstStruct::Variant::<1, _> { field: 1 }, 1.into());
             }
         }
     }
@@ -724,6 +773,66 @@ mod enums {
                 },
             }
 
+            #[derive(Debug, From, PartialEq)]
+            enum RefTuple<'a, A, B> {
+                Variant(&'a A, &'a B),
+                #[from(skip)]
+                Skipped(&'a A, &'a B),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum RefStruct<'a, A, B> {
+                Variant {
+                    field1: &'a A,
+                    field2: &'a B,
+                },
+                #[from(skip)]
+                Skipped {
+                    field1: &'a A,
+                    field2: &'a B,
+                },
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum BoundedTuple<A: Clone, B> {
+                Variant(A, B),
+                #[from(skip)]
+                Skipped(A, B),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum BoundedStruct<A, B: Clone> {
+                Variant {
+                    field1: A,
+                    field2: B,
+                },
+                #[from(skip)]
+                Skipped {
+                    field1: A,
+                    field2: B,
+                },
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum ConstTuple<const N: usize, A, B> {
+                Variant(A, B),
+                #[from(skip)]
+                Skipped(A, B),
+            }
+
+            #[derive(Debug, From, PartialEq)]
+            enum ConstStruct<A, const N: usize, B> {
+                Variant {
+                    field1: A,
+                    field2: B,
+                },
+                #[from(skip)]
+                Skipped {
+                    field1: A,
+                    field2: B,
+                },
+            }
+
             #[test]
             fn assert() {
                 assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
@@ -734,42 +843,30 @@ mod enums {
                     },
                     (1, 2_i16).into(),
                 );
-            }
-
-            mod bounds {
-                use super::*;
-
-                #[derive(Debug, From, PartialEq)]
-                enum Tuple<A: Clone, B> {
-                    Variant(A, B),
-                    #[from(skip)]
-                    Skipped(A, B),
-                }
-
-                #[derive(Debug, From, PartialEq)]
-                enum Struct<A: Clone, B> {
-                    Variant {
-                        field1: A,
-                        field2: B,
+                assert_eq!(RefTuple::Variant(&1, &2_i16), (&1, &2_i16).into());
+                assert_eq!(
+                    RefStruct::Variant {
+                        field1: &1,
+                        field2: &2_i16,
                     },
-                    #[from(skip)]
-                    Skipped {
-                        field1: A,
-                        field2: B,
+                    (&1, &2_i16).into(),
+                );
+                assert_eq!(BoundedTuple::Variant(1, 2_i16), (1, 2_i16).into());
+                assert_eq!(
+                    BoundedStruct::Variant {
+                        field1: 1,
+                        field2: 2_i16,
                     },
-                }
-
-                #[test]
-                fn assert() {
-                    assert_eq!(Tuple::Variant(1, 2_i16), (1, 2_i16).into());
-                    assert_eq!(
-                        Struct::Variant {
-                            field1: 1,
-                            field2: 2_i16,
-                        },
-                        (1, 2_i16).into(),
-                    );
-                }
+                    (1, 2_i16).into(),
+                );
+                assert_eq!(ConstTuple::Variant::<0, _, _>(1, 2_i16), (1, 2_i16).into());
+                assert_eq!(
+                    ConstStruct::<_, 1, _>::Variant {
+                        field1: 1,
+                        field2: 2_i16,
+                    },
+                    (1, 2_i16).into(),
+                );
             }
         }
     }
