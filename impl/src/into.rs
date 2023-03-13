@@ -83,3 +83,212 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     }
     Ok(tokens)
 }
+
+mod new {
+    use std::iter;
+
+    use quote::ToTokens as _;
+    use syn::{
+        parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
+        punctuated::Punctuated,
+        spanned::Spanned as _,
+        token, Error, Result,
+    };
+
+    use crate::{parsing::Type, utils::Either};
+
+    #[derive(Debug, Default)]
+    struct Attribute {
+        owned: Option<Punctuated<Type, token::Comma>>,
+        r#ref: Option<Punctuated<Type, token::Comma>>,
+        ref_mut: Option<Punctuated<Type, token::Comma>>,
+    }
+
+    impl Attribute {
+        /// Parses [`Attribute`] from the provided [`syn::Attribute`]s.
+        fn parse_attrs(
+            attrs: impl AsRef<[syn::Attribute]>,
+            fields: &syn::Fields,
+        ) -> Result<Option<Self>> {
+            fn infer<T>(v: T) -> T
+            where
+                T: for<'a> FnOnce(ParseStream<'a>) -> Result<Attribute>,
+            {
+                v
+            }
+
+            attrs
+                .as_ref()
+                .iter()
+                .filter(|attr| attr.path.is_ident("into"))
+                .try_fold(None, |mut attrs, attr| {
+                    let merge = |out: &mut Option<_>, tys| match (out.as_mut(), tys) {
+                        (None, Some(tys)) => {
+                            *out = Some::<Punctuated<_, _>>(tys);
+                        }
+                        (Some(out), Some(tys)) => out.extend(tys),
+                        (Some(_), None) | (None, None) => {}
+                    };
+
+                    let field_attr: Self = Parser::parse2(
+                        infer(|stream| Self::parse(stream, fields)),
+                        attr.tokens.clone(),
+                    )?;
+                    let out = attrs.get_or_insert_with(Self::default);
+                    merge(&mut out.owned, field_attr.owned);
+                    merge(&mut out.r#ref, field_attr.r#ref);
+                    merge(&mut out.ref_mut, field_attr.ref_mut);
+
+                    Ok(attrs)
+                })
+        }
+
+        fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
+            let content;
+            syn::parenthesized!(content in input);
+
+            let mut out = Self::default();
+
+            while !content.is_empty() {
+                let ahead = content.fork();
+                check_legacy_attribute(&ahead, fields)?;
+                let res = ahead.parse::<syn::Path>();
+                check_legacy_attribute(&ahead, fields)?;
+                match res {
+                    Ok(p) if p.is_ident("owned") => {
+                        check_legacy_attribute(&ahead, fields)?;
+                        content.advance_to(&ahead);
+                        let inner;
+                        syn::parenthesized!(inner in content);
+                        out.owned.get_or_insert_with(Punctuated::new).extend(
+                            inner
+                                .parse_terminated::<_, token::Comma>(Type::parse)?
+                                .into_pairs(),
+                        );
+                        if content.peek(token::Comma) {
+                            let _ = content.parse::<token::Comma>()?;
+                        }
+                    }
+                    Ok(p) if p.is_ident("ref") => {
+                        content.advance_to(&ahead);
+                        let inner;
+                        syn::parenthesized!(inner in content);
+                        out.r#ref.get_or_insert_with(Punctuated::new).extend(
+                            inner
+                                .parse_terminated::<_, token::Comma>(Type::parse)?
+                                .into_pairs(),
+                        );
+                        if content.peek(token::Comma) {
+                            let _ = content.parse::<token::Comma>()?;
+                        }
+                    }
+                    Ok(p) if p.is_ident("ref_mut") => {
+                        content.advance_to(&ahead);
+                        let inner;
+                        syn::parenthesized!(inner in content);
+                        out.ref_mut.get_or_insert_with(Punctuated::new).extend(
+                            inner
+                                .parse_terminated::<_, token::Comma>(Type::parse)?
+                                .into_pairs(),
+                        );
+                        if content.peek(token::Comma) {
+                            let _ = content.parse::<token::Comma>()?;
+                        }
+                    }
+                    _ => {
+                        out.owned
+                            .get_or_insert_with(Punctuated::new)
+                            .push_value(content.parse::<Type>()?);
+                        if content.peek(token::Comma) {
+                            out.owned
+                                .get_or_insert_with(Punctuated::new)
+                                .push_punct(content.parse::<token::Comma>()?)
+                        }
+                    }
+                }
+            }
+
+            Ok(out)
+        }
+    }
+
+    fn check_legacy_attribute(
+        input: ParseStream<'_>,
+        fields: &syn::Fields,
+    ) -> Result<()> {
+        use proc_macro2::Delimiter::Parenthesis;
+
+        let input = input.fork();
+
+        if input
+            .parse::<syn::Path>()
+            .ok()
+            .filter(|p| p.is_ident("types"))
+            .is_none()
+        {
+            return Ok(());
+        }
+
+        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
+        let content;
+        syn::parenthesized!(content in input);
+        let error_span = error_span.unwrap_or_else(|| unreachable!());
+
+        let types = content
+            .parse_terminated::<_, token::Comma>(syn::NestedMeta::parse)?
+            .into_iter()
+            .map(|meta| {
+                let value = match meta {
+                    syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
+                    syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
+                    meta => {
+                        return Err(Error::new(
+                            meta.span(),
+                            format!(
+                                "expected path (`i32`) of string literal (`\"...\"`), \
+                                 found: `{}`",
+                                meta.into_token_stream(),
+                            ),
+                        ))
+                    }
+                };
+                Ok(if fields.len() > 1 {
+                    format!(
+                        "({})",
+                        fields
+                            .iter()
+                            .map(|_| value.clone())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    )
+                } else {
+                    value
+                })
+            })
+            .chain(match fields.len() {
+                0 => Either::Left(iter::empty()),
+                1 => Either::Right(iter::once(Ok(fields
+                    .iter()
+                    .next()
+                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
+                    .ty
+                    .to_token_stream()
+                    .to_string()))),
+                _ => Either::Right(iter::once(Ok(format!(
+                    "({})",
+                    fields
+                        .iter()
+                        .map(|f| f.ty.to_token_stream().to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )))),
+            })
+            .collect::<Result<Vec<_>>>()?
+            .join(", ");
+
+        Err(Error::new(
+            error_span,
+            format!("legacy syntax, remove `types` and use `{types}` instead"),
+        ))
+    }
+}

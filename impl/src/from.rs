@@ -12,7 +12,7 @@ use syn::{
     token, Error, Ident, Result,
 };
 
-use crate::parsing::Type;
+use crate::{parsing::Type, utils::Either};
 
 /// Expands a [`From`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
@@ -516,33 +516,6 @@ impl<'a> Expansion<'a> {
             Type::Tuple { items, .. } => Either::Left(items.iter()),
             Type::Other(other) => Either::Right(iter::once(other)),
         })
-    }
-}
-
-/// Either [`Left`] or [`Right`].
-///
-/// [`Left`]: Either::Left
-/// [`Right`]: Either::Right
-enum Either<L, R> {
-    /// Left variant.
-    Left(L),
-
-    /// Right variant.
-    Right(R),
-}
-
-impl<L, R, T> Iterator for Either<L, R>
-where
-    L: Iterator<Item = T>,
-    R: Iterator<Item = T>,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Either::Left(left) => left.next(),
-            Either::Right(right) => right.next(),
-        }
     }
 }
 

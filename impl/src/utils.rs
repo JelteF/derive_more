@@ -1231,3 +1231,32 @@ pub fn is_type_parameter_used_in_type(
         _ => false,
     }
 }
+
+#[cfg(any(feature = "from", feature = "into"))]
+/// Either [`Left`] or [`Right`].
+///
+/// [`Left`]: Either::Left
+/// [`Right`]: Either::Right
+pub enum Either<L, R> {
+    /// Left variant.
+    Left(L),
+
+    /// Right variant.
+    Right(R),
+}
+
+#[cfg(any(feature = "from", feature = "into"))]
+impl<L, R, T> Iterator for Either<L, R>
+where
+    L: Iterator<Item = T>,
+    R: Iterator<Item = T>,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Either::Left(left) => left.next(),
+            Either::Right(right) => right.next(),
+        }
+    }
+}
