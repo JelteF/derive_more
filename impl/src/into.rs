@@ -88,10 +88,10 @@ pub mod new {
     use std::{borrow::Cow, iter};
 
     use proc_macro2::{Span, TokenStream};
-    use quote::quote;
+    use quote::{quote, ToTokens as _};
     use syn::{
         ext::IdentExt as _,
-        parse::{discouraged::Speculative as _, Parse as _, ParseStream, Parser},
+        parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
         punctuated::Punctuated,
         spanned::Spanned as _,
         token, Error, Ident, Result,
@@ -135,8 +135,29 @@ pub mod new {
             let r = r.then(|| token::And::default());
             let m = m.then(|| token::Mut::default());
 
+            let fields = data
+                .fields
+                .iter()
+                .enumerate()
+                .filter_map(|(i, f)| match SkipFieldAttribute::parse_attrs(&f.attrs) {
+                    Ok(None) => Some(Ok((
+                        &f.ty,
+                        f.ident
+                            .as_ref()
+                            .map_or_else(|| syn::Index::from(i).right(), Either::Left),
+                    ))),
+                    Ok(Some(_)) => None,
+                    Err(e) => Some(Err(e)),
+                })
+                .collect::<Result<Vec<_>>>();
+            let fields = match fields {
+                Ok(fields) => fields,
+                Err(e) => return iter::once(Err(e)).left().right(),
+            };
+            let (fields, fields_idents): (Vec<_>, Vec<_>) = fields.into_iter().unzip();
+
             if tys.is_empty() {
-                iter::once(Type::tuple(data.fields.iter().map(|f| &f.ty))).left()
+                iter::once(Type::tuple(fields)).left()
             } else {
                 tys.into_iter().right()
             }
@@ -150,11 +171,6 @@ pub mod new {
                 };
                 let (impl_gens, _, where_clause) = gens.split_for_impl();
                 let (_, ty_gens, _) = input.generics.split_for_impl();
-                let fields_idents = data.fields.iter().enumerate().map(|(i, f)| {
-                    f.ident
-                        .as_ref()
-                        .map_or_else(|| syn::Index::from(i).right(), Either::Left)
-                });
 
                 // TODO: validate tuple
                 let tys = match ty {
@@ -180,6 +196,7 @@ pub mod new {
                     }
                 })
             })
+            .right()
             .right()
         };
 
@@ -323,6 +340,46 @@ pub mod new {
             }
 
             Ok(out)
+        }
+    }
+
+    struct SkipFieldAttribute;
+
+    impl SkipFieldAttribute {
+        /// Parses [`SkipFieldAttribute`] from the provided [`syn::Attribute`]s.
+        fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
+            Ok(attrs
+                .as_ref()
+                .iter()
+                .filter(|attr| attr.path.is_ident("into"))
+                .try_fold(None, |mut attrs, attr| {
+                    let field_attr =
+                        syn::parse2::<SkipFieldAttribute>(attr.tokens.clone())?;
+                    if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
+                        Err(Error::new(
+                            path.span(),
+                            "only single `#[into(...)]` attribute is allowed here",
+                        ))
+                    } else {
+                        Ok(attrs)
+                    }
+                })?
+                .map(|(_, attr)| attr))
+        }
+    }
+
+    impl Parse for SkipFieldAttribute {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let content;
+            syn::parenthesized!(content in input);
+
+            match content.parse::<syn::Path>()? {
+                p if p.is_ident("skip") | p.is_ident("ignore") => Ok(Self),
+                p => Err(Error::new(
+                    p.span(),
+                    format!("expected `skip`, found: `{}`", p.into_token_stream()),
+                )),
+            }
         }
     }
 }
