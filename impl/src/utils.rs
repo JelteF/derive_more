@@ -4,13 +4,19 @@
     allow(unused_mut)
 )]
 
-use proc_macro2::TokenStream;
+use std::{convert::Infallible, iter};
+
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
-    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type,
-    TypeGenerics, TypeParamBound, Variant, WhereClause,
+    parse::{Parse as _, ParseStream},
+    parse_quote,
+    punctuated::Punctuated,
+    spanned::Spanned,
+    token, Attribute, Data, DeriveInput, Error, Field, Fields, FieldsNamed,
+    FieldsUnnamed, GenericParam, Generics, Ident, ImplGenerics, Index, Meta,
+    NestedMeta, Result, Token, Type, TypeGenerics, TypeParamBound, Variant,
+    WhereClause,
 };
 
 #[derive(Clone, Copy, Default)]
@@ -1258,5 +1264,108 @@ where
             Either::Left(left) => left.next(),
             Either::Right(right) => right.next(),
         }
+    }
+}
+
+#[cfg(any(feature = "from", feature = "into"))]
+impl<L, R> ToTokens for Either<L, R>
+where
+    L: ToTokens,
+    R: ToTokens,
+{
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Either::Left(l) => l.to_tokens(tokens),
+            Either::Right(r) => r.to_tokens(tokens),
+        }
+    }
+}
+
+#[cfg(any(feature = "from", feature = "into"))]
+pub(crate) trait EitherExt: Sized {
+    fn left<T>(self) -> Either<Self, T> {
+        Either::Left(self)
+    }
+
+    fn right<T>(self) -> Either<T, Self> {
+        Either::Right(self)
+    }
+}
+
+#[cfg(any(feature = "from", feature = "into"))]
+impl<T> EitherExt for T {}
+
+#[cfg(any(feature = "from", feature = "into"))]
+/// Constructs [`Error`] for legacy syntax: `#[...(types(i32, "&str"))]` ->
+/// `#[...(i32, &str)]`.
+pub fn legacy_types_attribute_error(
+    tokens: ParseStream<'_>,
+    span: Span,
+    fields: &Fields,
+) -> Error {
+    let inner = || {
+        let content;
+        syn::parenthesized!(content in tokens);
+
+        let types = content
+            .parse_terminated::<_, token::Comma>(NestedMeta::parse)?
+            .into_iter()
+            .map(|meta| {
+                let value = match meta {
+                    NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
+                    NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
+                    NestedMeta::Lit(_) => {
+                        return Err(Error::new(
+                            meta.span(),
+                            format!(
+                                "expected path (`i32`) of string literal (`\"...\"`), \
+                                 found: `{}`",
+                                meta.into_token_stream(),
+                            ),
+                        ))
+                    }
+                };
+                Ok(if fields.len() > 1 {
+                    format!(
+                        "({})",
+                        fields
+                            .iter()
+                            .map(|_| value.clone())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    )
+                } else {
+                    value
+                })
+            })
+            .chain(match fields.len() {
+                0 => Either::Left(iter::empty()),
+                1 => Either::Right(iter::once(Ok(fields
+                    .iter()
+                    .next()
+                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
+                    .ty
+                    .to_token_stream()
+                    .to_string()))),
+                _ => Either::Right(iter::once(Ok(format!(
+                    "({})",
+                    fields
+                        .iter()
+                        .map(|f| f.ty.to_token_stream().to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )))),
+            })
+            .collect::<Result<Vec<_>>>()?
+            .join(", ");
+
+        Err::<Infallible, _>(Error::new(
+            span,
+            format!("legacy syntax, remove `types` and use `{types}` instead"),
+        ))
+    };
+    match inner() {
+        Err(e) => e,
+        Ok(inf) => match inf {},
     }
 }

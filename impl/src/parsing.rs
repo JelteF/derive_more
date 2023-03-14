@@ -28,6 +28,15 @@ pub(crate) enum Type {
     Other(TokenStream),
 }
 
+impl Type {
+    pub(crate) fn tuple<T: ToTokens>(items: impl IntoIterator<Item = T>) -> Self {
+        Self::Tuple {
+            paren: token::Paren::default(),
+            items: items.into_iter().map(ToTokens::into_token_stream).collect(),
+        }
+    }
+}
+
 impl Parse for Type {
     fn parse(input: ParseStream) -> Result<Self> {
         input.step(|c| {

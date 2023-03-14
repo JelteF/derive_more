@@ -84,18 +84,114 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     Ok(tokens)
 }
 
-mod new {
-    use std::iter;
+pub mod new {
+    use std::{borrow::Cow, iter};
 
-    use quote::ToTokens as _;
+    use proc_macro2::{Span, TokenStream};
+    use quote::quote;
     use syn::{
-        parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
+        ext::IdentExt as _,
+        parse::{discouraged::Speculative as _, Parse as _, ParseStream, Parser},
         punctuated::Punctuated,
         spanned::Spanned as _,
-        token, Error, Result,
+        token, Error, Ident, Result,
     };
 
-    use crate::{parsing::Type, utils::Either};
+    use crate::{
+        parsing::Type,
+        utils::{legacy_types_attribute_error, Either, EitherExt as _},
+    };
+
+    pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
+        let data = match &input.data {
+            syn::Data::Struct(data) => Ok(data),
+            syn::Data::Enum(e) => Err(Error::new(
+                e.enum_token.span(),
+                "`Into` cannot be derived for enums",
+            )),
+            syn::Data::Union(u) => Err(Error::new(
+                u.union_token.span(),
+                "`Into` cannot be derived for unions",
+            )),
+        }?;
+        let attr =
+            Attribute::parse_attrs(&input.attrs, &data.fields)?.unwrap_or_else(|| {
+                Attribute {
+                    owned: Some(Punctuated::new()),
+                    r#ref: None,
+                    ref_mut: None,
+                }
+            });
+        let ident = &input.ident;
+
+        let expand = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
+            let Some(tys) = tys else {
+                return iter::empty().left();
+            };
+
+            let lf = r.then(|| {
+                syn::Lifetime::new("'__deriveMoreLifetime", Span::call_site())
+            });
+            let r = r.then(|| token::And::default());
+            let m = m.then(|| token::Mut::default());
+
+            if tys.is_empty() {
+                iter::once(Type::tuple(data.fields.iter().map(|f| &f.ty))).left()
+            } else {
+                tys.into_iter().right()
+            }
+            .map(move |ty| {
+                let gens = if let Some(lf) = lf.clone() {
+                    let mut gens = input.generics.clone();
+                    gens.params.push(syn::LifetimeDef::new(lf).into());
+                    Cow::Owned(gens)
+                } else {
+                    Cow::Borrowed(&input.generics)
+                };
+                let (impl_gens, _, where_clause) = gens.split_for_impl();
+                let (_, ty_gens, _) = input.generics.split_for_impl();
+                let fields_idents = data.fields.iter().enumerate().map(|(i, f)| {
+                    f.ident
+                        .as_ref()
+                        .map_or_else(|| syn::Index::from(i).right(), Either::Left)
+                });
+
+                // TODO: validate tuple
+                let tys = match ty {
+                    Type::Tuple { items, .. } => items.into_iter().left(),
+                    Type::Other(other) => iter::once(other).right(),
+                }
+                .collect::<Vec<_>>();
+
+                Ok(quote! {
+                    #[automatically_derived]
+                    impl #impl_gens ::core::convert::From<#r #lf #m #ident #ty_gens>
+                        for ( #( #r #lf #m #tys ),* )
+                        #where_clause
+                    {
+                        #[inline]
+                        fn from(original: #r #lf #m #ident #ty_gens) -> Self {
+                            (#(
+                                <#r #m #tys as ::core::convert::From<_>>::from(
+                                    #r #m original. #fields_idents
+                                )
+                            ),*)
+                        }
+                    }
+                })
+            })
+            .right()
+        };
+
+        [
+            expand(attr.owned, false, false),
+            expand(attr.r#ref, true, false),
+            expand(attr.ref_mut, true, true),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
 
     #[derive(Debug, Default)]
     struct Attribute {
@@ -130,7 +226,7 @@ mod new {
                         (Some(_), None) | (None, None) => {}
                     };
 
-                    let field_attr: Self = Parser::parse2(
+                    let field_attr = Parser::parse2(
                         infer(|stream| Self::parse(stream, fields)),
                         attr.tokens.clone(),
                     )?;
@@ -149,51 +245,69 @@ mod new {
 
             let mut out = Self::default();
 
+            let parse_inner = |ahead, types: &mut Option<_>| {
+                use proc_macro2::Delimiter::Parenthesis;
+
+                content.advance_to(&ahead);
+                let types = types.get_or_insert_with(Punctuated::new);
+
+                if content.peek(token::Paren) {
+                    let error_span =
+                        content.cursor().group(Parenthesis).map(|(_, span, _)| span);
+                    let inner;
+                    syn::parenthesized!(inner in content);
+                    let error_span = error_span.unwrap_or_else(|| unreachable!());
+
+                    let ahead = inner.fork();
+                    if ahead
+                        .parse::<syn::Path>()
+                        .ok()
+                        .filter(|p| p.is_ident("types"))
+                        .is_some()
+                    {
+                        return Err(legacy_types_attribute_error(
+                            &ahead, error_span, fields,
+                        ));
+                    }
+
+                    types.extend(
+                        inner
+                            .parse_terminated::<_, token::Comma>(Type::parse)?
+                            .into_pairs(),
+                    );
+                }
+
+                if content.peek(token::Comma) {
+                    let comma = content.parse::<token::Comma>()?;
+                    if !types.empty_or_trailing() {
+                        types.push_punct(comma);
+                    }
+                }
+
+                Ok(())
+            };
+
             while !content.is_empty() {
                 let ahead = content.fork();
-                check_legacy_attribute(&ahead, fields)?;
-                let res = ahead.parse::<syn::Path>();
-                check_legacy_attribute(&ahead, fields)?;
+                let res = if ahead.peek(Ident::peek_any) {
+                    ahead.call(Ident::parse_any).map(Into::into)
+                } else {
+                    ahead.parse::<syn::Path>()
+                };
                 match res {
                     Ok(p) if p.is_ident("owned") => {
-                        check_legacy_attribute(&ahead, fields)?;
-                        content.advance_to(&ahead);
-                        let inner;
-                        syn::parenthesized!(inner in content);
-                        out.owned.get_or_insert_with(Punctuated::new).extend(
-                            inner
-                                .parse_terminated::<_, token::Comma>(Type::parse)?
-                                .into_pairs(),
-                        );
-                        if content.peek(token::Comma) {
-                            let _ = content.parse::<token::Comma>()?;
-                        }
+                        parse_inner(ahead, &mut out.owned)?;
                     }
-                    Ok(p) if p.is_ident("ref") => {
-                        content.advance_to(&ahead);
-                        let inner;
-                        syn::parenthesized!(inner in content);
-                        out.r#ref.get_or_insert_with(Punctuated::new).extend(
-                            inner
-                                .parse_terminated::<_, token::Comma>(Type::parse)?
-                                .into_pairs(),
-                        );
-                        if content.peek(token::Comma) {
-                            let _ = content.parse::<token::Comma>()?;
-                        }
-                    }
+                    Ok(p) if p.is_ident("ref") => parse_inner(ahead, &mut out.r#ref)?,
                     Ok(p) if p.is_ident("ref_mut") => {
-                        content.advance_to(&ahead);
-                        let inner;
-                        syn::parenthesized!(inner in content);
-                        out.ref_mut.get_or_insert_with(Punctuated::new).extend(
-                            inner
-                                .parse_terminated::<_, token::Comma>(Type::parse)?
-                                .into_pairs(),
-                        );
-                        if content.peek(token::Comma) {
-                            let _ = content.parse::<token::Comma>()?;
-                        }
+                        parse_inner(ahead, &mut out.ref_mut)?;
+                    }
+                    Ok(p) if p.is_ident("types") => {
+                        return Err(legacy_types_attribute_error(
+                            &ahead,
+                            p.span(),
+                            fields,
+                        ));
                     }
                     _ => {
                         out.owned
@@ -210,85 +324,5 @@ mod new {
 
             Ok(out)
         }
-    }
-
-    fn check_legacy_attribute(
-        input: ParseStream<'_>,
-        fields: &syn::Fields,
-    ) -> Result<()> {
-        use proc_macro2::Delimiter::Parenthesis;
-
-        let input = input.fork();
-
-        if input
-            .parse::<syn::Path>()
-            .ok()
-            .filter(|p| p.is_ident("types"))
-            .is_none()
-        {
-            return Ok(());
-        }
-
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        let types = content
-            .parse_terminated::<_, token::Comma>(syn::NestedMeta::parse)?
-            .into_iter()
-            .map(|meta| {
-                let value = match meta {
-                    syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
-                    syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
-                    meta => {
-                        return Err(Error::new(
-                            meta.span(),
-                            format!(
-                                "expected path (`i32`) of string literal (`\"...\"`), \
-                                 found: `{}`",
-                                meta.into_token_stream(),
-                            ),
-                        ))
-                    }
-                };
-                Ok(if fields.len() > 1 {
-                    format!(
-                        "({})",
-                        fields
-                            .iter()
-                            .map(|_| value.clone())
-                            .collect::<Vec<_>>()
-                            .join(", "),
-                    )
-                } else {
-                    value
-                })
-            })
-            .chain(match fields.len() {
-                0 => Either::Left(iter::empty()),
-                1 => Either::Right(iter::once(Ok(fields
-                    .iter()
-                    .next()
-                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
-                    .ty
-                    .to_token_stream()
-                    .to_string()))),
-                _ => Either::Right(iter::once(Ok(format!(
-                    "({})",
-                    fields
-                        .iter()
-                        .map(|f| f.ty.to_token_stream().to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )))),
-            })
-            .collect::<Result<Vec<_>>>()?
-            .join(", ");
-
-        Err(Error::new(
-            error_span,
-            format!("legacy syntax, remove `types` and use `{types}` instead"),
-        ))
     }
 }

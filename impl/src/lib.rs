@@ -103,7 +103,7 @@ macro_rules! create_derive(
 
 create_derive!("from", from, From, from_derive, from);
 
-create_derive!("into", into, Into, into_derive, into);
+create_derive!("into", into::new, Into, into_derive, into);
 
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 

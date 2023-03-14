@@ -2,8 +2,8 @@
 
 use std::{cmp, iter};
 
-use proc_macro2::{Span, TokenStream};
-use quote::{format_ident, quote, ToTokens as _, TokenStreamExt as _};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, TokenStreamExt as _};
 use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
     parse_quote,
@@ -12,7 +12,10 @@ use syn::{
     token, Error, Ident, Result,
 };
 
-use crate::{parsing::Type, utils::Either};
+use crate::{
+    parsing::Type,
+    utils::{legacy_types_attribute_error, Either},
+};
 
 /// Expands a [`From`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
@@ -142,7 +145,9 @@ impl StructAttribute {
                 content.advance_to(&ahead);
                 Ok(Self::Forward)
             }
-            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
+            Ok(p) if p.is_ident("types") => {
+                Err(legacy_types_attribute_error(&ahead, error_span, fields))
+            }
             _ => content.parse_terminated(Type::parse).map(Self::Types),
         }
     }
@@ -227,7 +232,9 @@ impl VariantAttribute {
                 content.advance_to(&ahead);
                 Ok(Self::Skip)
             }
-            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
+            Ok(p) if p.is_ident("types") => {
+                Err(legacy_types_attribute_error(&ahead, error_span, fields))
+            }
             _ => content.parse_terminated(Type::parse).map(Self::Types),
         }
     }
@@ -517,64 +524,4 @@ impl<'a> Expansion<'a> {
             Type::Other(other) => Either::Right(iter::once(other)),
         })
     }
-}
-
-/// Constructs [`Error`] for legacy syntax: `#[from(types(i32, "&str"))]`.
-fn legacy_error<T>(
-    tokens: ParseStream<'_>,
-    span: Span,
-    fields: &syn::Fields,
-) -> Result<T> {
-    let content;
-    syn::parenthesized!(content in tokens);
-
-    let types = content
-        .parse_terminated::<_, token::Comma>(syn::NestedMeta::parse)?
-        .into_iter()
-        .map(|meta| {
-            let value = match meta {
-                syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
-                syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
-                syn::NestedMeta::Lit(_) => unreachable!(),
-            };
-            if fields.len() > 1 {
-                format!(
-                    "({})",
-                    fields
-                        .iter()
-                        .map(|_| value.clone())
-                        .collect::<Vec<_>>()
-                        .join(", "),
-                )
-            } else {
-                value
-            }
-        })
-        .chain(match fields.len() {
-            0 => Either::Left(iter::empty()),
-            1 => Either::Right(iter::once(
-                fields
-                    .iter()
-                    .next()
-                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
-                    .ty
-                    .to_token_stream()
-                    .to_string(),
-            )),
-            _ => Either::Right(iter::once(format!(
-                "({})",
-                fields
-                    .iter()
-                    .map(|f| f.ty.to_token_stream().to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ))),
-        })
-        .collect::<Vec<_>>()
-        .join(", ");
-
-    Err(Error::new(
-        span,
-        format!("legacy syntax, remove `types` and use `{types}` instead"),
-    ))
 }
