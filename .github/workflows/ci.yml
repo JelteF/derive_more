@@ -112,7 +112,7 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
 
-      - run: cargo test --workspace --features testing-helpers
+      - run: cargo test --workspace --features full,testing-helpers
 
   test-features:
     name: test features
@@ -145,7 +145,7 @@ jobs:
         with:
           toolchain: nightly
 
-      - run: cargo +nightly doc --workspace
+      - run: cargo +nightly doc --workspace --all-features
         env:
           RUSTDOCFLAGS: --cfg docsrs
 
