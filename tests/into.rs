@@ -59,7 +59,7 @@ struct Point2DWithIgnored {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[derive(Into)]
-#[into(owned(i64, i128, MyInt), ref, ref_mut, i32)]
+#[into(owned(i64, i128, i32, MyInt), ref(i32, MyInt), ref_mut(i32, MyInt))]
 struct MyIntExplicit(MyInt);
 
 #[test]
@@ -122,7 +122,11 @@ fn explicit_types_struct_tupled() {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[derive(Into)]
-#[into(owned((i32, i32), (MyInt, MyInt)), ref, ref_mut)]
+#[into(
+    owned((i32, i32), (MyInt, MyInt)),
+    ref((i32, i32), (MyInt, MyInt)),
+    ref_mut((i32, i32), (MyInt, MyInt)),
+)]
 struct Point2DExplicit {
     x: MyInt,
     y: MyInt,

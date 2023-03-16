@@ -99,7 +99,7 @@ pub mod new {
 
     use crate::{
         parsing::Type,
-        utils::{legacy_types_attribute_error, Either, EitherExt as _},
+        utils::{Either, EitherExt as _},
     };
 
     pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
@@ -257,35 +257,24 @@ pub mod new {
         }
 
         fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
+            use proc_macro2::Delimiter::Parenthesis;
+
+            let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
             let content;
             syn::parenthesized!(content in input);
+            let error_span = error_span.unwrap_or_else(|| unreachable!());
+
+            legacy_types_attribute_error(&content, error_span, fields)?;
 
             let mut out = Self::default();
 
             let parse_inner = |ahead, types: &mut Option<_>| {
-                use proc_macro2::Delimiter::Parenthesis;
-
                 content.advance_to(&ahead);
-                let types = types.get_or_insert_with(Punctuated::new);
 
+                let types = types.get_or_insert_with(Punctuated::new);
                 if content.peek(token::Paren) {
-                    let error_span =
-                        content.cursor().group(Parenthesis).map(|(_, span, _)| span);
                     let inner;
                     syn::parenthesized!(inner in content);
-                    let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-                    let ahead = inner.fork();
-                    if ahead
-                        .parse::<syn::Path>()
-                        .ok()
-                        .filter(|p| p.is_ident("types"))
-                        .is_some()
-                    {
-                        return Err(legacy_types_attribute_error(
-                            &ahead, error_span, fields,
-                        ));
-                    }
 
                     types.extend(
                         inner
@@ -293,7 +282,6 @@ pub mod new {
                             .into_pairs(),
                     );
                 }
-
                 if content.peek(token::Comma) {
                     let comma = content.parse::<token::Comma>()?;
                     if !types.empty_or_trailing() {
@@ -318,13 +306,6 @@ pub mod new {
                     Ok(p) if p.is_ident("ref") => parse_inner(ahead, &mut out.r#ref)?,
                     Ok(p) if p.is_ident("ref_mut") => {
                         parse_inner(ahead, &mut out.ref_mut)?;
-                    }
-                    Ok(p) if p.is_ident("types") => {
-                        return Err(legacy_types_attribute_error(
-                            &ahead,
-                            p.span(),
-                            fields,
-                        ));
                     }
                     _ => {
                         out.owned
@@ -380,6 +361,157 @@ pub mod new {
                     format!("expected `skip`, found: `{}`", p.into_token_stream()),
                 )),
             }
+        }
+    }
+
+    fn legacy_types_attribute_error(
+        tokens: ParseStream<'_>,
+        span: Span,
+        fields: &syn::Fields,
+    ) -> Result<()> {
+        let tokens = tokens.fork();
+
+        let map_ty = |s: String| {
+            if fields.len() > 1 {
+                format!(
+                    "({})",
+                    (0..fields.len())
+                        .map(|_| s.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            } else {
+                s
+            }
+        };
+        let field = match fields.len() {
+            0 => None,
+            1 => Some(
+                fields
+                    .iter()
+                    .next()
+                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
+                    .ty
+                    .to_token_stream()
+                    .to_string(),
+            ),
+            _ => Some(format!(
+                "({})",
+                fields
+                    .iter()
+                    .map(|f| f.ty.to_token_stream().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )),
+        };
+
+        let Ok(metas) = tokens.parse_terminated::<_, token::Comma>(syn::Meta::parse) else {
+            return Ok(());
+        };
+
+        let parse_list = |list: syn::MetaList, attrs: &mut Option<Vec<_>>| {
+            if !list.path.is_ident("types") {
+                return None;
+            }
+            for meta in list.nested {
+                attrs.get_or_insert_with(Vec::new).push(match meta {
+                    syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
+                    syn::NestedMeta::Meta(syn::Meta::Path(path)) => {
+                        path.into_token_stream().to_string()
+                    }
+                    _ => return None,
+                })
+            }
+            Some(())
+        };
+
+        let Some((top_level, owned, ref_, ref_mut)) = metas
+            .into_iter()
+            .try_fold(
+                (None, None, None, None),
+                |(mut top_level, mut owned, mut ref_, mut ref_mut), meta| {
+                    let is = |name| {
+                        matches!(&meta, syn::Meta::Path(p) if p.is_ident(name))
+                            || matches!(&meta, syn::Meta::List(list) if list.path.is_ident(name))
+                    };
+                    let parse_inner = |meta, attrs: &mut Option<_>| {
+                        match meta {
+                            syn::Meta::Path(_) => {
+                                let _ = attrs.get_or_insert_with(Vec::new);
+                                Some(())
+                            }
+                            syn::Meta::List(mut list) => {
+                                if let syn::NestedMeta::Meta(syn::Meta::List(list)) = list.nested.pop()?.into_value() {
+                                    parse_list(list, attrs)
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None
+                        }
+                    };
+
+                    match meta {
+                        meta if is("owned") => parse_inner(meta, &mut owned),
+                        meta if is("ref") => parse_inner(meta, &mut ref_),
+                        meta if is("ref_mut") => parse_inner(meta, &mut ref_mut),
+                        syn::Meta::List(list) => parse_list(list, &mut top_level),
+                        _ => None,
+                    }
+                    .map(|_| (top_level, owned, ref_, ref_mut))
+                },
+            )
+            .filter(|(top_level, owned, ref_, ref_mut)| {
+                [top_level, owned, ref_, ref_mut]
+                    .into_iter()
+                    .any(|l| l.as_ref().map_or(false, |l| !l.is_empty()))
+            })
+        else {
+            return Ok(());
+        };
+
+        if [&owned, &ref_, &ref_mut].into_iter().any(Option::is_some) {
+            let format = |list: Option<Vec<_>>, name: &str| match list {
+                Some(l)
+                    if top_level.as_ref().map_or(true, Vec::is_empty)
+                        && l.is_empty() =>
+                {
+                    Some(name.to_owned())
+                }
+                Some(l) => Some(format!(
+                    "{}({})",
+                    name,
+                    l.into_iter()
+                        .chain(top_level.clone().into_iter().flatten())
+                        .map(map_ty)
+                        .chain(field.clone())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                )),
+                None => None,
+            };
+            let format = [
+                format(owned, "owned"),
+                format(ref_, "ref"),
+                format(ref_mut, "ref_mut"),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .join(", ");
+
+            Err(Error::new(
+                span,
+                format!("legacy syntax, use `{format}` instead"),
+            ))
+        } else {
+            Err(Error::new(
+                span,
+                format!(
+                    "legacy syntax, remove `types` and use `{}` instead",
+                    top_level.unwrap_or_else(|| unreachable!()).join(", "),
+                ),
+            ))
         }
     }
 }
