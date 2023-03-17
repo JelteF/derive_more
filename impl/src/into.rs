@@ -63,8 +63,8 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
 
         let lf =
             r.then(|| syn::Lifetime::new("'__derive_more_into", Span::call_site()));
-        let r = r.then(|| token::And::default());
-        let m = m.then(|| token::Mut::default());
+        let r = r.then(token::And::default);
+        let m = m.then(token::Mut::default);
 
         let gens = if let Some(lf) = lf.clone() {
             let mut gens = input.generics.clone();
@@ -180,7 +180,7 @@ impl StructAttribute {
         syn::parenthesized!(content in input);
         let error_span = error_span.unwrap_or_else(|| unreachable!());
 
-        legacy_error(&content, error_span, fields)?;
+        check_legacy_syntax(&content, error_span, fields)?;
 
         let mut out = Self::default();
 
@@ -303,7 +303,7 @@ impl Parse for SkipFieldAttribute {
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
-fn legacy_error(
+fn check_legacy_syntax(
     tokens: ParseStream<'_>,
     span: Span,
     fields: &syn::Fields,

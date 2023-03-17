@@ -29,6 +29,8 @@ pub(crate) enum Type {
 }
 
 impl Type {
+    #[cfg(feature = "into")]
+    /// Creates [`Type::Tuple`] from [`Iterator`] of [`TokenStream`]s.
     pub(crate) fn tuple<T: ToTokens>(items: impl IntoIterator<Item = T>) -> Self {
         Self::Tuple {
             paren: token::Paren::default(),

@@ -47,7 +47,7 @@ struct Str(Cow<'static, str>);
 
 assert_eq!(Str("&str".into()), "&str".into());
 assert_eq!(Str("String".into()), "String".to_owned().into());
-assert_eq!(Str("Cow".into()), Cow::Borrowed("Cow").to_owned().into());
+assert_eq!(Str("Cow".into()), Cow::Borrowed("Cow").into());
 
 #[derive(Debug, From, PartialEq)]
 #[from((i16, i16), (i32, i32))]
