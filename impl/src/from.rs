@@ -1,9 +1,9 @@
 //! Implementation of a [`From`] derive macro.
 
-use std::{cmp, iter};
+use std::iter;
 
-use proc_macro2::TokenStream;
-use quote::{format_ident, quote, TokenStreamExt as _};
+use proc_macro2::{Span, TokenStream};
+use quote::{format_ident, quote, ToTokens as _, TokenStreamExt as _};
 use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
     parse_quote,
@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{legacy_types_attribute_error, Either},
+    utils::{validate_tuple, Either},
 };
 
 /// Expands a [`From`] derive macro.
@@ -145,9 +145,7 @@ impl StructAttribute {
                 content.advance_to(&ahead);
                 Ok(Self::Forward)
             }
-            Ok(p) if p.is_ident("types") => {
-                Err(legacy_types_attribute_error(&ahead, error_span, fields))
-            }
+            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
             _ => content.parse_terminated(Type::parse).map(Self::Types),
         }
     }
@@ -232,9 +230,7 @@ impl VariantAttribute {
                 content.advance_to(&ahead);
                 Ok(Self::Skip)
             }
-            Ok(p) if p.is_ident("types") => {
-                Err(legacy_types_attribute_error(&ahead, error_span, fields))
-            }
+            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
             _ => content.parse_terminated(Type::parse).map(Self::Types),
         }
     }
@@ -291,7 +287,7 @@ impl<'a> Expansion<'a> {
                 tys.iter().map(|ty| {
                     let variant = self.variant.iter();
 
-                    let mut from_tys = self.validate_type(ty)?;
+                    let mut from_tys = validate_tuple(ty, self.fields.len())?;
                     let init = self.expand_fields(|ident, ty, index| {
                         let ident = ident.into_iter();
                         let index = index.into_iter();
@@ -441,87 +437,64 @@ impl<'a> Expansion<'a> {
             })
             .unwrap_or_default()
     }
+}
 
-    /// Validates [`Type`] against [`syn::Fields`].
-    fn validate_type<'t>(
-        &self,
-        ty: &'t Type,
-    ) -> Result<impl Iterator<Item = &'t TokenStream>> {
-        match ty {
-            Type::Tuple { items, .. } if self.fields.len() > 1 => {
-                match self.fields.len().cmp(&items.len()) {
-                    cmp::Ordering::Greater => {
-                        return Err(Error::new(
-                            ty.span(),
-                            format!(
-                                "Wrong tuple length: expected {}, found {}. \
-                                 Consider adding {} more type{}: `({})`",
-                                self.fields.len(),
-                                items.len(),
-                                self.fields.len() - items.len(),
-                                if self.fields.len() - items.len() > 1 {
-                                    "s"
-                                } else {
-                                    ""
-                                },
-                                items
-                                    .iter()
-                                    .map(|item| item.to_string())
-                                    .chain(
-                                        (0..(self.fields.len() - items.len()))
-                                            .map(|_| "_".to_string())
-                                    )
-                                    .collect::<Vec<_>>()
-                                    .join(", "),
-                            ),
-                        ));
-                    }
-                    cmp::Ordering::Less => {
-                        return Err(Error::new(
-                            ty.span(),
-                            format!(
-                                "Wrong tuple length: expected {}, found {}. \
-                                 Consider removing last {} type{}: `({})`",
-                                self.fields.len(),
-                                items.len(),
-                                items.len() - self.fields.len(),
-                                if items.len() - self.fields.len() > 1 {
-                                    "s"
-                                } else {
-                                    ""
-                                },
-                                items
-                                    .iter()
-                                    .take(self.fields.len())
-                                    .map(|item| item.to_string())
-                                    .collect::<Vec<_>>()
-                                    .join(", "),
-                            ),
-                        ));
-                    }
-                    cmp::Ordering::Equal => {}
-                }
+/// Constructs [`Error`] for legacy syntax: `#[from(types(i32, "&str"))]`.
+fn legacy_error<T>(
+    tokens: ParseStream<'_>,
+    span: Span,
+    fields: &syn::Fields,
+) -> Result<T> {
+    let content;
+    syn::parenthesized!(content in tokens);
+
+    let types = content
+        .parse_terminated::<_, token::Comma>(syn::NestedMeta::parse)?
+        .into_iter()
+        .map(|meta| {
+            let value = match meta {
+                syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
+                syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
+                syn::NestedMeta::Lit(_) => unreachable!(),
+            };
+            if fields.len() > 1 {
+                format!(
+                    "({})",
+                    fields
+                        .iter()
+                        .map(|_| value.clone())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                )
+            } else {
+                value
             }
-            Type::Other(other) if self.fields.len() > 1 => {
-                if self.fields.len() > 1 {
-                    return Err(Error::new(
-                        other.span(),
-                        format!(
-                            "Expected tuple: `({}, {})`",
-                            other,
-                            (0..(self.fields.len() - 1))
-                                .map(|_| "_")
-                                .collect::<Vec<_>>()
-                                .join(", "),
-                        ),
-                    ));
-                }
-            }
-            Type::Tuple { .. } | Type::Other(_) => {}
-        }
-        Ok(match ty {
-            Type::Tuple { items, .. } => Either::Left(items.iter()),
-            Type::Other(other) => Either::Right(iter::once(other)),
         })
-    }
+        .chain(match fields.len() {
+            0 => Either::Left(iter::empty()),
+            1 => Either::Right(iter::once(
+                fields
+                    .iter()
+                    .next()
+                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
+                    .ty
+                    .to_token_stream()
+                    .to_string(),
+            )),
+            _ => Either::Right(iter::once(format!(
+                "({})",
+                fields
+                    .iter()
+                    .map(|f| f.ty.to_token_stream().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))),
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    Err(Error::new(
+        span,
+        format!("legacy syntax, remove `types` and use `{types}` instead"),
+    ))
 }

@@ -57,7 +57,12 @@ mod mul_helpers;
 mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
-#[cfg(any(feature = "debug", feature = "display", feature = "from"))]
+#[cfg(any(
+    feature = "debug",
+    feature = "display",
+    feature = "from",
+    feature = "into",
+))]
 pub(crate) mod parsing;
 #[cfg(feature = "sum")]
 mod sum_like;
@@ -103,7 +108,7 @@ macro_rules! create_derive(
 
 create_derive!("from", from, From, from_derive, from);
 
-create_derive!("into", into::new, Into, into_derive, into);
+create_derive!("into", into, Into, into_derive, into);
 
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 

@@ -4,20 +4,17 @@
     allow(unused_mut)
 )]
 
-use std::{convert::Infallible, iter};
-
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse::{Parse as _, ParseStream},
-    parse_quote,
-    punctuated::Punctuated,
-    spanned::Spanned,
-    token, Attribute, Data, DeriveInput, Error, Field, Fields, FieldsNamed,
-    FieldsUnnamed, GenericParam, Generics, Ident, ImplGenerics, Index, Meta,
-    NestedMeta, Result, Token, Type, TypeGenerics, TypeParamBound, Variant,
-    WhereClause,
+    parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
+    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
+    Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type,
+    TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
+
+#[cfg(any(feature = "from", feature = "into"))]
+use crate::parsing;
 
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
@@ -1176,11 +1173,6 @@ impl FullMetaInfo {
         }
         ref_types
     }
-
-    #[cfg(any(feature = "from", feature = "into"))]
-    pub fn additional_types(&self, ref_type: RefType) -> HashSet<syn::Type> {
-        self.info.types.get(&ref_type).cloned().unwrap_or_default()
-    }
 }
 
 pub fn get_if_type_parameter_used_in_type(
@@ -1296,76 +1288,87 @@ pub(crate) trait EitherExt: Sized {
 impl<T> EitherExt for T {}
 
 #[cfg(any(feature = "from", feature = "into"))]
-/// Constructs [`Error`] for legacy syntax: `#[...(types(i32, "&str"))]` ->
-/// `#[...(i32, &str)]`.
-pub fn legacy_types_attribute_error(
-    tokens: ParseStream<'_>,
-    span: Span,
-    fields: &Fields,
-) -> Error {
-    let inner = || {
-        let content;
-        syn::parenthesized!(content in tokens);
+/// Validates [`Type`] against [`Fields`].
+pub(crate) fn validate_tuple(
+    ty: &parsing::Type,
+    fields_count: usize,
+) -> Result<impl Iterator<Item = &TokenStream>> {
+    use std::{cmp::Ordering, iter};
 
-        let types = content
-            .parse_terminated::<_, token::Comma>(NestedMeta::parse)?
-            .into_iter()
-            .map(|meta| {
-                let value = match meta {
-                    NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
-                    NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
-                    NestedMeta::Lit(_) => {
-                        return Err(Error::new(
-                            meta.span(),
-                            format!(
-                                "expected path (`i32`) of string literal (`\"...\"`), \
-                                 found: `{}`",
-                                meta.into_token_stream(),
-                            ),
-                        ))
-                    }
-                };
-                Ok(if fields.len() > 1 {
+    match ty {
+        parsing::Type::Tuple { items, .. } if fields_count > 1 => {
+            match fields_count.cmp(&items.len()) {
+                Ordering::Greater => {
+                    return Err(Error::new(
+                        ty.span(),
+                        format!(
+                            "Wrong tuple length: expected {}, found {}. \
+                             Consider adding {} more type{}: `({})`",
+                            fields_count,
+                            items.len(),
+                            fields_count - items.len(),
+                            if fields_count - items.len() > 1 {
+                                "s"
+                            } else {
+                                ""
+                            },
+                            items
+                                .iter()
+                                .map(|item| item.to_string())
+                                .chain(
+                                    (0..(fields_count - items.len()))
+                                        .map(|_| "_".to_string())
+                                )
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                        ),
+                    ));
+                }
+                Ordering::Less => {
+                    return Err(Error::new(
+                        ty.span(),
+                        format!(
+                            "Wrong tuple length: expected {}, found {}. \
+                             Consider removing last {} type{}: `({})`",
+                            fields_count,
+                            items.len(),
+                            items.len() - fields_count,
+                            if items.len() - fields_count > 1 {
+                                "s"
+                            } else {
+                                ""
+                            },
+                            items
+                                .iter()
+                                .take(fields_count)
+                                .map(|item| item.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                        ),
+                    ));
+                }
+                Ordering::Equal => {}
+            }
+        }
+        parsing::Type::Other(other) if fields_count > 1 => {
+            if fields_count > 1 {
+                return Err(Error::new(
+                    other.span(),
                     format!(
-                        "({})",
-                        fields
-                            .iter()
-                            .map(|_| value.clone())
+                        "Expected tuple: `({}, {})`",
+                        other,
+                        (0..(fields_count - 1))
+                            .map(|_| "_")
                             .collect::<Vec<_>>()
                             .join(", "),
-                    )
-                } else {
-                    value
-                })
-            })
-            .chain(match fields.len() {
-                0 => Either::Left(iter::empty()),
-                1 => Either::Right(iter::once(Ok(fields
-                    .iter()
-                    .next()
-                    .unwrap_or_else(|| unreachable!("fields.len() == 1"))
-                    .ty
-                    .to_token_stream()
-                    .to_string()))),
-                _ => Either::Right(iter::once(Ok(format!(
-                    "({})",
-                    fields
-                        .iter()
-                        .map(|f| f.ty.to_token_stream().to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )))),
-            })
-            .collect::<Result<Vec<_>>>()?
-            .join(", ");
-
-        Err::<Infallible, _>(Error::new(
-            span,
-            format!("legacy syntax, remove `types` and use `{types}` instead"),
-        ))
-    };
-    match inner() {
-        Err(e) => e,
-        Ok(inf) => match inf {},
+                    ),
+                ));
+            }
+        }
+        parsing::Type::Tuple { .. } | parsing::Type::Other(_) => {}
     }
+    Ok(match ty {
+        parsing::Type::Tuple { items, .. } => Either::Left(items.iter()),
+        parsing::Type::Other(other) => Either::Right(iter::once(other)),
+    })
 }
