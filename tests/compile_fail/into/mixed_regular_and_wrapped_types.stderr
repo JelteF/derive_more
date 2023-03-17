@@ -1,0 +1,5 @@
+error: mixing regular types with wrapped into `owned`/`ref`/`ref_mut` is not allowed, try wrapping this type into `owned(i32), ref(i32), ref_mut(i32)`
+ --> tests/compile_fail/into/mixed_regular_and_wrapped_types.rs:2:25
+  |
+2 | #[into(owned, ref(i32), i32)]
+  |                         ^^^

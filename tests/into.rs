@@ -98,6 +98,25 @@ mod single_field {
         assert_eq!(42, Struct { field: 42 }.into());
     }
 
+    mod skip {
+        use super::*;
+
+        #[derive(Debug, Into, PartialEq)]
+        struct Tuple(#[into(skip)] i32);
+
+        #[derive(Debug, Into, PartialEq)]
+        struct Struct {
+            #[into(skip)]
+            field: i32,
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!((), Tuple(42).into());
+            assert_eq!((), Struct { field: 42 }.into());
+        }
+    }
+
     mod types {
         use super::*;
 
@@ -257,6 +276,25 @@ mod single_field {
         fn assert() {
             assert_eq!(Wrapped(42), Tuple(Wrapped(42)).into());
             assert_eq!(Wrapped(42), Struct { field: Wrapped(42) }.into());
+        }
+
+        mod skip {
+            use super::*;
+
+            #[derive(Debug, Into, PartialEq)]
+            struct Tuple<T>(#[into(skip)] Wrapped<T>);
+
+            #[derive(Debug, Into, PartialEq)]
+            struct Struct<T> {
+                #[into(skip)]
+                field: Wrapped<T>,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!((), Tuple(Wrapped(42)).into());
+                assert_eq!((), Struct { field: Wrapped(42) }.into());
+            }
         }
 
         mod types {
@@ -464,6 +502,33 @@ mod multi_field {
             }
             .into(),
         );
+    }
+
+    mod skip {
+        use super::*;
+
+        #[derive(Debug, Into, PartialEq)]
+        struct Tuple(i32, #[into(skip)] i64);
+
+        #[derive(Debug, Into, PartialEq)]
+        struct Struct {
+            #[into(skip)]
+            field1: i32,
+            field2: i64,
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(1, Tuple(1, 2_i64).into());
+            assert_eq!(
+                2_i64,
+                Struct {
+                    field1: 1,
+                    field2: 2_i64,
+                }
+                .into(),
+            );
+        }
     }
 
     mod types {
@@ -687,6 +752,33 @@ mod multi_field {
                 }
                 .into(),
             );
+        }
+
+        mod skip {
+            use super::*;
+
+            #[derive(Debug, Into, PartialEq)]
+            struct Tuple<A, B>(Wrapped<A>, #[into(skip)] Wrapped<B>);
+
+            #[derive(Debug, Into, PartialEq)]
+            struct Struct<A, B> {
+                #[into(skip)]
+                field1: Wrapped<A>,
+                field2: Wrapped<B>,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(Wrapped(1), Tuple(Wrapped(1), Wrapped(2)).into());
+                assert_eq!(
+                    Wrapped(2),
+                    Struct {
+                        field1: Wrapped(1),
+                        field2: Wrapped(2),
+                    }
+                    .into(),
+                );
+            }
         }
 
         mod types {

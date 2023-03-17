@@ -1,0 +1,5 @@
+error: `Into` cannot be derived for unions
+ --> tests/compile_fail/into/union.rs:2:5
+  |
+2 | pub union Foo {
+  |     ^^^^^

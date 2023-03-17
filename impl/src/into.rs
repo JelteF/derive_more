@@ -1,3 +1,5 @@
+//! Implementation of a [`Into`] derive macro.
+
 use std::{borrow::Cow, iter};
 
 use proc_macro2::{Span, TokenStream};
@@ -15,6 +17,7 @@ use crate::{
     utils::{validate_tuple, Either, EitherExt as _},
 };
 
+/// Expands a [`Into`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
@@ -27,16 +30,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
             "`Into` cannot be derived for unions",
         )),
     }?;
-    let attr =
-        Attribute::parse_attrs(&input.attrs, &data.fields)?.unwrap_or_else(|| {
-            Attribute {
-                owned: Some(Punctuated::new()),
-                r#ref: None,
-                ref_mut: None,
-            }
+
+    let attr = StructAttribute::parse_attrs(&input.attrs, &data.fields)?
+        .unwrap_or_else(|| StructAttribute {
+            owned: Some(Punctuated::new()),
+            r#ref: None,
+            ref_mut: None,
         });
     let ident = &input.ident;
-
     let fields = data
         .fields
         .iter()
@@ -113,22 +114,33 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
     .collect()
 }
 
+/// Representation of a [`Into`] derive macro struct container attribute.
+///
+/// ```rust,ignore
+/// #[into(<types>)]
+/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
+/// ```
 #[derive(Debug, Default)]
-struct Attribute {
+struct StructAttribute {
+    /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
     owned: Option<Punctuated<Type, token::Comma>>,
+
+    /// [`Type`]s wrapped into `ref(...)`.
     r#ref: Option<Punctuated<Type, token::Comma>>,
+
+    /// [`Type`]s wrapped into `ref_mut(...)`.
     ref_mut: Option<Punctuated<Type, token::Comma>>,
 }
 
-impl Attribute {
-    /// Parses [`Attribute`] from the provided [`syn::Attribute`]s.
+impl StructAttribute {
+    /// Parses [`StructAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         fields: &syn::Fields,
     ) -> Result<Option<Self>> {
         fn infer<T>(v: T) -> T
         where
-            T: for<'a> FnOnce(ParseStream<'a>) -> Result<Attribute>,
+            T: for<'a> FnOnce(ParseStream<'a>) -> Result<StructAttribute>,
         {
             v
         }
@@ -159,6 +171,7 @@ impl Attribute {
             })
     }
 
+    /// Parses single [`StructAttribute`].
     fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
         use proc_macro2::Delimiter::Parenthesis;
 
@@ -248,6 +261,7 @@ impl Attribute {
     }
 }
 
+/// `#[into(skip)]` field attribute.
 struct SkipFieldAttribute;
 
 impl SkipFieldAttribute {
@@ -288,6 +302,7 @@ impl Parse for SkipFieldAttribute {
     }
 }
 
+/// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
 fn legacy_error(
     tokens: ParseStream<'_>,
     span: Span,
@@ -330,8 +345,8 @@ fn legacy_error(
     };
 
     let Ok(metas) = tokens.parse_terminated::<_, token::Comma>(syn::Meta::parse) else {
-            return Ok(());
-        };
+        return Ok(());
+    };
 
     let parse_list = |list: syn::MetaList, attrs: &mut Option<Vec<_>>| {
         if !list.path.is_ident("types") {
