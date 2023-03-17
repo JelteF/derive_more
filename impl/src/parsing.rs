@@ -117,7 +117,6 @@ pub(crate) enum Expr {
 }
 
 impl Expr {
-    #[cfg(feature = "from")]
     /// Returns [`Ident`] in case this [`Expr`] is represented only by it.
     pub(crate) fn ident(&self) -> Option<&Ident> {
         match self {
