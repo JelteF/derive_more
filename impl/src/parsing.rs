@@ -16,7 +16,7 @@ use syn::{
 };
 
 /// [`syn::Type`] [`Parse`]ing polyfill.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum Type {
     /// [`syn::Type::Tuple`] [`Parse`]ing polyfill.
     Tuple {

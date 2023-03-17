@@ -292,6 +292,9 @@ pub mod new {
                 Ok(())
             };
 
+            let mut has_wrapped_type = false;
+            let mut top_level_type = None;
+
             while !content.is_empty() {
                 let ahead = content.fork();
                 let res = if ahead.peek(Ident::peek_any) {
@@ -301,16 +304,22 @@ pub mod new {
                 };
                 match res {
                     Ok(p) if p.is_ident("owned") => {
+                        has_wrapped_type = true;
                         parse_inner(ahead, &mut out.owned)?;
                     }
-                    Ok(p) if p.is_ident("ref") => parse_inner(ahead, &mut out.r#ref)?,
+                    Ok(p) if p.is_ident("ref") => {
+                        has_wrapped_type = true;
+                        parse_inner(ahead, &mut out.r#ref)?;
+                    }
                     Ok(p) if p.is_ident("ref_mut") => {
+                        has_wrapped_type = true;
                         parse_inner(ahead, &mut out.ref_mut)?;
                     }
                     _ => {
-                        out.owned
-                            .get_or_insert_with(Punctuated::new)
-                            .push_value(content.parse::<Type>()?);
+                        let ty = content.parse::<Type>()?;
+                        let _ = top_level_type.get_or_insert_with(|| ty.clone());
+                        out.owned.get_or_insert_with(Punctuated::new).push_value(ty);
+
                         if content.peek(token::Comma) {
                             out.owned
                                 .get_or_insert_with(Punctuated::new)
@@ -320,7 +329,19 @@ pub mod new {
                 }
             }
 
-            Ok(out)
+            if let Some(ty) = top_level_type.filter(|_| has_wrapped_type) {
+                Err(Error::new(
+                    ty.span(),
+                    format!(
+                        "mixing regular types with wrapped into \
+                        `owned`/`ref`/`ref_mut` is not allowed, try wrapping \
+                         this type into `owned({ty}), ref({ty}), ref_mut({ty})`",
+                        ty = ty.into_token_stream(),
+                    ),
+                ))
+            } else {
+                Ok(out)
+            }
         }
     }
 
