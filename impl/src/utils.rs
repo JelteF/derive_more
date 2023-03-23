@@ -7,10 +7,14 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
-    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type,
-    TypeGenerics, TypeParamBound, Variant, WhereClause,
+    ext::IdentExt as _,
+    parse::{Parse, ParseStream},
+    parse_quote,
+    punctuated::Punctuated,
+    spanned::Spanned,
+    token, Attribute, Data, DeriveInput, Error, Field, Fields, FieldsNamed,
+    FieldsUnnamed, GenericParam, Generics, Ident, ImplGenerics, Index, Meta, Result,
+    Token, Type, TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
 
 #[derive(Clone, Copy, Default)]
@@ -893,30 +897,30 @@ fn get_meta_info(
 
     let mut info = MetaInfo::default();
 
-    let Some(meta) = it.next() else {
+    let Some(attr) = it.next() else {
         return Ok(info);
     };
 
     if allowed_attr_params.is_empty() {
-        return Err(Error::new(meta.span(), "Attribute is not allowed here"));
+        return Err(Error::new(attr.span(), "Attribute is not allowed here"));
     }
 
     info.enabled = Some(true);
 
-    if let Some(another_meta) = it.next() {
+    if let Some(another_attr) = it.next() {
         return Err(Error::new(
-            another_meta.span(),
+            another_attr.span(),
             "Only a single attribute is allowed",
         ));
     }
 
-    let list = match meta.clone() {
+    let list = match &attr.meta {
         Meta::Path(_) => {
             if allowed_attr_params.contains(&"ignore") {
                 return Ok(info);
             } else {
                 return Err(Error::new(
-                    meta.span(),
+                    attr.span(),
                     format!(
                         "Empty attribute is not allowed, add one of the following parameters: {}",
                         allowed_attr_params.join(", "),
@@ -933,28 +937,23 @@ fn get_meta_info(
         }
     };
 
-    parse_punctuated_nested_meta(&mut info, &list.nested, allowed_attr_params, None)?;
+    parse_punctuated_nested_meta(
+        &mut info,
+        &list.parse_args_with(Punctuated::parse_terminated)?,
+        allowed_attr_params,
+        None,
+    )?;
 
     Ok(info)
 }
 
 fn parse_punctuated_nested_meta(
     info: &mut MetaInfo,
-    meta: &Punctuated<NestedMeta, Token![,]>,
+    meta: &Punctuated<Meta, Token![,]>,
     allowed_attr_params: &[&str],
     wrapper_name: Option<&str>,
 ) -> Result<()> {
     for meta in meta.iter() {
-        let meta = match meta {
-            NestedMeta::Meta(meta) => meta,
-            NestedMeta::Lit(lit) => {
-                return Err(Error::new(
-                    lit.span(),
-                    "Attribute doesn't support literals here",
-                ))
-            }
-        };
-
         match meta {
             Meta::List(list) if list.path.is_ident("not") => {
                 if wrapper_name.is_some() {
@@ -966,7 +965,7 @@ fn parse_punctuated_nested_meta(
                 }
                 parse_punctuated_nested_meta(
                     info,
-                    &list.nested,
+                    &list.parse_args_with(Punctuated::parse_terminated)?,
                     allowed_attr_params,
                     Some("not"),
                 )?;
@@ -999,7 +998,9 @@ fn parse_punctuated_nested_meta(
                     | (Some("ref"), "types")
                     | (Some("ref_mut"), "types") => {
                         parse_nested = false;
-                        for meta in &list.nested {
+                        for meta in &list.parse_args_with(
+                            Punctuated::<NestedMeta, token::Comma>::parse_terminated,
+                        )? {
                             let typ: syn::Type = match meta {
                                 NestedMeta::Meta(meta) => {
                                     let Meta::Path(path) = meta else {
@@ -1063,7 +1064,7 @@ fn parse_punctuated_nested_meta(
                 if parse_nested {
                     parse_punctuated_nested_meta(
                         info,
-                        &list.nested,
+                        &list.parse_args_with(Punctuated::parse_terminated)?,
                         allowed_attr_params,
                         Some(&attr_name),
                     )?;
@@ -1116,6 +1117,26 @@ fn parse_punctuated_nested_meta(
     }
 
     Ok(())
+}
+
+enum NestedMeta {
+    Meta(Meta),
+    Lit(syn::Lit),
+}
+
+impl Parse for NestedMeta {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
+        if input.peek(syn::Lit) && !(input.peek(syn::LitBool) && input.peek2(Token![=]))
+        {
+            input.parse().map(Self::Lit)
+        } else if input.peek(Ident::peek_any)
+            || input.peek(Token![::]) && input.peek3(Ident::peek_any)
+        {
+            input.parse().map(Self::Meta)
+        } else {
+            Err(input.error("expected identifier or literal"))
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default)]

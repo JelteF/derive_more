@@ -53,7 +53,7 @@ impl BoundsAttribute {
 }
 
 impl Parse for BoundsAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         let _ = input.parse::<syn::Path>().and_then(|p| {
             if ["bound", "bounds", "where"]
                 .into_iter()
