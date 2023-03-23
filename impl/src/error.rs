@@ -40,7 +40,6 @@ pub fn expand(
     let source = source.map(|source| {
         quote! {
             fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
-                use ::derive_more::__private::AsDynError;
                 #source
             }
         }
@@ -191,7 +190,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
         let source = self.source?;
         let ident = &self.data.members[source];
-        Some(render_some(quote! { #ident }))
+        Some(render_some(quote! { &#ident }))
     }
 
     fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
@@ -269,7 +268,7 @@ fn render_some<T>(expr: T) -> TokenStream
 where
     T: quote::ToTokens,
 {
-    quote! { Some(#expr.as_dyn_error()) }
+    quote! { Some(#expr as &(dyn ::std::error::Error + 'static)) }
 }
 
 fn parse_fields<'input, 'state>(
