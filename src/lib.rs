@@ -63,6 +63,14 @@ mod r#str;
 #[cfg(feature = "from_str")]
 pub use self::r#str::FromStrError;
 
+mod vendor;
+
+// Not public API.
+#[doc(hidden)]
+pub mod __private {
+    pub use crate::vendor::thiserror::aserror::AsDynError;
+}
+
 #[cfg(not(any(
     feature = "full",
     feature = "add_assign",

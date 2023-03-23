@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   to work correctly.
 - Use `Provider` API for backtraces in `Error` derive.
 - Fix `Error` derive not working with `const` generics.
+- Support trait objects for source in Error, e.g.
+  `Box<dyn Error + Send + 'static>`
 
 ## 0.99.10 - 2020-09-11
 
