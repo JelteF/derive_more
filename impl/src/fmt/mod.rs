@@ -17,7 +17,7 @@ use syn::{
     parse::{Parse, ParseBuffer, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    Error, Result,
+    token, Error, Result,
 };
 
 /// Representation of a macro attribute expressing additional trait bounds.
@@ -72,7 +72,7 @@ impl Parse for BoundsAttribute {
         syn::parenthesized!(content in input);
 
         content
-            .parse_terminated(syn::WherePredicate::parse)
+            .parse_terminated(syn::WherePredicate::parse, token::Comma)
             .map(Self)
     }
 }
@@ -140,7 +140,7 @@ impl FmtAttribute {
         match path {
             Ok(path) if path.is_ident("fmt") => (|| {
                 let args = fork
-                    .parse_terminated::<_, syn::token::Comma>(syn::Lit::parse)
+                    .parse_terminated(syn::Lit::parse, token::Comma)
                     .ok()?
                     .into_iter()
                     .enumerate()

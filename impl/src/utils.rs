@@ -882,16 +882,14 @@ fn get_meta_info(
     attrs: &[Attribute],
     allowed_attr_params: &[&str],
 ) -> Result<MetaInfo> {
-    let mut it = attrs
-        .iter()
-        .filter_map(|m| m.parse_meta().ok())
-        .filter(|m| {
-            m.path()
-                .segments
-                .first()
-                .map(|p| p.ident == trait_attr)
-                .unwrap_or_default()
-        });
+    let mut it = attrs.iter().filter(|a| {
+        a.meta
+            .path()
+            .segments
+            .first()
+            .map(|p| p.ident == trait_attr)
+            .unwrap_or_default()
+    });
 
     let mut info = MetaInfo::default();
 

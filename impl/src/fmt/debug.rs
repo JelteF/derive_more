@@ -154,9 +154,9 @@ impl ContainerAttributes {
         attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("debug"))
+            .filter(|attr| attr.path().is_ident("debug"))
             .try_fold(ContainerAttributes::default(), |mut attrs, attr| {
-                let attr = syn::parse2::<ContainerAttributes>(attr.tokens.clone())?;
+                let attr = attr.parse_args::<ContainerAttributes>()?;
                 attrs.bounds.0.extend(attr.bounds.0);
                 Ok(attrs)
             })
@@ -172,7 +172,7 @@ impl Parse for ContainerAttributes {
         syn::parenthesized!(content in input);
         let error_span = error_span.unwrap_or_else(|| unreachable!());
 
-        BoundsAttribute::check_legacy_fmt(&content, error_span)?;
+        BoundsAttribute::check_legacy_fmt(&content, error_span.span())?;
 
         content.parse().map(|bounds| ContainerAttributes { bounds })
     }
@@ -202,10 +202,10 @@ impl FieldAttribute {
         Ok(attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("debug"))
+            .filter(|attr| attr.path().is_ident("debug"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = syn::parse2::<FieldAttribute>(attr.tokens.clone())?;
-                if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
+                let field_attr = attr.parse_args::<FieldAttribute>()?;
+                if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
                     Err(Error::new(
                         path.span(),
                         "only single `#[debug(...)]` attribute is allowed here",
@@ -227,7 +227,7 @@ impl Parse for FieldAttribute {
         syn::parenthesized!(content in input);
         let error_span = error_span.unwrap_or_else(|| unreachable!());
 
-        FmtAttribute::check_legacy_fmt(&content, error_span)?;
+        FmtAttribute::check_legacy_fmt(&content, error_span.span())?;
 
         if content.peek(syn::LitStr) {
             content.parse().map(Self::Fmt)
