@@ -48,9 +48,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             span = variant.ident.span(),
         );
         let variant_ident = &variant.ident;
-        let (data_patterns, data_types) = get_field_info(&variant.fields);
-        let pattern = quote! { #enum_name :: #variant_ident (#(#data_patterns),*) };
-        let ret_value = quote! { (#(#data_patterns),*) };
+        let (data_pattern, ret_value, data_types) = get_field_info(&variant.fields);
+        let pattern = quote! { #enum_name :: #variant_ident #data_pattern };
 
         let (failed_block, failed_block_ref, failed_block_mut) = (
             failed_block(&state, enum_name, &fn_name),
@@ -129,16 +128,19 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     Ok(imp)
 }
 
-fn get_field_info(fields: &Fields) -> (Vec<Ident>, Vec<&Type>) {
+fn get_field_info(fields: &Fields) -> (TokenStream, TokenStream, Vec<&Type>) {
     match fields {
         Fields::Named(_) => panic!("cannot unwrap anonymous records"),
-        Fields::Unnamed(ref fields) => fields
-            .unnamed
-            .iter()
-            .enumerate()
-            .map(|(n, it)| (format_ident!("field_{n}"), &it.ty))
-            .unzip(),
-        Fields::Unit => (vec![], vec![]),
+        Fields::Unnamed(ref fields) => {
+            let (idents, types) = fields
+                .unnamed
+                .iter()
+                .enumerate()
+                .map(|(n, it)| (format_ident!("field_{n}"), &it.ty))
+                .unzip::<_, _, Vec<_>, Vec<_>>();
+            (quote! { (#(#idents),*) }, quote! { (#(#idents),*) }, types)
+        }
+        Fields::Unit => (quote! {}, quote! { () }, vec![]),
     }
 }
 

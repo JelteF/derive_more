@@ -2,7 +2,7 @@ use crate::utils::{AttrParams, DeriveType, State};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, Fields, Ident, Result, Type};
+use syn::{DeriveInput, Fields, Result, Type};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_attr_params(
@@ -13,8 +13,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
             variant: vec!["ignore", "owned", "ref", "ref_mut"],
-            struct_: vec![],
-            field: vec![],
+            struct_: vec!["ignore"],
+            field: vec!["ignore"],
         },
     )?;
     assert!(
@@ -48,9 +48,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             span = variant.ident.span(),
         );
         let variant_ident = &variant.ident;
-        let (data_patterns, data_types) = get_field_info(&variant.fields);
-        let pattern = quote! { #enum_name :: #variant_ident (#(#data_patterns),*) };
-        let ret_value = quote! { (#(#data_patterns),*) };
+        let (data_pattern, ret_value, data_types) = get_field_info(&variant.fields);
+        let pattern = quote! { #enum_name :: #variant_ident #data_pattern };
 
         let doc_owned = format!(
             "Attempts to convert this value to the `{enum_name}::{variant_ident}` variant.\n",
@@ -80,7 +79,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[track_caller]
             #[doc = #doc_ref]
             #[doc = #doc_else]
-            pub fn #ref_fn_name(&self) -> Result<(#(&#data_types),*), Self> {
+            pub fn #ref_fn_name(&self) -> Result<(#(&#data_types),*), &Self> {
                 match self {
                     #pattern => Ok(#ret_value),
                     val @ _ => Err(val),
@@ -93,7 +92,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[track_caller]
             #[doc = #doc_mut]
             #[doc = #doc_else]
-            pub fn #mut_fn_name(&mut self) -> Result<(#(&mut #data_types),*), Self> {
+            pub fn #mut_fn_name(&mut self) -> Result<(#(&mut #data_types),*), &mut Self> {
                 match self {
                     #pattern => Ok(#ret_value),
                     val @ _ => Err(val),
@@ -122,15 +121,18 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     Ok(imp)
 }
 
-fn get_field_info(fields: &Fields) -> (Vec<Ident>, Vec<&Type>) {
+fn get_field_info(fields: &Fields) -> (TokenStream, TokenStream, Vec<&Type>) {
     match fields {
         Fields::Named(_) => panic!("cannot unwrap anonymous records"),
-        Fields::Unnamed(ref fields) => fields
-            .unnamed
-            .iter()
-            .enumerate()
-            .map(|(n, it)| (format_ident!("field_{n}"), &it.ty))
-            .unzip(),
-        Fields::Unit => (vec![], vec![]),
+        Fields::Unnamed(ref fields) => {
+            let (idents, types) = fields
+                .unnamed
+                .iter()
+                .enumerate()
+                .map(|(n, it)| (format_ident!("field_{n}"), &it.ty))
+                .unzip::<_, _, Vec<_>, Vec<_>>();
+            (quote! { (#(#idents),*) }, quote! { (#(#idents),*) }, types)
+        }
+        Fields::Unit => (quote! {}, quote! { () }, vec![]),
     }
 }

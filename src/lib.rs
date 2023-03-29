@@ -27,6 +27,8 @@
 //! [`Constructor`]: crate::Constructor
 //! [`IsVariant`]: crate::IsVariant
 //! [`Unwrap`]: crate::Unwrap
+//! [`TryIntoVariant`]: crate::TryIntoVariant
+
 // The README includes doctests requiring these features. To make sure that
 // tests pass when not all features are provided we exclude it when the
 // required features are not available.
@@ -88,7 +90,8 @@ pub use self::r#str::FromStrError;
     feature = "not",
     feature = "sum",
     feature = "try_into",
-    feature = "unwrap"
+    feature = "unwrap",
+    feature = "try_into_variant",
 )))]
 compile_error!(
     "at least one derive feature must be enabled (or the \"full\" one enabling all the derives)"
