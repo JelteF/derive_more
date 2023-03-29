@@ -2,7 +2,7 @@ use crate::utils::{AttrParams, DeriveType, State};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, Fields, Ident, Result};
+use syn::{DeriveInput, Fields, Ident, Result, Type};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_attr_params(
@@ -48,29 +48,9 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             span = variant.ident.span(),
         );
         let variant_ident = &variant.ident;
-
-        let (data_pattern, ret_value, ret_type, ret_type_ref, ret_type_mut) = match variant.fields {
-            Fields::Named(_) => panic!("cannot unwrap anonymous records"),
-            Fields::Unnamed(ref fields) => {
-                let (data_pattern, ret_types): (Vec<_>, Vec<_>) = fields
-                    .unnamed
-                    .iter()
-                    .enumerate()
-                    .map(|(n, it)| (format_ident!("field_{n}"), &it.ty))
-                    .unzip();
-
-                (
-                    quote! { (#(#data_pattern),*) },
-                    quote! { (#(#data_pattern),*) },
-                    quote! { (#(#ret_types),*) },
-                    quote! { (#(&#ret_types),*) },
-                    quote! { (#(&mut #ret_types),*) },
-                )
-            }
-            Fields::Unit => (quote! {}, quote! { () }, quote! { () }, quote! { () }, quote! { () }),
-        };
-
-        let pattern = quote! { #enum_name :: #variant_ident #data_pattern };
+        let (data_patterns, data_types) = get_field_info(&variant.fields);
+        let pattern = quote! { #enum_name :: #variant_ident (#(#data_patterns),*) };
+        let ret_value = quote! { (#(#data_patterns),*) };
 
         let (failed_block, failed_block_ref, failed_block_mut) = (
             failed_block(&state, enum_name, &fn_name),
@@ -78,14 +58,23 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             failed_block(&state, enum_name, &mut_fn_name),
         );
 
-        let variant_name = stringify!(variant_ident);
+        let doc_owned = format!(
+            "Unwraps this value to the `{enum_name}::{variant_ident}` variant.\n",
+        );
+        let doc_ref = format!(
+            "Unwraps this reference to the `{enum_name}::{variant_ident}` variant.\n",
+        );
+        let doc_mut = format!(
+            "Unwraps this mutable reference to the `{enum_name}::{variant_ident}` variant.\n",
+        );
+        let doc_else = "Panics if this value is of any other type.";
+
         let func = quote! {
+            #[inline]
             #[track_caller]
-            #[doc = "Unwraps this value to the `"]
-            #[doc = #variant_name]
-            #[doc = "` variant.\n"]
-            #[doc = "Panics if this value is of any other type."]
-            pub fn #fn_name(self) -> #ret_type {
+            #[doc = #doc_owned]
+            #[doc = #doc_else]
+            pub fn #fn_name(self) -> (#(#data_types),*) {
                 match self {
                     #pattern => #ret_value,
                     val @ _ => #failed_block,
@@ -94,12 +83,11 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         };
 
         let ref_func = quote! {
+            #[inline]
             #[track_caller]
-            #[doc = "Unwraps this reference to the `"]
-            #[doc = #variant_name]
-            #[doc = "` variant.\n"]
-            #[doc = "Panics if this value is of any other type."]
-            pub fn #ref_fn_name(&self) -> #ret_type_ref {
+            #[doc = #doc_ref]
+            #[doc = #doc_else]
+            pub fn #ref_fn_name(&self) -> (#(&#data_types),*) {
                 match self {
                     #pattern => #ret_value,
                     val @ _ => #failed_block_ref,
@@ -108,12 +96,11 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         };
 
         let mut_func = quote! {
+            #[inline]
             #[track_caller]
-            #[doc = "Unwraps this mutable reference to the `"]
-            #[doc = #variant_name]
-            #[doc = "` variant.\n"]
-            #[doc = "Panics if this value is of any other type."]
-            pub fn #mut_fn_name(&mut self) -> #ret_type_mut {
+            #[doc = #doc_mut]
+            #[doc = #doc_else]
+            pub fn #mut_fn_name(&mut self) -> (#(&mut #data_types),*) {
                 match self {
                     #pattern => #ret_value,
                     val @ _ => #failed_block_mut,
@@ -142,6 +129,19 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     Ok(imp)
 }
 
+fn get_field_info(fields: &Fields) -> (Vec<Ident>, Vec<&Type>) {
+    match fields {
+        Fields::Named(_) => panic!("cannot unwrap anonymous records"),
+        Fields::Unnamed(ref fields) => fields
+            .unnamed
+            .iter()
+            .enumerate()
+            .map(|(n, it)| (format_ident!("field_{n}"), &it.ty))
+            .unzip(),
+        Fields::Unit => (vec![], vec![]),
+    }
+}
+
 fn failed_block(state: &State, enum_name: &Ident, fn_name: &Ident) -> TokenStream {
     let arms = state
         .variant_states
@@ -154,12 +154,10 @@ fn failed_block(state: &State, enum_name: &Ident, fn_name: &Ident) -> TokenStrea
                 Fields::Unit => quote! {},
             };
             let variant_ident = &variant.ident;
-            quote! {
-                #enum_name :: #variant_ident #data_pattern => panic!(concat!(
-                    "called `", stringify!(#enum_name), "::", stringify!(#fn_name), "()` ",
-                    "on a `", stringify!(#variant_ident), "` value"
-                ))
-            }
+            let panic_msg = format!(
+                "called `{enum_name}::{fn_name}()` on a `{enum_name}::{variant_ident}` value"
+            );
+            quote! { #enum_name :: #variant_ident #data_pattern => panic!(#panic_msg) }
         });
 
     quote! {
