@@ -9,8 +9,9 @@ enum Either<TLeft, TRight> {
 }
 
 #[derive(Unwrap)]
-#[unwrap(ref)]
-enum Maybe<T> {
+#[derive(Debug)]
+#[unwrap(ref, ref_mut)]
+enum Maybe<T: std::fmt::Debug> {
     Nothing,
     Just(T),
 }
@@ -38,7 +39,7 @@ where
     Two,
 }
 #[derive(Unwrap)]
-enum KitchenSink<'a, 'b, T1: Clone + Copy, T2: Clone>
+enum KitchenSink<'a, 'b, T1: Copy, T2: Clone>
 where
     T2: Into<T1> + 'b,
 {
@@ -53,20 +54,26 @@ where
 #[test]
 pub fn test_unwrap() {
     assert_eq!(Maybe::<()>::Nothing.unwrap_nothing(), ());
+    assert_eq!(Maybe::Just(1).unwrap_just(), 1);
+
+    assert_eq!((&Maybe::Just(42)).unwrap_just_ref(), &42);
+    assert_eq!((&mut Maybe::Just(42)).unwrap_just_mut(), &mut 42);
 }
 
 #[test]
 #[should_panic]
-pub fn test_unwrap_panic() {
-    Maybe::<()>::Nothing.unwrap_just()
+pub fn test_unwrap_panic_1() {
+    Maybe::<()>::Nothing.unwrap_just();
 }
 
 #[test]
-pub fn test_try_unwrap() {
-    let sink = KitchenSink::OwnBoth(0, 1);
-    assert_eq!(sink.unwrap_own_both(), (0, 1));
-    let sink = KitchenSink::OwnBoth(0, 1);
-    assert_eq!(sink.try_unwrap_own_both(), Some((0, 1)));
-    let sink = KitchenSink::OwnBoth(0, 1);
-    assert_eq!(sink.try_unwrap_nothing_to_see_here(), None);
+#[should_panic]
+pub fn test_unwrap_panic_2() {
+    Maybe::Just(2).unwrap_nothing();
+}
+
+#[test]
+#[should_panic]
+pub fn test_unwrap_ref_panic() {
+    Maybe::Just(2).unwrap_nothing_ref();
 }

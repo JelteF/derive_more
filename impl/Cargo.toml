@@ -68,5 +68,6 @@ sum = []
 try_into = ["syn/extra-traits"]
 is_variant = ["dep:convert_case"]
 unwrap = ["dep:convert_case"]
+try_into_variant = ["dep:convert_case"]
 
 testing-helpers = ["dep:rustc_version"]
