@@ -26,7 +26,7 @@ fn main() {
     // assert_eq!(Maybe::Nothing.unwrap_just(), /* panic */);
     // assert_eq!(Maybe::Just(2).unwrap_nothing(), /* panic */);
 
-    assert_eq!(*(&Maybe::Just(42)).unwrap_just_ref(), 42);
+    assert_eq!(&Maybe::Just(42)).unwrap_just_ref(), &42);
 }
 ```
 
