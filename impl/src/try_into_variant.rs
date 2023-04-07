@@ -2,7 +2,7 @@ use crate::utils::{AttrParams, DeriveType, State};
 use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, Fields, Result, Type};
+use syn::{DeriveInput, Fields, Ident, Result, Type};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_attr_params(
@@ -51,6 +51,12 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let (data_pattern, ret_value, data_types) = get_field_info(&variant.fields);
         let pattern = quote! { #enum_name :: #variant_ident #data_pattern };
 
+        let (failed_block, failed_block_ref, failed_block_mut) = (
+            failed_block(&state, enum_name, &fn_name),
+            failed_block(&state, enum_name, &ref_fn_name),
+            failed_block(&state, enum_name, &mut_fn_name),
+        );
+
         let doc_owned = format!(
             "Attempts to convert this value to the `{enum_name}::{variant_ident}` variant.\n",
         );
@@ -66,10 +72,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[track_caller]
             #[doc = #doc_owned]
             #[doc = #doc_else]
-            pub fn #fn_name(self) -> Result<(#(#data_types),*), Self> {
+            pub fn #fn_name(self) -> Result<(#(#data_types),*), ::derive_more::TryIntoVariantError<Self>> {
                 match self {
                     #pattern => Ok(#ret_value),
-                    val @ _ => Err(val),
+                    val @ _ => #failed_block,
                 }
             }
         };
@@ -79,10 +85,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[track_caller]
             #[doc = #doc_ref]
             #[doc = #doc_else]
-            pub fn #ref_fn_name(&self) -> Result<(#(&#data_types),*), &Self> {
+            pub fn #ref_fn_name(&self) -> Result<(#(&#data_types),*), ::derive_more::TryIntoVariantError<&Self>> {
                 match self {
                     #pattern => Ok(#ret_value),
-                    val @ _ => Err(val),
+                    val @ _ => #failed_block_ref,
                 }
             }
         };
@@ -92,10 +98,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[track_caller]
             #[doc = #doc_mut]
             #[doc = #doc_else]
-            pub fn #mut_fn_name(&mut self) -> Result<(#(&mut #data_types),*), &mut Self> {
+            pub fn #mut_fn_name(&mut self) -> Result<(#(&mut #data_types),*), ::derive_more::TryIntoVariantError<&mut Self>> {
                 match self {
                     #pattern => Ok(#ret_value),
-                    val @ _ => Err(val),
+                    val @ _ => #failed_block_mut,
                 }
             }
         };
@@ -134,5 +140,28 @@ fn get_field_info(fields: &Fields) -> (TokenStream, TokenStream, Vec<&Type>) {
             (quote! { (#(#idents),*) }, quote! { (#(#idents),*) }, types)
         }
         Fields::Unit => (quote! {}, quote! { () }, vec![]),
+    }
+}
+
+fn failed_block(state: &State, enum_name: &Ident, func_name: &Ident) -> TokenStream {
+    let arms = state
+        .variant_states
+        .iter()
+        .map(|it| it.variant.unwrap())
+        .map(|variant| {
+            let data_pattern = match variant.fields {
+                Fields::Named(_) => quote! { {..} },
+                Fields::Unnamed(_) => quote! { (..) },
+                Fields::Unit => quote! {},
+            };
+            let variant_ident = &variant.ident;
+        let error = quote! { ::derive_more::TryIntoVariantError::<_>::new(val, stringify!(#enum_name), stringify!(#variant_ident), stringify!(#func_name)) };
+            quote! { val @ #enum_name :: #variant_ident #data_pattern => Err(#error) }
+        });
+
+    quote! {
+        match val {
+            #(#arms),*
+        }
     }
 }

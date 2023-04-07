@@ -22,10 +22,20 @@ fn main() {
     assert_eq!(Maybe::Just(1).try_into_just(), Ok(1));
 
     // Unlike `Unwrap`, it does not panic.
-    assert_eq!(Maybe::Nothing.try_into_just(), Err(Maybe::Nothing)); // and the value is returned!
-    assert_eq!(Maybe::Just(2).try_into_nothing(), Err(Maybe::Just(2)));
+    assert_eq!(
+        Maybe::<()>::Nothing.try_into_just().map_err(|err| err.input),
+        Err(Maybe::<()>::Nothing), // and the value is returned!
+    );
+    assert_eq!(
+        Maybe::Just(2).try_into_nothing().map_err(|err| err.input),
+        Err(Maybe::Just(2)),
+    );
+    assert_eq!(
+        Maybe::<()>::Nothing.try_into_just().map_err(|err| err.to_string()),
+        Err("Attempt to call `Maybe::try_into_just()` on a `Maybe::Nothing` value".into()),
+    );
 
-    assert_eq!(*(&Maybe::Just(42)).unwrap_just_ref(), Ok(42));
+    assert_eq!((&Maybe::Just(42)).unwrap_just_ref(), Ok(&42));
 }
 ```
 
@@ -39,28 +49,28 @@ The derive in the above example code generates the following code:
 # }
 
 impl<T> Maybe<T> {
-    pub fn try_into_nothing(self) -> Result<(), Self> {
+    pub fn try_into_nothing(self) -> Result<(), TryIntoVariantError<Self>> {
         match self {
             Maybe::Nothing() => Ok(()),
-            val @ _ => Err(val),
+            val @ _ => Err(/* ... */),
         }
     }
-    pub fn try_into_nothing_ref(&self) -> Result<(), &Self> {
+    pub fn try_into_nothing_ref(&self) -> Result<(), TryIntoVariantError<&Self>> {
         match self {
             Maybe::Nothing() => Ok(()),
-            val @ _ => Err(val),
+            val @ _ => Err(/* ... */),
         }
     }
-    pub fn try_into_just(self) -> Result<T, Self> {
+    pub fn try_into_just(self) -> Result<T, TryIntoVariantError<Self>> {
         match self {
             Maybe::Just(field_0) => Ok(field_0),
-            val @ _ => Err(val),
+            val @ _ => Err(/* ... */),
         }
     }
-    pub fn try_into_just_ref(&self) -> Result<&T, &Self> {
+    pub fn try_into_just_ref(&self) -> Result<&T, TryIntoVariantError<&Self>> {
         match self {
             Maybe::Just(field_0) => Ok(field_0),
-            val @ _ => Err(val),
+            val @ _ => Err(/* ... */),
         }
     }
 }

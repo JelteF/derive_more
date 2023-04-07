@@ -53,20 +53,38 @@ where
 
 #[test]
 pub fn test_try_into_variant() {
-    assert_eq!(Maybe::<()>::Nothing.try_into_nothing(), Ok(()));
-    assert_eq!((&Maybe::Just(1)).try_into_just_ref(), Ok(&1));
-    assert_eq!((&mut Maybe::Just(42)).try_into_just_mut(), Ok(&mut 42));
+    assert_eq!(Maybe::<()>::Nothing.try_into_nothing().ok(), Some(()));
+    assert_eq!((&Maybe::Just(1)).try_into_just_ref().ok(), Some(&1));
+    assert_eq!(
+        (&mut Maybe::Just(42)).try_into_just_mut().ok(),
+        Some(&mut 42)
+    );
 
     assert_eq!(
-        Maybe::<()>::Nothing.try_into_just(),
-        Err(Maybe::<()>::Nothing)
+        Maybe::<()>::Nothing
+            .try_into_just()
+            .map_err(|e| e.to_string()),
+        Err(
+            "Attempt to call `Maybe::try_into_just()` on a `Maybe::Nothing` value"
+                .into()
+        ),
     );
     assert_eq!(
-        (&Maybe::Just(1)).try_into_nothing_ref(),
-        Err(&Maybe::Just(1))
+        (&Maybe::Just(1))
+            .try_into_nothing_ref()
+            .map_err(|e| e.to_string()),
+        Err(
+            "Attempt to call `Maybe::try_into_nothing_ref()` on a `Maybe::Just` value"
+                .into()
+        ),
     );
     assert_eq!(
-        (&mut Maybe::Just(42)).try_into_nothing_mut(),
-        Err(&mut Maybe::Just(42))
+        (&mut Maybe::Just(42))
+            .try_into_nothing_mut()
+            .map_err(|e| e.to_string()),
+        Err(
+            "Attempt to call `Maybe::try_into_nothing_mut()` on a `Maybe::Just` value"
+                .into()
+        ),
     );
 }
