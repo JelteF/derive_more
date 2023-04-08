@@ -1,19 +1,19 @@
-/// Error returned by the derived [`TryIntoVariant`] implementation.
+/// Error returned by the derived [`TryUnwrap`] implementation.
 ///
-/// [`TryIntoVariant`]: macro@crate::TryIntoVariant
+/// [`TryUnwrap`]: macro@crate::TryUnwrap
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct TryIntoVariantError<T> {
+pub struct TryUnwrapError<T> {
     /// Original input value which failed to convert via the derived
-    /// [`TryIntoVariant`] implementation.
+    /// [`TryUnwrap`] implementation.
     ///
-    /// [`TryIntoVariant`]: macro@crate::TryIntoVariant
+    /// [`TryUnwrap`]: macro@crate::TryUnwrap
     pub input: T,
     enum_name: &'static str,
     variant_name: &'static str,
     func_name: &'static str,
 }
 
-impl<T> TryIntoVariantError<T> {
+impl<T> TryUnwrapError<T> {
     #[doc(hidden)]
     #[must_use]
     #[inline]
@@ -32,7 +32,7 @@ impl<T> TryIntoVariantError<T> {
     }
 }
 
-impl<T> core::fmt::Display for TryIntoVariantError<T> {
+impl<T> core::fmt::Display for TryUnwrapError<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
@@ -45,4 +45,4 @@ impl<T> core::fmt::Display for TryIntoVariantError<T> {
 }
 
 #[cfg(feature = "std")]
-impl<T: core::fmt::Debug> std::error::Error for TryIntoVariantError<T> {}
+impl<T: core::fmt::Debug> std::error::Error for TryUnwrapError<T> {}

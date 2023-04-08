@@ -9,7 +9,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         input,
         trait_name,
         quote! {},
-        "try_into_variant".into(),
+        "try_unwrap".into(),
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
             variant: vec!["ignore", "owned", "ref", "ref_mut"],
@@ -19,7 +19,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     )?;
     assert!(
         state.derive_type == DeriveType::Enum,
-        "TryIntoVariant can only be derived for enums"
+        "TryUnwrap can only be derived for enums"
     );
 
     let enum_name = &input.ident;
@@ -33,17 +33,17 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     {
         let variant = variant_state.variant.unwrap();
         let fn_name = format_ident!(
-            "try_into_{ident}",
+            "try_unwrap_{ident}",
             ident = variant.ident.to_string().to_case(Case::Snake),
             span = variant.ident.span(),
         );
         let ref_fn_name = format_ident!(
-            "try_into_{ident}_ref",
+            "try_unwrap_{ident}_ref",
             ident = variant.ident.to_string().to_case(Case::Snake),
             span = variant.ident.span(),
         );
         let mut_fn_name = format_ident!(
-            "try_into_{ident}_mut",
+            "try_unwrap_{ident}_mut",
             ident = variant.ident.to_string().to_case(Case::Snake),
             span = variant.ident.span(),
         );
@@ -58,21 +58,21 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         );
 
         let doc_owned = format!(
-            "Attempts to convert this value to the `{enum_name}::{variant_ident}` variant.\n",
+            "Attempts to unwrap this value to the `{enum_name}::{variant_ident}` variant.\n",
         );
         let doc_ref = format!(
-            "Attempts to convert this reference to the `{enum_name}::{variant_ident}` variant.\n",
+            "Attempts to unwrap this reference to the `{enum_name}::{variant_ident}` variant.\n",
         );
         let doc_mut = format!(
-            "Attempts to convert this mutable reference to the `{enum_name}::{variant_ident}` variant.\n",
+            "Attempts to unwrap this mutable reference to the `{enum_name}::{variant_ident}` variant.\n",
         );
-        let doc_else = "Returns the original value if this value is of any other type.";
+        let doc_else = "Returns a [TryUnwrapError] with the original value if this value is of any other type.";
         let func = quote! {
             #[inline]
             #[track_caller]
             #[doc = #doc_owned]
             #[doc = #doc_else]
-            pub fn #fn_name(self) -> Result<(#(#data_types),*), ::derive_more::TryIntoVariantError<Self>> {
+            pub fn #fn_name(self) -> Result<(#(#data_types),*), ::derive_more::TryUnwrapError<Self>> {
                 match self {
                     #pattern => Ok(#ret_value),
                     val @ _ => #failed_block,
@@ -85,7 +85,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[track_caller]
             #[doc = #doc_ref]
             #[doc = #doc_else]
-            pub fn #ref_fn_name(&self) -> Result<(#(&#data_types),*), ::derive_more::TryIntoVariantError<&Self>> {
+            pub fn #ref_fn_name(&self) -> Result<(#(&#data_types),*), ::derive_more::TryUnwrapError<&Self>> {
                 match self {
                     #pattern => Ok(#ret_value),
                     val @ _ => #failed_block_ref,
@@ -98,7 +98,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[track_caller]
             #[doc = #doc_mut]
             #[doc = #doc_else]
-            pub fn #mut_fn_name(&mut self) -> Result<(#(&mut #data_types),*), ::derive_more::TryIntoVariantError<&mut Self>> {
+            pub fn #mut_fn_name(&mut self) -> Result<(#(&mut #data_types),*), ::derive_more::TryUnwrapError<&mut Self>> {
                 match self {
                     #pattern => Ok(#ret_value),
                     val @ _ => #failed_block_mut,
@@ -155,7 +155,7 @@ fn failed_block(state: &State, enum_name: &Ident, func_name: &Ident) -> TokenStr
                 Fields::Unit => quote! {},
             };
             let variant_ident = &variant.ident;
-        let error = quote! { ::derive_more::TryIntoVariantError::<_>::new(val, stringify!(#enum_name), stringify!(#variant_ident), stringify!(#func_name)) };
+        let error = quote! { ::derive_more::TryUnwrapError::<_>::new(val, stringify!(#enum_name), stringify!(#variant_ident), stringify!(#func_name)) };
             quote! { val @ #enum_name :: #variant_ident #data_pattern => Err(#error) }
         });
 

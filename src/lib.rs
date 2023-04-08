@@ -27,7 +27,7 @@
 //! [`Constructor`]: crate::Constructor
 //! [`IsVariant`]: crate::IsVariant
 //! [`Unwrap`]: crate::Unwrap
-//! [`TryIntoVariant`]: crate::TryIntoVariant
+//! [`TryUnwrap`]: crate::TryUnwrap
 
 // The README includes doctests requiring these features. To make sure that
 // tests pass when not all features are provided we exclude it when the
@@ -54,10 +54,10 @@ mod convert;
 #[cfg(feature = "try_into")]
 pub use self::convert::TryIntoError;
 
-#[cfg(feature = "try_into_variant")]
+#[cfg(feature = "try_unwrap")]
 mod try_unwrap;
-#[cfg(feature = "try_into_variant")]
-pub use self::try_unwrap::TryIntoVariantError;
+#[cfg(feature = "try_unwrap")]
+pub use self::try_unwrap::TryUnwrapError;
 
 #[cfg(feature = "debug")]
 pub mod fmt;
@@ -96,7 +96,7 @@ pub use self::r#str::FromStrError;
     feature = "sum",
     feature = "try_into",
     feature = "unwrap",
-    feature = "try_into_variant",
+    feature = "try_unwrap",
 )))]
 compile_error!(
     "at least one derive feature must be enabled (or the \"full\" one enabling all the derives)"

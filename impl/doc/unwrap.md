@@ -40,7 +40,7 @@ The derive in the above example code generates the following code:
 #     Just(T),
 #     Nothing,
 # }
-
+#
 impl<T> Maybe<T> {
     pub fn unwrap_nothing(self) -> () {
         match self {
