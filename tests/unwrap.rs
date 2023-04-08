@@ -38,6 +38,7 @@ where
     One(T),
     Two,
 }
+
 #[derive(Unwrap)]
 enum KitchenSink<'a, 'b, T1: Copy, T2: Clone>
 where
@@ -49,6 +50,11 @@ where
     Empty,
     NeverMind(),
     NothingToSeeHere(),
+}
+
+#[derive(Unwrap)]
+enum Single {
+    Value(i32),
 }
 
 #[test]

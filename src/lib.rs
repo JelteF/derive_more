@@ -49,12 +49,15 @@
 #[doc(inline)]
 pub use derive_more_impl::*;
 
-#[cfg(any(feature = "try_into", feature = "try_into_variant"))]
+#[cfg(feature = "try_into")]
 mod convert;
 #[cfg(feature = "try_into")]
 pub use self::convert::TryIntoError;
+
 #[cfg(feature = "try_into_variant")]
-pub use self::convert::TryIntoVariantError;
+mod try_unwrap;
+#[cfg(feature = "try_into_variant")]
+pub use self::try_unwrap::TryIntoVariantError;
 
 #[cfg(feature = "debug")]
 pub mod fmt;

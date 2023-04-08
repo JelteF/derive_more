@@ -51,6 +51,11 @@ where
     NothingToSeeHere(),
 }
 
+#[derive(TryIntoVariant)]
+enum Single {
+    Value(i32),
+}
+
 #[test]
 pub fn test_try_into_variant() {
     assert_eq!(Maybe::<()>::Nothing.try_into_nothing().ok(), Some(()));
