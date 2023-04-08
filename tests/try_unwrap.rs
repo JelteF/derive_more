@@ -66,22 +66,14 @@ pub fn test_try_unwrap() {
     );
 
     assert_eq!(
-        Maybe::<()>::Nothing
-            .try_unwrap_just()
-            .map_err(|e| e.to_string()),
-        Err(
-            "Attempt to call `Maybe::try_unwrap_just()` on a `Maybe::Nothing` value"
-                .into()
-        ),
+        Maybe::<()>::Nothing.try_unwrap_just().map_err(|e| e.input),
+        Err(Maybe::<()>::Nothing),
     );
     assert_eq!(
         (&Maybe::Just(1))
             .try_unwrap_nothing_ref()
-            .map_err(|e| e.to_string()),
-        Err(
-            "Attempt to call `Maybe::try_unwrap_nothing_ref()` on a `Maybe::Just` value"
-                .into()
-        ),
+            .map_err(|e| e.input),
+        Err(&Maybe::Just(1)),
     );
     assert_eq!(
         (&mut Maybe::Just(42))
@@ -89,7 +81,7 @@ pub fn test_try_unwrap() {
             .map_err(|e| e.to_string()),
         Err(
             "Attempt to call `Maybe::try_unwrap_nothing_mut()` on a `Maybe::Just` value"
-                .into()
+                .to_string()
         ),
     );
 }
