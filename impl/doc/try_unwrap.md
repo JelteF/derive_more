@@ -55,25 +55,25 @@ impl<T> Maybe<T> {
     pub fn try_unwrap_nothing(self) -> Result<(), TryUnwrapError<Self>> {
         match self {
             Maybe::Nothing => Ok(()),
-            val @ _ => Err(panic!("stub")),
+            val @ _ => Err(todo!("TryUnwrapError::new(val, /* omitted */)")),
         }
     }
     pub fn try_unwrap_nothing_ref(&self) -> Result<(), TryUnwrapError<&Self>> {
         match self {
             Maybe::Nothing => Ok(()),
-            val @ _ => Err(panic!("stub")),
+            val @ _ => Err(todo!("TryUnwrapError::new(val, /* omitted */)")),
         }
     }
     pub fn try_unwrap_just(self) -> Result<T, TryUnwrapError<Self>> {
         match self {
             Maybe::Just(field_0) => Ok(field_0),
-            val @ _ => Err(panic!("stub")),
+            val @ _ => Err(todo!("TryUnwrapError::new(val, /* omitted */)")),
         }
     }
     pub fn try_unwrap_just_ref(&self) -> Result<&T, TryUnwrapError<&Self>> {
         match self {
             Maybe::Just(field_0) => Ok(field_0),
-            val @ _ => Err(panic!("stub")),
+            val @ _ => Err(todo!("TryUnwrapError::new(val, /* omitted */)")),
         }
     }
 }
