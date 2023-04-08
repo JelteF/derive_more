@@ -10,8 +10,9 @@ If you want to treat a reference, you can put the `#[unwrap(ref)]` attribute on 
 ## Example usage
 
 ```rust
-use derive_more::Unwrap;
-
+# use derive_more::Unwrap;
+# 
+# #[derive(Debug, PartialEq)]
 #[derive(Unwrap)]
 #[unwrap(ref)]
 enum Maybe<T> {
@@ -26,7 +27,7 @@ fn main() {
     // assert_eq!(Maybe::<()>::Nothing.unwrap_just(), /* panic */);
     // assert_eq!(Maybe::Just(2).unwrap_nothing(), /* panic */);
 
-    assert_eq!(&Maybe::Just(42)).unwrap_just_ref(), &42);
+    assert_eq!((&Maybe::Just(42)).unwrap_just_ref(), &42);
 }
 ```
 
@@ -43,13 +44,13 @@ The derive in the above example code generates the following code:
 impl<T> Maybe<T> {
     pub fn unwrap_nothing(self) -> () {
         match self {
-            Maybe::Nothing() => (),
+            Maybe::Nothing => (),
             _ => panic!(),
         }
     }
     pub fn unwrap_nothing_ref(&self) -> () {
         match self {
-            Maybe::Nothing() => (),
+            Maybe::Nothing => (),
             _ => panic!(),
         }
     }

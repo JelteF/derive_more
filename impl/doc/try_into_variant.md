@@ -9,8 +9,9 @@ However, unlike `Unwrap`, it does not panic if the conversion fails. Also, value
 ## Example usage
 
 ```rust
-use derive_more::TryIntoVariant;
-
+# use derive_more::TryIntoVariant;
+# 
+# #[derive(Debug, PartialEq)]
 #[derive(TryIntoVariant)]
 #[try_into_variant(ref)]
 enum Maybe<T> {
@@ -35,7 +36,7 @@ fn main() {
         Err("Attempt to call `Maybe::try_into_just()` on a `Maybe::Nothing` value".into()),
     );
 
-    assert_eq!((&Maybe::Just(42)).unwrap_just_ref(), Ok(&42));
+    assert_eq!((&Maybe::Just(42)).try_into_just_ref(), Ok(&42));
 }
 ```
 
@@ -43,6 +44,8 @@ fn main() {
 
 The derive in the above example code generates the following code:
 ```rust
+# use derive_more::TryIntoVariantError;
+#
 # enum Maybe<T> {
 #     Just(T),
 #     Nothing,
@@ -51,26 +54,26 @@ The derive in the above example code generates the following code:
 impl<T> Maybe<T> {
     pub fn try_into_nothing(self) -> Result<(), TryIntoVariantError<Self>> {
         match self {
-            Maybe::Nothing() => Ok(()),
-            val @ _ => Err(/* ... */),
+            Maybe::Nothing => Ok(()),
+            val @ _ => Err(panic!("stub")),
         }
     }
     pub fn try_into_nothing_ref(&self) -> Result<(), TryIntoVariantError<&Self>> {
         match self {
-            Maybe::Nothing() => Ok(()),
-            val @ _ => Err(/* ... */),
+            Maybe::Nothing => Ok(()),
+            val @ _ => Err(panic!("stub")),
         }
     }
     pub fn try_into_just(self) -> Result<T, TryIntoVariantError<Self>> {
         match self {
             Maybe::Just(field_0) => Ok(field_0),
-            val @ _ => Err(/* ... */),
+            val @ _ => Err(panic!("stub")),
         }
     }
     pub fn try_into_just_ref(&self) -> Result<&T, TryIntoVariantError<&Self>> {
         match self {
             Maybe::Just(field_0) => Ok(field_0),
-            val @ _ => Err(/* ... */),
+            val @ _ => Err(panic!("stub")),
         }
     }
 }

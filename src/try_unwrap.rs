@@ -1,5 +1,3 @@
-
-
 /// Error returned by the derived [`TryIntoVariant`] implementation.
 ///
 /// [`TryIntoVariant`]: macro@crate::TryIntoVariant
