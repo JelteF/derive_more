@@ -11,7 +11,7 @@ enum Either<TLeft, TRight> {
 #[derive(Unwrap)]
 #[derive(Debug)]
 #[unwrap(ref, ref_mut)]
-enum Maybe<T: std::fmt::Debug> {
+enum Maybe<T> {
     Nothing,
     Just(T),
 }
@@ -22,6 +22,7 @@ enum Color {
     CMYK(u8, u8, u8, u8),
 }
 
+/// With lifetime
 #[derive(Unwrap)]
 enum Nonsense<'a, T> {
     Ref(&'a T),
@@ -52,9 +53,20 @@ where
     NothingToSeeHere(),
 }
 
+/// Single variant enum
 #[derive(Unwrap)]
 enum Single {
     Value(i32),
+}
+
+#[derive(Unwrap)]
+#[derive(Debug, PartialEq)]
+#[unwrap(ref, ref_mut)]
+enum Tuple<T> {
+    None,
+    Single(T),
+    Double(T, T),
+    Triple(T, T, T),
 }
 
 #[test]
@@ -82,4 +94,25 @@ pub fn test_unwrap_panic_2() {
 #[should_panic]
 pub fn test_unwrap_ref_panic() {
     Maybe::Just(2).unwrap_nothing_ref();
+}
+
+#[test]
+pub fn test_unwrap_mut_1() {
+    let mut value = Tuple::Double(1, 12);
+
+    let (a, b) = value.unwrap_double_mut();
+    *a = 9;
+    *b = 10;
+
+    assert_eq!(value, Tuple::Double(9, 10))
+}
+
+#[test]
+pub fn test_unwrap_mut_2() {
+    let mut value = Tuple::Single(128);
+
+    let x = value.unwrap_single_mut();
+    *x *= 2;
+
+    assert_eq!(value, Tuple::Single(256));
 }

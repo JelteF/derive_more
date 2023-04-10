@@ -11,7 +11,7 @@ enum Either<TLeft, TRight> {
 #[derive(TryUnwrap)]
 #[derive(Debug, PartialEq)]
 #[try_unwrap(ref, ref_mut)]
-enum Maybe<T: std::fmt::Debug + PartialEq> {
+enum Maybe<T> {
     Nothing,
     Just(T),
 }
@@ -22,6 +22,7 @@ enum Color {
     CMYK(u8, u8, u8, u8),
 }
 
+/// With lifetime
 #[derive(TryUnwrap)]
 enum Nonsense<'a, T> {
     Ref(&'a T),
@@ -38,6 +39,7 @@ where
     One(T),
     Two,
 }
+
 #[derive(TryUnwrap)]
 enum KitchenSink<'a, 'b, T1: Copy, T2: Clone>
 where
@@ -51,9 +53,20 @@ where
     NothingToSeeHere(),
 }
 
+/// Single variant enum
 #[derive(TryUnwrap)]
 enum Single {
     Value(i32),
+}
+
+#[derive(TryUnwrap)]
+#[derive(Debug, PartialEq)]
+#[try_unwrap(ref, ref_mut)]
+enum Tuple<T> {
+    None,
+    Single(T),
+    Double(T, T),
+    Triple(T, T, T),
 }
 
 #[test]
@@ -84,4 +97,32 @@ pub fn test_try_unwrap() {
                 .to_string()
         ),
     );
+}
+
+#[test]
+pub fn test_try_unwrap_mut_1() {
+    let mut value = Tuple::Double(1, 12);
+
+    if let Ok((a, b)) = value.try_unwrap_double_mut() {
+        *a = 9;
+        *b = 10;
+    }
+
+    assert_eq!(value, Tuple::Double(9, 10));
+}
+
+#[test]
+pub fn test_try_unwrap_mut_2() {
+    let mut value = Tuple::Single(128);
+
+    if let Ok(x) = value.try_unwrap_single_mut() {
+        *x *= 2;
+    }
+
+    if let Err(e) = value.try_unwrap_none_mut() {
+        let x = *e.input.try_unwrap_single_ref().unwrap_or(&0);
+        *e.input = Tuple::Double(x - 1, x);
+    }
+
+    assert_eq!(value, Tuple::Double(255, 256));
 }
