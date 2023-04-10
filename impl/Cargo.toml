@@ -32,7 +32,7 @@ unicode-xid = { version = "0.2.2", optional = true }
 rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
-derive_more = { path = "..", features = ["add", "debug", "from_str", "not", "try_into"] }
+derive_more = { path = "..", features = ["add", "debug", "from_str", "not", "try_into", "try_unwrap"] }
 itertools = "0.10.5"
 
 [badges]
@@ -68,5 +68,6 @@ sum = []
 try_into = ["syn/extra-traits"]
 is_variant = ["dep:convert_case"]
 unwrap = ["dep:convert_case"]
+try_unwrap = ["dep:convert_case"]
 
 testing-helpers = ["dep:rustc_version"]

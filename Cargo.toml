@@ -65,6 +65,7 @@ sum = ["derive_more-impl/sum"]
 try_into = ["derive_more-impl/try_into"]
 is_variant = ["derive_more-impl/is_variant"]
 unwrap = ["derive_more-impl/unwrap"]
+try_unwrap = ["derive_more-impl/try_unwrap"]
 
 std = []
 full = [
@@ -92,6 +93,7 @@ full = [
     "sum",
     "try_into",
     "unwrap",
+    "try_unwrap",
 ]
 
 testing-helpers = ["derive_more-impl/testing-helpers"]
@@ -215,6 +217,11 @@ required-features = ["is_variant"]
 name = "unwrap"
 path = "tests/unwrap.rs"
 required-features = ["unwrap"]
+
+[[test]]
+name = "try_unwrap"
+path = "tests/try_unwrap.rs"
+required-features = ["try_unwrap"]
 
 [[test]]
 name = "compile_fail"

@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `FromStr` derive support for enums that contain variants without fields.
   If you pass the name of the variant to `from_str` it will create the matching
   variant.
+- Add `#[unwrap(owned, ref, ref_mut)]` attribute for the `Unwrap` derive.
+  By using them, it is possible to derive implementations for the reference types as well.
+  ([#206](https://github.com/JelteF/derive_more/pull/206))
+- Add `TryUnwrap` derive similar to the `Unwrap` derive. This one returns a `Result` and does not panic.
+  ([#206](https://github.com/JelteF/derive_more/pull/206))
 
 ### Changed
 
@@ -48,7 +53,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `#[automatically_derived]` is now emitted from all macro expansions. This
   should prevent code style linters from attempting to modify the generated
   code.
-
 
 ### Fixed
 
