@@ -7,14 +7,10 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-    ext::IdentExt as _,
-    parse::{Parse, ParseStream},
-    parse_quote,
-    punctuated::Punctuated,
-    spanned::Spanned,
-    token, Attribute, Data, DeriveInput, Error, Field, Fields, FieldsNamed,
-    FieldsUnnamed, GenericParam, Generics, Ident, ImplGenerics, Index, Meta, Result,
-    Token, Type, TypeGenerics, TypeParamBound, Variant, WhereClause,
+    parse_quote, punctuated::Punctuated, spanned::Spanned, token, Attribute, Data,
+    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
+    Generics, Ident, ImplGenerics, Index, Result, Token, Type, TypeGenerics,
+    TypeParamBound, Variant, WhereClause,
 };
 
 #[derive(Clone, Copy, Default)]
@@ -915,7 +911,7 @@ fn get_meta_info(
     }
 
     let list = match &attr.meta {
-        Meta::Path(_) => {
+        syn::Meta::Path(_) => {
             if allowed_attr_params.contains(&"ignore") {
                 return Ok(info);
             } else {
@@ -928,8 +924,8 @@ fn get_meta_info(
                 ));
             }
         }
-        Meta::List(list) => list,
-        Meta::NameValue(val) => {
+        syn::Meta::List(list) => list,
+        syn::Meta::NameValue(val) => {
             return Err(Error::new(
                 val.span(),
                 "Attribute doesn't support name-value format here",
@@ -949,13 +945,13 @@ fn get_meta_info(
 
 fn parse_punctuated_nested_meta(
     info: &mut MetaInfo,
-    meta: &Punctuated<Meta, Token![,]>,
+    meta: &Punctuated<polyfill::Meta, Token![,]>,
     allowed_attr_params: &[&str],
     wrapper_name: Option<&str>,
 ) -> Result<()> {
     for meta in meta.iter() {
         match meta {
-            Meta::List(list) if list.path.is_ident("not") => {
+            polyfill::Meta::List(list) if list.path.is_ident("not") => {
                 if wrapper_name.is_some() {
                     // Only single top-level `not` attribute is allowed.
                     return Err(Error::new(
@@ -971,7 +967,7 @@ fn parse_punctuated_nested_meta(
                 )?;
             }
 
-            Meta::List(list) => {
+            polyfill::Meta::List(list) => {
                 let path = &list.path;
                 if !allowed_attr_params.iter().any(|param| path.is_ident(param)) {
                     return Err(Error::new(
@@ -999,11 +995,11 @@ fn parse_punctuated_nested_meta(
                     | (Some("ref_mut"), "types") => {
                         parse_nested = false;
                         for meta in &list.parse_args_with(
-                            Punctuated::<NestedMeta, token::Comma>::parse_terminated,
+                            Punctuated::<polyfill::NestedMeta, token::Comma>::parse_terminated,
                         )? {
                             let typ: syn::Type = match meta {
-                                NestedMeta::Meta(meta) => {
-                                    let Meta::Path(path) = meta else {
+                                polyfill::NestedMeta::Meta(meta) => {
+                                    let polyfill::Meta::Path(path) = meta else {
                                         return Err(Error::new(
                                             meta.span(),
                                             format!(
@@ -1014,12 +1010,12 @@ fn parse_punctuated_nested_meta(
                                     };
                                     syn::TypePath {
                                         qself: None,
-                                        path: path.clone(),
+                                        path: path.clone().into(),
                                     }
                                     .into()
                                 }
-                                NestedMeta::Lit(syn::Lit::Str(s)) => s.parse()?,
-                                NestedMeta::Lit(lit) => return Err(Error::new(
+                                polyfill::NestedMeta::Lit(syn::Lit::Str(s)) => s.parse()?,
+                                polyfill::NestedMeta::Lit(lit) => return Err(Error::new(
                                     lit.span(),
                                     "Attribute doesn't support nested literals here",
                                 )),
@@ -1071,7 +1067,7 @@ fn parse_punctuated_nested_meta(
                 }
             }
 
-            Meta::Path(path) => {
+            polyfill::Meta::Path(path) => {
                 if !allowed_attr_params.iter().any(|param| path.is_ident(param)) {
                     return Err(Error::new(
                         meta.span(),
@@ -1106,35 +1102,167 @@ fn parse_punctuated_nested_meta(
                     }
                 }
             }
-
-            Meta::NameValue(val) => {
-                return Err(Error::new(
-                    val.span(),
-                    "Attribute doesn't support name-value parameters here",
-                ))
-            }
         }
     }
 
     Ok(())
 }
 
-enum NestedMeta {
-    Meta(Meta),
-    Lit(syn::Lit),
-}
+// TODO: Remove this eventually, once all macros migrate to
+//       custom typed attributes parsing.
+/// Polyfill for [`syn`] 1.x AST.
+mod polyfill {
+    use proc_macro2::TokenStream;
+    use quote::ToTokens;
+    use syn::{
+        ext::IdentExt as _,
+        parse::{Parse, ParseStream, Parser},
+        token, Token,
+    };
 
-impl Parse for NestedMeta {
-    fn parse(input: ParseStream<'_>) -> Result<Self> {
-        if input.peek(syn::Lit) && !(input.peek(syn::LitBool) && input.peek2(Token![=]))
+    #[derive(Clone, Debug)]
+    pub(super) enum PathOrKeyword {
+        Path(syn::Path),
+        Keyword(syn::Ident),
+    }
+
+    impl Parse for PathOrKeyword {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            if input.fork().parse::<syn::Path>().is_ok() {
+                return input.parse().map(Self::Path);
+            }
+            syn::Ident::parse_any(input).map(Self::Keyword)
+        }
+    }
+
+    impl ToTokens for PathOrKeyword {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            match self {
+                Self::Path(p) => p.to_tokens(tokens),
+                Self::Keyword(i) => i.to_tokens(tokens),
+            }
+        }
+    }
+
+    impl PathOrKeyword {
+        pub(super) fn is_ident<I: ?Sized>(&self, ident: &I) -> bool
+        where
+            syn::Ident: PartialEq<I>,
         {
-            input.parse().map(Self::Lit)
-        } else if input.peek(Ident::peek_any)
-            || input.peek(Token![::]) && input.peek3(Ident::peek_any)
-        {
-            input.parse().map(Self::Meta)
-        } else {
-            Err(input.error("expected identifier or literal"))
+            match self {
+                Self::Path(p) => p.is_ident(ident),
+                Self::Keyword(i) => i == ident,
+            }
+        }
+
+        pub fn get_ident(&self) -> Option<&syn::Ident> {
+            match self {
+                Self::Path(p) => p.get_ident(),
+                Self::Keyword(i) => Some(i),
+            }
+        }
+    }
+
+    impl From<PathOrKeyword> for syn::Path {
+        fn from(p: PathOrKeyword) -> Self {
+            match p {
+                PathOrKeyword::Path(p) => p,
+                PathOrKeyword::Keyword(i) => i.into(),
+            }
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    pub(super) struct MetaList {
+        pub(super) path: PathOrKeyword,
+        pub(super) tokens: TokenStream,
+    }
+
+    impl Parse for MetaList {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            let path = input.parse::<PathOrKeyword>()?;
+            let tokens;
+            _ = syn::parenthesized!(tokens in input);
+            Ok(Self {
+                path,
+                tokens: tokens.parse()?,
+            })
+        }
+    }
+
+    impl ToTokens for MetaList {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.path.to_tokens(tokens);
+            token::Paren::default()
+                .surround(tokens, |tokens| self.tokens.to_tokens(tokens))
+        }
+    }
+
+    impl MetaList {
+        pub fn parse_args_with<F: Parser>(&self, parser: F) -> syn::Result<F::Output> {
+            parser.parse2(self.tokens.clone())
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    pub(super) enum Meta {
+        Path(PathOrKeyword),
+        List(MetaList),
+    }
+
+    impl Parse for Meta {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            let path = input.parse::<PathOrKeyword>()?;
+            Ok(if input.peek(token::Paren) {
+                let tokens;
+                _ = syn::parenthesized!(tokens in input);
+                Self::List(MetaList {
+                    path,
+                    tokens: tokens.parse()?,
+                })
+            } else {
+                Self::Path(path)
+            })
+        }
+    }
+
+    impl ToTokens for Meta {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            match self {
+                Self::Path(p) => p.to_tokens(tokens),
+                Self::List(l) => l.to_tokens(tokens),
+            }
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    pub(super) enum NestedMeta {
+        Meta(Meta),
+        Lit(syn::Lit),
+    }
+
+    impl Parse for NestedMeta {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            if input.peek(syn::Lit)
+                && !(input.peek(syn::LitBool) && input.peek2(Token![=]))
+            {
+                input.parse().map(Self::Lit)
+            } else if input.peek(syn::Ident::peek_any)
+                || input.peek(Token![::]) && input.peek3(syn::Ident::peek_any)
+            {
+                input.parse().map(Self::Meta)
+            } else {
+                Err(input.error("expected identifier or literal"))
+            }
+        }
+    }
+
+    impl ToTokens for NestedMeta {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            match self {
+                Self::Meta(m) => m.to_tokens(tokens),
+                Self::Lit(l) => l.to_tokens(tokens),
+            }
         }
     }
 }
