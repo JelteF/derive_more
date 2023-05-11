@@ -61,6 +61,8 @@ mod not_like;
 mod sum_like;
 #[cfg(feature = "try_into")]
 mod try_into;
+#[cfg(feature = "try_unwrap")]
+mod try_unwrap;
 #[cfg(feature = "unwrap")]
 mod unwrap;
 
@@ -259,3 +261,10 @@ create_derive!(
 );
 
 create_derive!("unwrap", unwrap, Unwrap, unwrap_derive, unwrap);
+create_derive!(
+    "try_unwrap",
+    try_unwrap,
+    TryUnwrap,
+    try_unwrap_derive,
+    try_unwrap,
+);
