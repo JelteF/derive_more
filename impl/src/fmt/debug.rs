@@ -165,16 +165,9 @@ impl ContainerAttributes {
 
 impl Parse for ContainerAttributes {
     fn parse(input: ParseStream) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
+        BoundsAttribute::check_legacy_fmt(input)?;
 
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        BoundsAttribute::check_legacy_fmt(&content, error_span.span())?;
-
-        content.parse().map(|bounds| ContainerAttributes { bounds })
+        input.parse().map(|bounds| ContainerAttributes { bounds })
     }
 }
 
@@ -220,19 +213,12 @@ impl FieldAttribute {
 
 impl Parse for FieldAttribute {
     fn parse(input: ParseStream) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
+        FmtAttribute::check_legacy_fmt(input)?;
 
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        FmtAttribute::check_legacy_fmt(&content, error_span.span())?;
-
-        if content.peek(syn::LitStr) {
-            content.parse().map(Self::Fmt)
+        if input.peek(syn::LitStr) {
+            input.parse().map(Self::Fmt)
         } else {
-            let _ = content.parse::<syn::Path>().and_then(|p| {
+            let _ = input.parse::<syn::Path>().and_then(|p| {
                 if ["skip", "ignore"].into_iter().any(|i| p.is_ident(i)) {
                     Ok(p)
                 } else {
@@ -242,7 +228,6 @@ impl Parse for FieldAttribute {
                     ))
                 }
             })?;
-
             Ok(Self::Skip)
         }
     }

@@ -10,11 +10,11 @@ mod parsing;
 
 use std::{iter, mem};
 
-use proc_macro2::{Ident, Span, TokenStream, TokenTree};
+use proc_macro2::{Ident, TokenStream, TokenTree};
 use quote::ToTokens;
 use syn::{
     buffer::Cursor,
-    parse::{Parse, ParseBuffer, ParseStream},
+    parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
     token, Error, Result,
@@ -26,13 +26,12 @@ struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
 
 impl BoundsAttribute {
     /// Errors in case legacy syntax is encountered: `bound = "..."`.
-    fn check_legacy_fmt(input: &ParseBuffer<'_>, error_span: Span) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
         let fork = input.fork();
 
         let path = fork
             .parse::<syn::Path>()
             .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
-
         match path {
             Ok(path) if path.is_ident("bound") => fork
                 .parse::<syn::Lit>()
@@ -43,7 +42,7 @@ impl BoundsAttribute {
                 })
                 .map_or(Ok(()), |bound| {
                     Err(Error::new(
-                        error_span,
+                        input.span(),
                         format!("legacy syntax, use `bound({bound})` instead"),
                     ))
                 }),
@@ -130,13 +129,12 @@ impl FmtAttribute {
     }
 
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
-    fn check_legacy_fmt(input: &ParseBuffer<'_>, error_span: Span) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
         let fork = input.fork();
 
         let path = fork
             .parse::<syn::Path>()
             .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
-
         match path {
             Ok(path) if path.is_ident("fmt") => (|| {
                 let args = fork
@@ -157,7 +155,7 @@ impl FmtAttribute {
             })()
             .map_or(Ok(()), |fmt| {
                 Err(Error::new(
-                    error_span,
+                    input.span(),
                     format!(
                         "legacy syntax, remove `fmt =` and use `{}` instead",
                         fmt.join(", "),

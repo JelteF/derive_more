@@ -252,20 +252,13 @@ enum Attribute {
 
 impl Parse for Attribute {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
+        BoundsAttribute::check_legacy_fmt(input)?;
+        FmtAttribute::check_legacy_fmt(input)?;
 
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        BoundsAttribute::check_legacy_fmt(&content, error_span.span())?;
-        FmtAttribute::check_legacy_fmt(&content, error_span.span())?;
-
-        if content.peek(syn::LitStr) {
-            content.parse().map(Attribute::Fmt)
+        if input.peek(syn::LitStr) {
+            input.parse().map(Attribute::Fmt)
         } else {
-            content.parse().map(Attribute::Bounds)
+            input.parse().map(Attribute::Bounds)
         }
     }
 }
