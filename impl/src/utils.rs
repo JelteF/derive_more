@@ -7,7 +7,7 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse_quote, punctuated::Punctuated, spanned::Spanned, token, Attribute, Data,
+    parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
     DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
     Generics, Ident, ImplGenerics, Index, Result, Token, Type, TypeGenerics,
     TypeParamBound, Variant, WhereClause,
@@ -995,7 +995,7 @@ fn parse_punctuated_nested_meta(
                     | (Some("ref_mut"), "types") => {
                         parse_nested = false;
                         for meta in &list.parse_args_with(
-                            Punctuated::<polyfill::NestedMeta, token::Comma>::parse_terminated,
+                            Punctuated::<polyfill::NestedMeta, syn::token::Comma>::parse_terminated,
                         )? {
                             let typ: syn::Type = match meta {
                                 polyfill::NestedMeta::Meta(meta) => {
@@ -1120,7 +1120,7 @@ mod polyfill {
         token, Token,
     };
 
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub(super) enum PathOrKeyword {
         Path(syn::Path),
         Keyword(syn::Ident),
@@ -1172,7 +1172,7 @@ mod polyfill {
         }
     }
 
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub(super) struct MetaList {
         pub(super) path: PathOrKeyword,
         pub(super) tokens: TokenStream,
@@ -1204,7 +1204,7 @@ mod polyfill {
         }
     }
 
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub(super) enum Meta {
         Path(PathOrKeyword),
         List(MetaList),
@@ -1235,7 +1235,7 @@ mod polyfill {
         }
     }
 
-    #[derive(Clone, Debug)]
+    #[derive(Clone)]
     pub(super) enum NestedMeta {
         Meta(Meta),
         Lit(syn::Lit),
