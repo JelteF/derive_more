@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `#[automatically_derived]` is now emitted from all macro expansions. This
   should prevent code style linters from attempting to modify the generated
   code.
+- Upgrade to `syn` 2.0.
 
 ### Fixed
 
