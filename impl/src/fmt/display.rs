@@ -219,22 +219,22 @@ impl Attributes {
         attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident(trait_name_to_attribute_name(trait_name)))
+            .filter(|attr| attr.path().is_ident(trait_name_to_attribute_name(trait_name)))
             .try_fold(Attributes::default(), |mut attrs, attr| {
-                let attr = syn::parse2::<Attribute>(attr.tokens.clone())?;
-               match attr {
-                   Attribute::Bounds(more) => {
-                       attrs.bounds.0.extend(more.0);
-                   }
-                   Attribute::Fmt(fmt) => {
-                       attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(Error::new(
-                           dup.span(),
-                           format!(
-                               "Multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
-                               trait_name_to_attribute_name(trait_name),
-                           ))))?;
-                   }
-               };
+                let attr = attr.parse_args::<Attribute>()?;
+                match attr {
+                    Attribute::Bounds(more) => {
+                        attrs.bounds.0.extend(more.0);
+                    }
+                    Attribute::Fmt(fmt) => {
+                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(Error::new(
+                            dup.span(),
+                            format!(
+                                "Multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
+                                trait_name_to_attribute_name(trait_name),
+                            ))))?;
+                    }
+                };
                 Ok(attrs)
             })
     }
@@ -251,21 +251,14 @@ enum Attribute {
 }
 
 impl Parse for Attribute {
-    fn parse(input: ParseStream) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
+        BoundsAttribute::check_legacy_fmt(input)?;
+        FmtAttribute::check_legacy_fmt(input)?;
 
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        BoundsAttribute::check_legacy_fmt(&content, error_span)?;
-        FmtAttribute::check_legacy_fmt(&content, error_span)?;
-
-        if content.peek(syn::LitStr) {
-            content.parse().map(Attribute::Fmt)
+        if input.peek(syn::LitStr) {
+            input.parse().map(Attribute::Fmt)
         } else {
-            content.parse().map(Attribute::Bounds)
+            input.parse().map(Attribute::Bounds)
         }
     }
 }
