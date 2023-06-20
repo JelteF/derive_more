@@ -424,7 +424,6 @@ impl<'input> State<'input> {
                 Fields::Unnamed(ref fields) => {
                     (DeriveType::Unnamed, unnamed_to_vec(fields), vec![])
                 }
-
                 Fields::Named(ref fields) => {
                     (DeriveType::Named, named_to_vec(fields), vec![])
                 }
@@ -882,7 +881,7 @@ fn get_meta_info(
     attrs: &[Attribute],
     allowed_attr_params: &[&str],
 ) -> Result<MetaInfo> {
-    let mut it = attrs.iter().filter(|a| {
+    let it = attrs.iter().filter(|a| {
         a.meta
             .path()
             .segments
@@ -893,52 +892,42 @@ fn get_meta_info(
 
     let mut info = MetaInfo::default();
 
-    let Some(attr) = it.next() else {
-        return Ok(info);
-    };
+    for attr in it {
+        if allowed_attr_params.is_empty() {
+            return Err(Error::new(attr.span(), "Attribute is not allowed here"));
+        }
 
-    if allowed_attr_params.is_empty() {
-        return Err(Error::new(attr.span(), "Attribute is not allowed here"));
-    }
+        info.enabled = Some(true);
 
-    info.enabled = Some(true);
-
-    if let Some(another_attr) = it.next() {
-        return Err(Error::new(
-            another_attr.span(),
-            "Only a single attribute is allowed",
-        ));
-    }
-
-    let list = match &attr.meta {
-        syn::Meta::Path(_) => {
-            if allowed_attr_params.contains(&"ignore") {
-                return Ok(info);
-            } else {
+        let list = match &attr.meta {
+            syn::Meta::Path(_) => {
+                if allowed_attr_params.contains(&"ignore") {
+                    return Ok(info);
+                }
                 return Err(Error::new(
-                    attr.span(),
-                    format!(
-                        "Empty attribute is not allowed, add one of the following parameters: {}",
-                        allowed_attr_params.join(", "),
-                    ),
+                        attr.span(),
+                        format!(
+                            "Empty attribute is not allowed, add one of the following parameters: {}",
+                            allowed_attr_params.join(", "),
+                        ),
+                    ));
+            }
+            syn::Meta::List(list) => list,
+            syn::Meta::NameValue(val) => {
+                return Err(Error::new(
+                    val.span(),
+                    "Attribute doesn't support name-value format here",
                 ));
             }
-        }
-        syn::Meta::List(list) => list,
-        syn::Meta::NameValue(val) => {
-            return Err(Error::new(
-                val.span(),
-                "Attribute doesn't support name-value format here",
-            ));
-        }
-    };
+        };
 
-    parse_punctuated_nested_meta(
-        &mut info,
-        &list.parse_args_with(Punctuated::parse_terminated)?,
-        allowed_attr_params,
-        None,
-    )?;
+        parse_punctuated_nested_meta(
+            &mut info,
+            &list.parse_args_with(Punctuated::parse_terminated)?,
+            allowed_attr_params,
+            None,
+        )?;
+    }
 
     Ok(info)
 }

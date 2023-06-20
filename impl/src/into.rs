@@ -49,22 +49,22 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             let into_types: Vec<_> = field_types
                 .iter()
                 .map(|field_type| {
-                    // No, `.unwrap_or()` won't work here, because we use different types.
-                    if let Some(type_) = explicit_type {
-                        quote! { #reference_with_lifetime #type_ }
-                    } else {
-                        quote! { #reference_with_lifetime #field_type }
-                    }
+                    explicit_type.map_or_else(
+                        || quote! { #reference_with_lifetime #field_type },
+                        |type_| quote! { #reference_with_lifetime #type_ },
+                    )
                 })
                 .collect();
 
-            let initializers = field_idents.iter().map(|field_ident| {
-                if let Some(type_) = explicit_type {
-                    quote! { <#reference #type_>::from(#reference original.#field_ident) }
-                } else {
-                    quote! { #reference original.#field_ident }
-                }
-            });
+            let initializers =
+                field_idents.iter().map(|field_ident| {
+                    explicit_type.map_or_else(
+                    || quote! { #reference original.#field_ident },
+                    |type_| quote! {
+                        <#reference #type_>::from(#reference original.#field_ident)
+                    }
+                )
+                });
 
             (quote! {
                 #[automatically_derived]

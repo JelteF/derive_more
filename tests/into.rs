@@ -18,7 +18,8 @@ struct EmptyUnit;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[derive(Into)]
-#[into(owned(types(i64, i128)), ref, ref_mut)]
+#[into(owned(types(i64)), ref, ref_mut)]
+#[into(owned(types(i128)), ref, ref_mut)]
 struct MyInt(i32);
 
 #[test]
@@ -59,7 +60,8 @@ struct Point2DWithIgnored {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[derive(Into)]
-#[into(owned(types(i64, i128)), ref, ref_mut, types(i32))]
+#[into(owned(types(i64, i128)), ref, ref_mut)]
+#[into(types(i32))]
 struct MyIntExplicit(MyInt);
 
 #[test]
@@ -77,7 +79,8 @@ fn explicit_types_struct_all() {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[derive(Into)]
-#[into(owned(types(i32, i64, i128)), ref(types(i32)), ref_mut(types(i32)))]
+#[into(owned(types(i32, i64, i128)))]
+#[into(ref(types(i32)), ref_mut(types(i32)))]
 struct MyIntsExplicit(i32, MyInt, MyIntExplicit);
 
 #[test]

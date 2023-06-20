@@ -111,7 +111,8 @@ fn auto_ignore_with_forward_field2() {
 
 #[derive(Debug, Eq, PartialEq)]
 #[derive(From)]
-#[from(types(u8, u16, u32))]
+#[from(types(u8, u16))]
+#[from(types(u32))]
 struct MyIntExplicit(u64);
 
 #[test]
