@@ -104,7 +104,7 @@ fn enum_content(
                 matches.push(matcher);
             }
             Fields::Named(ref fields) => {
-                // The patern that is outputted should look like this:
+                // The pattern that is outputted should look like this:
                 // (Subtype{a: __l_a, ...}, Subtype{a: __r_a, ...} => {
                 //     Ok(Subtype{a: __l_a.add(__r_a), ...})
                 // }

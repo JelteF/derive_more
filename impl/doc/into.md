@@ -1,6 +1,6 @@
 # What `#[derive(Into)]` generates
 
-This derive creates the the exact oposite of [`#[derive(From)]`](crate::From).
+This derive creates the the exact opposite of [`#[derive(From)]`](crate::From).
 Instead of allowing you to create a new instance of the struct from the values
 it should contain, it allows you to extract the values from the struct.
 One thing to note is that this derive doesn't actually generate an
