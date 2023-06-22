@@ -77,7 +77,7 @@ fn enum_from(
 
     let mut cases = vec![];
 
-    // if a case insensitve match is unique match do that
+    // if a case insensitive match is unique match do that
     // otherwise do a case sensitive match
     for (ref canonical, ref variants) in variants_caseinsensitive {
         if variants.len() == 1 {

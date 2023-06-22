@@ -171,7 +171,7 @@ fn named_explicit_backtrace_by_field_type_redundant() {
 }
 
 #[test]
-fn named_explicit_supresses_implicit() {
+fn named_explicit_suppresses_implicit() {
     derive_display!(TestErr);
     #[derive(Debug, Error)]
     struct TestErr {
@@ -378,7 +378,7 @@ fn unnamed_explicit_backtrace_redundant() {
 }
 
 #[test]
-fn unnamed_explicit_supresses_implicit() {
+fn unnamed_explicit_suppresses_implicit() {
     derive_display!(TestErr);
     #[derive(Debug, Error)]
     struct TestErr(#[error(backtrace)] MyBacktrace, Backtrace, i32);

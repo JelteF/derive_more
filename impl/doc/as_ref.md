@@ -32,7 +32,7 @@ impl AsRef<String> for MyWrapper {
 ```
 
 It's also possible to use the `#[as_ref(forward)]` attribute to forward
-to the `as_ref` implementation of the field. So here `SigleFieldForward`
+to the `as_ref` implementation of the field. So here `SingleFieldForward`
 implements all `AsRef` for all types that `Vec<i32>` implements `AsRef` for.
 
 ```rust
