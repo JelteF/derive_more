@@ -12,6 +12,7 @@ enum TestErr {
         source: SimpleErr,
         field: i32,
     },
+    #[cfg(std)]
     NamedImplicitBoxedSource {
         source: Box<dyn Error + Send + 'static>,
         field: i32,
@@ -98,6 +99,7 @@ fn named_implicit_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
+#[cfg(std)]
 #[test]
 fn named_implicit_boxed_source() {
     let err = TestErr::NamedImplicitBoxedSource {
