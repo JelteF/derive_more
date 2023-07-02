@@ -117,8 +117,10 @@ jobs:
   test-features:
     name: test features
     runs-on: ubuntu-latest
-    matrix:
-      std: [std, '']
+    strategy:
+      fail-fast: false
+      matrix:
+        std: [std, '']
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@v1
