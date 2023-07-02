@@ -46,8 +46,7 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 
 If you want to use the `Error` derive on `no_std` environments, then you need to
 compile with nightly and enable this feature:
-```rust
-# #[cfg(nightly)]
+```ignore
 #![feature(error_in_core)]
 ```
 
