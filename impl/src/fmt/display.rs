@@ -331,12 +331,16 @@ impl<'a> Expansion<'a> {
     /// Generates trait bounds for a struct or an enum variant.
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
         let Some(fmt) = &self.attrs.fmt else {
-            return self.fields.iter().next().map(|f| {
-                let ty = &f.ty;
-                let trait_ident = &self.trait_ident;
-                vec![parse_quote! { #ty: ::core::fmt::#trait_ident }]
-            })
-            .unwrap_or_default();
+            return self
+                .fields
+                .iter()
+                .next()
+                .map(|f| {
+                    let ty = &f.ty;
+                    let trait_ident = &self.trait_ident;
+                    vec![parse_quote! { #ty: ::core::fmt::#trait_ident }]
+                })
+                .unwrap_or_default();
         };
 
         fmt.bounded_types(self.fields)
