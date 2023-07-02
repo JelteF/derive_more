@@ -7,16 +7,6 @@ use crate::utils::{
     State,
 };
 
-#[cfg(feature = "std")]
-fn error_module() -> TokenStream {
-    quote! { ::std::error }
-}
-
-#[cfg(not(feature = "std"))]
-fn error_module() -> TokenStream {
-    quote! { ::core::error }
-}
-
 pub fn expand(
     input: &syn::DeriveInput,
     trait_name: &'static str,
@@ -25,12 +15,10 @@ pub fn expand(
         ident, generics, ..
     } = input;
 
-    let error_mod = error_module();
-
     let state = State::with_attr_params(
         input,
         trait_name,
-        error_mod.clone(),
+        quote!{ ::derive_more::Error },
         trait_name.to_lowercase(),
         allowed_attr_params(),
     )?;
@@ -51,7 +39,7 @@ pub fn expand(
 
     let source = source.map(|source| {
         quote! {
-            fn source(&self) -> Option<&(dyn #error_mod::Error + 'static)> {
+            fn source(&self) -> Option<&(dyn ::derive_more::Error + 'static)> {
                 use ::derive_more::__private::AsDynError;
                 #source
             }
@@ -85,7 +73,7 @@ pub fn expand(
             &generics,
             quote! {
                 where
-                    #(#bounds: ::core::fmt::Debug + ::core::fmt::Display + #error_mod::Error + 'static),*
+                    #(#bounds: ::core::fmt::Debug + ::core::fmt::Display + ::derive_more::Error + 'static),*
             },
         );
     }
@@ -94,7 +82,7 @@ pub fn expand(
 
     let render = quote! {
         #[automatically_derived]
-        impl #impl_generics #error_mod::Error for #ident #ty_generics #where_clause {
+        impl #impl_generics ::derive_more::Error for #ident #ty_generics #where_clause {
             #source
             #provide
         }
@@ -215,12 +203,11 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
 
     fn render_provide_as_struct(&self) -> Option<TokenStream> {
         let backtrace = self.backtrace?;
-        let error_mod = error_module();
 
         let source_provider = self.source.map(|source| {
             let source_expr = &self.data.members[source];
             quote! {
-                #error_mod::Error::provide(&#source_expr, demand);
+                ::derive_more::Error::provide(&#source_expr, demand);
             }
         });
         let backtrace_provider = self
@@ -244,14 +231,13 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
 
     fn render_provide_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         let backtrace = self.backtrace?;
-        let error_mod = error_module();
 
         match self.source {
             Some(source) if source == backtrace => {
                 let pattern = self.data.matcher(&[source], &[quote! { source }]);
                 Some(quote! {
                     #pattern => {
-                        #error_mod::Error::provide(source, demand);
+                        ::derive_more::Error::provide(source, demand);
                     }
                 })
             }
@@ -263,7 +249,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 Some(quote! {
                     #pattern => {
                         demand.provide_ref::<::std::backtrace::Backtrace>(backtrace);
-                        #error_mod::Error::provide(source, demand);
+                        ::derive_more::Error::provide(source, demand);
                     }
                 })
             }

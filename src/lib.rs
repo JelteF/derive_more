@@ -74,6 +74,12 @@ pub use self::r#str::FromStrError;
 #[cfg(feature = "error")]
 mod vendor;
 
+#[cfg(all(feature = "std", feature = "error"))]
+pub use ::std::error::Error;
+
+#[cfg(all(not(feature = "std"), feature = "error"))]
+pub use ::core::error::Error;
+
 // Not public API.
 #[doc(hidden)]
 #[cfg(feature = "error")]
