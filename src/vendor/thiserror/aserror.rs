@@ -1,7 +1,7 @@
-#[cfg(feature = "std")]
-use std::error::Error;
 #[cfg(not(feature = "std"))]
 use core::error::Error;
+#[cfg(feature = "std")]
+use std::error::Error;
 
 use core::panic::UnwindSafe;
 
