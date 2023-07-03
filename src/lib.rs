@@ -60,7 +60,7 @@ mod try_unwrap;
 pub use self::try_unwrap::TryUnwrapError;
 
 #[cfg(feature = "debug")]
-pub mod fmt;
+mod fmt;
 
 #[cfg(any(feature = "add", feature = "not"))]
 pub mod ops;
@@ -75,9 +75,12 @@ mod vendor;
 
 // Not public API.
 #[doc(hidden)]
-#[cfg(feature = "error")]
 pub mod __private {
+    #[cfg(feature = "error")]
     pub use crate::vendor::thiserror::aserror::AsDynError;
+
+    #[cfg(feature = "debug")]
+    pub use crate::fmt::{debug_tuple, DebugTuple};
 }
 
 #[cfg(not(any(
