@@ -1,7 +1,15 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)]
 
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(not(feature = "std"))]
+use alloc::format;
+
 mod structs {
+    use super::*;
     mod unit {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -25,6 +33,7 @@ mod structs {
     }
 
     mod single_field {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -47,6 +56,7 @@ mod structs {
         }
 
         mod str_field {
+            use super::*;
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -74,6 +84,7 @@ mod structs {
         }
 
         mod interpolated_field {
+            use super::*;
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -101,6 +112,7 @@ mod structs {
         }
 
         mod ignore {
+            use super::*;
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -123,6 +135,7 @@ mod structs {
     }
 
     mod multi_field {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -161,6 +174,7 @@ mod structs {
         }
 
         mod str_field {
+            use super::*;
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -204,6 +218,7 @@ mod structs {
         }
 
         mod interpolated_field {
+            use super::*;
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -247,6 +262,7 @@ mod structs {
         }
 
         mod ignore {
+            use super::*;
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -289,17 +305,19 @@ mod structs {
 }
 
 mod enums {
+    use super::*;
     mod no_variants {
         use derive_more::Debug;
 
         #[derive(Debug)]
         enum Void {}
 
-        const fn assert<T: std::fmt::Debug>() {}
+        const fn assert<T: core::fmt::Debug>() {}
         const _: () = assert::<Void>();
     }
 
     mod unit_variant {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -321,6 +339,7 @@ mod enums {
     }
 
     mod single_field_variant {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -407,6 +426,7 @@ mod enums {
     }
 
     mod multi_field_variant {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -532,6 +552,7 @@ mod enums {
 }
 
 mod generic {
+    use super::*;
     use derive_more::Debug;
 
     struct NotDebug;
@@ -818,6 +839,7 @@ mod generic {
     }
 
     mod associated_type_field_enumerator {
+        use super::*;
         use derive_more::Debug;
 
         trait Trait {
@@ -875,6 +897,7 @@ mod generic {
     }
 
     mod complex_type_field_enumerator {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -931,6 +954,7 @@ mod generic {
     }
 
     mod reference {
+        use super::*;
         use derive_more::Debug;
 
         #[test]
@@ -955,6 +979,7 @@ mod generic {
     }
 
     mod indirect {
+        use super::*;
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -976,6 +1001,7 @@ mod generic {
     }
 
     mod bound {
+        use super::*;
         use derive_more::Debug;
 
         #[test]

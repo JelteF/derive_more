@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code, non_camel_case_types)]
 
 use derive_more::{

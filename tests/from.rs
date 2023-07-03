@@ -1,5 +1,16 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)]
 
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(not(feature = "std"))]
+use alloc::{
+    string::{String,ToString},
+    borrow::{Cow},
+};
+
+
+#[cfg(feature = "std")]
 use std::borrow::Cow;
 
 use derive_more::From;
@@ -181,7 +192,7 @@ struct Name(String);
 fn explicit_complex_types_name() {
     let name = "Eärendil";
     let expected = Name(name.into());
-    assert_eq!(expected, name.to_owned().into());
+    assert_eq!(expected, name.to_string().into());
     assert_eq!(expected, name.into());
     assert_eq!(expected, Cow::Borrowed(name).into());
 }

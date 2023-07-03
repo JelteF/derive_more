@@ -1,6 +1,12 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code, unused_imports)]
 
 use derive_more::DerefMut;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(not(feature = "std"))]
+use alloc::{boxed::Box, format, vec, vec::Vec};
 
 #[derive(DerefMut)]
 #[deref_mut(forward)]
