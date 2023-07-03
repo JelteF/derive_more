@@ -18,7 +18,7 @@ pub fn expand(
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote!{ ::derive_more::__private::Error },
+        quote! { ::derive_more::__private::Error },
         trait_name.to_lowercase(),
         allowed_attr_params(),
     )?;
