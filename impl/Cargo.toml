@@ -71,6 +71,4 @@ is_variant = ["dep:convert_case"]
 unwrap = ["dep:convert_case"]
 try_unwrap = ["dep:convert_case"]
 
-std = []
-
 testing-helpers = ["dep:rustc_version"]

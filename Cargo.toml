@@ -70,7 +70,7 @@ is_variant = ["derive_more-impl/is_variant"]
 unwrap = ["derive_more-impl/unwrap"]
 try_unwrap = ["derive_more-impl/try_unwrap"]
 
-std = ["derive_more-impl/std"]
+std = []
 full = [
     "add_assign",
     "add",
