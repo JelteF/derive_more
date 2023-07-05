@@ -6,6 +6,8 @@ extern crate alloc;
 
 #[cfg(not(feature = "std"))]
 use alloc::{borrow::Cow, string::String};
+#[cfg(feature = "std")]
+use std::borrow::Cow;
 
 use derive_more::Into;
 

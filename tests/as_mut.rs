@@ -46,7 +46,7 @@ fn single_field_struct() {
 
 #[cfg(feature = "std")]
 mod pathbuf {
-    use std::path::PahBuf;
+    use std::path::PathBuf;
 
     use super::*;
 
