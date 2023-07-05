@@ -116,11 +116,11 @@ jobs:
 
   test-features:
     name: test features
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        std: [std, no_std]
+        std: ["std", "no_std"]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@v1

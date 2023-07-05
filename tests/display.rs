@@ -3,6 +3,7 @@
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
+
 #[cfg(not(feature = "std"))]
 use alloc::{
     boxed::Box,
@@ -10,7 +11,6 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-
 use core::fmt::{Binary, Display};
 
 use derive_more::{Binary, Display, Octal, UpperHex};
@@ -340,7 +340,6 @@ mod enums {
 
 mod generic {
     use super::*;
-    use derive_more::Display;
 
     trait Bound {}
 

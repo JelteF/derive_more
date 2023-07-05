@@ -1,11 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)]
 
-use core::ptr;
 #[cfg(not(feature = "std"))]
 extern crate alloc;
+
 #[cfg(not(feature = "std"))]
 use alloc::{string::String, vec, vec::Vec};
+use core::ptr;
 
 use derive_more::AsRef;
 
@@ -45,8 +46,9 @@ fn single_field_struct() {
 
 #[cfg(feature = "std")]
 mod pathbuf {
-    use super::*;
     use std::path::PahBuf;
+
+    use super::*;
 
     #[derive(AsRef)]
     struct MultiFieldTuple(#[as_ref] String, #[as_ref] PathBuf, Vec<usize>);

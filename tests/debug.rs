@@ -3,14 +3,17 @@
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
+
 #[cfg(not(feature = "std"))]
 use alloc::format;
 
+use derive_more::Debug;
+
 mod structs {
     use super::*;
+
     mod unit {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         struct Unit;
@@ -34,7 +37,6 @@ mod structs {
 
     mod single_field {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         struct Tuple(i32);
@@ -57,7 +59,6 @@ mod structs {
 
         mod str_field {
             use super::*;
-            use derive_more::Debug;
 
             #[derive(Debug)]
             struct Tuple(#[debug("i32")] i32);
@@ -85,7 +86,6 @@ mod structs {
 
         mod interpolated_field {
             use super::*;
-            use derive_more::Debug;
 
             #[derive(Debug)]
             struct Tuple(#[debug("{_0}.{}", _0)] i32);
@@ -113,7 +113,6 @@ mod structs {
 
         mod ignore {
             use super::*;
-            use derive_more::Debug;
 
             #[derive(Debug)]
             struct Tuple(#[debug(ignore)] i32);
@@ -136,7 +135,6 @@ mod structs {
 
     mod multi_field {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         struct Tuple(i32, i32);
@@ -175,7 +173,6 @@ mod structs {
 
         mod str_field {
             use super::*;
-            use derive_more::Debug;
 
             #[derive(Debug)]
             struct Tuple(i32, #[debug("i32")] i32);
@@ -219,7 +216,6 @@ mod structs {
 
         mod interpolated_field {
             use super::*;
-            use derive_more::Debug;
 
             #[derive(Debug)]
             struct Tuple(i32, #[debug("{_0}.{}", _1)] i32);
@@ -263,7 +259,6 @@ mod structs {
 
         mod ignore {
             use super::*;
-            use derive_more::Debug;
 
             #[derive(Debug)]
             struct Tuple(#[debug(ignore)] i32, i32);
@@ -306,8 +301,9 @@ mod structs {
 
 mod enums {
     use super::*;
+
     mod no_variants {
-        use derive_more::Debug;
+        use super::*;
 
         #[derive(Debug)]
         enum Void {}
@@ -318,7 +314,6 @@ mod enums {
 
     mod unit_variant {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         enum Enum {
@@ -340,7 +335,6 @@ mod enums {
 
     mod single_field_variant {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         enum Enum {
@@ -427,7 +421,6 @@ mod enums {
 
     mod multi_field_variant {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         enum Enum {
@@ -553,7 +546,6 @@ mod enums {
 
 mod generic {
     use super::*;
-    use derive_more::Debug;
 
     struct NotDebug;
 
@@ -840,7 +832,6 @@ mod generic {
 
     mod associated_type_field_enumerator {
         use super::*;
-        use derive_more::Debug;
 
         trait Trait {
             type Type;
@@ -898,7 +889,6 @@ mod generic {
 
     mod complex_type_field_enumerator {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         struct Struct<T>(T);
@@ -955,7 +945,6 @@ mod generic {
 
     mod reference {
         use super::*;
-        use derive_more::Debug;
 
         #[test]
         fn auto_generic_reference() {
@@ -980,7 +969,6 @@ mod generic {
 
     mod indirect {
         use super::*;
-        use derive_more::Debug;
 
         #[derive(Debug)]
         struct Struct<T>(T);
@@ -1002,7 +990,6 @@ mod generic {
 
     mod bound {
         use super::*;
-        use derive_more::Debug;
 
         #[test]
         fn simple() {

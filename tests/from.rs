@@ -3,13 +3,12 @@
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
+
 #[cfg(not(feature = "std"))]
 use alloc::{
-    string::{String,ToString},
-    borrow::{Cow},
+    borrow::Cow,
+    string::{String, ToString},
 };
-
-
 #[cfg(feature = "std")]
 use std::borrow::Cow;
 
