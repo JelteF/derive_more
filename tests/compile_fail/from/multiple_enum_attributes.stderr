@@ -1,0 +1,5 @@
+error: only single `#[from(...)]` attribute is allowed here
+ --> tests/compile_fail/from/multiple_enum_attributes.rs:3:7
+  |
+3 |     #[from(i32)]
+  |       ^^^^

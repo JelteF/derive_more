@@ -1,0 +1,5 @@
+error: legacy syntax, remove `types` and use `(i32, i32), (&str, &str), (String, String)` instead
+ --> tests/compile_fail/from/legacy_struct_attribute.rs:2:8
+  |
+2 | #[from(types(i32, "&str"))]
+  |        ^^^^^

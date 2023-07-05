@@ -9,7 +9,6 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_quote,
     spanned::Spanned as _,
-    Error, Result,
 };
 
 use super::{BoundsAttribute, FmtAttribute};
@@ -25,7 +24,7 @@ use super::{BoundsAttribute, FmtAttribute};
 /// - [`Pointer`](fmt::Pointer)
 /// - [`UpperExp`](fmt::UpperExp)
 /// - [`UpperHex`](fmt::UpperHex)
-pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> Result<TokenStream> {
+pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenStream> {
     let trait_name = normalize_trait_name(trait_name);
 
     let attrs = Attributes::parse_attrs(&input.attrs, trait_name)?;
@@ -73,7 +72,7 @@ type ExpansionCtx<'a> = (&'a Attributes, &'a Ident, &'a Ident, &'a str);
 fn expand_struct(
     s: &syn::DataStruct,
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
-) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
         attrs,
         fields: &s.fields,
@@ -106,7 +105,7 @@ fn expand_struct(
 fn expand_enum(
     e: &syn::DataEnum,
     (attrs, _, trait_ident, trait_name): ExpansionCtx<'_>,
-) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     if attrs.fmt.is_some() {
         todo!("https://github.com/JelteF/derive_more/issues/142");
     }
@@ -121,7 +120,7 @@ fn expand_enum(
                 && variant.fields.is_empty()
                 && trait_name != "Display"
             {
-                return Err(Error::new(
+                return Err(syn::Error::new(
                     e.variants.span(),
                     format!(
                         "implicit formatting of unit enum variant is supported \
@@ -157,7 +156,7 @@ fn expand_enum(
 
             arms.extend([quote! { #matcher => { #arm_body }, }]);
 
-            Ok::<_, Error>((bounds, arms))
+            Ok::<_, syn::Error>((bounds, arms))
         },
     )?;
 
@@ -173,9 +172,9 @@ fn expand_enum(
 fn expand_union(
     u: &syn::DataUnion,
     (attrs, _, _, trait_name): ExpansionCtx<'_>,
-) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let fmt = &attrs.fmt.as_ref().ok_or_else(|| {
-        Error::new(
+        syn::Error::new(
             u.fields.span(),
             format!(
                 "unions must have `#[{}(\"...\", ...)]` attribute",
@@ -183,13 +182,11 @@ fn expand_union(
             ),
         )
     })?;
-    let (lit, args) = (&fmt.lit, &fmt.args);
 
-    let body = quote! {
-        ::core::write!(__derive_more_f, #lit, #( #args ),*)
-    };
-
-    Ok((attrs.bounds.0.clone().into_iter().collect(), body))
+    Ok((
+        attrs.bounds.0.clone().into_iter().collect(),
+        quote! { ::core::write!(__derive_more_f, #fmt) },
+    ))
 }
 
 /// Representation of a [`fmt::Display`]-like derive macro attribute.
@@ -215,7 +212,7 @@ impl Attributes {
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         trait_name: &str,
-    ) -> Result<Self> {
+    ) -> syn::Result<Self> {
         attrs
             .as_ref()
             .iter()
@@ -227,10 +224,10 @@ impl Attributes {
                         attrs.bounds.0.extend(more.0);
                     }
                     Attribute::Fmt(fmt) => {
-                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(Error::new(
+                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
                             dup.span(),
                             format!(
-                                "Multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
+                                "multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
                                 trait_name_to_attribute_name(trait_name),
                             ))))?;
                     }
@@ -251,7 +248,7 @@ enum Attribute {
 }
 
 impl Parse for Attribute {
-    fn parse(input: ParseStream<'_>) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         BoundsAttribute::check_legacy_fmt(input)?;
         FmtAttribute::check_legacy_fmt(input)?;
 
@@ -291,19 +288,12 @@ impl<'a> Expansion<'a> {
     /// greater than 1.
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
-    fn generate_body(&self) -> Result<TokenStream> {
+    fn generate_body(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
-            Some(fmt) => {
-                let (lit, args) = (&fmt.lit, &fmt.args);
-                Ok(quote! {
-                    ::core::write!(__derive_more_f, #lit, #( #args ),*)
-                })
-            }
+            Some(fmt) => Ok(quote! { ::core::write!(__derive_more_f, #fmt) }),
             None if self.fields.is_empty() => {
                 let ident_str = self.ident.to_string();
-                Ok(quote! {
-                    ::core::write!(__derive_more_f, #ident_str)
-                })
+                Ok(quote! { ::core::write!(__derive_more_f, #ident_str) })
             }
             None if self.fields.len() == 1 => {
                 let field = self
@@ -317,7 +307,7 @@ impl<'a> Expansion<'a> {
                     ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
                 })
             }
-            _ => Err(Error::new(
+            _ => Err(syn::Error::new(
                 self.fields.span(),
                 format!(
                     "struct or enum variant with more than 1 field must have \

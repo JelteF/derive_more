@@ -8,17 +8,16 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
-use std::{iter, mem};
-
-use proc_macro2::{Ident, TokenStream, TokenTree};
+use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
-    buffer::Cursor,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Error, Result,
+    token, Ident,
 };
+
+use crate::parsing::Expr;
 
 /// Representation of a macro attribute expressing additional trait bounds.
 #[derive(Debug, Default)]
@@ -26,7 +25,7 @@ struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
 
 impl BoundsAttribute {
     /// Errors in case legacy syntax is encountered: `bound = "..."`.
-    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
         let fork = input.fork();
 
         let path = fork
@@ -41,7 +40,7 @@ impl BoundsAttribute {
                     _ => None,
                 })
                 .map_or(Ok(()), |bound| {
-                    Err(Error::new(
+                    Err(syn::Error::new(
                         input.span(),
                         format!("legacy syntax, use `bound({bound})` instead"),
                     ))
@@ -52,7 +51,7 @@ impl BoundsAttribute {
 }
 
 impl Parse for BoundsAttribute {
-    fn parse(input: ParseStream<'_>) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let _ = input.parse::<syn::Path>().and_then(|p| {
             if ["bound", "bounds", "where"]
                 .into_iter()
@@ -60,7 +59,7 @@ impl Parse for BoundsAttribute {
             {
                 Ok(p)
             } else {
-                Err(Error::new(
+                Err(syn::Error::new(
                     p.span(),
                     "unknown attribute, expected `bound(...)`",
                 ))
@@ -86,8 +85,11 @@ struct FmtAttribute {
     /// [`syn::LitStr`]: struct@syn::LitStr
     lit: syn::LitStr,
 
+    /// Optional [`token::Comma`].
+    comma: Option<token::Comma>,
+
     /// Interpolation arguments.
-    args: Vec<FmtArgument>,
+    args: Punctuated<FmtArgument, token::Comma>,
 }
 
 impl FmtAttribute {
@@ -104,11 +106,12 @@ impl FmtAttribute {
                 Parameter::Named(name) => self
                     .args
                     .iter()
-                    .find_map(|a| (a.alias.as_ref()? == &name).then_some(&a.expr))
+                    .find_map(|a| (a.alias()? == &name).then_some(&a.expr))
                     .map_or(Some(name), |expr| expr.ident().map(ToString::to_string))?,
                 Parameter::Positional(i) => self
                     .args
-                    .get(i)
+                    .iter()
+                    .nth(i)
                     .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))?
                     .to_string(),
             };
@@ -129,7 +132,7 @@ impl FmtAttribute {
     }
 
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
-    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
         let fork = input.fork();
 
         let path = fork
@@ -154,7 +157,7 @@ impl FmtAttribute {
                 (!args.is_empty()).then_some(args)
             })()
             .map_or(Ok(()), |fmt| {
-                Err(Error::new(
+                Err(syn::Error::new(
                     input.span(),
                     format!(
                         "legacy syntax, remove `fmt =` and use `{}` instead",
@@ -168,28 +171,14 @@ impl FmtAttribute {
 }
 
 impl Parse for FmtAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let fmt_lit = input.parse()?;
-
-        if input.peek(syn::token::Comma) {
-            let _ = input.parse::<syn::token::Comma>()?;
-        }
-
-        let fmt_args = input.step(|cursor| {
-            let mut cursor = *cursor;
-            let arguments = iter::from_fn(|| {
-                let (arg, c) = FmtArgument::parse(cursor)?;
-                cursor = c;
-                Some(arg)
-            })
-            .collect();
-
-            Ok((arguments, cursor))
-        })?;
-
+    fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
-            lit: fmt_lit,
-            args: fmt_args,
+            lit: input.parse()?,
+            comma: input
+                .peek(syn::token::Comma)
+                .then(|| input.parse())
+                .transpose()?,
+            args: input.parse_terminated(FmtArgument::parse, token::Comma)?,
         })
     }
 }
@@ -197,10 +186,8 @@ impl Parse for FmtAttribute {
 impl ToTokens for FmtAttribute {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.lit.to_tokens(tokens);
-        for arg in &self.args {
-            syn::token::Comma(arg.span()).to_tokens(tokens);
-            arg.to_tokens(tokens);
-        }
+        self.comma.to_tokens(tokens);
+        self.args.to_tokens(tokens);
     }
 }
 
@@ -208,249 +195,42 @@ impl ToTokens for FmtAttribute {
 /// in a [`FmtAttribute`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct FmtArgument {
-    /// `identifier` [`Ident`].
-    alias: Option<Ident>,
+    /// `identifier =` [`Ident`].
+    alias: Option<(Ident, token::Eq)>,
 
-    /// `expression` [`FmtExpr`].
-    expr: FmtExpr,
+    /// `expression` [`Expr`].
+    expr: Expr,
 }
 
 impl FmtArgument {
-    /// Parses a [`FmtArgument`] and returns a new [`Cursor`], where parsing
-    /// can be continued.
+    /// Returns an `identifier` of the [named parameter][1].
     ///
-    /// Returns [`None`] in case of eof or trailing comma.
-    fn parse(mut cursor: Cursor<'_>) -> Option<(FmtArgument, Cursor<'_>)> {
-        let mut arg = FmtArgument::default();
-
-        if let Some((ident, c)) = cursor.ident() {
-            if let Some((_eq, c)) = c.punct().filter(|(p, _)| p.as_char() == '=') {
-                arg.alias = Some(ident);
-                cursor = c;
-            }
-        }
-
-        if let Some((ident, c)) = cursor.ident() {
-            if let Some(c) = c
-                .punct()
-                .and_then(|(p, c)| (p.as_char() == ',').then_some(c))
-                .or_else(|| c.eof().then_some(c))
-            {
-                arg.expr = FmtExpr::Ident(ident);
-                return Some((arg, c));
-            }
-        }
-
-        let (rest, c) = Self::parse_rest(cursor);
-        arg.expr.extend(rest);
-
-        (!arg.expr.is_empty()).then_some((arg, c))
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
+    fn alias(&self) -> Option<&Ident> {
+        self.alias.as_ref().map(|(ident, _)| ident)
     }
+}
 
-    /// Parses the rest, until the end of a [`FmtArgument`] (comma or eof),
-    /// in case simplest case of `(ident =)? ident(,|eof)` wasn't parsed.
-    fn parse_rest(mut cursor: Cursor<'_>) -> (TokenStream, Cursor<'_>) {
-        let mut out = TokenStream::new();
-
-        loop {
-            if let Some(extend) = Self::turbofish(cursor) {
-                cursor = extend(&mut out);
-                continue;
-            }
-            if let Some(extend) = Self::closure_args(cursor) {
-                cursor = extend(&mut out);
-                continue;
-            }
-            if let Some(extend) = Self::qself(cursor) {
-                cursor = extend(&mut out);
-                continue;
-            }
-
-            if let Some(c) = cursor
-                .punct()
-                .and_then(|(p, c)| (p.as_char() == ',').then_some(c))
-                .or_else(|| cursor.eof().then_some(cursor))
-            {
-                return (out, c);
-            }
-
-            let (tt, c) = cursor
-                .token_tree()
-                .unwrap_or_else(|| unreachable!("checked for eof"));
-            out.extend([tt]);
-            cursor = c;
-        }
-    }
-
-    /// Tries to parse `| (closure_arg),* |`.
-    fn closure_args<'a>(
-        cursor: Cursor<'a>,
-    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
-        let (open, c) = cursor.punct().filter(|(p, _)| p.as_char() == '|')?;
-
-        Some(move |stream: &mut TokenStream| {
-            stream.extend([TokenTree::Punct(open)]);
-            // We can ignore inner `|`, because only other place it can appear
-            // is in or pattern (ex. `Either::Left(v) | Either::Right(v)`),
-            // which must be parenthesized, so will be parsed as one
-            // `TokenTree`.
-            let (more, c) = Self::parse_until_closing('|', '|', c);
-            stream.extend(more);
-            c
+impl Parse for FmtArgument {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            alias: (input.peek(Ident) && input.peek2(token::Eq))
+                .then(|| Ok::<_, syn::Error>((input.parse()?, input.parse()?)))
+                .transpose()?,
+            expr: input.parse()?,
         })
-    }
-
-    /// Tries to parse `::< ... >`.
-    fn turbofish<'a>(
-        cursor: Cursor<'a>,
-    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
-        use proc_macro2::Spacing;
-
-        let (colon1, c) = cursor
-            .punct()
-            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
-        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
-        let (less, c) = c.punct().filter(|(p, _)| p.as_char() == '<')?;
-
-        Some(move |stream: &mut TokenStream| {
-            stream.extend([colon1, colon2, less].map(TokenTree::Punct));
-            let (more, c) = Self::parse_until_closing('<', '>', c);
-            stream.extend(more);
-            c
-        })
-    }
-
-    /// Tries to parse `< ... as ... >::`.
-    fn qself<'a>(
-        cursor: Cursor<'a>,
-    ) -> Option<impl FnOnce(&mut TokenStream) -> Cursor<'a> + 'a> {
-        use proc_macro2::Spacing;
-
-        let (less, c) = cursor.punct().filter(|(p, _)| p.as_char() == '<')?;
-        let (more, c) = Self::parse_until_closing('<', '>', c);
-        let (colon1, c) = c
-            .punct()
-            .filter(|(p, _)| p.as_char() == ':' && p.spacing() == Spacing::Joint)?;
-        let (colon2, c) = c.punct().filter(|(p, _)| p.as_char() == ':')?;
-
-        Some(move |stream: &mut TokenStream| {
-            stream.extend([less].map(TokenTree::Punct));
-            stream.extend(more);
-            stream.extend([colon1, colon2].map(TokenTree::Punct));
-            c
-        })
-    }
-
-    /// Parses until balanced amount of `open` and `close` [`TokenTree::Punct`]
-    /// or eof.
-    ///
-    /// [`Cursor`] should be pointing **right after** the first `open`ing.
-    fn parse_until_closing(
-        open: char,
-        close: char,
-        mut cursor: Cursor<'_>,
-    ) -> (TokenStream, Cursor<'_>) {
-        let mut out = TokenStream::new();
-        let mut count = 1;
-
-        while let Some((tt, c)) = cursor.token_tree().filter(|_| count != 0) {
-            match tt {
-                TokenTree::Punct(ref p) if p.as_char() == close => {
-                    count -= 1;
-                }
-                TokenTree::Punct(ref p) if p.as_char() == open => {
-                    count += 1;
-                }
-                _ => {}
-            }
-
-            out.extend([tt]);
-            cursor = c;
-        }
-
-        (out, cursor)
     }
 }
 
 impl ToTokens for FmtArgument {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        if let Some(alias) = &self.alias {
-            alias.to_tokens(tokens);
-            syn::token::Eq::default().to_tokens(tokens);
+        if let Some((ident, eq)) = &self.alias {
+            ident.to_tokens(tokens);
+            eq.to_tokens(tokens);
         }
         self.expr.to_tokens(tokens);
-    }
-}
-
-/// Representation of an expression being a [`FmtArgument`].
-///
-/// **NOTE**: This type is used instead of a [`syn::Expr`] to avoid using
-///           [`syn`]'s `full` feature significantly blowing up compilation times.
-#[derive(Debug)]
-enum FmtExpr {
-    /// [`Ident`].
-    Ident(Ident),
-
-    /// Plain [`TokenStream`].
-    TokenStream(TokenStream),
-}
-
-impl FmtExpr {
-    /// Returns an [`Ident`] in case this [`FmtExpr`] contains only it, or [`None`]
-    /// otherwise.
-    fn ident(&self) -> Option<&Ident> {
-        match self {
-            Self::Ident(i) => Some(i),
-            Self::TokenStream(_) => None,
-        }
-    }
-
-    /// Checks whether this [`FmtExpr`] is empty.
-    fn is_empty(&self) -> bool {
-        match self {
-            Self::Ident(_) => false,
-            Self::TokenStream(stream) => stream.is_empty(),
-        }
-    }
-}
-
-impl Default for FmtExpr {
-    fn default() -> Self {
-        Self::TokenStream(TokenStream::new())
-    }
-}
-
-impl ToTokens for FmtExpr {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Self::Ident(ident) => ident.to_tokens(tokens),
-            Self::TokenStream(ts) => ts.to_tokens(tokens),
-        }
-    }
-}
-
-impl Extend<TokenTree> for FmtExpr {
-    fn extend<T: IntoIterator<Item = TokenTree>>(&mut self, iter: T) {
-        *self = iter
-            .into_iter()
-            .fold(mem::take(self), |this, tt| match (this, tt) {
-                (Self::TokenStream(stream), TokenTree::Ident(ident))
-                    if stream.is_empty() =>
-                {
-                    Self::Ident(ident)
-                }
-                (Self::TokenStream(mut stream), tt) => {
-                    stream.extend([tt]);
-                    Self::TokenStream(stream)
-                }
-                (Self::Ident(ident), tt) => {
-                    let mut stream = ident.into_token_stream();
-                    stream.extend([tt]);
-                    Self::TokenStream(stream)
-                }
-            });
     }
 }
 

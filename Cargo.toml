@@ -33,6 +33,7 @@ rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
 rustversion = "1.0"
+static_assertions = "1.1"
 trybuild = "1.0.56"
 
 [badges]
@@ -229,7 +230,7 @@ required-features = ["try_unwrap"]
 [[test]]
 name = "compile_fail"
 path = "tests/compile_fail/mod.rs"
-required-features = ["debug", "display"]
+required-features = ["debug", "display", "from"]
 
 [[test]]
 name = "no_std"

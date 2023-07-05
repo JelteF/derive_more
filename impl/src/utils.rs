@@ -1111,7 +1111,7 @@ fn parse_punctuated_nested_meta(
 // TODO: Remove this eventually, once all macros migrate to
 //       custom typed attributes parsing.
 /// Polyfill for [`syn`] 1.x AST.
-mod polyfill {
+pub(crate) mod polyfill {
     use proc_macro2::TokenStream;
     use quote::ToTokens;
     use syn::{
@@ -1121,7 +1121,7 @@ mod polyfill {
     };
 
     #[derive(Clone)]
-    pub(super) enum PathOrKeyword {
+    pub(crate) enum PathOrKeyword {
         Path(syn::Path),
         Keyword(syn::Ident),
     }
@@ -1173,7 +1173,7 @@ mod polyfill {
     }
 
     #[derive(Clone)]
-    pub(super) struct MetaList {
+    pub(crate) struct MetaList {
         pub(super) path: PathOrKeyword,
         pub(super) tokens: TokenStream,
     }
@@ -1205,7 +1205,7 @@ mod polyfill {
     }
 
     #[derive(Clone)]
-    pub(super) enum Meta {
+    pub(crate) enum Meta {
         Path(PathOrKeyword),
         List(MetaList),
     }
@@ -1236,7 +1236,7 @@ mod polyfill {
     }
 
     #[derive(Clone)]
-    pub(super) enum NestedMeta {
+    pub(crate) enum NestedMeta {
         Meta(Meta),
         Lit(syn::Lit),
     }

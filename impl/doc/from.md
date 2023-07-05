@@ -2,16 +2,134 @@
 
 The point of deriving this type is that it makes it easy to create a new
 instance of the type by using the `.into()` method on the value(s) that it
-should contain.
-This is done by implementing the `From` trait for the type that is passed to the
-derive.
+should contain. This is done by implementing the `From` trait for the type
+that is passed to the derive.
+
+
+
+
+## Structs
+
 For structs with a single field you can call `.into()` on the desired content
 itself after deriving `From`.
+
+```rust
+# use derive_more::From;
+#
+#[derive(Debug, From, PartialEq)]
+struct Int(i32);
+
+assert_eq!(Int(2), 2.into());
+```
+
 For structs that have multiple fields `.into()` needs to be called on a tuple
 containing the desired content for each field.
-For enums `.into()` works for each variant as if they were structs.
-This way the variant can not only be initialized, but also be chosen based on
-the type that `.into()` is called on.
+
+```rust
+# use derive_more::From;
+#
+#[derive(Debug, From, PartialEq)]
+struct Point(i32, i32);
+
+assert_eq!(Point(1, 2), (1, 2).into());
+```
+
+To specify concrete types to derive convert from use `#[from(<types>)]`.
+
+```rust
+# use std::borrow::Cow;
+#
+# use derive_more::From;
+#
+#[derive(Debug, From, PartialEq)]
+#[from(Cow<'static, str>, String, &'static str)]
+struct Str(Cow<'static, str>);
+
+assert_eq!(Str("&str".into()), "&str".into());
+assert_eq!(Str("String".into()), "String".to_owned().into());
+assert_eq!(Str("Cow".into()), Cow::Borrowed("Cow").to_owned().into());
+
+#[derive(Debug, From, PartialEq)]
+#[from((i16, i16), (i32, i32))]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+assert_eq!(Point { x: 1_i32, y: 2_i32 }, (1_i16, 2_i16).into());
+assert_eq!(Point { x: 3_i32, y: 4_i32 }, (3_i32, 4_i32).into());
+```
+
+Also, you can forward implementation to the inner type, which means deriving `From` for any type, that derives `From`
+inner type.
+
+```rust
+# use std::borrow::Cow;
+#
+# use derive_more::From;
+#
+#[derive(Debug, From, PartialEq)]
+#[from(forward)]
+struct Str {
+    inner: Cow<'static, str>,
+}
+
+assert_eq!(Str { inner: "&str".into() }, "&str".into());
+assert_eq!(Str { inner: "String".into() }, "String".to_owned().into());
+assert_eq!(Str { inner: "Cow".into() }, Cow::Borrowed("Cow").to_owned().into());
+```
+
+
+
+
+## Enums
+
+For enums `.into()` works for each variant as if they were structs. This
+includes specifying concrete types via `#[from(<types>)]` or forwarding
+implementation with `#[from(forward)]`.
+
+```rust
+# use derive_more::From;
+#
+#[derive(Debug, From, PartialEq)]
+enum IntOrPoint {
+    Int(i32),
+    Point {
+        x: i32,
+        y: i32,
+    },
+}
+
+assert_eq!(IntOrPoint::Int(1), 1.into());
+assert_eq!(IntOrPoint::Point { x: 1, y: 2 }, (1, 2).into());
+```
+
+By default, `From` is generated for every enum variant, but you can skip some
+variants via `#[from(skip)]` or only concrete fields via `#[from]`.
+
+```rust
+# mod from {
+# use derive_more::From;
+#[derive(Debug, From, PartialEq)]
+enum Int {
+    #[from]
+    Derived(i32),
+    NotDerived(i32),
+}
+# }
+
+// Is equivalent to:
+
+# mod skip {
+# use derive_more::From;
+#[derive(Debug, From, PartialEq)]
+enum Int {
+    Derived(i32),
+    #[from(skip)]
+    NotDerived(i32),
+}
+# }
+```
 
 
 
@@ -53,9 +171,9 @@ enum MyEnum2 {
 // And even specify additional conversions for them
 #[derive(From, PartialEq)]
 enum MyEnum3 {
-    #[from(types(i8))]
+    #[from(i8, i32)]
     SmallInt(i32),
-    #[from(types(i16))]
+    #[from(i16, i64)]
     NamedBigInt { int: i64 },
     NoFromImpl(i64),
 }
@@ -68,197 +186,3 @@ assert!(MyEnum::NamedBigInt{int: 123} == 123i64.into());
 assert!(MyEnum3::SmallInt(123) == 123i8.into());
 assert!(MyEnum3::NamedBigInt{int: 123} == 123i16.into());
 ```
-
-
-
-
-## Tuple structs
-
-When deriving for a tuple struct with a single field (i.e. a newtype) like this:
-
-```rust
-# use derive_more::From;
-#
-#[derive(From)]
-struct MyInt(i32);
-```
-
-Code like this will be generated:
-
-```rust
-# struct MyInt(i32);
-impl ::core::convert::From<(i32)> for MyInt {
-    fn from(original: (i32)) -> MyInt {
-        MyInt(original)
-    }
-}
-```
-
-The behaviour is a bit different when deriving for a struct with multiple
-fields. For instance when deriving for a tuple struct with two fields like this:
-
-```rust
-# use derive_more::From;
-#
-#[derive(From)]
-struct MyInts(i32, i32);
-```
-
-Code like this will be generated:
-
-```rust
-# struct MyInts(i32, i32);
-impl ::core::convert::From<(i32, i32)> for MyInts {
-    fn from(original: (i32, i32)) -> MyInts {
-        MyInts(original.0, original.1)
-    }
-}
-```
-
-
-
-
-## Regular structs
-
-For regular structs almost the same code is generated as for tuple structs
-except in the way the field values are assigned to the new struct.
-When deriving for a regular struct with a single field like this:
-
-```rust
-# use derive_more::From;
-#
-#[derive(From)]
-struct Point1D {
-    x: i32,
-}
-```
-
-Code like this will be generated:
-
-```rust
-# struct Point1D {
-#     x: i32,
-# }
-impl ::core::convert::From<(i32)> for Point1D {
-    fn from(original: (i32)) -> Point1D {
-        Point1D { x: original }
-    }
-}
-```
-
-The behaviour is a bit different when deriving for a struct with multiple
-fields. For instance when deriving for a tuple struct with two fields like this:
-
-```rust
-# use derive_more::From;
-#
-#[derive(From)]
-struct Point2D {
-    x: i32,
-    y: i32,
-}
-```
-
-Code like this will be generated:
-
-```rust
-# struct Point2D {
-#     x: i32,
-#     y: i32,
-# }
-impl ::core::convert::From<(i32, i32)> for Point2D {
-    fn from(original: (i32, i32)) -> Point2D {
-        Point2D {
-            x: original.0,
-            y: original.1,
-        }
-    }
-}
-```
-
-
-
-
-## Enums
-
-When deriving `From` for enums a new `impl` will be generated for each of its
-variants.
-If you don't want this for a variant you can put the `#[from(ignore)]` attribute
-on that variant. One case where this can be useful is when two variants would
-overlap.
-For instance when deriving `From` for the following enum:
-
-```rust
-# use derive_more::From;
-#
-#[derive(From)]
-enum MixedInts {
-    SmallInt(i32),
-    NamedBigInt { int: i64 },
-    TwoSmallInts(i32, i32),
-    NamedBigInts { x: i64, y: i64 },
-    #[from(ignore)]
-    Unsigned(u32),
-    NamedUnsigned { x: u32 },
-}
-```
-
-Code like this will be generated:
-
-```rust
-# enum MixedInts {
-#     SmallInt(i32),
-#     NamedBigInt { int: i64 },
-#     TwoSmallInts(i32, i32),
-#     NamedBigInts { x: i64, y: i64 },
-#     Unsigned(u32),
-#     NamedUnsigned { x: u32 },
-# }
-impl ::core::convert::From<(i32)> for MixedInts {
-    #[allow(unused_variables)]
-    #[inline]
-    fn from(original: (i32)) -> MixedInts {
-        MixedInts::SmallInt(original)
-    }
-}
-
-impl ::core::convert::From<(i64)> for MixedInts {
-    #[allow(unused_variables)]
-    #[inline]
-    fn from(original: (i64)) -> MixedInts {
-        MixedInts::NamedBigInt { int: original }
-    }
-}
-
-impl ::core::convert::From<(i32, i32)> for MixedInts {
-    #[allow(unused_variables)]
-    #[inline]
-    fn from(original: (i32, i32)) -> MixedInts {
-        MixedInts::TwoSmallInts(original.0, original.1)
-    }
-}
-
-impl ::core::convert::From<(i64, i64)> for MixedInts {
-    #[allow(unused_variables)]
-    #[inline]
-    fn from(original: (i64, i64)) -> MixedInts {
-        MixedInts::NamedBigInts {
-            x: original.0,
-            y: original.1,
-        }
-    }
-}
-
-impl ::core::convert::From<(u32)> for MixedInts {
-    #[allow(unused_variables)]
-    #[inline]
-    fn from(original: (u32)) -> MixedInts {
-        MixedInts::NamedUnsigned { x: original }
-    }
-}
-```
-
-Without the `#[from(ignore)]` on `Unsigned`, no `impl` would be generated for
-`Unsigned` and `NamedUnsigned`. The reason for this is that it would be
-impossible for the compiler to know which implementation to choose, since they
-would both implement `From<u32>`.

@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `From` derive doesn't derive `From<()>` for enum variants without any
   fields anymore. This feature was removed because it was considered useless in
   practice.
+- The `From` derive now uses `#[from(<types>)]` instead of `#[from(types(<types>))]`
+  and ignores field type itself.
 
 ### Added
 
