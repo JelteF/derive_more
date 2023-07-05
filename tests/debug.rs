@@ -1,7 +1,14 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
 
 mod structs {
     mod unit {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -25,6 +32,9 @@ mod structs {
     }
 
     mod single_field {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -47,6 +57,9 @@ mod structs {
         }
 
         mod str_field {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -74,6 +87,9 @@ mod structs {
         }
 
         mod interpolated_field {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -101,6 +117,9 @@ mod structs {
         }
 
         mod ignore {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -123,6 +142,9 @@ mod structs {
     }
 
     mod multi_field {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -161,6 +183,9 @@ mod structs {
         }
 
         mod str_field {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -204,6 +229,9 @@ mod structs {
         }
 
         mod interpolated_field {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -247,6 +275,9 @@ mod structs {
         }
 
         mod ignore {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
             use derive_more::Debug;
 
             #[derive(Debug)]
@@ -295,11 +326,14 @@ mod enums {
         #[derive(Debug)]
         enum Void {}
 
-        const fn assert<T: std::fmt::Debug>() {}
+        const fn assert<T: core::fmt::Debug>() {}
         const _: () = assert::<Void>();
     }
 
     mod unit_variant {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -321,6 +355,9 @@ mod enums {
     }
 
     mod single_field_variant {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -407,6 +444,9 @@ mod enums {
     }
 
     mod multi_field_variant {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -532,6 +572,9 @@ mod enums {
 }
 
 mod generic {
+    #[cfg(not(feature = "std"))]
+    use alloc::format;
+
     use derive_more::Debug;
 
     struct NotDebug;
@@ -818,6 +861,9 @@ mod generic {
     }
 
     mod associated_type_field_enumerator {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         trait Trait {
@@ -875,6 +921,9 @@ mod generic {
     }
 
     mod complex_type_field_enumerator {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -931,6 +980,9 @@ mod generic {
     }
 
     mod reference {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[test]
@@ -955,6 +1007,9 @@ mod generic {
     }
 
     mod indirect {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -976,6 +1031,9 @@ mod generic {
     }
 
     mod bound {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[test]

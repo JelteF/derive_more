@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use derive_more::Sum;
 
 #[derive(Sum)]

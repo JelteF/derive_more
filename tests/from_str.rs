@@ -1,4 +1,11 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::string::ToString;
 
 use derive_more::FromStr;
 
