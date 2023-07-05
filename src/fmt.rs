@@ -34,12 +34,13 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// # Example
     ///
     /// ```rust
+    /// use core::fmt;
     /// use derive_more::__private::debug_tuple;
     ///
     /// struct Foo(i32, String);
     ///
-    /// impl core::fmt::Debug for Foo {
-    ///     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    /// impl fmt::Debug for Foo {
+    ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
     ///         debug_tuple(fmt, "Foo")
     ///             .field(&self.0) // We add the first field.
     ///             .field(&self.1) // We add the second field.
@@ -78,12 +79,13 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// # Example
     ///
     /// ```
+    /// use core::fmt;
     /// use derive_more::__private::debug_tuple;
     ///
     /// struct Foo(i32, String);
     ///
-    /// impl core::fmt::Debug for Foo {
-    ///     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    /// impl fmt::Debug for Foo {
+    ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
     ///         debug_tuple(fmt, "Foo")
     ///             .field(&self.0)
     ///             .field(&self.1)
@@ -116,12 +118,13 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// # Example
     ///
     /// ```rust
+    /// use core::fmt;
     /// use derive_more::__private::debug_tuple;
     ///
     /// struct Bar(i32, f32);
     ///
-    /// impl core::fmt::Debug for Bar {
-    ///     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    /// impl fmt::Debug for Bar {
+    ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
     ///         debug_tuple(fmt, "Bar")
     ///             .field(&self.0)
     ///             .finish_non_exhaustive() // Show that some other field(s) exist.
