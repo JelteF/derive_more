@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(all(not(feature = "std"), feature = "error"), feature(error_in_core))]
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
 //! [`From`]: crate::From
@@ -77,6 +78,11 @@ mod vendor;
 #[doc(hidden)]
 #[cfg(feature = "error")]
 pub mod __private {
+    #[cfg(not(feature = "std"))]
+    pub use ::core::error::Error;
+    #[cfg(feature = "std")]
+    pub use ::std::error::Error;
+
     pub use crate::vendor::thiserror::aserror::AsDynError;
 }
 

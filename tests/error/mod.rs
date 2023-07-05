@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use core::error::Error;
+#[cfg(feature = "std")]
 use std::error::Error;
 
 use derive_more::Error;
@@ -29,17 +32,17 @@ use derive_more::Error;
 /// ```
 macro_rules! derive_display {
     (@fmt) => {
-        fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             write!(f, "")
         }
     };
     ($type:ident) => {
-        impl ::std::fmt::Display for $type {
+        impl ::core::fmt::Display for $type {
             derive_display!(@fmt);
         }
     };
     ($type:ident, $($type_parameters:ident),*) => {
-        impl<$($type_parameters),*> ::std::fmt::Display for $type<$($type_parameters),*> {
+        impl<$($type_parameters),*> ::core::fmt::Display for $type<$($type_parameters),*> {
             derive_display!(@fmt);
         }
     };
@@ -50,7 +53,7 @@ mod derives_for_generic_enums_with_source;
 mod derives_for_generic_structs_with_source;
 mod derives_for_structs_with_source;
 
-#[cfg(nightly)]
+#[cfg(all(feature = "std", nightly))]
 mod nightly;
 
 derive_display!(SimpleErr);

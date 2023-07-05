@@ -116,6 +116,10 @@ jobs:
 
   test-features:
     name: test features
+    strategy:
+      fail-fast: false
+      matrix:
+        std: ["std", "no_std"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -128,7 +132,7 @@ jobs:
           go install github.com/pelletier/go-toml/cmd/tomljson@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      - run: ci/test_all_features.sh
+      - run: ci/test_all_features.sh ${{ matrix.std }}
 
 
 
