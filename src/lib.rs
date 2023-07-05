@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(all(not(feature = "std"), feature = "error"), feature(error_in_core))]
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
 //! [`From`]: crate::From
@@ -42,6 +40,8 @@
     ),
     doc = include_str!("../README.md")
 )]
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(all(not(feature = "std"), feature = "error"), feature(error_in_core))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
 #![forbid(non_ascii_idents, unsafe_code)]
@@ -61,7 +61,7 @@ mod try_unwrap;
 pub use self::try_unwrap::TryUnwrapError;
 
 #[cfg(feature = "debug")]
-pub mod fmt;
+mod fmt;
 
 #[cfg(any(feature = "add", feature = "not"))]
 pub mod ops;
@@ -76,14 +76,17 @@ mod vendor;
 
 // Not public API.
 #[doc(hidden)]
-#[cfg(feature = "error")]
 pub mod __private {
-    #[cfg(not(feature = "std"))]
+    #[cfg(all(feature = "error", not(feature = "std")))]
     pub use ::core::error::Error;
-    #[cfg(feature = "std")]
+    #[cfg(all(feature = "error", feature = "std"))]
     pub use ::std::error::Error;
 
+    #[cfg(feature = "error")]
     pub use crate::vendor::thiserror::aserror::AsDynError;
+
+    #[cfg(feature = "debug")]
+    pub use crate::fmt::{debug_tuple, DebugTuple};
 }
 
 #[cfg(not(any(

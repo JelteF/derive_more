@@ -1,7 +1,7 @@
 //! [`core::fmt::DebugTuple`] reimplementation with
 //! [`DebugTuple::finish_non_exhaustive()`] method.
 
-pub use core::fmt::{Debug, Error, Formatter, Result, Write};
+use core::fmt::{Debug, Formatter, Result, Write};
 
 /// Same as [`core::fmt::DebugTuple`], but with
 /// [`DebugTuple::finish_non_exhaustive()`] method.
@@ -34,13 +34,14 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// # Example
     ///
     /// ```rust
-    /// use derive_more::fmt;
+    /// use core::fmt;
+    /// use derive_more::__private::debug_tuple;
     ///
     /// struct Foo(i32, String);
     ///
     /// impl fmt::Debug for Foo {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         fmt::debug_tuple(fmt, "Foo")
+    ///         debug_tuple(fmt, "Foo")
     ///             .field(&self.0) // We add the first field.
     ///             .field(&self.1) // We add the second field.
     ///             .finish() // We're good to go!
@@ -78,13 +79,14 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// # Example
     ///
     /// ```
-    /// use derive_more::fmt;
+    /// use core::fmt;
+    /// use derive_more::__private::debug_tuple;
     ///
     /// struct Foo(i32, String);
     ///
     /// impl fmt::Debug for Foo {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         fmt::debug_tuple(fmt, "Foo")
+    ///         debug_tuple(fmt, "Foo")
     ///             .field(&self.0)
     ///             .field(&self.1)
     ///             .finish() // You need to call it to "finish" the
@@ -116,13 +118,14 @@ impl<'a, 'b: 'a> DebugTuple<'a, 'b> {
     /// # Example
     ///
     /// ```rust
-    /// use derive_more::fmt;
+    /// use core::fmt;
+    /// use derive_more::__private::debug_tuple;
     ///
     /// struct Bar(i32, f32);
     ///
     /// impl fmt::Debug for Bar {
     ///     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    ///         fmt::debug_tuple(fmt, "Bar")
+    ///         debug_tuple(fmt, "Bar")
     ///             .field(&self.0)
     ///             .finish_non_exhaustive() // Show that some other field(s) exist.
     ///     }
