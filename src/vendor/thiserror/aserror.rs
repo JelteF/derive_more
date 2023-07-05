@@ -1,5 +1,9 @@
+#[cfg(not(feature = "std"))]
+use core::error::Error;
+#[cfg(feature = "std")]
 use std::error::Error;
-use std::panic::UnwindSafe;
+
+use core::panic::UnwindSafe;
 
 pub trait AsDynError<'a>: Sealed {
     fn as_dyn_error(&self) -> &(dyn Error + 'a);

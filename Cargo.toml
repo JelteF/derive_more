@@ -28,6 +28,9 @@ members = ["impl"]
 [dependencies]
 derive_more-impl = { version = "=0.99.17", path = "impl" }
 
+[build-dependencies]
+rustc_version = { version = "0.4", optional = true }
+
 [dev-dependencies]
 rustversion = "1.0"
 trybuild = "1.0.56"
@@ -50,7 +53,7 @@ debug = ["derive_more-impl/debug"]
 deref = ["derive_more-impl/deref"]
 deref_mut = ["derive_more-impl/deref_mut"]
 display = ["derive_more-impl/display"]
-error = ["derive_more-impl/error", "std"]
+error = ["derive_more-impl/error"]
 from = ["derive_more-impl/from"]
 from_str = ["derive_more-impl/from_str"]
 index = ["derive_more-impl/index"]
@@ -96,7 +99,7 @@ full = [
     "try_unwrap",
 ]
 
-testing-helpers = ["derive_more-impl/testing-helpers"]
+testing-helpers = ["derive_more-impl/testing-helpers", "dep:rustc_version"]
 
 [[test]]
 name = "add_assign"
@@ -151,7 +154,7 @@ required-features = ["display"]
 [[test]]
 name = "error"
 path = "tests/error_tests.rs"
-required-features = ["error", "std"]
+required-features = ["error"]
 
 [[test]]
 name = "from"
