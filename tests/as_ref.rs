@@ -1,7 +1,12 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)]
 
-use std::path::PathBuf;
-use std::ptr;
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::{string::String, vec, vec::Vec};
+use core::ptr;
 
 use derive_more::AsRef;
 
@@ -39,36 +44,43 @@ fn single_field_struct() {
     assert!(ptr::eq(&item.first, item.as_ref()));
 }
 
-#[derive(AsRef)]
-struct MultiFieldTuple(#[as_ref] String, #[as_ref] PathBuf, Vec<usize>);
+#[cfg(feature = "std")]
+mod pathbuf {
+    use std::path::PathBuf;
 
-#[test]
-fn multi_field_tuple() {
-    let item = MultiFieldTuple("test".into(), PathBuf::new(), vec![]);
+    use super::*;
 
-    assert!(ptr::eq(&item.0, item.as_ref()));
-    assert!(ptr::eq(&item.1, item.as_ref()));
-}
+    #[derive(AsRef)]
+    struct MultiFieldTuple(#[as_ref] String, #[as_ref] PathBuf, Vec<usize>);
 
-#[derive(AsRef)]
-struct MultiFieldStruct {
-    #[as_ref]
-    first: String,
-    #[as_ref]
-    second: PathBuf,
-    third: Vec<usize>,
-}
+    #[test]
+    fn multi_field_tuple() {
+        let item = MultiFieldTuple("test".into(), PathBuf::new(), vec![]);
 
-#[test]
-fn multi_field_struct() {
-    let item = MultiFieldStruct {
-        first: "test".into(),
-        second: PathBuf::new(),
-        third: vec![],
-    };
+        assert!(ptr::eq(&item.0, item.as_ref()));
+        assert!(ptr::eq(&item.1, item.as_ref()));
+    }
 
-    assert!(ptr::eq(&item.first, item.as_ref()));
-    assert!(ptr::eq(&item.second, item.as_ref()));
+    #[derive(AsRef)]
+    struct MultiFieldStruct {
+        #[as_ref]
+        first: String,
+        #[as_ref]
+        second: PathBuf,
+        third: Vec<usize>,
+    }
+
+    #[test]
+    fn multi_field_struct() {
+        let item = MultiFieldStruct {
+            first: "test".into(),
+            second: PathBuf::new(),
+            third: vec![],
+        };
+
+        assert!(ptr::eq(&item.first, item.as_ref()));
+        assert!(ptr::eq(&item.second, item.as_ref()));
+    }
 }
 
 #[derive(AsRef)]

@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use derive_more::{
     Add, AddAssign, Binary, BitAnd, BitOr, BitXor, Constructor, Deref, DerefMut,
     Display, Div, From, FromStr, Index, IndexMut, Into, IntoIterator, Mul, MulAssign,
