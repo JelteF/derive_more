@@ -268,7 +268,7 @@ impl<'a> Expansion<'a> {
                 let ident_str = self.ident.to_string();
 
                 let out = quote! {
-                    &mut ::derive_more::fmt::debug_tuple(
+                    &mut ::derive_more::__private::debug_tuple(
                         __derive_more_f,
                         #ident_str,
                     )
@@ -281,7 +281,7 @@ impl<'a> Expansion<'a> {
                             Ok::<_, Error>(out)
                         }
                         Some(FieldAttribute::Fmt(fmt)) => Ok(quote! {
-                            ::derive_more::fmt::DebugTuple::field(
+                            ::derive_more::__private::DebugTuple::field(
                                 #out,
                                 &::core::format_args!(#fmt),
                             )
@@ -289,15 +289,15 @@ impl<'a> Expansion<'a> {
                         None => {
                             let ident = format_ident!("_{i}");
                             Ok(quote! {
-                                ::derive_more::fmt::DebugTuple::field(#out, #ident)
+                                ::derive_more::__private::DebugTuple::field(#out, #ident)
                             })
                         }
                     },
                 )?;
                 Ok(if exhaustive {
-                    quote! { ::derive_more::fmt::DebugTuple::finish(#out) }
+                    quote! { ::derive_more::__private::DebugTuple::finish(#out) }
                 } else {
-                    quote! { ::derive_more::fmt::DebugTuple::finish_non_exhaustive(#out) }
+                    quote! { ::derive_more::__private::DebugTuple::finish_non_exhaustive(#out) }
                 })
             }
             syn::Fields::Named(named) => {
