@@ -9,13 +9,13 @@ use syn::{
     parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Error, Ident, Result,
+    token, Ident,
 };
 
 use crate::{parsing::Type, utils::polyfill};
 
 /// Expands a [`From`] derive macro.
-pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
+pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     match &input.data {
         syn::Data::Struct(data) => Expansion {
             attrs: StructAttribute::parse_attrs(&input.attrs, &data.fields)?
@@ -48,7 +48,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
                     }
                     Ok(attrs)
                 })
-                .collect::<Result<Vec<_>>>()?;
+                .collect::<syn::Result<Vec<_>>>()?;
 
             data.variants
                 .iter()
@@ -66,7 +66,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
                 })
                 .collect()
         }
-        syn::Data::Union(data) => Err(Error::new(
+        syn::Data::Union(data) => Err(syn::Error::new(
             data.union_token.span(),
             "`From` cannot be derived for unions",
         )),
@@ -88,11 +88,11 @@ enum StructAttribute {
 }
 
 impl StructAttribute {
-    /// Parses [`StructAttribute`] from the provided [`syn::Attribute`]s.
+    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         fields: &syn::Fields,
-    ) -> Result<Option<Self>> {
+    ) -> syn::Result<Option<Self>> {
         Ok(attrs
             .as_ref()
             .iter()
@@ -110,9 +110,9 @@ impl StructAttribute {
                         Ok(Some((path, StructAttribute::Types(tys))))
                     }
                     (None, field_attr) => Ok(Some((attr.path(), field_attr))),
-                    _ => Err(Error::new(
+                    _ => Err(syn::Error::new(
                         attr.path().span(),
-                        "Only single `#[from(...)]` attribute is allowed here",
+                        "only single `#[from(...)]` attribute is allowed here",
                     )),
                 }
             })?
@@ -120,7 +120,7 @@ impl StructAttribute {
     }
 
     /// Parses single [`StructAttribute`].
-    fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
+    fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> syn::Result<Self> {
         let ahead = input.fork();
         match ahead.parse::<syn::Path>() {
             Ok(p) if p.is_ident("forward") => {
@@ -158,11 +158,11 @@ enum VariantAttribute {
 }
 
 impl VariantAttribute {
-    /// Parses [`VariantAttribute`] from the provided [`syn::Attribute`]s.
+    /// Parses a [`VariantAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         fields: &syn::Fields,
-    ) -> Result<Option<Self>> {
+    ) -> syn::Result<Option<Self>> {
         Ok(attrs
             .as_ref()
             .iter()
@@ -170,9 +170,9 @@ impl VariantAttribute {
             .try_fold(None, |mut attrs, attr| {
                 let field_attr = Self::parse_attr(attr, fields)?;
                 if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
-                    Err(Error::new(
+                    Err(syn::Error::new(
                         path.span(),
-                        "Only single `#[from(...)]` attribute is allowed here",
+                        "only single `#[from(...)]` attribute is allowed here",
                     ))
                 } else {
                     Ok(attrs)
@@ -181,8 +181,8 @@ impl VariantAttribute {
             .map(|(_, attr)| attr))
     }
 
-    /// Parses [`VariantAttribute`] from the single provided [`syn::Attribute`].
-    fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> Result<Self> {
+    /// Parses a [`VariantAttribute`] from the single provided [`syn::Attribute`].
+    fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
             return Ok(Self::From);
         }
@@ -218,12 +218,13 @@ impl From<StructAttribute> for VariantAttribute {
     }
 }
 
-/// Helper struct to generate [`From`] implementation a struct or enum.
+/// Expansion of a macro for generating [`From`] implementation of a struct or
+/// enum.
 struct Expansion<'a> {
     /// [`From`] attributes.
     ///
-    /// As [`VariantAttribute`] is superset of [`StructAttribute`], we use it
-    /// for both derives.
+    /// As a [`VariantAttribute`] is superset of a [`StructAttribute`], we use
+    /// it for both derives.
     attrs: Option<&'a VariantAttribute>,
 
     /// Struct or enum [`Ident`].
@@ -247,8 +248,8 @@ struct Expansion<'a> {
 }
 
 impl<'a> Expansion<'a> {
-    /// Expands [`From`] implementations for struct or enum variant.
-    fn expand(&self) -> Result<TokenStream> {
+    /// Expands [`From`] implementations for a struct or an enum variant.
+    fn expand(&self) -> syn::Result<TokenStream> {
         let ident = self.ident;
         let field_tys = self.fields.iter().map(|f| &f.ty).collect::<Vec<_>>();
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
@@ -275,8 +276,7 @@ impl<'a> Expansion<'a> {
                     Ok(quote! {
                         #[automatically_derived]
                         impl #impl_gens ::core::convert::From<#ty>
-                            for #ident #ty_gens
-                            #where_clause
+                         for #ident #ty_gens #where_clause
                         {
                             #[inline]
                             fn from(value: #ty) -> Self {
@@ -298,8 +298,7 @@ impl<'a> Expansion<'a> {
                 Ok(quote! {
                     #[automatically_derived]
                     impl #impl_gens ::core::convert::From<(#( #field_tys ),*)>
-                        for #ident #ty_gens
-                        #where_clause
+                     for #ident #ty_gens #where_clause
                     {
                         #[inline]
                         fn from(value: (#( #field_tys ),*)) -> Self {
@@ -343,8 +342,7 @@ impl<'a> Expansion<'a> {
                 Ok(quote! {
                     #[automatically_derived]
                     impl #impl_gens ::core::convert::From<(#( #gen_idents ),*)>
-                        for #ident #ty_gens
-                        #where_clause
+                     for #ident #ty_gens #where_clause
                     {
                         #[inline]
                         fn from(value: (#( #gen_idents ),*)) -> Self {
@@ -359,8 +357,8 @@ impl<'a> Expansion<'a> {
         }
     }
 
-    /// Expands fields initialization wrapped into [`token::Brace`] in case of
-    /// [`syn::FieldsNamed`] or [`token::Paren`] in case of
+    /// Expands fields initialization wrapped into [`token::Brace`]s in case of
+    /// [`syn::FieldsNamed`], or [`token::Paren`] in case of
     /// [`syn::FieldsUnnamed`].
     fn expand_fields(
         &self,
@@ -411,19 +409,19 @@ impl<'a> Expansion<'a> {
             .unwrap_or_default()
     }
 
-    /// Validates [`Type`] against [`syn::Fields`].
+    /// Validates the provided [`Type`] against [`syn::Fields`].
     fn validate_type<'t>(
         &self,
         ty: &'t Type,
-    ) -> Result<impl Iterator<Item = &'t TokenStream>> {
+    ) -> syn::Result<impl Iterator<Item = &'t TokenStream>> {
         match ty {
             Type::Tuple { items, .. } if self.fields.len() > 1 => {
                 match self.fields.len().cmp(&items.len()) {
                     cmp::Ordering::Greater => {
-                        return Err(Error::new(
+                        return Err(syn::Error::new(
                             ty.span(),
                             format!(
-                                "Wrong tuple length: expected {}, found {}. \
+                                "wrong tuple length: expected {}, found {}. \
                                  Consider adding {} more type{}: `({})`",
                                 self.fields.len(),
                                 items.len(),
@@ -446,10 +444,10 @@ impl<'a> Expansion<'a> {
                         ));
                     }
                     cmp::Ordering::Less => {
-                        return Err(Error::new(
+                        return Err(syn::Error::new(
                             ty.span(),
                             format!(
-                                "Wrong tuple length: expected {}, found {}. \
+                                "wrong tuple length: expected {}, found {}. \
                                  Consider removing last {} type{}: `({})`",
                                 self.fields.len(),
                                 items.len(),
@@ -473,10 +471,10 @@ impl<'a> Expansion<'a> {
             }
             Type::Other(other) if self.fields.len() > 1 => {
                 if self.fields.len() > 1 {
-                    return Err(Error::new(
+                    return Err(syn::Error::new(
                         other.span(),
                         format!(
-                            "Expected tuple: `({}, {})`",
+                            "expected tuple: `({}, {})`",
                             other,
                             (0..(self.fields.len() - 1))
                                 .map(|_| "_")
@@ -522,12 +520,12 @@ where
     }
 }
 
-/// Constructs [`Error`] for legacy syntax: `#[from(types(i32, "&str"))]`.
+/// Constructs a [`syn::Error`] for legacy syntax: `#[from(types(i32, "&str"))]`.
 fn legacy_error<T>(
     tokens: ParseStream<'_>,
     span: Span,
     fields: &syn::Fields,
-) -> Result<T> {
+) -> syn::Result<T> {
     let content;
     syn::parenthesized!(content in tokens);
 
@@ -578,7 +576,7 @@ fn legacy_error<T>(
         .collect::<Vec<_>>()
         .join(", ");
 
-    Err(Error::new(
+    Err(syn::Error::new(
         span,
         format!("legacy syntax, remove `types` and use `{types}` instead"),
     ))

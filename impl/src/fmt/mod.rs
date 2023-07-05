@@ -14,7 +14,7 @@ use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Error, Ident, Result,
+    token, Ident,
 };
 
 use crate::parsing::Expr;
@@ -25,7 +25,7 @@ struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
 
 impl BoundsAttribute {
     /// Errors in case legacy syntax is encountered: `bound = "..."`.
-    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
         let fork = input.fork();
 
         let path = fork
@@ -40,7 +40,7 @@ impl BoundsAttribute {
                     _ => None,
                 })
                 .map_or(Ok(()), |bound| {
-                    Err(Error::new(
+                    Err(syn::Error::new(
                         input.span(),
                         format!("legacy syntax, use `bound({bound})` instead"),
                     ))
@@ -51,7 +51,7 @@ impl BoundsAttribute {
 }
 
 impl Parse for BoundsAttribute {
-    fn parse(input: ParseStream<'_>) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let _ = input.parse::<syn::Path>().and_then(|p| {
             if ["bound", "bounds", "where"]
                 .into_iter()
@@ -59,7 +59,7 @@ impl Parse for BoundsAttribute {
             {
                 Ok(p)
             } else {
-                Err(Error::new(
+                Err(syn::Error::new(
                     p.span(),
                     "unknown attribute, expected `bound(...)`",
                 ))
@@ -132,7 +132,7 @@ impl FmtAttribute {
     }
 
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
-    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
         let fork = input.fork();
 
         let path = fork
@@ -157,7 +157,7 @@ impl FmtAttribute {
                 (!args.is_empty()).then_some(args)
             })()
             .map_or(Ok(()), |fmt| {
-                Err(Error::new(
+                Err(syn::Error::new(
                     input.span(),
                     format!(
                         "legacy syntax, remove `fmt =` and use `{}` instead",
@@ -171,7 +171,7 @@ impl FmtAttribute {
 }
 
 impl Parse for FmtAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
             lit: input.parse()?,
             comma: input
@@ -205,7 +205,7 @@ struct FmtArgument {
 }
 
 impl FmtArgument {
-    /// Returns `identifier` of the [named parameter][1].
+    /// Returns an `identifier` of the [named parameter][1].
     ///
     /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
     fn alias(&self) -> Option<&Ident> {
@@ -214,10 +214,10 @@ impl FmtArgument {
 }
 
 impl Parse for FmtArgument {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
             alias: (input.peek(Ident) && input.peek2(token::Eq))
-                .then(|| Ok::<_, Error>((input.parse()?, input.parse()?)))
+                .then(|| Ok::<_, syn::Error>((input.parse()?, input.parse()?)))
                 .transpose()?,
             expr: input.parse()?,
         })

@@ -1,4 +1,4 @@
-error: Expected tuple: `(i16, _)`
+error: expected tuple: `(i16, _)`
  --> tests/compile_fail/from/struct_tuple_no_parens.rs:2:8
   |
 2 | #[from(i16, i16)]

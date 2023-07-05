@@ -1,4 +1,4 @@
-error: Only single `#[from(...)]` attribute is allowed here
+error: only single `#[from(...)]` attribute is allowed here
  --> tests/compile_fail/from/multiple_struct_attributes.rs:3:3
   |
 3 | #[from(forward)]
