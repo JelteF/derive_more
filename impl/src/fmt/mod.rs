@@ -8,16 +8,13 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
-use std::{iter, mem};
-
-use proc_macro2::{Ident, TokenStream, TokenTree};
+use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
-    buffer::Cursor,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Error, Result,
+    token, Error, Ident, Result,
 };
 
 use crate::parsing::Expr;
@@ -181,7 +178,7 @@ impl Parse for FmtAttribute {
                 .peek(syn::token::Comma)
                 .then(|| input.parse())
                 .transpose()?,
-            args: input.parse_terminated(FmtArgument::parse)?,
+            args: input.parse_terminated(FmtArgument::parse, token::Comma)?,
         })
     }
 }

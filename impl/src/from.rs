@@ -5,14 +5,14 @@ use std::{cmp, iter};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, ToTokens as _, TokenStreamExt as _};
 use syn::{
-    parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
+    parse::{discouraged::Speculative as _, Parse, ParseStream},
     parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
     token, Error, Ident, Result,
 };
 
-use crate::parsing::Type;
+use crate::{parsing::Type, utils::polyfill};
 
 /// Expands a [`From`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
@@ -93,22 +93,14 @@ impl StructAttribute {
         attrs: impl AsRef<[syn::Attribute]>,
         fields: &syn::Fields,
     ) -> Result<Option<Self>> {
-        fn infer<T>(v: T) -> T
-        where
-            T: for<'a> FnOnce(ParseStream<'a>) -> Result<StructAttribute>,
-        {
-            v
-        }
-
         Ok(attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("from"))
+            .filter(|attr| attr.path().is_ident("from"))
             .try_fold(None, |attrs, attr| {
-                let field_attr = Parser::parse2(
-                    infer(|stream| Self::parse(stream, fields)),
-                    attr.tokens.clone(),
-                )?;
+                let field_attr = attr.parse_args_with(|stream: ParseStream<'_>| {
+                    Self::parse(stream, fields)
+                })?;
                 match (attrs, field_attr) {
                     (
                         Some((path, StructAttribute::Types(mut tys))),
@@ -117,9 +109,9 @@ impl StructAttribute {
                         tys.extend(more);
                         Ok(Some((path, StructAttribute::Types(tys))))
                     }
-                    (None, field_attr) => Ok(Some((&attr.path, field_attr))),
+                    (None, field_attr) => Ok(Some((attr.path(), field_attr))),
                     _ => Err(Error::new(
-                        attr.path.span(),
+                        attr.path().span(),
                         "Only single `#[from(...)]` attribute is allowed here",
                     )),
                 }
@@ -128,22 +120,17 @@ impl StructAttribute {
     }
 
     /// Parses single [`StructAttribute`].
-    fn parse(input: ParseStream, fields: &syn::Fields) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
-
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        let ahead = content.fork();
+    fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
+        let ahead = input.fork();
         match ahead.parse::<syn::Path>() {
             Ok(p) if p.is_ident("forward") => {
-                content.advance_to(&ahead);
+                input.advance_to(&ahead);
                 Ok(Self::Forward)
             }
-            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
-            _ => content.parse_terminated(Type::parse).map(Self::Types),
+            Ok(p) if p.is_ident("types") => legacy_error(&ahead, input.span(), fields),
+            _ => input
+                .parse_terminated(Type::parse, token::Comma)
+                .map(Self::Types),
         }
     }
 }
@@ -176,23 +163,13 @@ impl VariantAttribute {
         attrs: impl AsRef<[syn::Attribute]>,
         fields: &syn::Fields,
     ) -> Result<Option<Self>> {
-        fn infer<T>(v: T) -> T
-        where
-            T: for<'a> FnOnce(ParseStream<'a>) -> Result<VariantAttribute>,
-        {
-            v
-        }
-
         Ok(attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("from"))
+            .filter(|attr| attr.path().is_ident("from"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = Parser::parse2(
-                    infer(|stream| Self::parse(stream, fields)),
-                    attr.tokens.clone(),
-                )?;
-                if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
+                let field_attr = Self::parse_attr(attr, fields)?;
+                if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
                     Err(Error::new(
                         path.span(),
                         "Only single `#[from(...)]` attribute is allowed here",
@@ -204,32 +181,31 @@ impl VariantAttribute {
             .map(|(_, attr)| attr))
     }
 
-    /// Parses [`VariantAttribute`].
-    fn parse(input: ParseStream, fields: &syn::Fields) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
-
-        if input.is_empty() {
+    /// Parses [`VariantAttribute`] from the single provided [`syn::Attribute`].
+    fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> Result<Self> {
+        if matches!(attr.meta, syn::Meta::Path(_)) {
             return Ok(Self::From);
         }
 
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        let ahead = content.fork();
-        match ahead.parse::<syn::Path>() {
-            Ok(p) if p.is_ident("forward") => {
-                content.advance_to(&ahead);
-                Ok(Self::Forward)
+        attr.parse_args_with(|input: ParseStream<'_>| {
+            let ahead = input.fork();
+            match ahead.parse::<syn::Path>() {
+                Ok(p) if p.is_ident("forward") => {
+                    input.advance_to(&ahead);
+                    Ok(Self::Forward)
+                }
+                Ok(p) if p.is_ident("skip") || p.is_ident("ignore") => {
+                    input.advance_to(&ahead);
+                    Ok(Self::Skip)
+                }
+                Ok(p) if p.is_ident("types") => {
+                    legacy_error(&ahead, input.span(), fields)
+                }
+                _ => input
+                    .parse_terminated(Type::parse, token::Comma)
+                    .map(Self::Types),
             }
-            Ok(p) if p.is_ident("skip") || p.is_ident("ignore") => {
-                content.advance_to(&ahead);
-                Ok(Self::Skip)
-            }
-            Ok(p) if p.is_ident("types") => legacy_error(&ahead, error_span, fields),
-            _ => content.parse_terminated(Type::parse).map(Self::Types),
-        }
+        })
     }
 }
 
@@ -556,13 +532,15 @@ fn legacy_error<T>(
     syn::parenthesized!(content in tokens);
 
     let types = content
-        .parse_terminated::<_, token::Comma>(syn::NestedMeta::parse)?
+        .parse_terminated(polyfill::NestedMeta::parse, token::Comma)?
         .into_iter()
         .map(|meta| {
             let value = match meta {
-                syn::NestedMeta::Meta(meta) => meta.into_token_stream().to_string(),
-                syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
-                syn::NestedMeta::Lit(_) => unreachable!(),
+                polyfill::NestedMeta::Meta(meta) => {
+                    meta.into_token_stream().to_string()
+                }
+                polyfill::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
+                polyfill::NestedMeta::Lit(_) => unreachable!(),
             };
             if fields.len() > 1 {
                 format!(
