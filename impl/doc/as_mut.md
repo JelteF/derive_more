@@ -32,7 +32,7 @@ impl AsMut<String> for MyWrapper {
 ```
 
 It's also possible to use the `#[as_mut(forward)]` attribute to forward
-to the `as_mut` implementation of the field. So here `SigleFieldForward`
+to the `as_mut` implementation of the field. So here `SingleFieldForward`
 implements all `AsMut` for all types that `Vec<i32>` implements `AsMut` for.
 
 ```rust

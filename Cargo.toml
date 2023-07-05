@@ -28,6 +28,9 @@ members = ["impl"]
 [dependencies]
 derive_more-impl = { version = "=0.99.17", path = "impl" }
 
+[build-dependencies]
+rustc_version = { version = "0.4", optional = true }
+
 [dev-dependencies]
 rustversion = "1.0"
 static_assertions = "1.1"
@@ -66,6 +69,7 @@ sum = ["derive_more-impl/sum"]
 try_into = ["derive_more-impl/try_into"]
 is_variant = ["derive_more-impl/is_variant"]
 unwrap = ["derive_more-impl/unwrap"]
+try_unwrap = ["derive_more-impl/try_unwrap"]
 
 std = []
 full = [
@@ -93,9 +97,10 @@ full = [
     "sum",
     "try_into",
     "unwrap",
+    "try_unwrap",
 ]
 
-testing-helpers = ["derive_more-impl/testing-helpers"]
+testing-helpers = ["derive_more-impl/testing-helpers", "dep:rustc_version"]
 
 [[test]]
 name = "add_assign"
@@ -150,7 +155,7 @@ required-features = ["display"]
 [[test]]
 name = "error"
 path = "tests/error_tests.rs"
-required-features = ["error", "std"]
+required-features = ["error"]
 
 [[test]]
 name = "from"
@@ -216,6 +221,11 @@ required-features = ["is_variant"]
 name = "unwrap"
 path = "tests/unwrap.rs"
 required-features = ["unwrap"]
+
+[[test]]
+name = "try_unwrap"
+path = "tests/try_unwrap.rs"
+required-features = ["try_unwrap"]
 
 [[test]]
 name = "compile_fail"

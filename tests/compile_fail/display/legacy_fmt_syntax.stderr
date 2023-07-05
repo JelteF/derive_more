@@ -1,5 +1,5 @@
 error: legacy syntax, remove `fmt =` and use `"Stuff({}): {}", bar` instead
- --> tests/compile_fail/display/legacy_fmt_syntax.rs:2:10
+ --> tests/compile_fail/display/legacy_fmt_syntax.rs:2:11
   |
 2 | #[display(fmt = "Stuff({}): {}", "bar")]
-  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |           ^^^

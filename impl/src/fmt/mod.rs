@@ -8,13 +8,16 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
-use proc_macro2::{Span, TokenStream};
+use std::{iter, mem};
+
+use proc_macro2::{Ident, TokenStream, TokenTree};
 use quote::ToTokens;
 use syn::{
-    parse::{Parse, ParseBuffer, ParseStream},
+    buffer::Cursor,
+    parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Error, Ident, Result,
+    token, Error, Result,
 };
 
 use crate::parsing::Expr;
@@ -25,13 +28,12 @@ struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
 
 impl BoundsAttribute {
     /// Errors in case legacy syntax is encountered: `bound = "..."`.
-    fn check_legacy_fmt(input: &ParseBuffer<'_>, error_span: Span) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
         let fork = input.fork();
 
         let path = fork
             .parse::<syn::Path>()
             .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
-
         match path {
             Ok(path) if path.is_ident("bound") => fork
                 .parse::<syn::Lit>()
@@ -42,7 +44,7 @@ impl BoundsAttribute {
                 })
                 .map_or(Ok(()), |bound| {
                     Err(Error::new(
-                        error_span,
+                        input.span(),
                         format!("legacy syntax, use `bound({bound})` instead"),
                     ))
                 }),
@@ -52,7 +54,7 @@ impl BoundsAttribute {
 }
 
 impl Parse for BoundsAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         let _ = input.parse::<syn::Path>().and_then(|p| {
             if ["bound", "bounds", "where"]
                 .into_iter()
@@ -71,7 +73,7 @@ impl Parse for BoundsAttribute {
         syn::parenthesized!(content in input);
 
         content
-            .parse_terminated(syn::WherePredicate::parse)
+            .parse_terminated(syn::WherePredicate::parse, token::Comma)
             .map(Self)
     }
 }
@@ -133,17 +135,16 @@ impl FmtAttribute {
     }
 
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
-    fn check_legacy_fmt(input: &ParseBuffer<'_>, error_span: Span) -> Result<()> {
+    fn check_legacy_fmt(input: ParseStream<'_>) -> Result<()> {
         let fork = input.fork();
 
         let path = fork
             .parse::<syn::Path>()
             .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
-
         match path {
             Ok(path) if path.is_ident("fmt") => (|| {
                 let args = fork
-                    .parse_terminated::<_, syn::token::Comma>(syn::Lit::parse)
+                    .parse_terminated(syn::Lit::parse, token::Comma)
                     .ok()?
                     .into_iter()
                     .enumerate()
@@ -160,7 +161,7 @@ impl FmtAttribute {
             })()
             .map_or(Ok(()), |fmt| {
                 Err(Error::new(
-                    error_span,
+                    input.span(),
                     format!(
                         "legacy syntax, remove `fmt =` and use `{}` instead",
                         fmt.join(", "),

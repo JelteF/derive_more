@@ -50,7 +50,7 @@ enum TestErr<T> {
         implicit_backtrace: Backtrace,
         field: T,
     },
-    NamedExplicitSupressesImplicit {
+    NamedExplicitSuppressesImplicit {
         #[error(backtrace)]
         not_backtrace: MyBacktrace,
         backtrace: Backtrace,
@@ -65,7 +65,7 @@ enum TestErr<T> {
         #[error(not(backtrace))] T,
     ),
     UnnamedExplicitBacktraceRedundant(#[error(backtrace)] Backtrace, T, T),
-    UnnamedExplicitSupressesImplicit(#[error(backtrace)] MyBacktrace, Backtrace, T),
+    UnnamedExplicitSuppressesImplicit(#[error(backtrace)] MyBacktrace, Backtrace, T),
 }
 
 impl<T> TestErr<T> {
@@ -85,19 +85,21 @@ impl<T> TestErr<T> {
                 implicit_backtrace,
                 ..
             } => implicit_backtrace,
-            Self::NamedExplicitSupressesImplicit { not_backtrace, .. } => not_backtrace,
+            Self::NamedExplicitSuppressesImplicit { not_backtrace, .. } => {
+                not_backtrace
+            }
             Self::UnnamedImplicitBacktrace(backtrace, _, _) => backtrace,
             Self::UnnamedExplicitBacktrace(backtrace, _, _) => backtrace,
             Self::UnnamedExplicitBacktraceRedundant(backtrace, _, _) => backtrace,
-            Self::UnnamedExplicitSupressesImplicit(backtrace, _, _) => backtrace,
+            Self::UnnamedExplicitSuppressesImplicit(backtrace, _, _) => backtrace,
             _ => panic!("ERROR IN TEST IMPLEMENTATION"),
         }
     }
 
     fn get_unused_backtrace(&self) -> &Backtrace {
         match self {
-            Self::NamedExplicitSupressesImplicit { backtrace, .. } => backtrace,
-            Self::UnnamedExplicitSupressesImplicit(_, backtrace, _) => backtrace,
+            Self::NamedExplicitSuppressesImplicit { backtrace, .. } => backtrace,
+            Self::UnnamedExplicitSuppressesImplicit(_, backtrace, _) => backtrace,
             _ => panic!("ERROR IN TEST IMPLEMENTATION"),
         }
     }
@@ -203,8 +205,8 @@ fn named_explicit_backtrace_by_field_type_redundant() {
 }
 
 #[test]
-fn named_explicit_supresses_implicit() {
-    let err = TestErr::NamedExplicitSupressesImplicit {
+fn named_explicit_suppresses_implicit() {
+    let err = TestErr::NamedExplicitSuppressesImplicit {
         not_backtrace: Backtrace::force_capture(),
         backtrace: (|| Backtrace::force_capture())(), // ensure backtraces are different
         field: 0,
@@ -263,8 +265,8 @@ fn unnamed_explicit_backtrace_redundant() {
 }
 
 #[test]
-fn unnamed_explicit_supresses_implicit() {
-    let err = TestErr::UnnamedExplicitSupressesImplicit(
+fn unnamed_explicit_suppresses_implicit() {
+    let err = TestErr::UnnamedExplicitSuppressesImplicit(
         Backtrace::force_capture(),
         (|| Backtrace::force_capture())(), // ensure backtraces are different
         0,

@@ -100,7 +100,7 @@ fn enum_output_type_and_content(
 
         match variant.fields {
             Fields::Unnamed(ref fields) => {
-                // The patern that is outputted should look like this:
+                // The pattern that is outputted should look like this:
                 // (Subtype(vars)) => Ok(TypePath(exprs))
                 let size = unnamed_to_vec(fields).len();
                 let vars: &Vec<_> =
@@ -118,7 +118,7 @@ fn enum_output_type_and_content(
                 matches.push(matcher);
             }
             Fields::Named(ref fields) => {
-                // The patern that is outputted should look like this:
+                // The pattern that is outputted should look like this:
                 // (Subtype{a: __l_a, ...} => {
                 //     Ok(Subtype{a: __l_a.neg(__r_a), ...})
                 // }

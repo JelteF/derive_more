@@ -42,13 +42,25 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 `#[error(not(source))]`.
 
 
+### What works in `no_std`?
+
+If you want to use the `Error` derive on `no_std` environments, then you need to
+compile with nightly and enable this feature:
+```ignore
+#![feature(error_in_core)]
+```
+
+Backtraces don't work though, because the `Backtrace` type is only available in
+`std`.
+
+
 
 
 ## Example usage
 
 ```rust
 # #![cfg_attr(nightly, feature(error_generic_member_access, provide_any))]
-// Nightly requires enabling this features:
+// Nightly requires enabling these features:
 // #![feature(error_generic_member_access, provide_any)]
 # #[cfg(not(nightly))] fn main() {}
 # #[cfg(nightly)] fn main() {

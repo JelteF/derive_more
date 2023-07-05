@@ -15,6 +15,7 @@ include = [
     "src/**/*.rs",
     "doc/**/*.md",
     "Cargo.toml",
+    "README.md",
     "LICENSE",
 ]
 
@@ -24,7 +25,7 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0"
-syn = "1.0.81"
+syn = "2.0"
 convert_case = { version = "0.6", optional = true }
 unicode-xid = { version = "0.2.2", optional = true }
 
@@ -32,8 +33,8 @@ unicode-xid = { version = "0.2.2", optional = true }
 rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
-derive_more = { path = "..", features = ["add", "debug", "from_str", "not", "try_into"] }
-itertools = "0.10.5"
+derive_more = { path = "..", features = ["add", "debug", "error", "from_str", "not", "std", "try_into", "try_unwrap"] }
+itertools = "0.11.0"
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
@@ -68,5 +69,6 @@ sum = []
 try_into = ["syn/extra-traits"]
 is_variant = ["dep:convert_case"]
 unwrap = ["dep:convert_case"]
+try_unwrap = ["dep:convert_case"]
 
 testing-helpers = ["dep:rustc_version"]
