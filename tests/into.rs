@@ -7,6 +7,8 @@ extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::{
     borrow::Cow,
+    borrow::ToOwned,
+    boxed::Box,
     string::{String, ToString},
 };
 #[cfg(feature = "std")]
