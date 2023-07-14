@@ -172,7 +172,7 @@ impl StructAttribute {
 
     /// Parses single [`StructAttribute`].
     fn parse(content: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
-        check_legacy_syntax(&content, fields)?;
+        check_legacy_syntax(content, fields)?;
 
         let mut out = Self::default();
 

@@ -5,10 +5,12 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::{borrow::Cow, string::String};
+use alloc::{
+    borrow::Cow,
+    string::{String, ToString},
+};
 #[cfg(feature = "std")]
-use std::borrow::Cow;
-use std::mem;
+use std::{borrow::Cow, mem};
 
 use derive_more::Into;
 use static_assertions::assert_not_impl_any;
