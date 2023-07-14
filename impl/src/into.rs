@@ -6,12 +6,13 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens as _};
 use syn::{
     ext::IdentExt as _,
-    parse::{discouraged::Speculative as _, Parse, ParseStream, Parser},
+    parse::{discouraged::Speculative as _, Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
     token, Error, Ident, Result,
 };
 
+use crate::utils::polyfill;
 use crate::{
     parsing::Type,
     utils::{validate_tuple, Either, EitherExt as _},
@@ -68,7 +69,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
 
         let gens = if let Some(lf) = lf.clone() {
             let mut gens = input.generics.clone();
-            gens.params.push(syn::LifetimeDef::new(lf).into());
+            gens.params.push(syn::LifetimeParam::new(lf).into());
             Cow::Owned(gens)
         } else {
             Cow::Borrowed(&input.generics)
@@ -148,7 +149,7 @@ impl StructAttribute {
         attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("into"))
+            .filter(|attr| attr.path().is_ident("into"))
             .try_fold(None, |mut attrs, attr| {
                 let merge = |out: &mut Option<_>, tys| match (out.as_mut(), tys) {
                     (None, Some(tys)) => {
@@ -158,10 +159,8 @@ impl StructAttribute {
                     (Some(_), None) | (None, None) => {}
                 };
 
-                let field_attr = Parser::parse2(
-                    infer(|stream| Self::parse(stream, fields)),
-                    attr.tokens.clone(),
-                )?;
+                let field_attr =
+                    attr.parse_args_with(infer(|stream| Self::parse(stream, fields)))?;
                 let out = attrs.get_or_insert_with(Self::default);
                 merge(&mut out.owned, field_attr.owned);
                 merge(&mut out.r#ref, field_attr.r#ref);
@@ -172,15 +171,8 @@ impl StructAttribute {
     }
 
     /// Parses single [`StructAttribute`].
-    fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
-
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        check_legacy_syntax(&content, error_span, fields)?;
+    fn parse(content: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
+        check_legacy_syntax(&content, fields)?;
 
         let mut out = Self::default();
 
@@ -194,7 +186,7 @@ impl StructAttribute {
 
                 types.extend(
                     inner
-                        .parse_terminated::<_, token::Comma>(Type::parse)?
+                        .parse_terminated(Type::parse, token::Comma)?
                         .into_pairs(),
                 );
             }
@@ -270,11 +262,10 @@ impl SkipFieldAttribute {
         Ok(attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("into"))
+            .filter(|attr| attr.path().is_ident("into"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr =
-                    syn::parse2::<SkipFieldAttribute>(attr.tokens.clone())?;
-                if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
+                let field_attr = attr.parse_args::<SkipFieldAttribute>()?;
+                if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
                     Err(Error::new(
                         path.span(),
                         "only single `#[into(...)]` attribute is allowed here",
@@ -288,10 +279,7 @@ impl SkipFieldAttribute {
 }
 
 impl Parse for SkipFieldAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let content;
-        syn::parenthesized!(content in input);
-
+    fn parse(content: ParseStream) -> Result<Self> {
         match content.parse::<syn::Path>()? {
             p if p.is_ident("skip") | p.is_ident("ignore") => Ok(Self),
             p => Err(Error::new(
@@ -303,11 +291,8 @@ impl Parse for SkipFieldAttribute {
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
-fn check_legacy_syntax(
-    tokens: ParseStream<'_>,
-    span: Span,
-    fields: &syn::Fields,
-) -> Result<()> {
+fn check_legacy_syntax(tokens: ParseStream<'_>, fields: &syn::Fields) -> Result<()> {
+    let span = tokens.span();
     let tokens = tokens.fork();
 
     let map_ty = |s: String| {
@@ -344,18 +329,21 @@ fn check_legacy_syntax(
         )),
     };
 
-    let Ok(metas) = tokens.parse_terminated::<_, token::Comma>(syn::Meta::parse) else {
+    let Ok(metas) = tokens.parse_terminated(polyfill::Meta::parse, token::Comma) else {
         return Ok(());
     };
 
-    let parse_list = |list: syn::MetaList, attrs: &mut Option<Vec<_>>| {
+    let parse_list = |list: polyfill::MetaList, attrs: &mut Option<Vec<_>>| {
         if !list.path.is_ident("types") {
             return None;
         }
-        for meta in list.nested {
+        for meta in list
+            .parse_args_with(Punctuated::<_, token::Comma>::parse_terminated)
+            .ok()?
+        {
             attrs.get_or_insert_with(Vec::new).push(match meta {
-                syn::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
-                syn::NestedMeta::Meta(syn::Meta::Path(path)) => {
+                polyfill::NestedMeta::Lit(syn::Lit::Str(str)) => str.value(),
+                polyfill::NestedMeta::Meta(polyfill::Meta::Path(path)) => {
                     path.into_token_stream().to_string()
                 }
                 _ => return None,
@@ -370,23 +358,27 @@ fn check_legacy_syntax(
                 (None, None, None, None),
                 |(mut top_level, mut owned, mut ref_, mut ref_mut), meta| {
                     let is = |name| {
-                        matches!(&meta, syn::Meta::Path(p) if p.is_ident(name))
-                            || matches!(&meta, syn::Meta::List(list) if list.path.is_ident(name))
+                        matches!(&meta, polyfill::Meta::Path(p) if p.is_ident(name))
+                            || matches!(&meta, polyfill::Meta::List(list) if list.path.is_ident(name))
                     };
                     let parse_inner = |meta, attrs: &mut Option<_>| {
                         match meta {
-                            syn::Meta::Path(_) => {
+                            polyfill::Meta::Path(_) => {
                                 let _ = attrs.get_or_insert_with(Vec::new);
                                 Some(())
                             }
-                            syn::Meta::List(mut list) => {
-                                if let syn::NestedMeta::Meta(syn::Meta::List(list)) = list.nested.pop()?.into_value() {
+                            polyfill::Meta::List(list) => {
+                                if let polyfill::NestedMeta::Meta(polyfill::Meta::List(list)) = list
+                                    .parse_args_with(Punctuated::<_, token::Comma>::parse_terminated)
+                                    .ok()?
+                                    .pop()?
+                                    .into_value()
+                                {
                                     parse_list(list, attrs)
                                 } else {
                                     None
                                 }
                             }
-                            _ => None
                         }
                     };
 
@@ -394,7 +386,7 @@ fn check_legacy_syntax(
                         meta if is("owned") => parse_inner(meta, &mut owned),
                         meta if is("ref") => parse_inner(meta, &mut ref_),
                         meta if is("ref_mut") => parse_inner(meta, &mut ref_mut),
-                        syn::Meta::List(list) => parse_list(list, &mut top_level),
+                        polyfill::Meta::List(list) => parse_list(list, &mut top_level),
                         _ => None,
                     }
                     .map(|_| (top_level, owned, ref_, ref_mut))

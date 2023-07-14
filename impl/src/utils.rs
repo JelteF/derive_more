@@ -1148,7 +1148,7 @@ pub(crate) mod polyfill {
     }
 
     impl PathOrKeyword {
-        pub(super) fn is_ident<I: ?Sized>(&self, ident: &I) -> bool
+        pub(crate) fn is_ident<I: ?Sized>(&self, ident: &I) -> bool
         where
             syn::Ident: PartialEq<I>,
         {
@@ -1177,8 +1177,8 @@ pub(crate) mod polyfill {
 
     #[derive(Clone)]
     pub(crate) struct MetaList {
-        pub(super) path: PathOrKeyword,
-        pub(super) tokens: TokenStream,
+        pub(crate) path: PathOrKeyword,
+        pub(crate) tokens: TokenStream,
     }
 
     impl Parse for MetaList {

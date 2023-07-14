@@ -8,6 +8,7 @@ extern crate alloc;
 use alloc::{borrow::Cow, string::String};
 #[cfg(feature = "std")]
 use std::borrow::Cow;
+use std::mem;
 
 use derive_more::Into;
 use static_assertions::assert_not_impl_any;
