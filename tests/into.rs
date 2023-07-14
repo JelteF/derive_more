@@ -11,16 +11,18 @@ use alloc::{
     boxed::Box,
     string::{String, ToString},
 };
+use core::mem;
 #[cfg(feature = "std")]
 use std::borrow::Cow;
 
 use derive_more::Into;
 use static_assertions::assert_not_impl_any;
 
-/// [`mem::transmute()`] that works in generic contexts.
+/// Nasty [`mem::transmute()`] that works in generic contexts
+/// by [`mem::forget`]ing stuff.
+///
+/// It's OK for tests!
 unsafe fn transmute<From, To>(from: From) -> To {
-    use core::mem;
-
     let to = unsafe { mem::transmute_copy(&from) };
     mem::forget(from);
     to
