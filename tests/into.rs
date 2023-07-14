@@ -1,6 +1,13 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)]
 
-use std::{borrow::Cow, mem};
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::{borrow::Cow, string::String};
+#[cfg(feature = "std")]
+use std::borrow::Cow;
 
 use derive_more::Into;
 use static_assertions::assert_not_impl_any;

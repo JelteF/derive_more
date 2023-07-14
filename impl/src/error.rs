@@ -18,7 +18,7 @@ pub fn expand(
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote! { ::std::error },
+        quote! { ::derive_more::__private::Error },
         trait_name.to_lowercase(),
         allowed_attr_params(),
     )?;
@@ -39,7 +39,8 @@ pub fn expand(
 
     let source = source.map(|source| {
         quote! {
-            fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
+            fn source(&self) -> Option<&(dyn ::derive_more::__private::Error + 'static)> {
+                use ::derive_more::__private::AsDynError;
                 #source
             }
         }
@@ -47,7 +48,7 @@ pub fn expand(
 
     let provide = provide.map(|provide| {
         quote! {
-            fn provide<'_demand>(&'_demand self, demand: &mut ::std::any::Demand<'_demand>) {
+            fn provide<'_demand>(&'_demand self, demand: &mut ::core::any::Demand<'_demand>) {
                 #provide
             }
         }
@@ -61,7 +62,7 @@ pub fn expand(
             &generics,
             quote! {
                 where
-                    #ident #ty_generics: ::std::fmt::Debug + ::std::fmt::Display
+                    #ident #ty_generics: ::core::fmt::Debug + ::core::fmt::Display
             },
         );
     }
@@ -72,7 +73,7 @@ pub fn expand(
             &generics,
             quote! {
                 where
-                    #(#bounds: ::std::fmt::Debug + ::std::fmt::Display + ::std::error::Error + 'static),*
+                    #(#bounds: ::core::fmt::Debug + ::core::fmt::Display + ::derive_more::__private::Error + 'static),*
             },
         );
     }
@@ -81,7 +82,7 @@ pub fn expand(
 
     let render = quote! {
         #[automatically_derived]
-        impl #impl_generics ::std::error::Error for #ident #ty_generics #where_clause {
+        impl #impl_generics ::derive_more::__private::Error for #ident #ty_generics #where_clause {
             #source
             #provide
         }
@@ -190,7 +191,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
         let source = self.source?;
         let ident = &self.data.members[source];
-        Some(render_some(quote! { &#ident }))
+        Some(render_some(quote! { #ident }))
     }
 
     fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
@@ -206,7 +207,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
         let source_provider = self.source.map(|source| {
             let source_expr = &self.data.members[source];
             quote! {
-                ::std::error::Error::provide(&#source_expr, demand);
+                ::derive_more::__private::Error::provide(&#source_expr, demand);
             }
         });
         let backtrace_provider = self
@@ -216,7 +217,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
             .then(|| {
                 let backtrace_expr = &self.data.members[backtrace];
                 quote! {
-                    demand.provide_ref::<std::backtrace::Backtrace>(&#backtrace_expr);
+                    demand.provide_ref::<::std::backtrace::Backtrace>(&#backtrace_expr);
                 }
             });
 
@@ -236,7 +237,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 let pattern = self.data.matcher(&[source], &[quote! { source }]);
                 Some(quote! {
                     #pattern => {
-                        ::std::error::Error::provide(source, demand);
+                        ::derive_more::__private::Error::provide(source, demand);
                     }
                 })
             }
@@ -247,8 +248,8 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 );
                 Some(quote! {
                     #pattern => {
-                        demand.provide_ref::<std::backtrace::Backtrace>(backtrace);
-                        ::std::error::Error::provide(source, demand);
+                        demand.provide_ref::<::std::backtrace::Backtrace>(backtrace);
+                        ::derive_more::__private::Error::provide(source, demand);
                     }
                 })
             }
@@ -256,7 +257,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 let pattern = self.data.matcher(&[backtrace], &[quote! { backtrace }]);
                 Some(quote! {
                     #pattern => {
-                        demand.provide_ref::<std::backtrace::Backtrace>(backtrace);
+                        demand.provide_ref::<::std::backtrace::Backtrace>(backtrace);
                     }
                 })
             }
@@ -268,7 +269,7 @@ fn render_some<T>(expr: T) -> TokenStream
 where
     T: quote::ToTokens,
 {
-    quote! { Some(#expr as &(dyn ::std::error::Error + 'static)) }
+    quote! { Some(#expr.as_dyn_error()) }
 }
 
 fn parse_fields<'input, 'state>(

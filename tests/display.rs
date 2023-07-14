@@ -1,9 +1,17 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code, unused_imports)]
 
-use std::{
-    fmt::{Binary, Display},
-    path::PathBuf,
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::{
+    boxed::Box,
+    format,
+    string::{String, ToString},
+    vec::Vec,
 };
+use core::fmt::{Binary, Display};
 
 use derive_more::{Binary, Display, Octal, UpperHex};
 
@@ -331,7 +339,7 @@ mod enums {
 }
 
 mod generic {
-    use derive_more::Display;
+    use super::*;
 
     trait Bound {}
 

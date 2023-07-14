@@ -154,9 +154,9 @@ impl ContainerAttributes {
         attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("debug"))
+            .filter(|attr| attr.path().is_ident("debug"))
             .try_fold(ContainerAttributes::default(), |mut attrs, attr| {
-                let attr = syn::parse2::<ContainerAttributes>(attr.tokens.clone())?;
+                let attr = attr.parse_args::<ContainerAttributes>()?;
                 attrs.bounds.0.extend(attr.bounds.0);
                 Ok(attrs)
             })
@@ -165,16 +165,9 @@ impl ContainerAttributes {
 
 impl Parse for ContainerAttributes {
     fn parse(input: ParseStream) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
+        BoundsAttribute::check_legacy_fmt(input)?;
 
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        BoundsAttribute::check_legacy_fmt(&content, error_span)?;
-
-        content.parse().map(|bounds| ContainerAttributes { bounds })
+        input.parse().map(|bounds| ContainerAttributes { bounds })
     }
 }
 
@@ -202,10 +195,10 @@ impl FieldAttribute {
         Ok(attrs
             .as_ref()
             .iter()
-            .filter(|attr| attr.path.is_ident("debug"))
+            .filter(|attr| attr.path().is_ident("debug"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = syn::parse2::<FieldAttribute>(attr.tokens.clone())?;
-                if let Some((path, _)) = attrs.replace((&attr.path, field_attr)) {
+                let field_attr = attr.parse_args::<FieldAttribute>()?;
+                if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
                     Err(Error::new(
                         path.span(),
                         "only single `#[debug(...)]` attribute is allowed here",
@@ -220,19 +213,12 @@ impl FieldAttribute {
 
 impl Parse for FieldAttribute {
     fn parse(input: ParseStream) -> Result<Self> {
-        use proc_macro2::Delimiter::Parenthesis;
+        FmtAttribute::check_legacy_fmt(input)?;
 
-        let error_span = input.cursor().group(Parenthesis).map(|(_, span, _)| span);
-        let content;
-        syn::parenthesized!(content in input);
-        let error_span = error_span.unwrap_or_else(|| unreachable!());
-
-        FmtAttribute::check_legacy_fmt(&content, error_span)?;
-
-        if content.peek(syn::LitStr) {
-            content.parse().map(Self::Fmt)
+        if input.peek(syn::LitStr) {
+            input.parse().map(Self::Fmt)
         } else {
-            let _ = content.parse::<syn::Path>().and_then(|p| {
+            let _ = input.parse::<syn::Path>().and_then(|p| {
                 if ["skip", "ignore"].into_iter().any(|i| p.is_ident(i)) {
                     Ok(p)
                 } else {
@@ -242,7 +228,6 @@ impl Parse for FieldAttribute {
                     ))
                 }
             })?;
-
             Ok(Self::Skip)
         }
     }
@@ -283,7 +268,7 @@ impl<'a> Expansion<'a> {
                 let ident_str = self.ident.to_string();
 
                 let out = quote! {
-                    &mut ::derive_more::fmt::debug_tuple(
+                    &mut ::derive_more::__private::debug_tuple(
                         __derive_more_f,
                         #ident_str,
                     )
@@ -296,7 +281,7 @@ impl<'a> Expansion<'a> {
                             Ok::<_, Error>(out)
                         }
                         Some(FieldAttribute::Fmt(fmt)) => Ok(quote! {
-                            ::derive_more::fmt::DebugTuple::field(
+                            ::derive_more::__private::DebugTuple::field(
                                 #out,
                                 &::core::format_args!(#fmt),
                             )
@@ -304,15 +289,15 @@ impl<'a> Expansion<'a> {
                         None => {
                             let ident = format_ident!("_{i}");
                             Ok(quote! {
-                                ::derive_more::fmt::DebugTuple::field(#out, #ident)
+                                ::derive_more::__private::DebugTuple::field(#out, #ident)
                             })
                         }
                     },
                 )?;
                 Ok(if exhaustive {
-                    quote! { ::derive_more::fmt::DebugTuple::finish(#out) }
+                    quote! { ::derive_more::__private::DebugTuple::finish(#out) }
                 } else {
-                    quote! { ::derive_more::fmt::DebugTuple::finish_non_exhaustive(#out) }
+                    quote! { ::derive_more::__private::DebugTuple::finish_non_exhaustive(#out) }
                 })
             }
             syn::Fields::Named(named) => {

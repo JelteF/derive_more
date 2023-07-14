@@ -116,7 +116,7 @@ pub(crate) enum Expr {
 }
 
 impl Expr {
-    /// Returns [`Ident`] in case this [`Expr`] is represented only by it.
+    /// Returns an [`Ident`] in case this [`Expr`] is represented only by it.
     pub(crate) fn ident(&self) -> Option<&Ident> {
         match self {
             Self::Ident(ident) => Some(ident),
@@ -166,10 +166,10 @@ impl ToTokens for Expr {
     }
 }
 
-/// Result of the parsing.
+/// Result of parsing.
 type ParsingResult<'a> = Option<(TokenStream, Cursor<'a>)>;
 
-/// Tries to parse [`syn::token::Colon2`].
+/// Tries to parse a [`syn::token::Colon2`].
 pub fn colon2(c: Cursor<'_>) -> ParsingResult<'_> {
     seq([
         &mut punct_with_spacing(':', Spacing::Joint),
@@ -177,7 +177,7 @@ pub fn colon2(c: Cursor<'_>) -> ParsingResult<'_> {
     ])(c)
 }
 
-/// Tries to parse [`punct`] with [`Spacing`].
+/// Tries to parse a [`punct`] with [`Spacing`].
 pub fn punct_with_spacing(
     p: char,
     spacing: Spacing,
@@ -190,7 +190,7 @@ pub fn punct_with_spacing(
     }
 }
 
-/// Tries to parse [`Punct`].
+/// Tries to parse a [`Punct`].
 ///
 /// [`Punct`]: proc_macro2::Punct
 pub fn punct(p: char) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> {
@@ -238,7 +238,7 @@ pub fn balanced_pair(
     }
 }
 
-/// Tries to execute sequence of parsers.
+/// Tries to execute the provided sequence of `parsers`.
 pub fn seq<const N: usize>(
     mut parsers: [&mut dyn FnMut(Cursor<'_>) -> ParsingResult<'_>; N],
 ) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> + '_ {
@@ -255,7 +255,7 @@ pub fn seq<const N: usize>(
     }
 }
 
-/// Tries to execute first successful parser.
+/// Tries to execute the first successful parser.
 pub fn alt<const N: usize>(
     mut parsers: [&mut dyn FnMut(Cursor<'_>) -> ParsingResult<'_>; N],
 ) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> + '_ {
