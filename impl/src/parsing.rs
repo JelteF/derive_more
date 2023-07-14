@@ -29,7 +29,7 @@ pub(crate) enum Type {
 }
 
 impl Type {
-    /// Creates [`Type::Tuple`] from [`Iterator`] of [`TokenStream`]s.
+    /// Creates a [`Type::Tuple`] from the provided [`Iterator`] of [`TokenStream`]s.
     pub(crate) fn tuple<T: ToTokens>(items: impl IntoIterator<Item = T>) -> Self {
         Self::Tuple {
             paren: token::Paren::default(),

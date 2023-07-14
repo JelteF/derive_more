@@ -1,6 +1,6 @@
 //! Implementation of a [`From`] derive macro.
 
-use std::{cmp, iter};
+use std::iter;
 
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, ToTokens as _, TokenStreamExt as _};
@@ -12,7 +12,10 @@ use syn::{
     token, Ident,
 };
 
-use crate::{parsing::Type, utils::polyfill};
+use crate::{
+    parsing::Type,
+    utils::{polyfill, Either},
+};
 
 /// Expands a [`From`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -250,6 +253,8 @@ struct Expansion<'a> {
 impl<'a> Expansion<'a> {
     /// Expands [`From`] implementations for a struct or an enum variant.
     fn expand(&self) -> syn::Result<TokenStream> {
+        use crate::utils::FieldsExt as _;
+
         let ident = self.ident;
         let field_tys = self.fields.iter().map(|f| &f.ty).collect::<Vec<_>>();
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
@@ -261,7 +266,7 @@ impl<'a> Expansion<'a> {
                 tys.iter().map(|ty| {
                     let variant = self.variant.iter();
 
-                    let mut from_tys = self.validate_type(ty)?;
+                    let mut from_tys = self.fields.validate_type(ty)?;
                     let init = self.expand_fields(|ident, ty, index| {
                         let ident = ident.into_iter();
                         let index = index.into_iter();
@@ -407,116 +412,6 @@ impl<'a> Expansion<'a> {
                 })
             })
             .unwrap_or_default()
-    }
-
-    /// Validates the provided [`Type`] against [`syn::Fields`].
-    fn validate_type<'t>(
-        &self,
-        ty: &'t Type,
-    ) -> syn::Result<impl Iterator<Item = &'t TokenStream>> {
-        match ty {
-            Type::Tuple { items, .. } if self.fields.len() > 1 => {
-                match self.fields.len().cmp(&items.len()) {
-                    cmp::Ordering::Greater => {
-                        return Err(syn::Error::new(
-                            ty.span(),
-                            format!(
-                                "wrong tuple length: expected {}, found {}. \
-                                 Consider adding {} more type{}: `({})`",
-                                self.fields.len(),
-                                items.len(),
-                                self.fields.len() - items.len(),
-                                if self.fields.len() - items.len() > 1 {
-                                    "s"
-                                } else {
-                                    ""
-                                },
-                                items
-                                    .iter()
-                                    .map(|item| item.to_string())
-                                    .chain(
-                                        (0..(self.fields.len() - items.len()))
-                                            .map(|_| "_".to_string())
-                                    )
-                                    .collect::<Vec<_>>()
-                                    .join(", "),
-                            ),
-                        ));
-                    }
-                    cmp::Ordering::Less => {
-                        return Err(syn::Error::new(
-                            ty.span(),
-                            format!(
-                                "wrong tuple length: expected {}, found {}. \
-                                 Consider removing last {} type{}: `({})`",
-                                self.fields.len(),
-                                items.len(),
-                                items.len() - self.fields.len(),
-                                if items.len() - self.fields.len() > 1 {
-                                    "s"
-                                } else {
-                                    ""
-                                },
-                                items
-                                    .iter()
-                                    .take(self.fields.len())
-                                    .map(|item| item.to_string())
-                                    .collect::<Vec<_>>()
-                                    .join(", "),
-                            ),
-                        ));
-                    }
-                    cmp::Ordering::Equal => {}
-                }
-            }
-            Type::Other(other) if self.fields.len() > 1 => {
-                if self.fields.len() > 1 {
-                    return Err(syn::Error::new(
-                        other.span(),
-                        format!(
-                            "expected tuple: `({}, {})`",
-                            other,
-                            (0..(self.fields.len() - 1))
-                                .map(|_| "_")
-                                .collect::<Vec<_>>()
-                                .join(", "),
-                        ),
-                    ));
-                }
-            }
-            Type::Tuple { .. } | Type::Other(_) => {}
-        }
-        Ok(match ty {
-            Type::Tuple { items, .. } => Either::Left(items.iter()),
-            Type::Other(other) => Either::Right(iter::once(other)),
-        })
-    }
-}
-
-/// Either [`Left`] or [`Right`].
-///
-/// [`Left`]: Either::Left
-/// [`Right`]: Either::Right
-enum Either<L, R> {
-    /// Left variant.
-    Left(L),
-
-    /// Right variant.
-    Right(R),
-}
-
-impl<L, R, T> Iterator for Either<L, R>
-where
-    L: Iterator<Item = T>,
-    R: Iterator<Item = T>,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Either::Left(left) => left.next(),
-            Either::Right(right) => right.next(),
-        }
     }
 }
 

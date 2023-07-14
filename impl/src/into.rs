@@ -1,4 +1,4 @@
-//! Implementation of a [`Into`] derive macro.
+//! Implementation of an [`Into`] derive macro.
 
 use std::{borrow::Cow, iter};
 
@@ -9,24 +9,23 @@ use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Error, Ident, Result,
+    token, Ident,
 };
 
-use crate::utils::polyfill;
 use crate::{
     parsing::Type,
-    utils::{validate_tuple, Either, EitherExt as _},
+    utils::{polyfill, Either, FieldsExt as _},
 };
 
-/// Expands a [`Into`] derive macro.
-pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> {
+/// Expands an [`Into`] derive macro.
+pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
-        syn::Data::Enum(e) => Err(Error::new(
+        syn::Data::Enum(e) => Err(syn::Error::new(
             e.enum_token.span(),
             "`Into` cannot be derived for enums",
         )),
-        syn::Data::Union(u) => Err(Error::new(
+        syn::Data::Union(u) => Err(syn::Error::new(
             u.union_token.span(),
             "`Into` cannot be derived for unions",
         )),
@@ -48,18 +47,18 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
                 &f.ty,
                 f.ident
                     .as_ref()
-                    .map_or_else(|| syn::Index::from(i).right(), Either::Left),
+                    .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left),
             ))),
             Ok(Some(_)) => None,
             Err(e) => Some(Err(e)),
         })
-        .collect::<Result<Vec<_>>>()?;
+        .collect::<syn::Result<Vec<_>>>()?;
     let (fields_tys, fields_idents): (Vec<_>, Vec<_>) = fields.into_iter().unzip();
     let (fields_tys, fields_idents) = (&fields_tys, &fields_idents);
 
     let expand = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
         let Some(tys) = tys else {
-            return iter::empty().left();
+            return Either::Left(iter::empty());
         };
 
         let lf =
@@ -75,34 +74,34 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
             Cow::Borrowed(&input.generics)
         };
 
-        if tys.is_empty() {
-            iter::once(Type::tuple(fields_tys.clone())).left()
-        } else {
-            tys.into_iter().right()
-        }
-        .map(move |ty| {
-            let tys = validate_tuple(&ty, fields_tys.len())?.collect::<Vec<_>>();
-            let (impl_gens, _, where_clause) = gens.split_for_impl();
-            let (_, ty_gens, _) = input.generics.split_for_impl();
+        Either::Right(
+            if tys.is_empty() {
+                Either::Left(iter::once(Type::tuple(fields_tys.clone())))
+            } else {
+                Either::Right(tys.into_iter())
+            }
+            .map(move |ty| {
+                let tys = fields_tys.validate_type(&ty)?.collect::<Vec<_>>();
+                let (impl_gens, _, where_clause) = gens.split_for_impl();
+                let (_, ty_gens, _) = input.generics.split_for_impl();
 
-            Ok(quote! {
-                #[automatically_derived]
-                impl #impl_gens ::core::convert::From<#r #lf #m #ident #ty_gens>
-                    for ( #( #r #lf #m #tys ),* )
-                    #where_clause
-                {
-                    #[inline]
-                    fn from(value: #r #lf #m #ident #ty_gens) -> Self {
-                        (#(
-                            <#r #m #tys as ::core::convert::From<_>>::from(
-                                #r #m value. #fields_idents
-                            )
-                        ),*)
+                Ok(quote! {
+                    #[automatically_derived]
+                    impl #impl_gens ::core::convert::From<#r #lf #m #ident #ty_gens>
+                     for ( #( #r #lf #m #tys ),* ) #where_clause
+                    {
+                        #[inline]
+                        fn from(value: #r #lf #m #ident #ty_gens) -> Self {
+                            (#(
+                                <#r #m #tys as ::core::convert::From<_>>::from(
+                                    #r #m value. #fields_idents
+                                )
+                            ),*)
+                        }
                     }
-                }
-            })
-        })
-        .right()
+                })
+            }),
+        )
     };
 
     [
@@ -115,7 +114,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> Result<TokenStream> 
     .collect()
 }
 
-/// Representation of a [`Into`] derive macro struct container attribute.
+/// Representation of an [`Into`] derive macro struct container attribute.
 ///
 /// ```rust,ignore
 /// #[into(<types>)]
@@ -134,14 +133,14 @@ struct StructAttribute {
 }
 
 impl StructAttribute {
-    /// Parses [`StructAttribute`] from the provided [`syn::Attribute`]s.
+    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         fields: &syn::Fields,
-    ) -> Result<Option<Self>> {
+    ) -> syn::Result<Option<Self>> {
         fn infer<T>(v: T) -> T
         where
-            T: for<'a> FnOnce(ParseStream<'a>) -> Result<StructAttribute>,
+            T: for<'a> FnOnce(ParseStream<'a>) -> syn::Result<StructAttribute>,
         {
             v
         }
@@ -170,8 +169,8 @@ impl StructAttribute {
             })
     }
 
-    /// Parses single [`StructAttribute`].
-    fn parse(content: ParseStream<'_>, fields: &syn::Fields) -> Result<Self> {
+    /// Parses a single [`StructAttribute`].
+    fn parse(content: ParseStream<'_>, fields: &syn::Fields) -> syn::Result<Self> {
         check_legacy_syntax(content, fields)?;
 
         let mut out = Self::default();
@@ -238,7 +237,7 @@ impl StructAttribute {
         }
 
         if let Some(ty) = top_level_type.filter(|_| has_wrapped_type) {
-            Err(Error::new(
+            Err(syn::Error::new(
                 ty.span(),
                 format!(
                     "mixing regular types with wrapped into \
@@ -257,8 +256,8 @@ impl StructAttribute {
 struct SkipFieldAttribute;
 
 impl SkipFieldAttribute {
-    /// Parses [`SkipFieldAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
+    /// Parses a [`SkipFieldAttribute`] from the provided [`syn::Attribute`]s.
+    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
         Ok(attrs
             .as_ref()
             .iter()
@@ -266,7 +265,7 @@ impl SkipFieldAttribute {
             .try_fold(None, |mut attrs, attr| {
                 let field_attr = attr.parse_args::<SkipFieldAttribute>()?;
                 if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
-                    Err(Error::new(
+                    Err(syn::Error::new(
                         path.span(),
                         "only single `#[into(...)]` attribute is allowed here",
                     ))
@@ -279,10 +278,10 @@ impl SkipFieldAttribute {
 }
 
 impl Parse for SkipFieldAttribute {
-    fn parse(content: ParseStream) -> Result<Self> {
+    fn parse(content: ParseStream) -> syn::Result<Self> {
         match content.parse::<syn::Path>()? {
             p if p.is_ident("skip") | p.is_ident("ignore") => Ok(Self),
-            p => Err(Error::new(
+            p => Err(syn::Error::new(
                 p.span(),
                 format!("expected `skip`, found: `{}`", p.into_token_stream()),
             )),
@@ -291,7 +290,10 @@ impl Parse for SkipFieldAttribute {
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
-fn check_legacy_syntax(tokens: ParseStream<'_>, fields: &syn::Fields) -> Result<()> {
+fn check_legacy_syntax(
+    tokens: ParseStream<'_>,
+    fields: &syn::Fields,
+) -> syn::Result<()> {
     let span = tokens.span();
     let tokens = tokens.fork();
 
@@ -430,12 +432,12 @@ fn check_legacy_syntax(tokens: ParseStream<'_>, fields: &syn::Fields) -> Result<
         .collect::<Vec<_>>()
         .join(", ");
 
-        Err(Error::new(
+        Err(syn::Error::new(
             span,
             format!("legacy syntax, use `{format}` instead"),
         ))
     } else {
-        Err(Error::new(
+        Err(syn::Error::new(
             span,
             format!(
                 "legacy syntax, remove `types` and use `{}` instead",
