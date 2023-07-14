@@ -13,7 +13,7 @@ the struct and thus has an indirect implementation of `Into` as
 
 ## Structs
 
-For structs with a single field you can call `.into()` to extract inner type.
+For structs with a single field you can call `.into()` to extract the inner type.
 
 ```rust
 # use derive_more::Into;
@@ -24,7 +24,7 @@ struct Int(i32);
 assert_eq!(2, Int(2).into());
 ```
 
-For structs that have multiple fields `.into()` extract tuple containing the
+For structs having multiple fields, `.into()` extracts a tuple containing the
 desired content for each field.
 
 ```rust
@@ -36,7 +36,7 @@ struct Point(i32, i32);
 assert_eq!((1, 2), Point(1, 2).into());
 ```
 
-To specify concrete types to derive convert into use `#[into(<types>)]`.
+To specify concrete types for deriving conversions into, use `#[into(<types>)]`.
 
 ```rust
 # use std::borrow::Cow;
@@ -62,7 +62,7 @@ assert_eq!((3_i32, 4_i32), Point { x: 3_i32, y: 4_i32 }.into());
 ```
 
 In addition to converting to owned types, this macro supports deriving into
-reference, mutable or not via `#[into(ref(...))]`/`#[into(ref_mut(...))]`.
+reference (mutable or not) via `#[into(ref(...))]`/`#[into(ref_mut(...))]`.
 
 ```rust
 # use derive_more::Into;
@@ -76,8 +76,8 @@ assert_eq!(&2, <&i32>::from(&Int(2)));
 assert_eq!(&mut 2, <&mut i32>::from(&mut Int(2)));
 ```
 
-In case there are fields, that shouldn't be included in the conversion there is
-`#[into(skip)]`.
+In case there are fields, that shouldn't be included in the conversion, use the
+`#[into(skip)]` attribute.
 
 ```rust
 # use std::marker::PhantomData;
