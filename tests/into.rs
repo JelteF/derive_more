@@ -10,13 +10,15 @@ use alloc::{
     string::{String, ToString},
 };
 #[cfg(feature = "std")]
-use std::{borrow::Cow, mem};
+use std::borrow::Cow;
 
 use derive_more::Into;
 use static_assertions::assert_not_impl_any;
 
 /// [`mem::transmute()`] that works in generic contexts.
 unsafe fn transmute<From, To>(from: From) -> To {
+    use core::mem;
+
     let to = unsafe { mem::transmute_copy(&from) };
     mem::forget(from);
     to
