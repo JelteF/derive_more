@@ -10,7 +10,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_field_ignore_and_refs(
         input,
         trait_name,
-        quote! { ::core::iter },
         "into_iterator".into(),
     )?;
     let SingleFieldData {

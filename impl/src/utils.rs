@@ -265,7 +265,6 @@ pub struct State<'input> {
     pub trait_name: &'static str,
     pub trait_ident: Ident,
     pub method_ident: Ident,
-    pub trait_module: TokenStream,
     pub trait_path: TokenStream,
     pub trait_path_params: Vec<TokenStream>,
     pub trait_attr: String,
@@ -314,13 +313,11 @@ impl<'input> State<'input> {
     pub fn new<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
         State::new_impl(
             input,
             trait_name,
-            trait_module,
             trait_attr,
             AttrParams::default(),
             true,
@@ -330,13 +327,11 @@ impl<'input> State<'input> {
     pub fn with_field_ignore<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
         State::new_impl(
             input,
             trait_name,
-            trait_module,
             trait_attr,
             AttrParams::new(vec!["ignore"]),
             true,
@@ -346,13 +341,11 @@ impl<'input> State<'input> {
     pub fn with_field_ignore_and_forward<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
         State::new_impl(
             input,
             trait_name,
-            trait_module,
             trait_attr,
             AttrParams::new(vec!["ignore", "forward"]),
             true,
@@ -362,13 +355,11 @@ impl<'input> State<'input> {
     pub fn with_field_ignore_and_refs<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
         State::new_impl(
             input,
             trait_name,
-            trait_module,
             trait_attr,
             AttrParams::new(vec!["ignore", "owned", "ref", "ref_mut"]),
             true,
@@ -378,14 +369,12 @@ impl<'input> State<'input> {
     pub fn with_attr_params<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
         allowed_attr_params: AttrParams,
     ) -> Result<State<'arg_input>> {
         State::new_impl(
             input,
             trait_name,
-            trait_module,
             trait_attr,
             allowed_attr_params,
             true,
@@ -395,7 +384,6 @@ impl<'input> State<'input> {
     pub fn with_type_bound<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
         allowed_attr_params: AttrParams,
         add_type_bound: bool,
@@ -403,7 +391,6 @@ impl<'input> State<'input> {
         Self::new_impl(
             input,
             trait_name,
-            trait_module,
             trait_attr,
             allowed_attr_params,
             add_type_bound,
@@ -413,7 +400,6 @@ impl<'input> State<'input> {
     fn new_impl<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
         allowed_attr_params: AttrParams,
         add_type_bound: bool,
@@ -421,7 +407,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { #trait_module::#trait_ident };
+        let trait_path = quote! { ::derive_more::#trait_ident };
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
                 Fields::Unnamed(ref fields) => {
@@ -516,7 +502,6 @@ impl<'input> State<'input> {
                     State::from_variant(
                         input,
                         trait_name,
-                        trait_module.clone(),
                         trait_attr.clone(),
                         allowed_attr_params.clone(),
                         variant,
@@ -539,7 +524,6 @@ impl<'input> State<'input> {
             trait_name,
             trait_ident,
             method_ident,
-            trait_module,
             trait_path,
             trait_path_params: vec![],
             trait_attr,
@@ -558,7 +542,6 @@ impl<'input> State<'input> {
     pub fn from_variant<'arg_input>(
         input: &'arg_input DeriveInput,
         trait_name: &'static str,
-        trait_module: TokenStream,
         trait_attr: String,
         allowed_attr_params: AttrParams,
         variant: &'arg_input Variant,
@@ -567,7 +550,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { #trait_module::#trait_ident };
+        let trait_path = quote! { ::derive_more::#trait_ident };
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {
                 (DeriveType::Unnamed, unnamed_to_vec(fields))
@@ -593,7 +576,6 @@ impl<'input> State<'input> {
         Ok(State {
             input,
             trait_name,
-            trait_module,
             trait_path,
             trait_path_params: vec![],
             trait_attr,

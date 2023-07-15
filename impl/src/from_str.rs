@@ -9,7 +9,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::new(
         input,
         trait_name,
-        quote! { ::core::str },
         trait_name.to_lowercase(),
     )?;
 

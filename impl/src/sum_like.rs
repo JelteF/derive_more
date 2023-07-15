@@ -9,7 +9,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::new(
         input,
         trait_name,
-        quote! { ::core::iter },
         trait_name.to_lowercase(),
     )?;
     let multi_field_data = state.enabled_fields_data();

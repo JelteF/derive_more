@@ -9,7 +9,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let mut state = State::with_field_ignore(
         input,
         trait_name,
-        quote! { ::core::ops },
         trait_name.to_lowercase(),
     )?;
     state.add_trait_path_type_param(quote! { #index_type });

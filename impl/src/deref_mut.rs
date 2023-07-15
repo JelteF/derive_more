@@ -8,7 +8,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_field_ignore_and_forward(
         input,
         trait_name,
-        quote! { ::core::ops },
         "deref_mut".into(),
     )?;
     let SingleFieldData {

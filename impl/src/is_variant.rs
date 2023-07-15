@@ -8,7 +8,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_attr_params(
         input,
         trait_name,
-        quote! {},
         "is_variant".into(),
         AttrParams {
             enum_: vec!["ignore"],
