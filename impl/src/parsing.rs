@@ -16,7 +16,7 @@ use syn::{
 };
 
 /// [`syn::Type`] [`Parse`]ing polyfill.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum Type {
     /// [`syn::Type::Tuple`] [`Parse`]ing polyfill.
     Tuple {
@@ -26,6 +26,16 @@ pub(crate) enum Type {
 
     /// Every other [`syn::Type`] variant.
     Other(TokenStream),
+}
+
+impl Type {
+    /// Creates a [`Type::Tuple`] from the provided [`Iterator`] of [`TokenStream`]s.
+    pub(crate) fn tuple<T: ToTokens>(items: impl IntoIterator<Item = T>) -> Self {
+        Self::Tuple {
+            paren: token::Paren::default(),
+            items: items.into_iter().map(ToTokens::into_token_stream).collect(),
+        }
+    }
 }
 
 impl Parse for Type {

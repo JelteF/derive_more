@@ -1,0 +1,5 @@
+error: wrong tuple length: expected 2, found 3. Consider removing last 1 type: `(i16, i16)`
+ --> tests/compile_fail/into/tuple_too_long.rs:2:8
+  |
+2 | #[into((i16, i16, i16))]
+  |        ^^^^^^^^^^^^^^^

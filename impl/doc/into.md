@@ -1,166 +1,119 @@
 # What `#[derive(Into)]` generates
 
-This derive creates the the exact opposite of [`#[derive(From)]`](crate::From).
+This derive creates the exact opposite of `#[derive(From)]`.
 Instead of allowing you to create a new instance of the struct from the values
-it should contain, it allows you to extract the values from the struct.
-One thing to note is that this derive doesn't actually generate an
-implementation for the `Into` trait.
-Instead it derives `From` for the values contained in the struct and thus has an
-indirect implementation of `Into` as recommended by the
-[docs](https://doc.rust-lang.org/core/convert/trait.Into.html).
+it should contain, it allows you to extract the values from the struct. One
+thing to note is that this derive doesn't actually generate an implementation
+for the `Into` trait. Instead, it derives `From` for the values contained in
+the struct and thus has an indirect implementation of `Into` as
+[recommended by the docs][1].
 
 
 
 
-## Example usage
+## Structs
 
-```rust
-# use derive_more::Into;
-#
-// Allow converting into i32
-#[derive(Into, PartialEq)]
-struct MyInt(i32);
-
-// Additionally convert refs to the inner type refs
-#[derive(Into, PartialEq)]
-#[into(owned, ref, ref_mut)]
-struct MyInt64(i64);
-
-// Specify additional conversions
-#[derive(Into, PartialEq)]
-#[into(types(i16, i32))]
-struct MyInt8(i8);
-
-// Even for ref types
-#[derive(Into, PartialEq)]
-#[into(owned, ref(types(i64)))]
-struct MyInt64Wrapped(MyInt64);
-
-assert!(i32::from(MyInt(2)) == 2i32);
-assert!(i64::from(MyInt64(6)) == 6i64);
-assert!(<&i64>::from(&MyInt64(6)) == &6i64);
-assert!(<&mut i64>::from(&mut MyInt64(6)) == &mut 6i64);
-assert!(i8::from(MyInt8(7)) == 7i8);
-assert!(i16::from(MyInt8(7)) == 7i16);
-assert!(i32::from(MyInt8(7)) == 7i32);
-assert!(MyInt64::from(MyInt64Wrapped(MyInt64(1))) == MyInt64(1));
-assert!(<&MyInt64>::from(&MyInt64Wrapped(MyInt64(1))) == &MyInt64(1));
-assert!(<&i64>::from(&MyInt64Wrapped(MyInt64(1))) == &1i64);
-```
-
-
-
-
-## Tuple structs
-
-When deriving `Into` for a tuple struct with a single field (i.e. a newtype) like this:
+For structs with a single field you can call `.into()` to extract the inner type.
 
 ```rust
 # use derive_more::Into;
 #
-#[derive(Into)]
-struct MyInt(i32);
+#[derive(Debug, Into, PartialEq)]
+struct Int(i32);
+
+assert_eq!(2, Int(2).into());
 ```
 
-Code like this will be generated:
-
-```rust
-# struct MyInt(i32);
-impl ::core::convert::From<MyInt> for (i32) {
-    fn from(original: MyInt) -> (i32) {
-        (original.0)
-    }
-}
-```
-
-The behaviour is a bit different when deriving for a struct with multiple
-fields, since it returns a tuple. For instance when deriving for a tuple struct
-with two fields like this:
+For structs having multiple fields, `.into()` extracts a tuple containing the
+desired content for each field.
 
 ```rust
 # use derive_more::Into;
 #
-#[derive(Into)]
-struct MyInts(i32, i32);
+#[derive(Debug, Into, PartialEq)]
+struct Point(i32, i32);
+
+assert_eq!((1, 2), Point(1, 2).into());
 ```
 
-Code like this will be generated:
+To specify concrete types for deriving conversions into, use `#[into(<types>)]`.
 
 ```rust
-# struct MyInts(i32, i32);
-impl ::core::convert::From<MyInts> for (i32, i32) {
-    fn from(original: MyInts) -> (i32, i32) {
-        (original.0, original.1)
-    }
-}
-```
-
-
-
-
-## Regular structs
-
-For regular structs almost the same code is generated as for tuple structs
-except in the way the field values are assigned to the new struct.
-When deriving for a regular struct with a single field like this:
-
-```rust
+# use std::borrow::Cow;
+#
 # use derive_more::Into;
 #
-#[derive(Into)]
-struct Point1D {
-    x: i32,
-}
-```
+#[derive(Debug, Into, PartialEq)]
+#[into(Cow<'static, str>, String)]
+struct Str(Cow<'static, str>);
 
-Code like this will be generated:
+assert_eq!("String".to_owned(), String::from(Str("String".into())));
+assert_eq!(Cow::Borrowed("Cow"), <Cow<_>>::from(Str("Cow".into())));
 
-```rust
-# struct Point1D {
-#     x: i32,
-# }
-impl ::core::convert::From<Point1D> for (i32) {
-    fn from(original: Point1D) -> (i32) {
-        (original.x)
-    }
-}
-```
-
-The behaviour is again a bit different when deriving for a struct with multiple
-fields, because this also returns a tuple. For instance when deriving for a
-tuple struct with two fields like this:
-
-```rust
-# use derive_more::Into;
-#
-#[derive(Into)]
-struct Point2D {
+#[derive(Debug, Into, PartialEq)]
+#[into((i64, i64), (i32, i32))]
+struct Point {
     x: i32,
     y: i32,
 }
 
+assert_eq!((1_i64, 2_i64), Point { x: 1_i32, y: 2_i32 }.into());
+assert_eq!((3_i32, 4_i32), Point { x: 3_i32, y: 4_i32 }.into());
 ```
 
-Code like this will be generated:
+In addition to converting to owned types, this macro supports deriving into
+reference (mutable or not) via `#[into(ref(...))]`/`#[into(ref_mut(...))]`.
 
 ```rust
-# struct Point2D {
-#     x: i32,
-#     y: i32,
-# }
-impl ::core::convert::From<Point2D> for (i32, i32) {
-    fn from(original: Point2D) -> (i32, i32) {
-        (original.x, original.y)
-    }
-}
+# use derive_more::Into;
+#
+#[derive(Debug, Into, PartialEq)]
+#[into(owned, ref(i32), ref_mut)]
+struct Int(i32);
+
+assert_eq!(2, Int(2).into());
+assert_eq!(&2, <&i32>::from(&Int(2)));
+assert_eq!(&mut 2, <&mut i32>::from(&mut Int(2)));
 ```
 
+In case there are fields, that shouldn't be included in the conversion, use the
+`#[into(skip)]` attribute.
 
+```rust
+# use std::marker::PhantomData;
+#
+# use derive_more::Into;
+#
+# struct Gram;
+#
+#[derive(Debug, Into, PartialEq)]
+#[into(i32, i64, i128)]
+struct Mass<Unit> {
+    value: i32,
+    #[into(skip)]
+    _unit: PhantomData<Unit>,
+}
 
+assert_eq!(5, Mass::<Gram>::new(5).into());
+assert_eq!(5_i64, Mass::<Gram>::new(5).into());
+assert_eq!(5_i128, Mass::<Gram>::new(5).into());
+#
+# impl<Unit> Mass<Unit> {
+#     fn new(value: i32) -> Self {
+#         Self {
+#             value,
+#             _unit: PhantomData,
+#         }
+#     }
+# }
+```
 
 ## Enums
 
-Deriving `Into` for enums is not supported as it would not always be successful.
-This is what the currently unstable
-[`TryInto`](https://doc.rust-lang.org/core/convert/trait.TryInto.html) should be
-used for, which is currently not supported by this library.
+Deriving `Into` for enums is not supported as it would not always be successful,
+so `TryInto` should be used instead.
+
+
+
+
+[1]: https://doc.rust-lang.org/core/convert/trait.Into.html

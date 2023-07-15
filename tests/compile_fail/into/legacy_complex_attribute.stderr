@@ -1,0 +1,5 @@
+error: legacy syntax, use `owned(Cow<'_ str>, i32, &str, String), ref(i32, &str, String), ref_mut(i32, &str, String)` instead
+ --> tests/compile_fail/into/legacy_complex_attribute.rs:2:8
+  |
+2 | #[into(owned(types("Cow<'_ str>")), ref, ref_mut, types(i32, "&str"))]
+  |        ^^^^^

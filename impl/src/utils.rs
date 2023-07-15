@@ -13,6 +13,9 @@ use syn::{
     TypeParamBound, Variant, WhereClause,
 };
 
+#[cfg(any(feature = "from", feature = "into"))]
+pub(crate) use self::{either::Either, fields_ext::FieldsExt};
+
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
 
@@ -1145,7 +1148,7 @@ pub(crate) mod polyfill {
     }
 
     impl PathOrKeyword {
-        pub(super) fn is_ident<I: ?Sized>(&self, ident: &I) -> bool
+        pub(crate) fn is_ident<I: ?Sized>(&self, ident: &I) -> bool
         where
             syn::Ident: PartialEq<I>,
         {
@@ -1174,8 +1177,8 @@ pub(crate) mod polyfill {
 
     #[derive(Clone)]
     pub(crate) struct MetaList {
-        pub(super) path: PathOrKeyword,
-        pub(super) tokens: TokenStream,
+        pub(crate) path: PathOrKeyword,
+        pub(crate) tokens: TokenStream,
     }
 
     impl Parse for MetaList {
@@ -1317,11 +1320,6 @@ impl FullMetaInfo {
         }
         ref_types
     }
-
-    #[cfg(any(feature = "from", feature = "into"))]
-    pub fn additional_types(&self, ref_type: RefType) -> HashSet<syn::Type> {
-        self.info.types.get(&ref_type).cloned().unwrap_or_default()
-    }
 }
 
 pub fn get_if_type_parameter_used_in_type(
@@ -1377,4 +1375,170 @@ pub fn is_type_parameter_used_in_type(
 
         _ => false,
     }
+}
+
+#[cfg(any(feature = "from", feature = "into"))]
+mod either {
+    use proc_macro2::TokenStream;
+    use quote::ToTokens;
+
+    /// Either [`Left`] or [`Right`].
+    ///
+    /// [`Left`]: Either::Left
+    /// [`Right`]: Either::Right
+    pub(crate) enum Either<L, R> {
+        /// Left variant.
+        Left(L),
+
+        /// Right variant.
+        Right(R),
+    }
+
+    impl<L, R, T> Iterator for Either<L, R>
+    where
+        L: Iterator<Item = T>,
+        R: Iterator<Item = T>,
+    {
+        type Item = T;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                Either::Left(left) => left.next(),
+                Either::Right(right) => right.next(),
+            }
+        }
+    }
+
+    impl<L, R> ToTokens for Either<L, R>
+    where
+        L: ToTokens,
+        R: ToTokens,
+    {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            match self {
+                Either::Left(l) => l.to_tokens(tokens),
+                Either::Right(r) => r.to_tokens(tokens),
+            }
+        }
+    }
+}
+
+#[cfg(any(feature = "from", feature = "into"))]
+mod fields_ext {
+    use std::{cmp, iter};
+
+    use proc_macro2::TokenStream;
+    use syn::{punctuated, spanned::Spanned as _};
+
+    use crate::parsing;
+
+    use super::Either;
+
+    /// Abstraction over `.len()` method to use it on type parameters.
+    pub(crate) trait Len {
+        /// Returns number of fields.
+        fn len(&self) -> usize;
+    }
+
+    impl Len for syn::Fields {
+        fn len(&self) -> usize {
+            self.len()
+        }
+    }
+
+    impl<T> Len for Vec<T> {
+        fn len(&self) -> usize {
+            self.len()
+        }
+    }
+
+    /// [`syn::Fields`] extension.
+    pub(crate) trait FieldsExt: Len {
+        /// Validates the provided [`parsing::Type`] against these [`syn::Fields`].
+        fn validate_type<'t>(
+            &self,
+            ty: &'t parsing::Type,
+        ) -> syn::Result<
+            Either<punctuated::Iter<'t, TokenStream>, iter::Once<&'t TokenStream>>,
+        > {
+            match ty {
+                parsing::Type::Tuple { items, .. } if self.len() > 1 => {
+                    match self.len().cmp(&items.len()) {
+                        cmp::Ordering::Greater => {
+                            return Err(syn::Error::new(
+                                ty.span(),
+                                format!(
+                                    "wrong tuple length: expected {}, found {}. \
+                                     Consider adding {} more type{}: `({})`",
+                                    self.len(),
+                                    items.len(),
+                                    self.len() - items.len(),
+                                    if self.len() - items.len() > 1 {
+                                        "s"
+                                    } else {
+                                        ""
+                                    },
+                                    items
+                                        .iter()
+                                        .map(|item| item.to_string())
+                                        .chain(
+                                            (0..(self.len() - items.len()))
+                                                .map(|_| "_".to_string())
+                                        )
+                                        .collect::<Vec<_>>()
+                                        .join(", "),
+                                ),
+                            ));
+                        }
+                        cmp::Ordering::Less => {
+                            return Err(syn::Error::new(
+                                ty.span(),
+                                format!(
+                                    "wrong tuple length: expected {}, found {}. \
+                                     Consider removing last {} type{}: `({})`",
+                                    self.len(),
+                                    items.len(),
+                                    items.len() - self.len(),
+                                    if items.len() - self.len() > 1 {
+                                        "s"
+                                    } else {
+                                        ""
+                                    },
+                                    items
+                                        .iter()
+                                        .take(self.len())
+                                        .map(ToString::to_string)
+                                        .collect::<Vec<_>>()
+                                        .join(", "),
+                                ),
+                            ));
+                        }
+                        cmp::Ordering::Equal => {}
+                    }
+                }
+                parsing::Type::Other(other) if self.len() > 1 => {
+                    if self.len() > 1 {
+                        return Err(syn::Error::new(
+                            other.span(),
+                            format!(
+                                "expected tuple: `({}, {})`",
+                                other,
+                                (0..(self.len() - 1))
+                                    .map(|_| "_")
+                                    .collect::<Vec<_>>()
+                                    .join(", "),
+                            ),
+                        ));
+                    }
+                }
+                parsing::Type::Tuple { .. } | parsing::Type::Other(_) => {}
+            }
+            Ok(match ty {
+                parsing::Type::Tuple { items, .. } => Either::Left(items.iter()),
+                parsing::Type::Other(other) => Either::Right(iter::once(other)),
+            })
+        }
+    }
+
+    impl<T: Len + ?Sized> FieldsExt for T {}
 }

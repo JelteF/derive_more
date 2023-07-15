@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   practice.
 - The `From` derive now uses `#[from(<types>)]` instead of `#[from(types(<types>))]`
   and ignores field type itself.
+- The `Into` derive now uses `#[into(<types>)]` instead of `#[into(types(<types>))]`
+  and ignores field type itself.
 
 ### Added
 

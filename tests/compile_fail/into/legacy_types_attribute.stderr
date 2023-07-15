@@ -1,0 +1,5 @@
+error: legacy syntax, remove `types` and use `i32, &str` instead
+ --> tests/compile_fail/into/legacy_types_attribute.rs:2:8
+  |
+2 | #[into(types(i32, "&str"))]
+  |        ^^^^^

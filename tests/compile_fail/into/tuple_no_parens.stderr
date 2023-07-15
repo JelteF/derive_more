@@ -1,0 +1,5 @@
+error: expected tuple: `(i16, _)`
+ --> tests/compile_fail/into/tuple_no_parens.rs:2:8
+  |
+2 | #[into(i16, i16)]
+  |        ^^^
