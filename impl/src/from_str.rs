@@ -6,11 +6,7 @@ use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `FromStr`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::new(
-        input,
-        trait_name,
-        trait_name.to_lowercase(),
-    )?;
+    let state = State::new(input, trait_name, trait_name.to_lowercase())?;
 
     if state.derive_type == DeriveType::Enum {
         Ok(enum_from(input, state, trait_name))

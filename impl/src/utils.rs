@@ -315,13 +315,7 @@ impl<'input> State<'input> {
         trait_name: &'static str,
         trait_attr: String,
     ) -> Result<State<'arg_input>> {
-        State::new_impl(
-            input,
-            trait_name,
-            trait_attr,
-            AttrParams::default(),
-            true,
-        )
+        State::new_impl(input, trait_name, trait_attr, AttrParams::default(), true)
     }
 
     pub fn with_field_ignore<'arg_input>(
@@ -372,13 +366,7 @@ impl<'input> State<'input> {
         trait_attr: String,
         allowed_attr_params: AttrParams,
     ) -> Result<State<'arg_input>> {
-        State::new_impl(
-            input,
-            trait_name,
-            trait_attr,
-            allowed_attr_params,
-            true,
-        )
+        State::new_impl(input, trait_name, trait_attr, allowed_attr_params, true)
     }
 
     pub fn with_type_bound<'arg_input>(
