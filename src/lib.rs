@@ -57,14 +57,6 @@ pub mod __private {
     pub use crate::vendor::thiserror::aserror::AsDynError;
 }
 
-/// Module containing macro definitions only, without corresponding traits.
-///
-/// Use it in your import paths, if you don't want to import traits, but only macros.
-pub mod macros {
-    #[doc(inline)]
-    pub use derive_more_impl::*;
-}
-
 // The modules containing error types and other helpers
 #[cfg(any(feature = "add", feature = "not"))]
 pub mod ops;
@@ -115,7 +107,7 @@ macro_rules! re_export_traits((
         // Seems there's a bug in this warning because it considers the next line a glob import,
         // even though when expanded it is not. Also make clippy not complain about it.
         #[allow(ambiguous_glob_reexports, clippy::useless_attribute)]
-        pub use crate::macros::{$($traits),*};
+        pub use derive_more_impl::{$($traits),*};
 
     }
 );
@@ -196,15 +188,29 @@ re_export_traits!(
 
 re_export_traits!("not", not_traits, core::ops, Neg, Not);
 
-#[cfg(feature = "sum")]
 re_export_traits!("sum", sum_traits, core::iter, Product, Sum);
 
 re_export_traits!("try_into", try_into_traits, core::convert, TryInto);
 
-// Then finally also wildcard export the other derives, to also export the derives that don't have
-// a trait (e.g. Constructor).
+// Then finally also re-export the other derives, to also export the derives that don't have
+// a trait. We could have used a wildcard re-export here, but that might inadvertently hide that we
+// missed a trait derive.
+#[cfg(feature = "constructor")]
 #[doc(inline)]
-pub use crate::macros::*;
+pub use derive_more_impl::Constructor;
+
+#[cfg(feature = "is_variant")]
+#[doc(inline)]
+pub use derive_more_impl::IsVariant;
+
+#[cfg(feature = "try_unwrap")]
+#[doc(inline)]
+pub use derive_more_impl::TryUnwrap;
+
+#[cfg(feature = "unwrap")]
+#[doc(inline)]
+pub use derive_more_impl::Unwrap;
+
 
 #[cfg(not(any(
     feature = "full",
