@@ -65,225 +65,148 @@ pub mod macros {
     pub use derive_more_impl::*;
 }
 
+// The modules containing error types and other helpers
 #[cfg(any(feature = "add", feature = "not"))]
 pub mod ops;
-#[cfg(feature = "add")]
-mod gimmick_add {
-    pub use crate::macros::{Add, BitAnd, BitOr, BitXor, Sub};
-    pub use core::ops::*;
-}
-#[cfg(feature = "add")]
-#[doc(inline)]
-pub use self::gimmick_add::{Add, BitAnd, BitOr, BitXor, Sub};
-
-#[cfg(feature = "add_assign")]
-mod gimmick_add_assign {
-    pub use crate::macros::{
-        AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, SubAssign,
-    };
-    pub use core::ops::*;
-}
-#[cfg(feature = "add_assign")]
-#[doc(inline)]
-pub use self::gimmick_add_assign::{
-    AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, SubAssign,
-};
-
-#[cfg(feature = "as_mut")]
-mod gimmick_as_mut {
-    pub use crate::macros::AsMut;
-    pub use core::convert::*;
-}
-#[cfg(feature = "as_mut")]
-#[doc(inline)]
-pub use self::gimmick_as_mut::AsMut;
-
-#[cfg(feature = "as_ref")]
-mod gimmick_as_ref {
-    pub use crate::macros::AsRef;
-    pub use core::convert::*;
-}
-#[cfg(feature = "as_ref")]
-#[doc(inline)]
-pub use self::gimmick_as_ref::AsRef;
-
-#[cfg(feature = "constructor")]
-#[doc(inline)]
-pub use self::macros::Constructor;
 
 #[cfg(feature = "debug")]
 mod fmt;
-#[cfg(feature = "debug")]
-mod gimmick_debug {
-    pub use crate::macros::Debug;
-    pub use core::fmt::*;
-}
-#[cfg(feature = "debug")]
-#[doc(inline)]
-pub use self::gimmick_debug::Debug;
-
-#[cfg(feature = "deref")]
-mod gimmick_deref {
-    pub use crate::macros::Deref;
-    pub use core::ops::*;
-}
-#[cfg(feature = "deref")]
-#[doc(inline)]
-pub use self::gimmick_deref::Deref;
-
-#[cfg(feature = "deref_mut")]
-mod gimmick_deref_mut {
-    pub use crate::macros::DerefMut;
-    pub use core::ops::*;
-}
-#[cfg(feature = "deref_mut")]
-#[doc(inline)]
-pub use self::gimmick_deref_mut::DerefMut;
-
-#[cfg(feature = "display")]
-mod gimmick_display {
-    pub use crate::macros::{
-        Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
-    };
-    pub use core::fmt::*;
-}
-#[cfg(feature = "display")]
-#[doc(inline)]
-pub use self::gimmick_display::{
-    Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
-};
 
 #[cfg(feature = "error")]
 mod vendor;
-#[cfg(feature = "error")]
-mod gimmick_error {
-    pub use crate::macros::Error;
-    #[cfg(not(feature = "std"))]
-    pub use core::error::*;
-    #[cfg(feature = "std")]
-    pub use std::error::*;
-}
-#[cfg(feature = "error")]
-pub use self::gimmick_error::Error;
-
-#[cfg(feature = "from")]
-mod gimmick_from {
-    pub use crate::macros::From;
-    pub use core::convert::*;
-}
-#[cfg(feature = "from")]
-#[doc(inline)]
-pub use self::gimmick_from::From;
 
 #[cfg(feature = "from_str")]
 mod r#str;
 #[cfg(feature = "from_str")]
-mod gimmick_from_str {
-    pub use crate::{macros::FromStr, r#str::FromStrError};
-    pub use core::str::*;
-}
-#[cfg(feature = "from_str")]
-#[doc(hidden)]
-pub use self::gimmick_from_str::{FromStr, FromStrError};
-
-#[cfg(feature = "index")]
-mod gimmick_index {
-    pub use crate::macros::Index;
-    pub use core::ops::*;
-}
-#[cfg(feature = "index")]
 #[doc(inline)]
-pub use self::gimmick_index::Index;
-
-#[cfg(feature = "index_mut")]
-mod gimmick_index_mut {
-    pub use crate::macros::IndexMut;
-    pub use core::ops::*;
-}
-#[cfg(feature = "index_mut")]
-#[doc(inline)]
-pub use self::gimmick_index_mut::IndexMut;
-
-#[cfg(feature = "into")]
-mod gimmick_into {
-    pub use crate::macros::Into;
-    pub use core::convert::*;
-}
-#[cfg(feature = "into")]
-#[doc(inline)]
-pub use self::gimmick_into::Into;
-
-#[cfg(feature = "into_iterator")]
-mod gimmick_into_iterator {
-    pub use crate::macros::IntoIterator;
-    pub use core::iter::*;
-}
-#[cfg(feature = "into_iterator")]
-#[doc(inline)]
-pub use self::gimmick_into_iterator::IntoIterator;
-
-#[cfg(feature = "is_variant")]
-#[doc(inline)]
-pub use self::macros::IsVariant;
-
-#[cfg(feature = "mul")]
-mod gimmick_mul {
-    pub use crate::macros::{Div, Mul, Rem, Shl, Shr};
-    pub use core::ops::*;
-}
-#[cfg(feature = "mul")]
-#[doc(inline)]
-pub use self::gimmick_mul::{Div, Mul, Rem, Shl, Shr};
-
-#[cfg(feature = "mul_assign")]
-mod gimmick_mul_assign {
-    pub use crate::macros::{DivAssign, MulAssign, RemAssign, ShlAssign, ShrAssign};
-    pub use core::ops::*;
-}
-#[cfg(feature = "mul_assign")]
-#[doc(inline)]
-pub use self::gimmick_mul_assign::{
-    DivAssign, MulAssign, RemAssign, ShlAssign, ShrAssign,
-};
-
-#[cfg(feature = "not")]
-mod gimmick_not {
-    pub use crate::macros::{Neg, Not};
-    pub use core::ops::*;
-}
-#[cfg(feature = "not")]
-#[doc(inline)]
-pub use self::gimmick_not::{Neg, Not};
-
-#[cfg(feature = "sum")]
-mod gimmick_sum {
-    pub use crate::macros::{Product, Sum};
-    pub use core::iter::*;
-}
-#[cfg(feature = "sum")]
-#[doc(inline)]
-pub use self::gimmick_sum::{Product, Sum};
+pub use crate::r#str::FromStrError;
 
 #[cfg(feature = "try_into")]
 mod convert;
 #[cfg(feature = "try_into")]
-mod gimmick_try_into {
-    pub use crate::{convert::TryIntoError, macros::TryInto};
-    pub use core::convert::*;
-}
-#[cfg(feature = "try_into")]
 #[doc(inline)]
-pub use self::gimmick_try_into::{TryInto, TryIntoError};
+pub use crate::convert::TryIntoError;
 
 #[cfg(feature = "try_unwrap")]
 mod try_unwrap;
 #[cfg(feature = "try_unwrap")]
 #[doc(inline)]
-pub use self::{macros::TryUnwrap, try_unwrap::TryUnwrapError};
+pub use self::try_unwrap::TryUnwrapError;
 
-#[cfg(feature = "unwrap")]
+
+// When re-exporting traits from std we need to do a pretty crazy trick, because we ONLY want
+// to re-export the traits and not derives that are called the same in the std module,
+// because those would conflict with our own. The way we do this is by first importing both
+// the trait and possible derive into a separate module and re-export them. Then we wildcard import
+// all the things from that module into the main module, but we also import our own derive by its
+// exact name. Due to the way wildcard imports work in rust, that results in our own derive taking
+// precedence over any derive from std.
+macro_rules! re_export_traits((
+    $feature:literal, $new_module_name:ident, $module:path $(, $traits:ident)* $(,)?) => {
+        #[cfg(feature = $feature)]
+        mod $new_module_name {
+            pub use $module::{$($traits),*};
+        }
+
+        #[cfg(feature = $feature)]
+        #[doc(hidden)]
+        pub use crate::$new_module_name::*;
+        #[cfg(feature = $feature)]
+        #[doc(inline)]
+        // Seems there's a bug in this warning because it considers the next line a glob import,
+        // even though when expanded it is not.
+        #[allow(ambiguous_glob_reexports)]
+        pub use crate::macros::{$($traits),*};
+
+    }
+);
+re_export_traits!(
+    "add",
+    add_traits,
+    core::ops,
+    Add,
+    BitAnd,
+    BitOr,
+    BitXor,
+    Sub,
+);
+re_export_traits!(
+    "add_assign",
+    add_assign_traits,
+    core::ops,
+    AddAssign,
+    BitAndAssign,
+    BitOrAssign,
+    BitXorAssign,
+    SubAssign,
+);
+re_export_traits!("as_mut", as_mut_traits, core::convert, AsMut);
+re_export_traits!("as_ref", as_ref_traits, core::convert, AsRef);
+re_export_traits!("debug", debug_traits, core::fmt, Debug);
+re_export_traits!("deref", deref_traits, core::ops, Deref);
+re_export_traits!("deref_mut", deref_mut_traits, core::ops, DerefMut);
+re_export_traits!(
+    "display",
+    display_traits,
+    core::fmt,
+    Binary,
+    Display,
+    LowerExp,
+    LowerHex,
+    Octal,
+    Pointer,
+    UpperExp,
+    UpperHex,
+);
+
+#[cfg(not(feature = "std"))]
+re_export_traits!("error", error_traits, core::error, Error);
+#[cfg(feature = "std")]
+re_export_traits!("error", error_traits, std::error, Error);
+
+re_export_traits!("from", from_traits, core::convert, From);
+
+re_export_traits!("from_str", from_str_traits, core::str, FromStr);
+
+re_export_traits!("index", index_traits, core::ops, Index);
+
+re_export_traits!("index_mut", index_mut_traits, core::ops, IndexMut);
+
+re_export_traits!("into", into_traits, core::convert, Into);
+
+re_export_traits!(
+    "into_iterator",
+    into_iterator_traits,
+    core::iter,
+    IntoIterator,
+);
+
+re_export_traits!("mul", mul_traits, core::ops, Div, Mul, Rem, Shl, Shr);
+
+#[cfg(feature = "mul_assign")]
+re_export_traits!(
+    "mul_assign",
+    mul_assign_traits,
+    core::ops,
+    DivAssign,
+    MulAssign,
+    RemAssign,
+    ShlAssign,
+    ShrAssign,
+);
+
+re_export_traits!("not", not_traits, core::ops, Neg, Not);
+
+#[cfg(feature = "sum")]
+re_export_traits!("sum", sum_traits, core::iter, Product, Sum);
+
+re_export_traits!("try_into", try_into_traits, core::convert, TryInto);
+
+
+// Then finally also wildcard export the other derives, to also export the derives that don't have
+// a trait (e.g. Constructor).
 #[doc(inline)]
-pub use self::macros::Unwrap;
+pub use crate::macros::*;
 
 #[cfg(not(any(
     feature = "full",
