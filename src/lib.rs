@@ -91,7 +91,10 @@ pub use self::try_unwrap::TryUnwrapError;
 // the trait and possible derive into a separate module and re-export them. Then we wildcard import
 // all the things from that module into the main module, but we also import our own derive by its
 // exact name. Due to the way wildcard imports work in rust, that results in our own derive taking
-// precedence over any derive from std.
+// precedence over any derive from std. For some reason the named re-export of our own derive
+// cannot be in in this (or really any) macro too. It will somehow still consider it a wildcard
+// then and will result in this warning ambiguous_glob_reexports, and not actually exporting of our
+// derive.
 macro_rules! re_export_traits((
     $feature:literal, $new_module_name:ident, $module:path $(, $traits:ident)* $(,)?) => {
         #[cfg(feature = $feature)]
@@ -102,15 +105,10 @@ macro_rules! re_export_traits((
         #[cfg(feature = $feature)]
         #[doc(hidden)]
         pub use crate::$new_module_name::*;
-        #[cfg(feature = $feature)]
-        #[doc(inline)]
-        // Seems there's a bug in this warning because it considers the next line a glob import,
-        // even though when expanded it is not. Also make clippy not complain about it.
-        #[allow(ambiguous_glob_reexports, clippy::useless_attribute)]
-        pub use derive_more_impl::{$($traits),*};
 
     }
 );
+
 re_export_traits!(
     "add",
     add_traits,
@@ -192,25 +190,85 @@ re_export_traits!("sum", sum_traits, core::iter, Product, Sum);
 
 re_export_traits!("try_into", try_into_traits, core::convert, TryInto);
 
-// Then finally also re-export the other derives, to also export the derives that don't have
-// a trait. We could have used a wildcard re-export here, but that might inadvertently hide that we
-// missed a trait derive.
+// Now re-export our own derives by their exact name to overwrite any derives that the trait
+// re-exporting might inadvertently pull into scope.
+#[cfg(feature = "add")]
+pub use derive_more_impl::{Add, BitAnd, BitOr, BitXor, Sub};
+
+#[cfg(feature = "add_assign")]
+pub use derive_more_impl::{
+    AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, SubAssign,
+};
+
+#[cfg(feature = "as_mut")]
+pub use derive_more_impl::AsMut;
+
+#[cfg(feature = "as_ref")]
+pub use derive_more_impl::AsRef;
+
 #[cfg(feature = "constructor")]
-#[doc(inline)]
 pub use derive_more_impl::Constructor;
 
+#[cfg(feature = "debug")]
+pub use derive_more_impl::Debug;
+
+#[cfg(feature = "deref")]
+pub use derive_more_impl::Deref;
+
+#[cfg(feature = "deref_mut")]
+pub use derive_more_impl::DerefMut;
+
+#[cfg(feature = "display")]
+pub use derive_more_impl::{
+    Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
+};
+
+#[cfg(feature = "error")]
+pub use derive_more_impl::Error;
+
+#[cfg(feature = "from")]
+pub use derive_more_impl::From;
+
+#[cfg(feature = "from_str")]
+pub use derive_more_impl::FromStr;
+
+#[cfg(feature = "index")]
+pub use derive_more_impl::Index;
+
+#[cfg(feature = "index_mut")]
+pub use derive_more_impl::IndexMut;
+
+#[cfg(feature = "into")]
+pub use derive_more_impl::Into;
+
+#[cfg(feature = "into_iterator")]
+pub use derive_more_impl::IntoIterator;
+
 #[cfg(feature = "is_variant")]
-#[doc(inline)]
 pub use derive_more_impl::IsVariant;
 
+#[cfg(feature = "mul")]
+pub use derive_more_impl::{Div, Mul, Rem, Shl, Shr};
+
+#[cfg(feature = "mul_assign")]
+pub use derive_more_impl::{DivAssign, MulAssign, RemAssign, ShlAssign, ShrAssign};
+
+#[cfg(feature = "not")]
+pub use derive_more_impl::{Neg, Not};
+
+#[cfg(feature = "sum")]
+pub use derive_more_impl::{Product, Sum};
+
+#[cfg(feature = "try_into")]
+pub use derive_more_impl::TryInto;
+
 #[cfg(feature = "try_unwrap")]
-#[doc(inline)]
 pub use derive_more_impl::TryUnwrap;
 
 #[cfg(feature = "unwrap")]
-#[doc(inline)]
 pub use derive_more_impl::Unwrap;
 
+// Check if any feature is enabled
 #[cfg(not(any(
     feature = "full",
     feature = "add",
