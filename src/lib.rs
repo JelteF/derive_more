@@ -93,7 +93,6 @@ mod try_unwrap;
 #[doc(inline)]
 pub use self::try_unwrap::TryUnwrapError;
 
-
 // When re-exporting traits from std we need to do a pretty crazy trick, because we ONLY want
 // to re-export the traits and not derives that are called the same in the std module,
 // because those would conflict with our own. The way we do this is by first importing both
@@ -114,8 +113,8 @@ macro_rules! re_export_traits((
         #[cfg(feature = $feature)]
         #[doc(inline)]
         // Seems there's a bug in this warning because it considers the next line a glob import,
-        // even though when expanded it is not.
-        #[allow(ambiguous_glob_reexports)]
+        // even though when expanded it is not. Also make clippy not complain about it.
+        #[allow(ambiguous_glob_reexports, clippy::useless_attribute)]
         pub use crate::macros::{$($traits),*};
 
     }
@@ -201,7 +200,6 @@ re_export_traits!("not", not_traits, core::ops, Neg, Not);
 re_export_traits!("sum", sum_traits, core::iter, Product, Sum);
 
 re_export_traits!("try_into", try_into_traits, core::convert, TryInto);
-
 
 // Then finally also wildcard export the other derives, to also export the derives that don't have
 // a trait (e.g. Constructor).
