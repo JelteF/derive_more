@@ -11,7 +11,6 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use core::fmt::{Binary, Display};
 
 use derive_more::{Binary, Display, Octal, UpperHex};
 

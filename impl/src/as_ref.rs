@@ -10,7 +10,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let state = State::with_type_bound(
         input,
         trait_name,
-        quote! { ::core::convert },
         "as_ref".into(),
         AttrParams::ignore_and_forward(),
         false,

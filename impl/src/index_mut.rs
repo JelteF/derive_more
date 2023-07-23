@@ -6,12 +6,7 @@ use syn::{parse::Result, DeriveInput};
 /// Provides the hook to expand `#[derive(IndexMut)]` into an implementation of `IndexMut`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let index_type = format_ident!("__IdxT");
-    let mut state = State::with_field_ignore(
-        input,
-        trait_name,
-        quote! { ::core::ops },
-        "index_mut".into(),
-    )?;
+    let mut state = State::with_field_ignore(input, trait_name, "index_mut".into())?;
     state.add_trait_path_type_param(quote! { #index_type });
     let SingleFieldData {
         field,

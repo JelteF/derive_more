@@ -61,7 +61,6 @@ index = ["derive_more-impl/index"]
 index_mut = ["derive_more-impl/index_mut"]
 into = ["derive_more-impl/into"]
 into_iterator = ["derive_more-impl/into_iterator"]
-iterator = ["derive_more-impl/iterator"]
 mul_assign = ["derive_more-impl/mul_assign"]
 mul = ["derive_more-impl/mul"]
 not = ["derive_more-impl/not"]
@@ -73,8 +72,8 @@ try_unwrap = ["derive_more-impl/try_unwrap"]
 
 std = []
 full = [
-    "add_assign",
     "add",
+    "add_assign",
     "as_mut",
     "as_ref",
     "constructor",
@@ -90,14 +89,13 @@ full = [
     "into",
     "into_iterator",
     "is_variant",
-    "iterator",
-    "mul_assign",
     "mul",
+    "mul_assign",
     "not",
     "sum",
     "try_into",
-    "unwrap",
     "try_unwrap",
+    "unwrap",
 ]
 
 testing-helpers = ["derive_more-impl/testing-helpers", "dep:rustc_version"]

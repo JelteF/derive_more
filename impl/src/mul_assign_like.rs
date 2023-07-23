@@ -16,7 +16,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let mut state = State::with_attr_params(
         input,
         trait_name,
-        quote! { ::core::ops },
         method_name,
         AttrParams::struct_(vec!["forward"]),
     )?;

@@ -7,12 +7,8 @@ use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(IntoIterator)]` into an implementation of `IntoIterator`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::with_field_ignore_and_refs(
-        input,
-        trait_name,
-        quote! { ::core::iter },
-        "into_iterator".into(),
-    )?;
+    let state =
+        State::with_field_ignore_and_refs(input, trait_name, "into_iterator".into())?;
     let SingleFieldData {
         input_type,
         info,

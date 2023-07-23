@@ -1,8 +1,3 @@
-#[cfg(not(feature = "std"))]
-use core::error::Error;
-#[cfg(feature = "std")]
-use std::error::Error;
-
 use derive_more::Error;
 
 /// Derives `std::fmt::Display` for structs/enums.

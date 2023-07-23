@@ -1,7 +1,9 @@
 //! [`core::fmt::DebugTuple`] reimplementation with
 //! [`DebugTuple::finish_non_exhaustive()`] method.
 
+use ::core;
 use core::fmt::{Debug, Formatter, Result, Write};
+use core::prelude::v1::*;
 
 /// Same as [`core::fmt::DebugTuple`], but with
 /// [`DebugTuple::finish_non_exhaustive()`] method.

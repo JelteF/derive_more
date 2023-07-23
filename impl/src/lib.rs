@@ -108,26 +108,11 @@ macro_rules! create_derive(
     }
 );
 
-create_derive!("from", from, From, from_derive, from);
-
-create_derive!("into", into, Into, into_derive, into);
-
-create_derive!("constructor", constructor, Constructor, constructor_derive);
-
-create_derive!("not", not_like, Not, not_derive);
-create_derive!("not", not_like, Neg, neg_derive);
-
 create_derive!("add", add_like, Add, add_derive);
 create_derive!("add", add_like, Sub, sub_derive);
 create_derive!("add", add_like, BitAnd, bit_and_derive);
 create_derive!("add", add_like, BitOr, bit_or_derive);
 create_derive!("add", add_like, BitXor, bit_xor_derive);
-
-create_derive!("mul", mul_like, Mul, mul_derive, mul);
-create_derive!("mul", mul_like, Div, div_derive, div);
-create_derive!("mul", mul_like, Rem, rem_derive, rem);
-create_derive!("mul", mul_like, Shr, shr_derive, shr);
-create_derive!("mul", mul_like, Shl, shl_derive, shl);
 
 create_derive!("add_assign", add_assign_like, AddAssign, add_assign_derive,);
 create_derive!("add_assign", add_assign_like, SubAssign, sub_assign_derive,);
@@ -149,6 +134,97 @@ create_derive!(
     BitXorAssign,
     bit_xor_assign_derive,
 );
+
+create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
+
+create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
+
+create_derive!("constructor", constructor, Constructor, constructor_derive);
+
+create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
+
+create_derive!("deref", deref, Deref, deref_derive, deref);
+
+create_derive!(
+    "deref_mut",
+    deref_mut,
+    DerefMut,
+    deref_mut_derive,
+    deref_mut,
+);
+
+create_derive!("display", fmt::display, Display, display_derive, display);
+create_derive!("display", fmt::display, Binary, binary_derive, binary);
+create_derive!("display", fmt::display, Octal, octal_derive, octal);
+create_derive!(
+    "display",
+    fmt::display,
+    LowerHex,
+    lower_hex_derive,
+    lower_hex,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    UpperHex,
+    upper_hex_derive,
+    upper_hex,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    LowerExp,
+    lower_exp_derive,
+    lower_exp,
+);
+create_derive!(
+    "display",
+    fmt::display,
+    UpperExp,
+    upper_exp_derive,
+    upper_exp,
+);
+create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
+
+create_derive!("error", error, Error, error_derive, error);
+
+create_derive!("from", from, From, from_derive, from);
+
+create_derive!("from_str", from_str, FromStr, from_str_derive);
+
+create_derive!("index", index, Index, index_derive, index);
+
+create_derive!(
+    "index_mut",
+    index_mut,
+    IndexMut,
+    index_mut_derive,
+    index_mut,
+);
+
+create_derive!("into", into, Into, into_derive, into);
+
+create_derive!(
+    "into_iterator",
+    into_iterator,
+    IntoIterator,
+    into_iterator_derive,
+    into_iterator,
+);
+
+create_derive!(
+    "is_variant",
+    is_variant,
+    IsVariant,
+    is_variant_derive,
+    is_variant,
+);
+
+create_derive!("mul", mul_like, Mul, mul_derive, mul);
+create_derive!("mul", mul_like, Div, div_derive, div);
+create_derive!("mul", mul_like, Rem, rem_derive, rem);
+create_derive!("mul", mul_like, Shr, shr_derive, shr);
+create_derive!("mul", mul_like, Shl, shl_derive, shl);
 
 create_derive!(
     "mul_assign",
@@ -186,88 +262,14 @@ create_derive!(
     shl_assign,
 );
 
+create_derive!("not", not_like, Not, not_derive);
+create_derive!("not", not_like, Neg, neg_derive);
+
 create_derive!("sum", sum_like, Sum, sum_derive);
 create_derive!("sum", sum_like, Product, product_derive);
 
-create_derive!("error", error, Error, error_derive, error);
-
-create_derive!("from_str", from_str, FromStr, from_str_derive);
-
-create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
-
-create_derive!("display", fmt::display, Display, display_derive, display);
-create_derive!("display", fmt::display, Binary, binary_derive, binary);
-create_derive!("display", fmt::display, Octal, octal_derive, octal);
-create_derive!(
-    "display",
-    fmt::display,
-    LowerHex,
-    lower_hex_derive,
-    lower_hex,
-);
-create_derive!(
-    "display",
-    fmt::display,
-    UpperHex,
-    upper_hex_derive,
-    upper_hex,
-);
-create_derive!(
-    "display",
-    fmt::display,
-    LowerExp,
-    lower_exp_derive,
-    lower_exp,
-);
-create_derive!(
-    "display",
-    fmt::display,
-    UpperExp,
-    upper_exp_derive,
-    upper_exp,
-);
-create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
-
-create_derive!("index", index, Index, index_derive, index);
-create_derive!(
-    "index_mut",
-    index_mut,
-    IndexMut,
-    index_mut_derive,
-    index_mut,
-);
-
-create_derive!(
-    "into_iterator",
-    into_iterator,
-    IntoIterator,
-    into_iterator_derive,
-    into_iterator,
-);
-
 create_derive!("try_into", try_into, TryInto, try_into_derive, try_into);
 
-create_derive!("deref", deref, Deref, deref_derive, deref);
-create_derive!(
-    "deref_mut",
-    deref_mut,
-    DerefMut,
-    deref_mut_derive,
-    deref_mut,
-);
-
-create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
-create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
-
-create_derive!(
-    "is_variant",
-    is_variant,
-    IsVariant,
-    is_variant_derive,
-    is_variant,
-);
-
-create_derive!("unwrap", unwrap, Unwrap, unwrap_derive, unwrap);
 create_derive!(
     "try_unwrap",
     try_unwrap,
@@ -275,3 +277,5 @@ create_derive!(
     try_unwrap_derive,
     try_unwrap,
 );
+
+create_derive!("unwrap", unwrap, Unwrap, unwrap_derive, unwrap);

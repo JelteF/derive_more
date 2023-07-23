@@ -33,7 +33,7 @@ unicode-xid = { version = "0.2.2", optional = true }
 rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
-derive_more = { path = "..", features = ["add", "debug", "error", "from_str", "not", "std", "try_into", "try_unwrap"] }
+derive_more = { path = "..", features = ["full"] }
 itertools = "0.11.0"
 
 [badges]
@@ -45,8 +45,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = []
 
-add_assign = []
 add = []
+add_assign = []
 as_mut = []
 as_ref = []
 constructor = []
@@ -61,14 +61,13 @@ index = []
 index_mut = []
 into = ["syn/extra-traits"]
 into_iterator = []
-iterator = []
-mul_assign = ["syn/extra-traits"]
+is_variant = ["dep:convert_case"]
 mul = ["syn/extra-traits"]
+mul_assign = ["syn/extra-traits"]
 not = ["syn/extra-traits"]
 sum = []
 try_into = ["syn/extra-traits"]
-is_variant = ["dep:convert_case"]
-unwrap = ["dep:convert_case"]
 try_unwrap = ["dep:convert_case"]
+unwrap = ["dep:convert_case"]
 
 testing-helpers = ["dep:rustc_version"]

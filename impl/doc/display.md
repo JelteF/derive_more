@@ -86,8 +86,6 @@ Note how we have to bound `U` and `V` by `Display` in the following example, as 
 Not even `Display`.
 
 ```rust
-# use std::fmt::Display;
-#
 # use derive_more::Display;
 #
 # trait MyTrait { fn my_function(&self) -> i32; }

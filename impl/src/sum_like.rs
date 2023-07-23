@@ -6,12 +6,7 @@ use quote::{format_ident, quote};
 use syn::{DeriveInput, Result};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::new(
-        input,
-        trait_name,
-        quote! { ::core::iter },
-        trait_name.to_lowercase(),
-    )?;
+    let state = State::new(input, trait_name, trait_name.to_lowercase())?;
     let multi_field_data = state.enabled_fields_data();
     let MultiFieldData {
         input_type,

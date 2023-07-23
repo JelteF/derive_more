@@ -5,12 +5,8 @@ use syn::{parse::Result, DeriveInput};
 
 /// Provides the hook to expand `#[derive(DerefMut)]` into an implementation of `DerefMut`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::with_field_ignore_and_forward(
-        input,
-        trait_name,
-        quote! { ::core::ops },
-        "deref_mut".into(),
-    )?;
+    let state =
+        State::with_field_ignore_and_forward(input, trait_name, "deref_mut".into())?;
     let SingleFieldData {
         input_type,
         trait_path,
