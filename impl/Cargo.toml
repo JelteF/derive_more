@@ -40,6 +40,7 @@ itertools = "0.11.0"
 github = { repository = "JelteF/derive_more", workflow = "CI" }
 
 [package.metadata.docs.rs]
+features = ["full"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
@@ -69,5 +70,32 @@ sum = []
 try_into = ["syn/extra-traits"]
 try_unwrap = ["dep:convert_case"]
 unwrap = ["dep:convert_case"]
+
+full = [
+    "add",
+    "add_assign",
+    "as_mut",
+    "as_ref",
+    "constructor",
+    "debug",
+    "deref",
+    "deref_mut",
+    "display",
+    "error",
+    "from",
+    "from_str",
+    "index",
+    "index_mut",
+    "into",
+    "into_iterator",
+    "is_variant",
+    "mul",
+    "mul_assign",
+    "not",
+    "sum",
+    "try_into",
+    "try_unwrap",
+    "unwrap",
+]
 
 testing-helpers = ["dep:rustc_version"]
