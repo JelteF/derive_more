@@ -43,7 +43,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(all(not(feature = "std"), feature = "error"), feature(error_in_core))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![deny(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
+#![cfg_attr(any(not(docsrs), ci), deny(rustdoc::all))]
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(clippy::nonstandard_macro_braces)]
 

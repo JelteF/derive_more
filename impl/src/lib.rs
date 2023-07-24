@@ -1,7 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![recursion_limit = "128"]
-#![deny(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
+#![cfg_attr(any(not(docsrs), ci), deny(rustdoc::all))]
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(clippy::nonstandard_macro_braces)]
 

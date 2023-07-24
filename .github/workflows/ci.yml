@@ -149,9 +149,13 @@ jobs:
         with:
           toolchain: nightly
 
-      - run: cargo +nightly doc --workspace --all-features
+      - run: cargo +nightly doc -p derive_more-impl --features full
         env:
-          RUSTDOCFLAGS: --cfg docsrs
+          RUSTDOCFLAGS: --cfg docsrs --cfg ci
+
+      - run: cargo +nightly doc -p derive_more --features full
+        env:
+          RUSTDOCFLAGS: --cfg docsrs --cfg ci
 
 
 
