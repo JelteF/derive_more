@@ -5,13 +5,9 @@ use std::fmt;
 
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_quote,
-    spanned::Spanned as _,
-};
+use syn::{parse_quote, spanned::Spanned as _};
 
-use super::{BoundsAttribute, FmtAttribute};
+use super::{BoundsAttribute, DisplayAttribute, FmtAttribute};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -218,12 +214,12 @@ impl Attributes {
             .iter()
             .filter(|attr| attr.path().is_ident(trait_name_to_attribute_name(trait_name)))
             .try_fold(Attributes::default(), |mut attrs, attr| {
-                let attr = attr.parse_args::<Attribute>()?;
+                let attr = attr.parse_args::<DisplayAttribute>()?;
                 match attr {
-                    Attribute::Bounds(more) => {
+                    DisplayAttribute::Bounds(more) => {
                         attrs.bounds.0.extend(more.0);
                     }
-                    Attribute::Fmt(fmt) => {
+                    DisplayAttribute::Fmt(fmt) => {
                         attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
                             dup.span(),
                             format!(
@@ -234,29 +230,6 @@ impl Attributes {
                 };
                 Ok(attrs)
             })
-    }
-}
-
-/// Representation of a single [`fmt::Display`]-like derive macro attribute.
-#[derive(Debug)]
-enum Attribute {
-    /// [`fmt`] attribute.
-    Fmt(FmtAttribute),
-
-    /// Addition trait bounds.
-    Bounds(BoundsAttribute),
-}
-
-impl Parse for Attribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        BoundsAttribute::check_legacy_fmt(input)?;
-        FmtAttribute::check_legacy_fmt(input)?;
-
-        if input.peek(syn::LitStr) {
-            input.parse().map(Attribute::Fmt)
-        } else {
-            input.parse().map(Attribute::Bounds)
-        }
     }
 }
 

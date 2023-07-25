@@ -11,7 +11,7 @@ use syn::{
     Ident,
 };
 
-use super::{BoundsAttribute, FmtAttribute};
+use super::{BoundsAttribute, DisplayAttribute, FmtAttribute};
 
 /// Expands a [`fmt::Debug`] derive macro.
 ///
@@ -138,12 +138,16 @@ fn expand_enum(
 /// Representation of a [`fmt::Debug`] derive macro container attribute.
 ///
 /// ```rust,ignore
+/// #[debug("<fmt_literal>", <fmt_args>)]
 /// #[debug(bound(<bounds>))]
 /// ```
 ///
 /// [`fmt::Debug`]: std::fmt::Debug
 #[derive(Debug, Default)]
 struct ContainerAttributes {
+    /// Interpolation [`FmtAttribute`].
+    fmt: Option<FmtAttribute>,
+
     /// Additional trait bounds.
     bounds: BoundsAttribute,
 }
@@ -156,18 +160,20 @@ impl ContainerAttributes {
             .iter()
             .filter(|attr| attr.path().is_ident("debug"))
             .try_fold(ContainerAttributes::default(), |mut attrs, attr| {
-                let attr = attr.parse_args::<ContainerAttributes>()?;
-                attrs.bounds.0.extend(attr.bounds.0);
+                let attr = attr.parse_args::<DisplayAttribute>()?;
+                match attr {
+                    DisplayAttribute::Bounds(more) => {
+                        attrs.bounds.0.extend(more.0);
+                    }
+                    DisplayAttribute::Fmt(fmt) => {
+                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
+                            dup.span(),
+                            "multiple `#[debug(\"...\", ...)]` attributes aren't allowed",
+                        )))?;
+                    }
+                };
                 Ok(attrs)
             })
-    }
-}
-
-impl Parse for ContainerAttributes {
-    fn parse(input: ParseStream) -> Result<Self> {
-        BoundsAttribute::check_legacy_fmt(input)?;
-
-        input.parse().map(|bounds| ContainerAttributes { bounds })
     }
 }
 
@@ -253,6 +259,9 @@ impl<'a> Expansion<'a> {
     ///
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> Result<TokenStream> {
+        if let Some(fmt) = &self.attr.fmt {
+            return Ok(quote! { ::core::write!(__derive_more_f, #fmt) });
+        };
         match self.fields {
             syn::Fields::Unit => {
                 let ident = self.ident.to_string();
