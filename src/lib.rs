@@ -59,7 +59,15 @@ pub mod __private {
 
 // The modules containing error types and other helpers
 #[cfg(any(feature = "add", feature = "not"))]
-pub mod ops;
+mod ops;
+
+#[cfg(any(feature = "add", feature = "not"))]
+pub use crate::ops::UnitError;
+
+#[cfg(feature = "add")]
+mod add;
+#[cfg(feature = "add")]
+pub use crate::add::{BinaryError, WrongVariantError};
 
 #[cfg(feature = "debug")]
 mod fmt;
