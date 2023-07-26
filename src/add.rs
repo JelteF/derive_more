@@ -1,5 +1,5 @@
-use core::fmt;
 use crate::UnitError;
+use core::fmt;
 
 /// Error returned by the derived implementations when an arithmetic or logic
 /// operation is invoked on mismatched enum variants.
