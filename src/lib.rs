@@ -1,32 +1,32 @@
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
-//! [`From`]: crate::From
-//! [`Into`]: crate::Into
-//! [`FromStr`]: crate::FromStr
-//! [`TryInto`]: crate::TryInto
-//! [`IntoIterator`]: crate::IntoIterator
-//! [`AsRef`]: crate::AsRef
+//! [`From`]: macro@crate::From
+//! [`Into`]: macro@crate::Into
+//! [`FromStr`]: macro@crate::FromStr
+//! [`TryInto`]: macro@crate::TryInto
+//! [`IntoIterator`]: macro@crate::IntoIterator
+//! [`AsRef`]: macro@crate::AsRef
 //!
-//! [`Debug`]: crate::Debug
-//! [`Display`-like]: crate::Display
+//! [`Debug`]: macro@crate::Debug
+//! [`Display`-like]: macro@crate::Display
 //!
-//! [`Error`]: crate::Error
+//! [`Error`]: macro@crate::Error
 //!
-//! [`Index`]: crate::Index
-//! [`Deref`]: crate::Deref
-//! [`Not`-like]: crate::Not
-//! [`Add`-like]: crate::Add
-//! [`Mul`-like]: crate::Mul
-//! [`Sum`-like]: crate::Sum
-//! [`IndexMut`]: crate::IndexMut
-//! [`DerefMut`]: crate::DerefMut
-//! [`AddAssign`-like]: crate::AddAssign
-//! [`MulAssign`-like]: crate::MulAssign
+//! [`Index`]: macro@crate::Index
+//! [`Deref`]: macro@crate::Deref
+//! [`Not`-like]: macro@crate::Not
+//! [`Add`-like]: macro@crate::Add
+//! [`Mul`-like]: macro@crate::Mul
+//! [`Sum`-like]: macro@crate::Sum
+//! [`IndexMut`]: macro@crate::IndexMut
+//! [`DerefMut`]: macro@crate::DerefMut
+//! [`AddAssign`-like]: macro@crate::AddAssign
+//! [`MulAssign`-like]: macro@crate::MulAssign
 //!
-//! [`Constructor`]: crate::Constructor
-//! [`IsVariant`]: crate::IsVariant
-//! [`Unwrap`]: crate::Unwrap
-//! [`TryUnwrap`]: crate::TryUnwrap
+//! [`Constructor`]: macro@crate::Constructor
+//! [`IsVariant`]: macro@crate::IsVariant
+//! [`Unwrap`]: macro@crate::Unwrap
+//! [`TryUnwrap`]: macro@crate::TryUnwrap
 
 // The README includes doctests requiring these features. To make sure that
 // tests pass when not all features are provided we exclude it when the
@@ -97,15 +97,14 @@ pub use self::try_unwrap::TryUnwrapError;
 // derive.
 macro_rules! re_export_traits((
     $feature:literal, $new_module_name:ident, $module:path $(, $traits:ident)* $(,)?) => {
-        #[cfg(feature = $feature)]
+        #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         mod $new_module_name {
             pub use $module::{$($traits),*};
         }
 
-        #[cfg(feature = $feature)]
+        #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         #[doc(hidden)]
         pub use crate::$new_module_name::*;
-
     }
 );
 
