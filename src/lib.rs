@@ -97,15 +97,14 @@ pub use self::try_unwrap::TryUnwrapError;
 // derive.
 macro_rules! re_export_traits((
     $feature:literal, $new_module_name:ident, $module:path $(, $traits:ident)* $(,)?) => {
-        #[cfg(feature = $feature)]
+        #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         mod $new_module_name {
             pub use $module::{$($traits),*};
         }
 
-        #[cfg(feature = $feature)]
+        #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         #[doc(hidden)]
         pub use crate::$new_module_name::*;
-
     }
 );
 
