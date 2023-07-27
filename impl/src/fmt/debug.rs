@@ -260,6 +260,18 @@ impl<'a> Expansion<'a> {
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
+            for field_attr in self
+                .fields
+                .iter()
+                .map(|field| FieldAttribute::parse_attrs(&field.attrs))
+            {
+                if let Some(FieldAttribute::Fmt(fmt)) = field_attr? {
+                    return Err(Error::new_spanned(
+                        fmt,
+                        r#"field format not supported when `#[debug("<format>", ...)]` is specified on the container"#,
+                    ));
+                }
+            }
             return Ok(quote! { ::core::write!(__derive_more_f, #fmt) });
         };
         match self.fields {
