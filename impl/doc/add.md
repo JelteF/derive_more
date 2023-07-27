@@ -113,8 +113,8 @@ Code like this will be generated:
 #     Unit,
 # }
 impl ::core::ops::Add for MixedInts {
-    type Output = Result<MixedInts, ::derive_more::ops::BinaryError>;
-    fn add(self, rhs: MixedInts) -> Result<MixedInts, ::derive_more::ops::BinaryError> {
+    type Output = Result<MixedInts, ::derive_more::BinaryError>;
+    fn add(self, rhs: MixedInts) -> Result<MixedInts, ::derive_more::BinaryError> {
         match (self, rhs) {
             (MixedInts::SmallInt(__l_0), MixedInts::SmallInt(__r_0)) => {
                 Ok(MixedInts::SmallInt(__l_0.add(__r_0)))
@@ -138,11 +138,11 @@ impl ::core::ops::Add for MixedInts {
             (MixedInts::UnsignedTwo(__l_0), MixedInts::UnsignedTwo(__r_0)) => {
                 Ok(MixedInts::UnsignedTwo(__l_0.add(__r_0)))
             }
-            (MixedInts::Unit, MixedInts::Unit) => Err(::derive_more::ops::BinaryError::Unit(
-                ::derive_more::ops::UnitError::new("add"),
+            (MixedInts::Unit, MixedInts::Unit) => Err(::derive_more::BinaryError::Unit(
+                ::derive_more::UnitError::new("add"),
             )),
-            _ => Err(::derive_more::ops::BinaryError::Mismatch(
-                ::derive_more::ops::WrongVariantError::new("add"),
+            _ => Err(::derive_more::BinaryError::Mismatch(
+                ::derive_more::WrongVariantError::new("add"),
             )),
         }
     }

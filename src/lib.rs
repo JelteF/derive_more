@@ -57,9 +57,17 @@ pub mod __private {
     pub use crate::vendor::thiserror::aserror::AsDynError;
 }
 
-// The modules containing error types and other helpers
+// The modules containing error types and other helpers.
+
+#[cfg(feature = "add")]
+mod add;
+#[cfg(feature = "add")]
+pub use crate::add::{BinaryError, WrongVariantError};
+
 #[cfg(any(feature = "add", feature = "not"))]
-pub mod ops;
+mod ops;
+#[cfg(any(feature = "add", feature = "not"))]
+pub use crate::ops::UnitError;
 
 #[cfg(feature = "debug")]
 mod fmt;
@@ -83,7 +91,7 @@ pub use crate::convert::TryIntoError;
 mod try_unwrap;
 #[cfg(feature = "try_unwrap")]
 #[doc(inline)]
-pub use self::try_unwrap::TryUnwrapError;
+pub use crate::try_unwrap::TryUnwrapError;
 
 // When re-exporting traits from std we need to do a pretty crazy trick, because we ONLY want
 // to re-export the traits and not derives that are called the same in the std module,
@@ -99,6 +107,7 @@ macro_rules! re_export_traits((
     $feature:literal, $new_module_name:ident, $module:path $(, $traits:ident)* $(,)?) => {
         #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         mod $new_module_name {
+            #[doc(hidden)]
             pub use $module::{$($traits),*};
         }
 
