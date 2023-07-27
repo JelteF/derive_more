@@ -148,11 +148,11 @@ Code like this will be generated:
 #     Unit,
 # }
 impl ::core::ops::Not for EnumWithUnit {
-    type Output = Result<EnumWithUnit, ::derive_more::ops::UnitError>;
-    fn not(self) -> Result<EnumWithUnit, ::derive_more::ops::UnitError> {
+    type Output = Result<EnumWithUnit, ::derive_more::UnitError>;
+    fn not(self) -> Result<EnumWithUnit, ::derive_more::UnitError> {
         match self {
             EnumWithUnit::SmallInt(__0) => Ok(EnumWithUnit::SmallInt(__0.not())),
-            EnumWithUnit::Unit => Err(::derive_more::ops::UnitError::new("not")),
+            EnumWithUnit::Unit => Err(::derive_more::UnitError::new("not")),
         }
     }
 }
