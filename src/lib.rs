@@ -104,6 +104,7 @@ macro_rules! re_export_traits((
     $feature:literal, $new_module_name:ident, $module:path $(, $traits:ident)* $(,)?) => {
         #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         mod $new_module_name {
+            #[doc(hidden)]
             pub use $module::{$($traits),*};
         }
 
