@@ -1153,3 +1153,41 @@ mod generic {
         }
     }
 }
+
+mod item_format {
+    use derive_more::Debug;
+
+    #[test]
+    fn structs() {
+        #[derive(Debug)]
+        #[debug("Format String")]
+        struct Unit;
+
+        assert_eq!(format!("{Unit:?}"), "Format String");
+
+        #[derive(Debug)]
+        #[debug("{_0} * {_1}")]
+        struct Tuple(u8, bool);
+
+        assert_eq!(format!("{:?}", Tuple(10, true)), "10 * true");
+
+        #[derive(Debug)]
+        #[debug("{a} * {b}")]
+        struct Struct {
+            a: u8,
+            b: bool,
+        }
+
+        assert_eq!(format!("{:?}", Struct { a: 10, b: true }), "10 * true");
+    }
+
+    #[test]
+    fn enums() {
+        #[derive(Debug)]
+        #[debug("Format String")]
+        enum Item {
+            Unit,
+        }
+        assert_eq!(format!("{:?}", Item::Unit), "Format String");
+    }
+}
