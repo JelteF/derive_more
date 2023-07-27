@@ -579,14 +579,6 @@ mod generic {
 
     struct NotDebug;
 
-    trait Bound {}
-
-    impl Bound for () {}
-
-    fn display_bound<T: Bound>(_: &T) -> &'static str {
-        "()"
-    }
-
     #[derive(Debug)]
     struct NamedGenericStruct<T> {
         field: T,
@@ -600,6 +592,23 @@ mod generic {
         assert_eq!(
             format!("{:#?}", NamedGenericStruct { field: 1 }),
             "NamedGenericStruct {\n    field: 1,\n}",
+        );
+    }
+
+    #[derive(Debug)]
+    struct NamedGenericStructIgnored<T> {
+        #[debug(ignore)]
+        field: T,
+    }
+    #[test]
+    fn named_generic_struct_ignored() {
+        assert_eq!(
+            format!("{:?}", NamedGenericStructIgnored { field: NotDebug }),
+            "NamedGenericStructIgnored { .. }",
+        );
+        assert_eq!(
+            format!("{:#?}", NamedGenericStructIgnored { field: NotDebug }),
+            "NamedGenericStructIgnored { .. }",
         );
     }
 
@@ -719,6 +728,20 @@ mod generic {
         assert_eq!(
             format!("{:#?}", UnnamedGenericStruct(2)),
             "UnnamedGenericStruct(\n    2,\n)",
+        );
+    }
+
+    #[derive(Debug)]
+    struct UnnamedGenericStructIgnored<T>(#[debug(skip)] T);
+    #[test]
+    fn unnamed_generic_struct_ignored() {
+        assert_eq!(
+            format!("{:?}", UnnamedGenericStructIgnored(NotDebug)),
+            "UnnamedGenericStructIgnored(..)",
+        );
+        assert_eq!(
+            format!("{:#?}", UnnamedGenericStructIgnored(NotDebug)),
+            "UnnamedGenericStructIgnored(..)",
         );
     }
 
