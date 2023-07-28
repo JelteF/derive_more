@@ -574,10 +574,17 @@ mod enums {
 mod generic {
     #[cfg(not(feature = "std"))]
     use alloc::format;
+    use core::fmt;
 
     use derive_more::Debug;
 
     struct NotDebug;
+
+    impl fmt::Display for NotDebug {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_tuple("NotDebug").finish()
+        }
+    }
 
     #[derive(Debug)]
     struct NamedGenericStruct<T> {
@@ -626,6 +633,14 @@ mod generic {
         assert_eq!(
             format!("{:#?}", InterpolatedNamedGenericStruct { field: 1 }),
             "InterpolatedNamedGenericStruct {\n    field: 1.1,\n}",
+        );
+        assert_eq!(
+            format!("{:?}", InterpolatedNamedGenericStruct { field: NotDebug }),
+            "InterpolatedNamedGenericStruct { field: NotDebug.NotDebug }",
+        );
+        assert_eq!(
+            format!("{:#?}", InterpolatedNamedGenericStruct { field: NotDebug }),
+            "InterpolatedNamedGenericStruct {\n    field: NotDebug.NotDebug,\n}",
         );
     }
 
@@ -756,6 +771,14 @@ mod generic {
         assert_eq!(
             format!("{:#?}", InterpolatedUnnamedGenericStruct(2)),
             "InterpolatedUnnamedGenericStruct(\n    2.2,\n)",
+        );
+        assert_eq!(
+            format!("{:?}", InterpolatedUnnamedGenericStruct(NotDebug)),
+            "InterpolatedUnnamedGenericStruct(NotDebug.NotDebug)",
+        );
+        assert_eq!(
+            format!("{:#?}", InterpolatedUnnamedGenericStruct(NotDebug)),
+            "InterpolatedUnnamedGenericStruct(\n    NotDebug.NotDebug,\n)",
         );
     }
 
