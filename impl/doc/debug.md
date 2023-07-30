@@ -3,7 +3,7 @@
 This derive macro is a clever superset of `Debug` from standard library. Additional features include:
 - not imposing redundant trait bounds;
 - `#[debug(skip)]` attribute to skip formatting struct field or enum variant;
-- `#[debug("...", args...)]` to specify custom formatting either for the whole item or a particular struct or enum variant field;
+- `#[debug("...", args...)]` to specify custom formatting either for the whole struct or variant or a particular struct or enum variant field;
 - `#[debug(bounds(...))]` to impose additional custom trait bounds.
 
 
@@ -11,7 +11,7 @@ This derive macro is a clever superset of `Debug` from standard library. Additio
 
 ## The format of the format
 
-You supply a format by placing an attribute on the item or on a particular struct or enum variant field (not enum variant itself):
+You supply a format by placing an attribute on the item or on a struct or variant or particular struct or enum variant field:
 `#[debug("...", args...)]`. The format is exactly like in [`format!()`] or any other [`format_args!()`]-based macros.
 
 The variables available in the arguments is `self` and each member of the variant or struct, with members of tuple structs being
@@ -117,6 +117,8 @@ enum E {
         i: i8,
     },
     Path(#[debug("{}", _0.display())] PathBuf),
+    #[debug("{_0}")]
+    EnumFormat(bool)
 }
 
 assert_eq!(format!("{:?}", MyInt(-2)), "MyInt(-2)");
@@ -125,6 +127,7 @@ assert_eq!(format!("{:?}", StructFormat("answer", 42)), "answer = 42");
 assert_eq!(format!("{:?}", E::Skipped { x: 10, y: 20 }), "Skipped { x: 10, .. }");
 assert_eq!(format!("{:?}", E::Binary { i: -2 }), "Binary { i: 11111110 }");
 assert_eq!(format!("{:?}", E::Path("abc".into())), "Path(abc)");
+assert_eq!(format!("{:?}", E::EnumFormat(true)), "true");
 ```
 
 [`format!()`]: https://doc.rust-lang.org/stable/std/macro.format.html

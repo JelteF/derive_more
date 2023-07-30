@@ -1184,10 +1184,14 @@ mod item_format {
     #[test]
     fn enums() {
         #[derive(Debug)]
-        #[debug("Format String")]
         enum Item {
+            #[debug("Format String")]
             Unit,
+            #[debug("Format {a} String")]
+            Fields { a: usize },
         }
+
         assert_eq!(format!("{:?}", Item::Unit), "Format String");
+        assert_eq!(format!("{:?}", Item::Fields { a: 1 }), "Format 1 String");
     }
 }

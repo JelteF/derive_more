@@ -91,13 +91,40 @@ fn expand_struct(
 ///
 /// [`fmt::Debug`]: std::fmt::Debug
 fn expand_enum(
-    attrs: ContainerAttributes,
+    mut attrs: ContainerAttributes,
     e: &syn::DataEnum,
 ) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+    if let Some(item_fmt) = attrs.fmt.as_ref() {
+        return Err(Error::new_spanned(
+            item_fmt,
+            "item format not supported on enums",
+        ));
+    }
+
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
             let ident = &variant.ident;
+
+            let mut format_attrs = variant
+                .attrs
+                .iter()
+                .filter_map(|a| {
+                    a.path()
+                        .is_ident("debug")
+                        .then(|| a.parse_args::<FmtAttribute>())
+                })
+                .collect::<Result<Vec<_>>>()?;
+
+            if let Some(second) = format_attrs.get(1) {
+                return Err(Error::new_spanned(
+                    second,
+                    "only single `#[debug(...)]` attribute is allowed here",
+                ));
+            }
+
+            // Set the format argument to that of the current variant or None.
+            attrs.fmt = format_attrs.pop();
 
             let v = Expansion {
                 attr: &attrs,
@@ -196,7 +223,7 @@ enum FieldAttribute {
 }
 
 impl FieldAttribute {
-    /// Parses [`ContainerAttributes`] from the provided [`syn::Attribute`]s.
+    /// Parses [`FieldAttributes`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
         Ok(attrs
             .as_ref()

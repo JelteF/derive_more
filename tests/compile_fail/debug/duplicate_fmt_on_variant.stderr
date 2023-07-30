@@ -1,0 +1,5 @@
+error: only single `#[debug(...)]` attribute is allowed here
+ --> tests/compile_fail/debug/duplicate_fmt_on_variant.rs:4:13
+  |
+4 |     #[debug("Second")]
+  |             ^^^^^^^^

@@ -1,0 +1,5 @@
+error: item format not supported on enums
+ --> tests/compile_fail/debug/fmt_on_enum.rs:2:9
+  |
+2 | #[debug("Test")]
+  |         ^^^^^^
