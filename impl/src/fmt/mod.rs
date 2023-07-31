@@ -41,7 +41,6 @@ impl Parse for DisplayAttribute {
     }
 }
 
-
 /// Representation of a macro attribute expressing additional trait bounds.
 #[derive(Debug, Default)]
 struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
