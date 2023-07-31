@@ -1155,6 +1155,9 @@ mod generic {
 }
 
 mod item_format {
+    #[cfg(not(feature = "std"))]
+    use alloc::format;
+
     use derive_more::Debug;
 
     #[test]
