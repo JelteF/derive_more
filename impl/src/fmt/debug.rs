@@ -346,26 +346,19 @@ impl<'a> Expansion<'a> {
         self.fields.iter().try_fold(
             self.attr.bounds.0.clone().into_iter().collect::<Vec<_>>(),
             |mut out, field| {
-                let fmt_attr =
-                    FieldAttribute::parse_attrs(&field.attrs)?.and_then(|attr| {
-                        match attr {
-                            FieldAttribute::Fmt(fmt) => Some(fmt),
-                            FieldAttribute::Skip => None,
-                        }
-                    });
                 let ty = &field.ty;
-
-                if let Some(attr) = fmt_attr {
-                    out.extend(attr.bounded_types(self.fields).map(
-                        |(ty, trait_name)| {
-                            let trait_name = format_ident!("{trait_name}");
-                            parse_quote! { #ty: ::core::fmt::#trait_name }
-                        },
-                    ));
-                } else {
-                    out.extend([parse_quote! { #ty: ::core::fmt::Debug }]);
+                match FieldAttribute::parse_attrs(&field.attrs)? {
+                    Some(FieldAttribute::Fmt(attr)) => {
+                        out.extend(attr.bounded_types(self.fields).map(
+                            |(ty, trait_name)| {
+                                let trait_name = format_ident!("{trait_name}");
+                                parse_quote! { #ty: ::core::fmt::#trait_name }
+                            },
+                        ));
+                    }
+                    Some(FieldAttribute::Skip) => {}
+                    None => out.extend([parse_quote! { #ty: ::core::fmt::Debug }]),
                 }
-
                 Ok(out)
             },
         )
