@@ -952,6 +952,28 @@ mod generic {
     }
 
     #[derive(Debug)]
+    enum InterpolatedGenericEnumIngored<A, B> {
+        #[debug("A {field}")]
+        A { field: A },
+        #[debug("B")]
+        B(B),
+    }
+    #[test]
+    fn interpolated_generic_enum_ignored() {
+        assert_eq!(
+            format!(
+                "{:?}",
+                InterpolatedGenericEnum::A::<_, u8> { field: NotDebug },
+            ),
+            "A NotDebug",
+        );
+        assert_eq!(
+            format!("{:?}", InterpolatedGenericEnum::B::<u8, _>(NotDebug)),
+            "B",
+        );
+    }
+
+    #[derive(Debug)]
     struct MultiTraitNamedGenericStruct<A, B> {
         #[debug("{}.{}<->{0:o}.{1:#x}<->{0:?}.{1:X?}", a, b)]
         a: A,
