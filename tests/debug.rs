@@ -574,17 +574,16 @@ mod enums {
 mod generic {
     #[cfg(not(feature = "std"))]
     use alloc::format;
+    use core::fmt;
 
     use derive_more::Debug;
 
     struct NotDebug;
 
-    trait Bound {}
-
-    impl Bound for () {}
-
-    fn display_bound<T: Bound>(_: &T) -> &'static str {
-        "()"
+    impl fmt::Display for NotDebug {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_tuple("NotDebug").finish()
+        }
     }
 
     #[derive(Debug)]
@@ -604,6 +603,23 @@ mod generic {
     }
 
     #[derive(Debug)]
+    struct NamedGenericStructIgnored<T> {
+        #[debug(ignore)]
+        field: T,
+    }
+    #[test]
+    fn named_generic_struct_ignored() {
+        assert_eq!(
+            format!("{:?}", NamedGenericStructIgnored { field: NotDebug }),
+            "NamedGenericStructIgnored { .. }",
+        );
+        assert_eq!(
+            format!("{:#?}", NamedGenericStructIgnored { field: NotDebug }),
+            "NamedGenericStructIgnored { .. }",
+        );
+    }
+
+    #[derive(Debug)]
     struct InterpolatedNamedGenericStruct<T> {
         #[debug("{field}.{}", field)]
         field: T,
@@ -617,6 +633,14 @@ mod generic {
         assert_eq!(
             format!("{:#?}", InterpolatedNamedGenericStruct { field: 1 }),
             "InterpolatedNamedGenericStruct {\n    field: 1.1,\n}",
+        );
+        assert_eq!(
+            format!("{:?}", InterpolatedNamedGenericStruct { field: NotDebug }),
+            "InterpolatedNamedGenericStruct { field: NotDebug.NotDebug }",
+        );
+        assert_eq!(
+            format!("{:#?}", InterpolatedNamedGenericStruct { field: NotDebug }),
+            "InterpolatedNamedGenericStruct {\n    field: NotDebug.NotDebug,\n}",
         );
     }
 
@@ -723,6 +747,20 @@ mod generic {
     }
 
     #[derive(Debug)]
+    struct UnnamedGenericStructIgnored<T>(#[debug(skip)] T);
+    #[test]
+    fn unnamed_generic_struct_ignored() {
+        assert_eq!(
+            format!("{:?}", UnnamedGenericStructIgnored(NotDebug)),
+            "UnnamedGenericStructIgnored(..)",
+        );
+        assert_eq!(
+            format!("{:#?}", UnnamedGenericStructIgnored(NotDebug)),
+            "UnnamedGenericStructIgnored(..)",
+        );
+    }
+
+    #[derive(Debug)]
     struct InterpolatedUnnamedGenericStruct<T>(#[debug("{}.{_0}", _0)] T);
     #[test]
     fn interpolated_unnamed_generic_struct() {
@@ -733,6 +771,14 @@ mod generic {
         assert_eq!(
             format!("{:#?}", InterpolatedUnnamedGenericStruct(2)),
             "InterpolatedUnnamedGenericStruct(\n    2.2,\n)",
+        );
+        assert_eq!(
+            format!("{:?}", InterpolatedUnnamedGenericStruct(NotDebug)),
+            "InterpolatedUnnamedGenericStruct(NotDebug.NotDebug)",
+        );
+        assert_eq!(
+            format!("{:#?}", InterpolatedUnnamedGenericStruct(NotDebug)),
+            "InterpolatedUnnamedGenericStruct(\n    NotDebug.NotDebug,\n)",
         );
     }
 

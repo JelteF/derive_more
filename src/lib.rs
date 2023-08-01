@@ -1,32 +1,32 @@
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
-//! [`From`]: crate::From
-//! [`Into`]: crate::Into
-//! [`FromStr`]: crate::FromStr
-//! [`TryInto`]: crate::TryInto
-//! [`IntoIterator`]: crate::IntoIterator
-//! [`AsRef`]: crate::AsRef
+//! [`From`]: macro@crate::From
+//! [`Into`]: macro@crate::Into
+//! [`FromStr`]: macro@crate::FromStr
+//! [`TryInto`]: macro@crate::TryInto
+//! [`IntoIterator`]: macro@crate::IntoIterator
+//! [`AsRef`]: macro@crate::AsRef
 //!
-//! [`Debug`]: crate::Debug
-//! [`Display`-like]: crate::Display
+//! [`Debug`]: macro@crate::Debug
+//! [`Display`-like]: macro@crate::Display
 //!
-//! [`Error`]: crate::Error
+//! [`Error`]: macro@crate::Error
 //!
-//! [`Index`]: crate::Index
-//! [`Deref`]: crate::Deref
-//! [`Not`-like]: crate::Not
-//! [`Add`-like]: crate::Add
-//! [`Mul`-like]: crate::Mul
-//! [`Sum`-like]: crate::Sum
-//! [`IndexMut`]: crate::IndexMut
-//! [`DerefMut`]: crate::DerefMut
-//! [`AddAssign`-like]: crate::AddAssign
-//! [`MulAssign`-like]: crate::MulAssign
+//! [`Index`]: macro@crate::Index
+//! [`Deref`]: macro@crate::Deref
+//! [`Not`-like]: macro@crate::Not
+//! [`Add`-like]: macro@crate::Add
+//! [`Mul`-like]: macro@crate::Mul
+//! [`Sum`-like]: macro@crate::Sum
+//! [`IndexMut`]: macro@crate::IndexMut
+//! [`DerefMut`]: macro@crate::DerefMut
+//! [`AddAssign`-like]: macro@crate::AddAssign
+//! [`MulAssign`-like]: macro@crate::MulAssign
 //!
-//! [`Constructor`]: crate::Constructor
-//! [`IsVariant`]: crate::IsVariant
-//! [`Unwrap`]: crate::Unwrap
-//! [`TryUnwrap`]: crate::TryUnwrap
+//! [`Constructor`]: macro@crate::Constructor
+//! [`IsVariant`]: macro@crate::IsVariant
+//! [`Unwrap`]: macro@crate::Unwrap
+//! [`TryUnwrap`]: macro@crate::TryUnwrap
 
 // The README includes doctests requiring these features. To make sure that
 // tests pass when not all features are provided we exclude it when the
@@ -57,9 +57,17 @@ pub mod __private {
     pub use crate::vendor::thiserror::aserror::AsDynError;
 }
 
-// The modules containing error types and other helpers
+// The modules containing error types and other helpers.
+
+#[cfg(feature = "add")]
+mod add;
+#[cfg(feature = "add")]
+pub use crate::add::{BinaryError, WrongVariantError};
+
 #[cfg(any(feature = "add", feature = "not"))]
-pub mod ops;
+mod ops;
+#[cfg(any(feature = "add", feature = "not"))]
+pub use crate::ops::UnitError;
 
 #[cfg(feature = "debug")]
 mod fmt;
@@ -83,7 +91,7 @@ pub use crate::convert::TryIntoError;
 mod try_unwrap;
 #[cfg(feature = "try_unwrap")]
 #[doc(inline)]
-pub use self::try_unwrap::TryUnwrapError;
+pub use crate::try_unwrap::TryUnwrapError;
 
 // When re-exporting traits from std we need to do a pretty crazy trick, because we ONLY want
 // to re-export the traits and not derives that are called the same in the std module,
@@ -97,15 +105,15 @@ pub use self::try_unwrap::TryUnwrapError;
 // derive.
 macro_rules! re_export_traits((
     $feature:literal, $new_module_name:ident, $module:path $(, $traits:ident)* $(,)?) => {
-        #[cfg(feature = $feature)]
+        #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         mod $new_module_name {
+            #[doc(hidden)]
             pub use $module::{$($traits),*};
         }
 
-        #[cfg(feature = $feature)]
+        #[cfg(all(feature = $feature, any(not(docsrs), ci)))]
         #[doc(hidden)]
         pub use crate::$new_module_name::*;
-
     }
 );
 
