@@ -29,6 +29,22 @@ mod structs {
             assert_eq!(format!("{:?}", Struct {}), "Struct");
             assert_eq!(format!("{:#?}", Struct {}), "Struct");
         }
+
+        mod interpolated_struct {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[debug("Format String")]
+            struct Unit;
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{Unit:?}"), "Format String");
+            }
+        }
     }
 
     mod single_field {
@@ -271,6 +287,30 @@ mod structs {
                     ),
                     "Struct {\n    field1: 1.2,\n    field2: 2,\n}",
                 );
+            }
+        }
+
+        mod interpolated_struct {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[debug("{_0} * {_1}")]
+            struct Tuple(u8, bool);
+
+            #[derive(Debug)]
+            #[debug("{a} * {b}")]
+            struct Struct {
+                a: u8,
+                b: bool,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:?}", Tuple(10, true)), "10 * true");
+                assert_eq!(format!("{:?}", Struct { a: 10, b: true }), "10 * true");
             }
         }
 
@@ -567,6 +607,30 @@ mod enums {
                 ),
                 "SkippedNamed {\n    field2: 2,\n    ..\n}",
             );
+        }
+
+        mod interpolated_variant {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            enum Enum {
+                #[debug("Format String")]
+                Unit,
+                #[debug("Format {a} String {b}")]
+                Fields { a: usize, b: u8 },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:?}", Enum::Unit), "Format String");
+                assert_eq!(
+                    format!("{:?}", Enum::Fields { a: 1, b: 2 }),
+                    "Format 1 String 2"
+                );
+            }
         }
     }
 }
@@ -1197,50 +1261,5 @@ mod generic {
                 "Struct(\n    WHAT_10_EVER_20,\n    20,\n)",
             );
         }
-    }
-}
-
-mod item_format {
-    #[cfg(not(feature = "std"))]
-    use alloc::format;
-
-    use derive_more::Debug;
-
-    #[test]
-    fn structs() {
-        #[derive(Debug)]
-        #[debug("Format String")]
-        struct Unit;
-
-        assert_eq!(format!("{Unit:?}"), "Format String");
-
-        #[derive(Debug)]
-        #[debug("{_0} * {_1}")]
-        struct Tuple(u8, bool);
-
-        assert_eq!(format!("{:?}", Tuple(10, true)), "10 * true");
-
-        #[derive(Debug)]
-        #[debug("{a} * {b}")]
-        struct Struct {
-            a: u8,
-            b: bool,
-        }
-
-        assert_eq!(format!("{:?}", Struct { a: 10, b: true }), "10 * true");
-    }
-
-    #[test]
-    fn enums() {
-        #[derive(Debug)]
-        enum Item {
-            #[debug("Format String")]
-            Unit,
-            #[debug("Format {a} String")]
-            Fields { a: usize },
-        }
-
-        assert_eq!(format!("{:?}", Item::Unit), "Format String");
-        assert_eq!(format!("{:?}", Item::Fields { a: 1 }), "Format 1 String");
     }
 }
