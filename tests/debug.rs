@@ -750,6 +750,22 @@ mod generic {
     }
 
     #[derive(Debug)]
+    #[debug("test_named")]
+    struct InterpolatedNamedGenericStructIgnored<T> {
+        field: T,
+    }
+    #[test]
+    fn interpolated_named_generic_struct_ignored() {
+        assert_eq!(
+            format!(
+                "{:?}",
+                InterpolatedNamedGenericStructIgnored { field: NotDebug },
+            ),
+            "test_named",
+        );
+    }
+
+    #[derive(Debug)]
     struct AliasedNamedGenericStruct<T> {
         #[debug("{alias}", alias = field)]
         field: T,
@@ -843,6 +859,17 @@ mod generic {
         assert_eq!(
             format!("{:#?}", InterpolatedUnnamedGenericStruct(NotDebug)),
             "InterpolatedUnnamedGenericStruct(\n    NotDebug.NotDebug,\n)",
+        );
+    }
+
+    #[derive(Debug)]
+    #[debug("test_unnamed")]
+    struct InterpolatedUnnamedGenericStructIgnored<T>(T);
+    #[test]
+    fn interpolated_unnamed_generic_struct_ignored() {
+        assert_eq!(
+            format!("{:?}", InterpolatedUnnamedGenericStructIgnored(NotDebug)),
+            "test_unnamed",
         );
     }
 
