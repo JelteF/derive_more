@@ -963,12 +963,12 @@ mod generic {
         assert_eq!(
             format!(
                 "{:?}",
-                InterpolatedGenericEnum::A::<_, u8> { field: NotDebug },
+                InterpolatedGenericEnumIngored::A::<_, u8> { field: NotDebug },
             ),
             "A NotDebug",
         );
         assert_eq!(
-            format!("{:?}", InterpolatedGenericEnum::B::<u8, _>(NotDebug)),
+            format!("{:?}", InterpolatedGenericEnumIngored::B::<u8, _>(NotDebug)),
             "B",
         );
     }

@@ -391,24 +391,31 @@ impl<'a> Expansion<'a> {
 
     /// Generates trait bounds for a struct or an enum variant.
     fn generate_bounds(&self) -> Result<Vec<syn::WherePredicate>> {
-        self.fields.iter().try_fold(
-            self.attr.bounds.0.clone().into_iter().collect::<Vec<_>>(),
-            |mut out, field| {
-                let ty = &field.ty;
-                match FieldAttribute::parse_attrs(&field.attrs)? {
-                    Some(FieldAttribute::Fmt(attr)) => {
-                        out.extend(attr.bounded_types(self.fields).map(
-                            |(ty, trait_name)| {
-                                let trait_name = format_ident!("{trait_name}");
-                                parse_quote! { #ty: ::core::fmt::#trait_name }
-                            },
-                        ));
-                    }
-                    Some(FieldAttribute::Skip) => {}
-                    None => out.extend([parse_quote! { #ty: ::core::fmt::Debug }]),
+        let mut out = self.attr.bounds.0.clone().into_iter().collect::<Vec<_>>();
+
+        if let Some(fmt) = self.attr.fmt.as_ref() {
+            out.extend(fmt.bounded_types(self.fields).map(|(ty, trait_name)| {
+                let trait_name = format_ident!("{trait_name}");
+                parse_quote! { #ty: ::core::fmt::#trait_name }
+            }));
+            return Ok(out);
+        }
+
+        self.fields.iter().try_fold(out, |mut out, field| {
+            let ty = &field.ty;
+            match FieldAttribute::parse_attrs(&field.attrs)? {
+                Some(FieldAttribute::Fmt(attr)) => {
+                    out.extend(attr.bounded_types(self.fields).map(
+                        |(ty, trait_name)| {
+                            let trait_name = format_ident!("{trait_name}");
+                            parse_quote! { #ty: ::core::fmt::#trait_name }
+                        },
+                    ));
                 }
-                Ok(out)
-            },
-        )
+                Some(FieldAttribute::Skip) => {}
+                None => out.extend([parse_quote! { #ty: ::core::fmt::Debug }]),
+            }
+            Ok(out)
+        })
     }
 }
