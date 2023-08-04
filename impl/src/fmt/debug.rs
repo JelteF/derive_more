@@ -114,10 +114,12 @@ fn expand_enum(
                 .filter(|attr| attr.path().is_ident("debug"))
                 .try_fold(None, |mut attrs, attr| {
                     let attr = attr.parse_args::<FmtAttribute>()?;
-                    attrs.replace(attr).map_or(Ok(()), |dup| Err(syn::Error::new(
-                        dup.span(),
-                        "multiple `#[debug(\"...\", ...)]` attributes aren't allowed",
-                    )))?;
+                    attrs.replace(attr).map_or(Ok(()), |dup| {
+                        Err(syn::Error::new(
+                            dup.span(),
+                            "multiple `#[debug(\"...\", ...)]` attributes aren't allowed",
+                        ))
+                    })?;
                     Ok::<_, syn::Error>(attrs)
                 })?;
 
