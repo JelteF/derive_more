@@ -1,4 +1,4 @@
-error: item format not supported on enums
+error: `#[debug("...", ...)]` attribute is not allowed on enum, place it on its variants instead
  --> tests/compile_fail/debug/fmt_on_enum.rs:2:9
   |
 2 | #[debug("Test")]

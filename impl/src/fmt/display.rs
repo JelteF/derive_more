@@ -5,9 +5,13 @@ use std::fmt;
 
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use syn::{parse_quote, spanned::Spanned as _};
+use syn::{
+    parse::{Parse, ParseStream},
+    parse_quote,
+    spanned::Spanned as _,
+};
 
-use super::{BoundsAttribute, DisplayAttribute, FmtAttribute};
+use super::{BoundsAttribute, FmtAttribute};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -195,17 +199,17 @@ fn expand_union(
 /// `#[<fmt_trait>(...)]` can be specified only once, while multiple
 /// `#[<fmt_trait>(bound(...))]` are allowed.
 #[derive(Debug, Default)]
-struct Attributes {
+pub(super) struct Attributes {
     /// Interpolation [`FmtAttribute`].
-    fmt: Option<FmtAttribute>,
+    pub(super) fmt: Option<FmtAttribute>,
 
     /// Addition trait bounds.
-    bounds: BoundsAttribute,
+    pub(super) bounds: BoundsAttribute,
 }
 
 impl Attributes {
     /// Parses [`Attributes`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(
+    pub(super) fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         trait_name: &str,
     ) -> syn::Result<Self> {
@@ -214,12 +218,11 @@ impl Attributes {
             .iter()
             .filter(|attr| attr.path().is_ident(trait_name_to_attribute_name(trait_name)))
             .try_fold(Attributes::default(), |mut attrs, attr| {
-                let attr = attr.parse_args::<DisplayAttribute>()?;
-                match attr {
-                    DisplayAttribute::Bounds(more) => {
+                match attr.parse_args::<Attribute>()? {
+                    Attribute::Bounds(more) => {
                         attrs.bounds.0.extend(more.0);
                     }
-                    DisplayAttribute::Fmt(fmt) => {
+                    Attribute::Fmt(fmt) => {
                         attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
                             dup.span(),
                             format!(
@@ -230,6 +233,29 @@ impl Attributes {
                 };
                 Ok(attrs)
             })
+    }
+}
+
+/// Representation of a single [`fmt::Display`]-like derive macro attribute.
+#[derive(Debug)]
+pub(super) enum Attribute {
+    /// [`fmt`] attribute.
+    Fmt(FmtAttribute),
+
+    /// Addition trait bounds.
+    Bounds(BoundsAttribute),
+}
+
+impl Parse for Attribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        BoundsAttribute::check_legacy_fmt(input)?;
+        FmtAttribute::check_legacy_fmt(input)?;
+
+        if input.peek(syn::LitStr) {
+            input.parse().map(Attribute::Fmt)
+        } else {
+            input.parse().map(Attribute::Bounds)
+        }
     }
 }
 
@@ -323,6 +349,7 @@ where
 {
     match () {
         _ if trait_name == "Binary" => "binary",
+        _ if trait_name == "Debug" => "debug",
         _ if trait_name == "Display" => "display",
         _ if trait_name == "LowerExp" => "lower_exp",
         _ if trait_name == "LowerHex" => "lower_hex",

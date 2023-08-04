@@ -3,7 +3,7 @@
 This derive macro is a clever superset of `Debug` from standard library. Additional features include:
 - not imposing redundant trait bounds;
 - `#[debug(skip)]` attribute to skip formatting struct field or enum variant;
-- `#[debug("...", args...)]` to specify custom formatting either for the whole struct or variant or a particular struct or enum variant field;
+- `#[debug("...", args...)]` to specify custom formatting either for the whole struct or enum variant, or its particular field;
 - `#[debug(bounds(...))]` to impose additional custom trait bounds.
 
 
@@ -11,11 +11,11 @@ This derive macro is a clever superset of `Debug` from standard library. Additio
 
 ## The format of the format
 
-You supply a format by placing an attribute on the item or on a struct or variant or particular struct or enum variant field:
+You supply a format by placing an attribute on a struct or enum variant, or its particular field:
 `#[debug("...", args...)]`. The format is exactly like in [`format!()`] or any other [`format_args!()`]-based macros.
 
-The variables available in the arguments is `self` and each member of the variant or struct, with members of tuple structs being
-named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
+The variables available in the arguments is `self` and each member of the struct or enum variant, with members of tuple
+structs being named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
 
 
 

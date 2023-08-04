@@ -5,26 +5,26 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    parse::{Error, Parse, ParseStream, Result},
+    parse::{Parse, ParseStream},
     parse_quote,
     spanned::Spanned as _,
     Ident,
 };
 
-use super::{BoundsAttribute, DisplayAttribute, FmtAttribute};
+use super::{display::Attributes as ContainerAttributes, FmtAttribute};
 
 /// Expands a [`fmt::Debug`] derive macro.
 ///
 /// [`fmt::Debug`]: std::fmt::Debug
-pub fn expand(input: &syn::DeriveInput, _: &str) -> Result<TokenStream> {
-    let attrs = ContainerAttributes::parse_attrs(&input.attrs)?;
+pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
+    let attrs = ContainerAttributes::parse_attrs(&input.attrs, "Debug")?;
     let ident = &input.ident;
 
     let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => expand_struct(attrs, ident, s),
         syn::Data::Enum(e) => expand_enum(attrs, e),
         syn::Data::Union(_) => {
-            return Err(Error::new(
+            return Err(syn::Error::new(
                 input.span(),
                 "`Debug` cannot be derived for unions",
             ));
@@ -61,12 +61,13 @@ fn expand_struct(
     attrs: ContainerAttributes,
     ident: &Ident,
     s: &syn::DataStruct,
-) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
+) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
         attr: &attrs,
         fields: &s.fields,
         ident,
     };
+    s.validate_attrs()?;
     let bounds = s.generate_bounds()?;
     let body = s.generate_body()?;
 
@@ -93,11 +94,12 @@ fn expand_struct(
 fn expand_enum(
     mut attrs: ContainerAttributes,
     e: &syn::DataEnum,
-) -> Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    if let Some(item_fmt) = attrs.fmt.as_ref() {
-        return Err(Error::new_spanned(
-            item_fmt,
-            "item format not supported on enums",
+) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
+    if let Some(enum_fmt) = attrs.fmt.as_ref() {
+        return Err(syn::Error::new_spanned(
+            enum_fmt,
+            "`#[debug(\"...\", ...)]` attribute is not allowed on enum, place it on its variants \
+             instead",
         ));
     }
 
@@ -106,31 +108,25 @@ fn expand_enum(
         |(mut bounds, mut arms), variant| {
             let ident = &variant.ident;
 
-            let mut format_attrs = variant
+            attrs.fmt = variant
                 .attrs
                 .iter()
-                .filter_map(|a| {
-                    a.path()
-                        .is_ident("debug")
-                        .then(|| a.parse_args::<FmtAttribute>())
-                })
-                .collect::<Result<Vec<_>>>()?;
-
-            if let Some(second) = format_attrs.get(1) {
-                return Err(Error::new_spanned(
-                    second,
-                    "only single `#[debug(...)]` attribute is allowed here",
-                ));
-            }
-
-            // Set the format argument to that of the current variant or None.
-            attrs.fmt = format_attrs.pop();
+                .filter(|attr| attr.path().is_ident("debug"))
+                .try_fold(None, |mut attrs, attr| {
+                    let attr = attr.parse_args::<FmtAttribute>()?;
+                    attrs.replace(attr).map_or(Ok(()), |dup| Err(syn::Error::new(
+                        dup.span(),
+                        "multiple `#[debug(\"...\", ...)]` attributes aren't allowed",
+                    )))?;
+                    Ok::<_, syn::Error>(attrs)
+                })?;
 
             let v = Expansion {
                 attr: &attrs,
                 fields: &variant.fields,
                 ident,
             };
+            v.validate_attrs()?;
             let arm_body = v.generate_body()?;
             bounds.extend(v.generate_bounds()?);
 
@@ -150,7 +146,7 @@ fn expand_enum(
 
             arms.extend([quote! { #matcher => { #arm_body }, }]);
 
-            Ok::<_, Error>((bounds, arms))
+            Ok::<_, syn::Error>((bounds, arms))
         },
     )?;
 
@@ -160,48 +156,6 @@ fn expand_enum(
         .unwrap_or_else(|| quote! { match self { #match_arms } });
 
     Ok((bounds, body))
-}
-
-/// Representation of a [`fmt::Debug`] derive macro container attribute.
-///
-/// ```rust,ignore
-/// #[debug("<fmt_literal>", <fmt_args>)]
-/// #[debug(bound(<bounds>))]
-/// ```
-///
-/// [`fmt::Debug`]: std::fmt::Debug
-#[derive(Debug, Default)]
-struct ContainerAttributes {
-    /// Interpolation [`FmtAttribute`].
-    fmt: Option<FmtAttribute>,
-
-    /// Additional trait bounds.
-    bounds: BoundsAttribute,
-}
-
-impl ContainerAttributes {
-    /// Parses [`ContainerAttributes`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Self> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("debug"))
-            .try_fold(ContainerAttributes::default(), |mut attrs, attr| {
-                let attr = attr.parse_args::<DisplayAttribute>()?;
-                match attr {
-                    DisplayAttribute::Bounds(more) => {
-                        attrs.bounds.0.extend(more.0);
-                    }
-                    DisplayAttribute::Fmt(fmt) => {
-                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
-                            dup.span(),
-                            "multiple `#[debug(\"...\", ...)]` attributes aren't allowed",
-                        )))?;
-                    }
-                };
-                Ok(attrs)
-            })
-    }
 }
 
 /// Representation of a [`fmt::Debug`] derive macro field attribute.
@@ -223,8 +177,8 @@ enum FieldAttribute {
 }
 
 impl FieldAttribute {
-    /// Parses [`FieldAttributes`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> Result<Option<Self>> {
+    /// Parses a [`FieldAttribute`] from the provided [`syn::Attribute`]s.
+    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
         Ok(attrs
             .as_ref()
             .iter()
@@ -232,7 +186,7 @@ impl FieldAttribute {
             .try_fold(None, |mut attrs, attr| {
                 let field_attr = attr.parse_args::<FieldAttribute>()?;
                 if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
-                    Err(Error::new(
+                    Err(syn::Error::new(
                         path.span(),
                         "only single `#[debug(...)]` attribute is allowed here",
                     ))
@@ -245,7 +199,7 @@ impl FieldAttribute {
 }
 
 impl Parse for FieldAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
         FmtAttribute::check_legacy_fmt(input)?;
 
         if input.peek(syn::LitStr) {
@@ -255,7 +209,7 @@ impl Parse for FieldAttribute {
                 if ["skip", "ignore"].into_iter().any(|i| p.is_ident(i)) {
                     Ok(p)
                 } else {
-                    Err(Error::new(
+                    Err(syn::Error::new(
                         p.span(),
                         "unknown attribute, expected `skip` or `ignore`",
                     ))
@@ -282,25 +236,34 @@ struct Expansion<'a> {
 }
 
 impl<'a> Expansion<'a> {
-    /// Generates [`Debug::fmt()`] implementation for a struct or an enum variant.
-    ///
-    /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
-    fn generate_body(&self) -> Result<TokenStream> {
-        if let Some(fmt) = &self.attr.fmt {
+    /// Validates attributes of this [`Expansion`] to be consistent.
+    fn validate_attrs(&self) -> syn::Result<()> {
+        if self.attr.fmt.is_some() {
             for field_attr in self
                 .fields
                 .iter()
-                .map(|field| FieldAttribute::parse_attrs(&field.attrs))
+                .map(|f| FieldAttribute::parse_attrs(&f.attrs))
             {
                 if let Some(FieldAttribute::Fmt(fmt)) = field_attr? {
-                    return Err(Error::new_spanned(
+                    return Err(syn::Error::new_spanned(
                         fmt,
-                        r#"field format not supported when `#[debug("<format>", ...)]` is specified on the container"#,
+                        "`#[debug(...)]` attributes are not allowed on fields when \
+                         `#[debug(\"...\", ...)]` is specified on struct or variant",
                     ));
                 }
             }
-            return Ok(quote! { ::core::write!(__derive_more_f, #fmt) });
+        }
+        Ok(())
+    }
+
+    /// Generates [`Debug::fmt()`] implementation for a struct or an enum variant.
+    ///
+    /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
+    fn generate_body(&self) -> syn::Result<TokenStream> {
+        if let Some(fmt_attr) = &self.attr.fmt {
+            return Ok(quote! { ::core::write!(__derive_more_f, #fmt_attr) });
         };
+
         match self.fields {
             syn::Fields::Unit => {
                 let ident = self.ident.to_string();
@@ -326,7 +289,7 @@ impl<'a> Expansion<'a> {
                     |out, (i, field)| match FieldAttribute::parse_attrs(&field.attrs)? {
                         Some(FieldAttribute::Skip) => {
                             exhaustive = false;
-                            Ok::<_, Error>(out)
+                            Ok::<_, syn::Error>(out)
                         }
                         Some(FieldAttribute::Fmt(fmt)) => Ok(quote! {
                             ::derive_more::__private::DebugTuple::field(
@@ -366,7 +329,7 @@ impl<'a> Expansion<'a> {
                         match FieldAttribute::parse_attrs(&field.attrs)? {
                             Some(FieldAttribute::Skip) => {
                                 exhaustive = false;
-                                Ok::<_, Error>(out)
+                                Ok::<_, syn::Error>(out)
                             }
                             Some(FieldAttribute::Fmt(fmt)) => Ok(quote! {
                                 ::core::fmt::DebugStruct::field(
@@ -390,7 +353,7 @@ impl<'a> Expansion<'a> {
     }
 
     /// Generates trait bounds for a struct or an enum variant.
-    fn generate_bounds(&self) -> Result<Vec<syn::WherePredicate>> {
+    fn generate_bounds(&self) -> syn::Result<Vec<syn::WherePredicate>> {
         let mut out = self.attr.bounds.0.clone().into_iter().collect::<Vec<_>>();
 
         if let Some(fmt) = self.attr.fmt.as_ref() {
@@ -398,24 +361,24 @@ impl<'a> Expansion<'a> {
                 let trait_name = format_ident!("{trait_name}");
                 parse_quote! { #ty: ::core::fmt::#trait_name }
             }));
-            return Ok(out);
-        }
-
-        self.fields.iter().try_fold(out, |mut out, field| {
-            let ty = &field.ty;
-            match FieldAttribute::parse_attrs(&field.attrs)? {
-                Some(FieldAttribute::Fmt(attr)) => {
-                    out.extend(attr.bounded_types(self.fields).map(
-                        |(ty, trait_name)| {
-                            let trait_name = format_ident!("{trait_name}");
-                            parse_quote! { #ty: ::core::fmt::#trait_name }
-                        },
-                    ));
-                }
-                Some(FieldAttribute::Skip) => {}
-                None => out.extend([parse_quote! { #ty: ::core::fmt::Debug }]),
-            }
             Ok(out)
-        })
+        } else {
+            self.fields.iter().try_fold(out, |mut out, field| {
+                let ty = &field.ty;
+                match FieldAttribute::parse_attrs(&field.attrs)? {
+                    Some(FieldAttribute::Fmt(attr)) => {
+                        out.extend(attr.bounded_types(self.fields).map(
+                            |(ty, trait_name)| {
+                                let trait_name = format_ident!("{trait_name}");
+                                parse_quote! { #ty: ::core::fmt::#trait_name }
+                            },
+                        ));
+                    }
+                    Some(FieldAttribute::Skip) => {}
+                    None => out.extend([parse_quote! { #ty: ::core::fmt::Debug }]),
+                }
+                Ok(out)
+            })
+        }
     }
 }

@@ -19,28 +19,6 @@ use syn::{
 
 use crate::parsing::Expr;
 
-/// Representation of a single [`fmt::Display`]-like derive macro attribute. #[derive(Debug)]
-enum DisplayAttribute {
-    /// [`fmt`] attribute.
-    Fmt(FmtAttribute),
-
-    /// Addition trait bounds.
-    Bounds(BoundsAttribute),
-}
-
-impl Parse for DisplayAttribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        BoundsAttribute::check_legacy_fmt(input)?;
-        FmtAttribute::check_legacy_fmt(input)?;
-
-        if input.peek(syn::LitStr) {
-            input.parse().map(DisplayAttribute::Fmt)
-        } else {
-            input.parse().map(DisplayAttribute::Bounds)
-        }
-    }
-}
-
 /// Representation of a macro attribute expressing additional trait bounds.
 #[derive(Debug, Default)]
 struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);

@@ -1,0 +1,5 @@
+error: multiple `#[debug("...", ...)]` attributes aren't allowed
+ --> tests/compile_fail/debug/duplicate_fmt_on_struct.rs:2:9
+  |
+2 | #[debug("Test")]
+  |         ^^^^^^

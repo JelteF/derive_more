@@ -1,5 +1,0 @@
-error: field format not supported when `#[debug("<format>", ...)]` is specified on the container
- --> tests/compile_fail/debug/fmt_on_item_and_field.rs:4:13
-  |
-4 |     #[debug("{bar}")]
-  |             ^^^^^^^

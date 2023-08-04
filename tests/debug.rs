@@ -628,7 +628,7 @@ mod enums {
                 assert_eq!(format!("{:?}", Enum::Unit), "Format String");
                 assert_eq!(
                     format!("{:?}", Enum::Fields { a: 1, b: 2 }),
-                    "Format 1 String 2"
+                    "Format 1 String 2",
                 );
             }
         }
