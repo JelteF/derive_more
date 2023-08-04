@@ -317,6 +317,97 @@ impl Placeholder {
     }
 }
 
+/// Representation of a [`fmt::Display`]-like derive macro attributes placed on a container (struct
+/// or enum variant).
+///
+/// ```rust,ignore
+/// #[<fmt_trait>("<fmt_literal>", <fmt_args>)]
+/// #[bound(<bounds>)]
+/// ```
+///
+/// `#[<fmt_trait>(...)]` can be specified only once, while multiple
+/// `#[<fmt_trait>(bound(...))]` are allowed.
+#[derive(Debug, Default)]
+struct ContainerAttributes {
+    /// Interpolation [`FmtAttribute`].
+    fmt: Option<FmtAttribute>,
+
+    /// Addition trait bounds.
+    bounds: BoundsAttribute,
+}
+
+impl ContainerAttributes {
+    /// Parses [`ContainerAttributes`] from the provided [`syn::Attribute`]s.
+    pub(super) fn parse_attrs(
+        attrs: impl AsRef<[syn::Attribute]>,
+        trait_name: &str,
+    ) -> syn::Result<Self> {
+        attrs
+            .as_ref()
+            .iter()
+            .filter(|attr| attr.path().is_ident(trait_name_to_attribute_name(trait_name)))
+            .try_fold(Self::default(), |mut attrs, attr| {
+                match attr.parse_args::<ContainerAttribute>()? {
+                    ContainerAttribute::Bounds(more) => {
+                        attrs.bounds.0.extend(more.0);
+                    }
+                    ContainerAttribute::Fmt(fmt) => {
+                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
+                            dup.span(),
+                            format!(
+                                "multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
+                                trait_name_to_attribute_name(trait_name),
+                            ))))?;
+                    }
+                };
+                Ok(attrs)
+            })
+    }
+}
+
+/// Representation of a single [`fmt::Display`]-like derive macro attribute, placed on a container
+/// (struct or enum variant).
+#[derive(Debug)]
+enum ContainerAttribute {
+    /// [`fmt`] attribute.
+    Fmt(FmtAttribute),
+
+    /// Addition trait bounds.
+    Bounds(BoundsAttribute),
+}
+
+impl Parse for ContainerAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        BoundsAttribute::check_legacy_fmt(input)?;
+        FmtAttribute::check_legacy_fmt(input)?;
+
+        if input.peek(syn::LitStr) {
+            input.parse().map(Self::Fmt)
+        } else {
+            input.parse().map(Self::Bounds)
+        }
+    }
+}
+
+/// Matches the provided `trait_name` to appropriate [`Attribute::Fmt`] argument name.
+fn trait_name_to_attribute_name<T>(trait_name: T) -> &'static str
+where
+    T: for<'a> PartialEq<&'a str>,
+{
+    match () {
+        _ if trait_name == "Binary" => "binary",
+        _ if trait_name == "Debug" => "debug",
+        _ if trait_name == "Display" => "display",
+        _ if trait_name == "LowerExp" => "lower_exp",
+        _ if trait_name == "LowerHex" => "lower_hex",
+        _ if trait_name == "Octal" => "octal",
+        _ if trait_name == "Pointer" => "pointer",
+        _ if trait_name == "UpperExp" => "upper_exp",
+        _ if trait_name == "UpperHex" => "upper_hex",
+        _ => unimplemented!(),
+    }
+}
+
 #[cfg(test)]
 mod fmt_attribute_spec {
     use itertools::Itertools as _;

@@ -11,7 +11,7 @@ use syn::{
     Ident,
 };
 
-use super::{display::Attributes as ContainerAttributes, FmtAttribute};
+use super::{ContainerAttributes, FmtAttribute};
 
 /// Expands a [`fmt::Debug`] derive macro.
 ///
