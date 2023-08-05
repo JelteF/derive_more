@@ -1,0 +1,5 @@
+error: `#[debug(...)]` attributes are not allowed on fields when `#[debug("...", ...)]` is specified on struct or variant
+ --> tests/compile_fail/debug/fmt_on_container_and_field_simultaneously.rs:4:13
+  |
+4 |     #[debug("{bar}")]
+  |             ^^^^^^^

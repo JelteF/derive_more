@@ -29,6 +29,22 @@ mod structs {
             assert_eq!(format!("{:?}", Struct {}), "Struct");
             assert_eq!(format!("{:#?}", Struct {}), "Struct");
         }
+
+        mod interpolated_struct {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[debug("Format String")]
+            struct Unit;
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{Unit:?}"), "Format String");
+            }
+        }
     }
 
     mod single_field {
@@ -271,6 +287,30 @@ mod structs {
                     ),
                     "Struct {\n    field1: 1.2,\n    field2: 2,\n}",
                 );
+            }
+        }
+
+        mod interpolated_struct {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[debug("{_0} * {_1}")]
+            struct Tuple(u8, bool);
+
+            #[derive(Debug)]
+            #[debug("{a} * {b}")]
+            struct Struct {
+                a: u8,
+                b: bool,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:?}", Tuple(10, true)), "10 * true");
+                assert_eq!(format!("{:?}", Struct { a: 10, b: true }), "10 * true");
             }
         }
 
@@ -568,6 +608,30 @@ mod enums {
                 "SkippedNamed {\n    field2: 2,\n    ..\n}",
             );
         }
+
+        mod interpolated_variant {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            enum Enum {
+                #[debug("Format String")]
+                Unit,
+                #[debug("Format {a} String {b}")]
+                Fields { a: usize, b: u8 },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:?}", Enum::Unit), "Format String");
+                assert_eq!(
+                    format!("{:?}", Enum::Fields { a: 1, b: 2 }),
+                    "Format 1 String 2",
+                );
+            }
+        }
     }
 }
 
@@ -686,6 +750,22 @@ mod generic {
     }
 
     #[derive(Debug)]
+    #[debug("test_named")]
+    struct InterpolatedNamedGenericStructIgnored<T> {
+        field: T,
+    }
+    #[test]
+    fn interpolated_named_generic_struct_ignored() {
+        assert_eq!(
+            format!(
+                "{:?}",
+                InterpolatedNamedGenericStructIgnored { field: NotDebug },
+            ),
+            "test_named",
+        );
+    }
+
+    #[derive(Debug)]
     struct AliasedNamedGenericStruct<T> {
         #[debug("{alias}", alias = field)]
         field: T,
@@ -783,6 +863,17 @@ mod generic {
     }
 
     #[derive(Debug)]
+    #[debug("test_unnamed")]
+    struct InterpolatedUnnamedGenericStructIgnored<T>(T);
+    #[test]
+    fn interpolated_unnamed_generic_struct_ignored() {
+        assert_eq!(
+            format!("{:?}", InterpolatedUnnamedGenericStructIgnored(NotDebug)),
+            "test_unnamed",
+        );
+    }
+
+    #[derive(Debug)]
     struct AliasedUnnamedGenericStruct<T>(#[debug("{alias}", alias = _0)] T);
     #[test]
     fn aliased_unnamed_generic_struct() {
@@ -857,6 +948,28 @@ mod generic {
         assert_eq!(
             format!("{:#?}", InterpolatedGenericEnum::B::<u8, _>(2)),
             "B(\n    2.2,\n)",
+        );
+    }
+
+    #[derive(Debug)]
+    enum InterpolatedGenericEnumIngored<A, B> {
+        #[debug("A {field}")]
+        A { field: A },
+        #[debug("B")]
+        B(B),
+    }
+    #[test]
+    fn interpolated_generic_enum_ignored() {
+        assert_eq!(
+            format!(
+                "{:?}",
+                InterpolatedGenericEnumIngored::A::<_, u8> { field: NotDebug },
+            ),
+            "A NotDebug",
+        );
+        assert_eq!(
+            format!("{:?}", InterpolatedGenericEnumIngored::B::<u8, _>(NotDebug)),
+            "B",
         );
     }
 

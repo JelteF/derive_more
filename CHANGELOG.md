@@ -50,6 +50,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#206](https://github.com/JelteF/derive_more/pull/206))
 - Add `TryUnwrap` derive similar to the `Unwrap` derive. This one returns a `Result` and does not panic.
   ([#206](https://github.com/JelteF/derive_more/pull/206))
+- Add support for container format in `Debug` derive with the same syntax as `Display` derives.
+  ([#279](https://github.com/JelteF/derive_more/pull/279))
 
 ### Changed
 

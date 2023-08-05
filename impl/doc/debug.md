@@ -3,7 +3,7 @@
 This derive macro is a clever superset of `Debug` from standard library. Additional features include:
 - not imposing redundant trait bounds;
 - `#[debug(skip)]` attribute to skip formatting struct field or enum variant;
-- `#[debug("...", args...)]` to specify custom formatting for a particular struct or enum variant field;
+- `#[debug("...", args...)]` to specify custom formatting either for the whole struct or enum variant, or its particular field;
 - `#[debug(bounds(...))]` to impose additional custom trait bounds.
 
 
@@ -11,11 +11,11 @@ This derive macro is a clever superset of `Debug` from standard library. Additio
 
 ## The format of the format
 
-You supply a format by placing an attribute on particular struct or enum variant field (not enum variant itself):
+You supply a format by placing an attribute on a struct or enum variant, or its particular field:
 `#[debug("...", args...)]`. The format is exactly like in [`format!()`] or any other [`format_args!()`]-based macros.
 
-The variables available in the arguments is `self` and each member of the variant, with members of tuple structs being
-named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
+The variables available in the arguments is `self` and each member of the struct or enum variant, with members of tuple
+structs being named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
 
 
 
@@ -103,6 +103,10 @@ struct MyInt(i32);
 struct MyIntHex(#[debug("{_0:x}")] i32);
 
 #[derive(Debug)]
+#[debug("{_0} = {_1}")]
+struct StructFormat(&'static str, u8);
+
+#[derive(Debug)]
 enum E {
     Skipped {
         x: u32,
@@ -114,13 +118,17 @@ enum E {
         i: i8,
     },
     Path(#[debug("{}", _0.display())] PathBuf),
+    #[debug("{_0}")]
+    EnumFormat(bool)
 }
 
 assert_eq!(format!("{:?}", MyInt(-2)), "MyInt(-2)");
 assert_eq!(format!("{:?}", MyIntHex(-255)), "MyIntHex(ffffff01)");
+assert_eq!(format!("{:?}", StructFormat("answer", 42)), "answer = 42");
 assert_eq!(format!("{:?}", E::Skipped { x: 10, y: 20 }), "Skipped { x: 10, .. }");
 assert_eq!(format!("{:?}", E::Binary { i: -2 }), "Binary { i: 11111110 }");
 assert_eq!(format!("{:?}", E::Path("abc".into())), "Path(abc)");
+assert_eq!(format!("{:?}", E::EnumFormat(true)), "true");
 ```
 
 [`format!()`]: https://doc.rust-lang.org/stable/std/macro.format.html

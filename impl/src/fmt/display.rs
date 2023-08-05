@@ -5,13 +5,9 @@ use std::fmt;
 
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_quote,
-    spanned::Spanned as _,
-};
+use syn::{parse_quote, spanned::Spanned as _};
 
-use super::{BoundsAttribute, FmtAttribute};
+use super::{trait_name_to_attribute_name, ContainerAttributes};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -27,7 +23,7 @@ use super::{BoundsAttribute, FmtAttribute};
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenStream> {
     let trait_name = normalize_trait_name(trait_name);
 
-    let attrs = Attributes::parse_attrs(&input.attrs, trait_name)?;
+    let attrs = ContainerAttributes::parse_attrs(&input.attrs, trait_name)?;
     let trait_ident = format_ident!("{trait_name}");
     let ident = &input.ident;
 
@@ -62,11 +58,11 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 }
 
 /// Type alias for an expansion context:
-/// - [`Attributes`].
+/// - [`ContainerAttributes`].
 /// - Struct/enum/union [`Ident`].
 /// - Derived trait [`Ident`].
 /// - Derived trait `&`[`str`].
-type ExpansionCtx<'a> = (&'a Attributes, &'a Ident, &'a Ident, &'a str);
+type ExpansionCtx<'a> = (&'a ContainerAttributes, &'a Ident, &'a Ident, &'a str);
 
 /// Expands a [`fmt::Display`]-like derive macro for the provided struct.
 fn expand_struct(
@@ -113,7 +109,7 @@ fn expand_enum(
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
-            let attrs = Attributes::parse_attrs(&variant.attrs, trait_name)?;
+            let attrs = ContainerAttributes::parse_attrs(&variant.attrs, trait_name)?;
             let ident = &variant.ident;
 
             if attrs.fmt.is_none()
@@ -189,85 +185,14 @@ fn expand_union(
     ))
 }
 
-/// Representation of a [`fmt::Display`]-like derive macro attribute.
-///
-/// ```rust,ignore
-/// #[<fmt_trait>("<fmt_literal>", <fmt_args>)]
-/// #[bound(<bounds>)]
-/// ```
-///
-/// `#[<fmt_trait>(...)]` can be specified only once, while multiple
-/// `#[<fmt_trait>(bound(...))]` are allowed.
-#[derive(Debug, Default)]
-struct Attributes {
-    /// Interpolation [`FmtAttribute`].
-    fmt: Option<FmtAttribute>,
-
-    /// Addition trait bounds.
-    bounds: BoundsAttribute,
-}
-
-impl Attributes {
-    /// Parses [`Attributes`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(
-        attrs: impl AsRef<[syn::Attribute]>,
-        trait_name: &str,
-    ) -> syn::Result<Self> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident(trait_name_to_attribute_name(trait_name)))
-            .try_fold(Attributes::default(), |mut attrs, attr| {
-                let attr = attr.parse_args::<Attribute>()?;
-                match attr {
-                    Attribute::Bounds(more) => {
-                        attrs.bounds.0.extend(more.0);
-                    }
-                    Attribute::Fmt(fmt) => {
-                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
-                            dup.span(),
-                            format!(
-                                "multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
-                                trait_name_to_attribute_name(trait_name),
-                            ))))?;
-                    }
-                };
-                Ok(attrs)
-            })
-    }
-}
-
-/// Representation of a single [`fmt::Display`]-like derive macro attribute.
-#[derive(Debug)]
-enum Attribute {
-    /// [`fmt`] attribute.
-    Fmt(FmtAttribute),
-
-    /// Addition trait bounds.
-    Bounds(BoundsAttribute),
-}
-
-impl Parse for Attribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        BoundsAttribute::check_legacy_fmt(input)?;
-        FmtAttribute::check_legacy_fmt(input)?;
-
-        if input.peek(syn::LitStr) {
-            input.parse().map(Attribute::Fmt)
-        } else {
-            input.parse().map(Attribute::Bounds)
-        }
-    }
-}
-
 /// Helper struct to generate [`Display::fmt()`] implementation body and trait
 /// bounds for a struct or an enum variant.
 ///
 /// [`Display::fmt()`]: fmt::Display::fmt()
 #[derive(Debug)]
 struct Expansion<'a> {
-    /// Derive macro [`Attributes`].
-    attrs: &'a Attributes,
+    /// Derive macro [`ContainerAttributes`].
+    attrs: &'a ContainerAttributes,
 
     /// Struct or enum [`Ident`].
     ident: &'a Ident,
@@ -340,24 +265,6 @@ impl<'a> Expansion<'a> {
             })
             .chain(self.attrs.bounds.0.clone())
             .collect()
-    }
-}
-
-/// Matches the provided `trait_name` to appropriate [`Attribute::Fmt`] argument name.
-fn trait_name_to_attribute_name<T>(trait_name: T) -> &'static str
-where
-    T: for<'a> PartialEq<&'a str>,
-{
-    match () {
-        _ if trait_name == "Binary" => "binary",
-        _ if trait_name == "Display" => "display",
-        _ if trait_name == "LowerExp" => "lower_exp",
-        _ if trait_name == "LowerHex" => "lower_hex",
-        _ if trait_name == "Octal" => "octal",
-        _ if trait_name == "Pointer" => "pointer",
-        _ if trait_name == "UpperExp" => "upper_exp",
-        _ if trait_name == "UpperHex" => "upper_hex",
-        _ => unimplemented!(),
     }
 }
 

@@ -1,0 +1,5 @@
+error: multiple `#[debug("...", ...)]` attributes aren't allowed
+ --> tests/compile_fail/debug/duplicate_fmt_on_variant.rs:3:13
+  |
+3 |     #[debug("Test")]
+  |             ^^^^^^
