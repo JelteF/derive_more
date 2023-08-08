@@ -45,3 +45,22 @@ impl ::core::iter::IntoIterator for Numbers3 {
         <Vec<i32> as ::core::iter::IntoIterator>::into_iter(self.numbers)
     }
 }
+
+#[derive(IntoIterator)]
+struct Generic1<T> {
+    #[into_iterator(owned, ref, ref_mut)]
+    items: Vec<T>,
+}
+
+#[derive(IntoIterator)]
+struct Generic2<'a, T, U> {
+    #[into_iterator(owned, ref, ref_mut)]
+    items: Vec<T>,
+    useless: &'a U,
+}
+
+#[derive(IntoIterator)]
+struct Generic3<'a, 'b, T> {
+    #[into_iterator(owned, ref, ref_mut)]
+    items: &'a mut Vec<&'b mut T>,
+}
