@@ -53,7 +53,10 @@ struct Generic1<T> {
 }
 
 #[derive(IntoIterator)]
-struct Generic2<'a, T, U> {
+struct Generic2<'a, T, U: Send>
+where
+    T: Send,
+{
     #[into_iterator(owned, ref, ref_mut)]
     items: Vec<T>,
     useless: &'a U,
