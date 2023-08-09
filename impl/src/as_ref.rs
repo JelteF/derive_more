@@ -12,13 +12,14 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let trait_ident = format_ident!("{trait_name}");
     let trait_path = quote! { ::derive_more::#trait_ident };
 
-    let args = extract(input)?;
+    let field_args = extract_field_args(input)?;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
-    let sub_items: Vec<_> = args
+
+    let sub_items: Vec<_> = field_args
         .into_iter()
         .map(
-            |FieldArgs {
+            |FieldArg {
                  forward,
                  field,
                  ident,
@@ -91,7 +92,7 @@ impl StructAttribute {
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
-                        "only single #[as_ref(...)] attribute is allowed here",
+                        "only single `#[as_ref(...)]` attribute is allowed here",
                     ))
                 } else {
                     Ok(attrs)
@@ -129,7 +130,7 @@ impl FieldAttribute {
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
-                        "only single #[as_ref(...)] attribute is allowed here",
+                        "only single `#[as_ref(...)]` attribute is allowed here",
                     ))
                 } else {
                     Ok(attrs)
@@ -153,13 +154,13 @@ impl FieldAttribute {
     }
 }
 
-struct FieldArgs<'a> {
+struct FieldArg<'a> {
     forward: bool,
     field: &'a Field,
     ident: Either<&'a Ident, Index>,
 }
 
-impl<'a> FieldArgs<'a> {
+impl<'a> FieldArg<'a> {
     fn new(field: &'a Field, forward: bool, index: usize) -> Self {
         Self {
             field,
@@ -172,7 +173,7 @@ impl<'a> FieldArgs<'a> {
     }
 }
 
-fn extract(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArgs<'_>>> {
+fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArg<'_>>> {
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
         syn::Data::Enum(e) => Err(syn::Error::new(
@@ -191,33 +192,33 @@ fn extract(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArgs<'_>>> {
         let field = fields.next().ok_or_else(|| {
             syn::Error::new(
                 Span::call_site(),
-                "#[as_ref(...)] can only be applied to structs with exactly one field",
+                "`#[as_ref(...)]` can only be applied to structs with exactly one field",
             )
         })?;
 
         if FieldAttribute::parse_attrs(&field.attrs)?.is_some() {
             return Err(syn::Error::new(
                 field.span(),
-                "#[as_ref(...)] cannot be applied to both struct and field",
+                "`#[as_ref(...)]` cannot be applied to both struct and field",
             ));
         }
 
         if let Some(other_field) = fields.next() {
             return Err(syn::Error::new(
                 other_field.span(),
-                "#[as_ref(...)] can only be applied to structs with exactly one field",
+                "`#[as_ref(...)]` can only be applied to structs with exactly one field",
             ));
         }
 
         let forward = matches!(struct_attr, StructAttribute::Forward);
 
-        Ok(vec![FieldArgs::new(field, forward, 0)])
+        Ok(vec![FieldArg::new(field, forward, 0)])
     } else {
         extract_many(&data.fields)
     }
 }
 
-fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArgs<'_>>> {
+fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArg<'_>>> {
     let attrs = fields
         .iter()
         .map(|field| FieldAttribute::parse_attrs(&field.attrs))
@@ -239,7 +240,7 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArgs<'_>>> {
     {
         return Err(syn::Error::new(
             Span::call_site(),
-            "#[as_ref(ignore)] cannot be used with others",
+            "`#[as_ref(ignore)]` cannot be used in the same struct as other `#[as_ref(...)]` attributes",
         ));
     }
 
@@ -249,7 +250,7 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArgs<'_>>> {
             .enumerate()
             .zip(attrs)
             .filter(|(_, attr)| attr.is_none())
-            .map(|((i, field), _)| FieldArgs::new(field, false, i))
+            .map(|((i, field), _)| FieldArg::new(field, false, i))
             .collect())
     } else {
         Ok(fields
@@ -257,8 +258,8 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArgs<'_>>> {
             .enumerate()
             .zip(attrs)
             .filter_map(|((i, field), attr)| match attr {
-                Some(FieldAttribute::AsRef) => Some(FieldArgs::new(field, false, i)),
-                Some(FieldAttribute::Forward) => Some(FieldArgs::new(field, true, i)),
+                Some(FieldAttribute::AsRef) => Some(FieldArg::new(field, false, i)),
+                Some(FieldAttribute::Forward) => Some(FieldArg::new(field, true, i)),
                 Some(FieldAttribute::Ignore) => unreachable!(),
                 None => None,
             })
