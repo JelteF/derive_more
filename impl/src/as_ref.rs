@@ -2,7 +2,7 @@ use crate::utils::{add_where_clauses_for_new_ident, Either};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
-    parse::{discouraged::Speculative, Parse, ParseStream, Result},
+    parse::{Parse, ParseStream, Result},
     spanned::Spanned,
     DeriveInput, Field, Fields, Index,
 };
@@ -65,7 +65,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let trait_paths = sub_items.iter().map(|i| &i.3);
     let return_types = sub_items.iter().map(|i| &i.4);
 
-    let out = quote! {#(
+    Ok(quote! {#(
         #[automatically_derived]
         impl #impl_generics #trait_paths for #input_type #ty_generics #where_clauses {
             #[inline]
@@ -73,10 +73,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                 #bodies
             }
         }
-    )*};
-
-    println!("{}", out);
-    Ok(out)
+    )*})
 }
 
 enum StructAttribute {
@@ -128,7 +125,7 @@ impl FieldAttribute {
             .iter()
             .filter(|attr| attr.path().is_ident("as_ref"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = attr.parse_args()?;
+                let field_attr = Self::parse_attr(attr)?;
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
@@ -139,22 +136,20 @@ impl FieldAttribute {
                 }
             })
     }
-}
 
-impl Parse for FieldAttribute {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let ahead = input.fork();
-        match ahead.parse::<syn::Path>() {
-            Ok(p) if p.is_ident("forward") => {
-                input.advance_to(&ahead);
-                Ok(Self::Forward)
-            }
-            Ok(p) if p.is_ident("ignore") => {
-                input.advance_to(&ahead);
-                Ok(Self::Ignore)
-            }
-            _ => Ok(Self::AsRef),
+    fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
+        if matches!(attr.meta, syn::Meta::Path(_)) {
+            return Ok(Self::AsRef);
         }
+        attr.parse_args::<syn::Path>().and_then(|p| {
+            if p.is_ident("forward") {
+                return Ok(Self::Forward);
+            }
+            if p.is_ident("ignore") {
+                return Ok(Self::Ignore);
+            }
+            Err(syn::Error::new(p.span(), "unknown argument"))
+        })
     }
 }
 
