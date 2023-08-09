@@ -17,7 +17,7 @@ use syn::{
     token, Ident,
 };
 
-use crate::parsing::Expr;
+use crate::{parsing::Expr, utils::Either};
 
 /// Representation of a macro attribute expressing additional trait bounds.
 #[derive(Debug, Default)]
@@ -141,16 +141,20 @@ impl FmtAttribute {
         match path {
             Ok(path) if path.is_ident("fmt") => (|| {
                 let args = fork
-                    .parse_terminated(syn::Lit::parse, token::Comma)
+                    .parse_terminated(
+                        <Either<syn::Lit, syn::Ident>>::parse,
+                        token::Comma,
+                    )
                     .ok()?
                     .into_iter()
                     .enumerate()
-                    .filter_map(|(i, lit)| match lit {
-                        syn::Lit::Str(str) => Some(if i == 0 {
+                    .filter_map(|(i, arg)| match arg {
+                        Either::Left(syn::Lit::Str(str)) => Some(if i == 0 {
                             format!("\"{}\"", str.value())
                         } else {
                             str.value()
                         }),
+                        Either::Right(ident) => Some(ident.to_string()),
                         _ => None,
                     })
                     .collect::<Vec<_>>();
@@ -171,7 +175,7 @@ impl FmtAttribute {
 }
 
 impl Parse for FmtAttribute {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         Ok(Self {
             lit: input.parse()?,
             comma: input
