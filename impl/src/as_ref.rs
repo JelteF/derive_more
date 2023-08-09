@@ -3,7 +3,11 @@ use crate::utils::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse::Result, DeriveInput};
+use syn::{
+    parse::{discouraged::Speculative, Parse, ParseStream, Result},
+    spanned::Spanned,
+    DeriveInput,
+};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let as_ref_type = format_ident!("__AsRefT");
@@ -78,4 +82,83 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             }
         }
     )*})
+}
+
+enum StructAttribute {
+    Forward,
+}
+
+impl StructAttribute {
+    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
+        attrs
+            .as_ref()
+            .iter()
+            .filter(|attr| attr.path().is_ident("as_ref"))
+            .try_fold(None, |mut attrs, attr| {
+                let field_attr = attr.parse_args()?;
+                if attrs.replace(field_attr).is_some() {
+                    Err(syn::Error::new(
+                        attr.path().span(),
+                        "only single #[as_ref(...)] attribute is allowed here",
+                    ))
+                } else {
+                    Ok(attrs)
+                }
+            })
+    }
+}
+
+impl Parse for StructAttribute {
+    fn parse(input: ParseStream) -> Result<Self> {
+        input.parse::<syn::Path>().and_then(|path| {
+            if path.is_ident("forward") {
+                Ok(Self::Forward)
+            } else {
+                Err(syn::Error::new(path.span(), "unknown"))
+            }
+        })
+    }
+}
+
+enum FieldAttribute {
+    AsRef,
+    Forward,
+    Ignore,
+}
+
+impl FieldAttribute {
+    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
+        attrs
+            .as_ref()
+            .iter()
+            .filter(|attr| attr.path().is_ident("as_ref"))
+            .try_fold(None, |mut attrs, attr| {
+                let field_attr = attr.parse_args()?;
+                if attrs.replace(field_attr).is_some() {
+                    Err(syn::Error::new(
+                        attr.path().span(),
+                        "only single #[as_ref(...)] attribute is allowed here",
+                    ))
+                } else {
+                    Ok(attrs)
+                }
+            })
+    }
+}
+
+impl Parse for FieldAttribute {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let ahead = input.fork();
+        match ahead.parse::<syn::Path>() {
+            Ok(p) if p.is_ident("forward") => {
+                input.advance_to(&ahead);
+                Ok(Self::Forward)
+            }
+            Ok(p) if p.is_ident("ignore") => {
+                input.advance_to(&ahead);
+                Ok(Self::Ignore)
+            }
+            _ => Ok(Self::AsRef),
+        }
+    }
 }
