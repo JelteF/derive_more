@@ -1,12 +1,12 @@
 use crate::utils::{
     add_where_clauses_for_new_ident, AttrParams, MultiFieldData, State,
 };
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
     parse::{discouraged::Speculative, Parse, ParseStream, Result},
     spanned::Spanned,
-    DeriveInput,
+    DeriveInput, Field, Fields,
 };
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
@@ -160,5 +160,111 @@ impl Parse for FieldAttribute {
             }
             _ => Ok(Self::AsRef),
         }
+    }
+}
+
+struct FieldWithArgs<'a> {
+    forward: bool,
+    field: &'a Field,
+}
+
+fn extract(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldWithArgs<'_>>> {
+    let data = match &input.data {
+        syn::Data::Struct(data) => Ok(data),
+        syn::Data::Enum(e) => Err(syn::Error::new(
+            e.enum_token.span(),
+            "`AsRef` cannot be derived for enums",
+        )),
+        syn::Data::Union(u) => Err(syn::Error::new(
+            u.union_token.span(),
+            "`AsRef` cannot be derived for unions",
+        )),
+    }?;
+
+    if let Some(struct_attr) = StructAttribute::parse_attrs(&input.attrs)? {
+        let mut fields = data.fields.iter();
+
+        let field = fields.next().ok_or_else(|| {
+            syn::Error::new(
+                Span::call_site(),
+                "#[as_ref(...)] can only be applied to structs with exactly one field",
+            )
+        })?;
+
+        if FieldAttribute::parse_attrs(&field.attrs)?.is_some() {
+            return Err(syn::Error::new(
+                field.span(),
+                "#[as_ref(...)] cannot be applied to both struct and field",
+            ));
+        }
+
+        if let Some(other_field) = fields.next() {
+            return Err(syn::Error::new(
+                other_field.span(),
+                "#[as_ref(...)] can only be applied to structs with exactly one field",
+            ));
+        }
+
+        let forward = matches!(struct_attr, StructAttribute::Forward);
+
+        Ok(vec![FieldWithArgs { field, forward }])
+    } else {
+        extract_many(&data.fields)
+    }
+}
+
+fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldWithArgs<'_>>> {
+    let attrs = fields
+        .iter()
+        .map(|field| FieldAttribute::parse_attrs(&field.attrs))
+        .collect::<syn::Result<Vec<_>>>()?;
+
+    let present_attrs = attrs
+        .iter()
+        .filter_map(|attr| attr.as_ref())
+        .collect::<Vec<_>>();
+
+    let all = present_attrs
+        .iter()
+        .all(|attr| matches!(attr, FieldAttribute::Ignore));
+
+    if !all
+        && present_attrs
+            .iter()
+            .any(|attr| matches!(attr, FieldAttribute::Ignore))
+    {
+        return Err(syn::Error::new(
+            Span::call_site(),
+            "#[as_ref(ignore)] cannot be used with others",
+        ));
+    }
+
+    if all {
+        Ok(fields
+            .iter()
+            .zip(attrs)
+            .filter(|(_, attr)| attr.is_none())
+            .map(|(field, _)| FieldWithArgs {
+                field,
+                forward: false,
+            })
+            .collect())
+    } else {
+        Ok(fields
+            .iter()
+            .zip(attrs)
+            .filter_map(|(field, attr)| match attr {
+                Some(FieldAttribute::AsRef) => Some(FieldWithArgs {
+                    field,
+                    forward: false,
+                }),
+                Some(FieldAttribute::Forward) => Some(FieldWithArgs {
+                    forward: true,
+                    field,
+                }),
+                Some(FieldAttribute::Ignore) => unreachable!(),
+                None => None,
+            })
+            .collect())
     }
 }
