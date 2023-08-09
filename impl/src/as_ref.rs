@@ -1,71 +1,63 @@
-use crate::utils::{
-    add_where_clauses_for_new_ident, AttrParams, MultiFieldData, State,
-};
-use proc_macro2::{Span, TokenStream};
+use crate::utils::{add_where_clauses_for_new_ident, Either};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
     parse::{discouraged::Speculative, Parse, ParseStream, Result},
     spanned::Spanned,
-    DeriveInput, Field, Fields,
+    DeriveInput, Field, Fields, Index,
 };
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let as_ref_type = format_ident!("__AsRefT");
-    let state = State::with_type_bound(
-        input,
-        trait_name,
-        "as_ref".into(),
-        AttrParams::ignore_and_forward(),
-        false,
-    )?;
-    let MultiFieldData {
-        fields,
-        input_type,
-        members,
-        infos,
-        trait_path,
-        impl_generics,
-        ty_generics,
-        where_clause,
-        ..
-    } = state.enabled_fields_data();
-    let sub_items: Vec<_> = infos
-        .iter()
-        .zip(members.iter())
-        .zip(fields)
-        .map(|((info, member), field)| {
-            let field_type = &field.ty;
-            if info.forward {
-                let trait_path = quote! { #trait_path<#as_ref_type> };
-                let type_where_clauses = quote! {
-                    where #field_type: #trait_path
-                };
-                let new_generics = add_where_clauses_for_new_ident(
-                    &input.generics,
-                    &[field],
-                    &as_ref_type,
-                    type_where_clauses,
-                    false,
-                );
-                let (impl_generics, _, where_clause) = new_generics.split_for_impl();
-                let casted_trait = quote! { <#field_type as #trait_path> };
-                (
-                    quote! { #casted_trait::as_ref(&#member) },
-                    quote! { #impl_generics },
-                    quote! { #where_clause },
-                    quote! { #trait_path },
-                    quote! { #as_ref_type },
-                )
-            } else {
-                (
-                    quote! { &#member },
-                    quote! { #impl_generics },
-                    quote! { #where_clause },
-                    quote! { #trait_path<#field_type> },
-                    quote! { #field_type },
-                )
-            }
-        })
+    let trait_ident = format_ident!("{trait_name}");
+    let trait_path = quote! { ::derive_more::#trait_ident };
+
+    let args = extract(input)?;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let input_type = &input.ident;
+    let sub_items: Vec<_> = args
+        .into_iter()
+        .map(
+            |FieldArgs {
+                 forward,
+                 field,
+                 ident,
+             }| {
+                let member = quote! { self.#ident };
+                let field_type = &field.ty;
+                if forward {
+                    let trait_path = quote! { #trait_path<#as_ref_type> };
+                    let type_where_clauses = quote! {
+                        where #field_type: #trait_path
+                    };
+                    let new_generics = add_where_clauses_for_new_ident(
+                        &input.generics,
+                        &[field],
+                        &as_ref_type,
+                        type_where_clauses,
+                        false,
+                    );
+                    let (impl_generics, _, where_clause) =
+                        new_generics.split_for_impl();
+                    let casted_trait = quote! { <#field_type as #trait_path> };
+                    (
+                        quote! { #casted_trait::as_ref(&#member) },
+                        quote! { #impl_generics },
+                        quote! { #where_clause },
+                        quote! { #trait_path },
+                        quote! { #as_ref_type },
+                    )
+                } else {
+                    (
+                        quote! { &#member },
+                        quote! { #impl_generics },
+                        quote! { #where_clause },
+                        quote! { #trait_path<#field_type> },
+                        quote! { #field_type },
+                    )
+                }
+            },
+        )
         .collect();
     let bodies = sub_items.iter().map(|i| &i.0);
     let impl_generics = sub_items.iter().map(|i| &i.1);
@@ -73,7 +65,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let trait_paths = sub_items.iter().map(|i| &i.3);
     let return_types = sub_items.iter().map(|i| &i.4);
 
-    Ok(quote! {#(
+    let out = quote! {#(
         #[automatically_derived]
         impl #impl_generics #trait_paths for #input_type #ty_generics #where_clauses {
             #[inline]
@@ -81,7 +73,10 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
                 #bodies
             }
         }
-    )*})
+    )*};
+
+    println!("{}", out);
+    Ok(out)
 }
 
 enum StructAttribute {
@@ -163,12 +158,26 @@ impl Parse for FieldAttribute {
     }
 }
 
-struct FieldWithArgs<'a> {
+struct FieldArgs<'a> {
     forward: bool,
     field: &'a Field,
+    ident: Either<&'a Ident, Index>,
 }
 
-fn extract(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldWithArgs<'_>>> {
+impl<'a> FieldArgs<'a> {
+    fn new(field: &'a Field, forward: bool, index: usize) -> Self {
+        Self {
+            field,
+            forward,
+            ident: field
+                .ident
+                .as_ref()
+                .map_or_else(|| Either::Right(syn::Index::from(index)), Either::Left),
+        }
+    }
+}
+
+fn extract(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArgs<'_>>> {
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
         syn::Data::Enum(e) => Err(syn::Error::new(
@@ -207,13 +216,13 @@ fn extract(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldWithArgs<'_>>> {
 
         let forward = matches!(struct_attr, StructAttribute::Forward);
 
-        Ok(vec![FieldWithArgs { field, forward }])
+        Ok(vec![FieldArgs::new(field, forward, 0)])
     } else {
         extract_many(&data.fields)
     }
 }
 
-fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldWithArgs<'_>>> {
+fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArgs<'_>>> {
     let attrs = fields
         .iter()
         .map(|field| FieldAttribute::parse_attrs(&field.attrs))
@@ -242,26 +251,19 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldWithArgs<'_>>> {
     if all {
         Ok(fields
             .iter()
+            .enumerate()
             .zip(attrs)
             .filter(|(_, attr)| attr.is_none())
-            .map(|(field, _)| FieldWithArgs {
-                field,
-                forward: false,
-            })
+            .map(|((i, field), _)| FieldArgs::new(field, false, i))
             .collect())
     } else {
         Ok(fields
             .iter()
+            .enumerate()
             .zip(attrs)
-            .filter_map(|(field, attr)| match attr {
-                Some(FieldAttribute::AsRef) => Some(FieldWithArgs {
-                    field,
-                    forward: false,
-                }),
-                Some(FieldAttribute::Forward) => Some(FieldWithArgs {
-                    forward: true,
-                    field,
-                }),
+            .filter_map(|((i, field), attr)| match attr {
+                Some(FieldAttribute::AsRef) => Some(FieldArgs::new(field, false, i)),
+                Some(FieldAttribute::Forward) => Some(FieldArgs::new(field, true, i)),
                 Some(FieldAttribute::Ignore) => unreachable!(),
                 None => None,
             })
