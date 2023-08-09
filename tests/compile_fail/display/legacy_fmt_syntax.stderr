@@ -5,7 +5,7 @@ error: legacy syntax, remove `fmt =` and use `"Stuff({}): {}", bar` instead
   |           ^^^
 
 error: legacy syntax, remove `fmt =` and use `"Stuff({}): {}", _0` instead
-  --> tests/compile_fail/display/legacy_fmt_syntax.rs:8:11
+ --> tests/compile_fail/display/legacy_fmt_syntax.rs:8:11
   |
 8 | #[display(fmt = "Stuff({}): {}", _0)]
   |           ^^^
