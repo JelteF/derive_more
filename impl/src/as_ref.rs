@@ -19,7 +19,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let sub_items: Vec<_> = field_args
         .into_iter()
         .map(
-            |FieldArg {
+            |FieldArgs {
                  forward,
                  field,
                  ident,
@@ -77,16 +77,16 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     )*})
 }
 
-struct StructAttribute<'a> {
-    args: StructAttributeArgs,
+struct StructAttr<'a> {
+    args: StructAttrArgs,
     attr: &'a syn::Attribute,
 }
 
-enum StructAttributeArgs {
+enum StructAttrArgs {
     Forward,
 }
 
-impl<'a> StructAttribute<'a> {
+impl<'a> StructAttr<'a> {
     fn parse_attrs(attrs: &'a [syn::Attribute]) -> syn::Result<Option<Self>> {
         attrs
             .as_ref()
@@ -94,7 +94,7 @@ impl<'a> StructAttribute<'a> {
             .filter(|attr| attr.path().is_ident("as_ref"))
             .try_fold(None, |mut attrs, attr| {
                 let field_args = attr.parse_args()?;
-                let field_attr = StructAttribute {
+                let field_attr = StructAttr {
                     args: field_args,
                     attr,
                 };
@@ -110,7 +110,7 @@ impl<'a> StructAttribute<'a> {
     }
 }
 
-impl Parse for StructAttributeArgs {
+impl Parse for StructAttrArgs {
     fn parse(input: ParseStream) -> Result<Self> {
         input.parse::<syn::Path>().and_then(|path| {
             if path.is_ident("forward") {
@@ -125,18 +125,18 @@ impl Parse for StructAttributeArgs {
     }
 }
 
-struct FieldAttribute<'a> {
+struct FieldAttr<'a> {
     attr: &'a syn::Attribute,
-    args: FieldAttributeArgs,
+    args: FieldAttrArgs,
 }
 
-enum FieldAttributeArgs {
+enum FieldAttrArgs {
     AsRef,
     Forward,
     Ignore,
 }
 
-impl<'a> FieldAttribute<'a> {
+impl<'a> FieldAttr<'a> {
     fn parse_attrs(attrs: &'a [syn::Attribute]) -> syn::Result<Option<Self>> {
         attrs
             .as_ref()
@@ -158,12 +158,12 @@ impl<'a> FieldAttribute<'a> {
     fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
         Ok(Self {
             attr,
-            args: FieldAttributeArgs::parse_attr(attr)?,
+            args: FieldAttrArgs::parse_attr(attr)?,
         })
     }
 }
 
-impl FieldAttributeArgs {
+impl FieldAttrArgs {
     fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
             return Ok(Self::AsRef);
@@ -183,13 +183,13 @@ impl FieldAttributeArgs {
     }
 }
 
-struct FieldArg<'a> {
+struct FieldArgs<'a> {
     forward: bool,
     field: &'a Field,
     ident: Either<&'a Ident, Index>,
 }
 
-impl<'a> FieldArg<'a> {
+impl<'a> FieldArgs<'a> {
     fn new(field: &'a Field, forward: bool, index: usize) -> Self {
         Self {
             field,
@@ -202,7 +202,7 @@ impl<'a> FieldArg<'a> {
     }
 }
 
-fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArg<'_>>> {
+fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArgs<'_>>> {
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
         syn::Data::Enum(e) => Err(syn::Error::new(
@@ -215,7 +215,7 @@ fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArg<'
         )),
     }?;
 
-    if let Some(struct_attr) = StructAttribute::parse_attrs(&input.attrs)? {
+    if let Some(struct_attr) = StructAttr::parse_attrs(&input.attrs)? {
         let mut fields = data.fields.iter();
 
         let field = fields.next().ok_or_else(|| {
@@ -225,7 +225,7 @@ fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArg<'
             )
         })?;
 
-        if FieldAttribute::parse_attrs(&field.attrs)?.is_some() {
+        if FieldAttr::parse_attrs(&field.attrs)?.is_some() {
             return Err(syn::Error::new(
                 field.span(),
                 "`#[as_ref(...)]` cannot be applied to both struct and field",
@@ -239,18 +239,18 @@ fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArg<'
             ));
         }
 
-        let forward = matches!(struct_attr.args, StructAttributeArgs::Forward);
+        let forward = matches!(struct_attr.args, StructAttrArgs::Forward);
 
-        Ok(vec![FieldArg::new(field, forward, 0)])
+        Ok(vec![FieldArgs::new(field, forward, 0)])
     } else {
         extract_many(&data.fields)
     }
 }
 
-fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArg<'_>>> {
+fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArgs<'_>>> {
     let attrs = fields
         .iter()
-        .map(|field| FieldAttribute::parse_attrs(&field.attrs))
+        .map(|field| FieldAttr::parse_attrs(&field.attrs))
         .collect::<syn::Result<Vec<_>>>()?;
 
     let present_attrs = attrs
@@ -260,12 +260,12 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArg<'_>>> {
 
     let all = present_attrs
         .iter()
-        .all(|attr| matches!(attr.args, FieldAttributeArgs::Ignore));
+        .all(|attr| matches!(attr.args, FieldAttrArgs::Ignore));
 
     if !all {
         if let Some(attr) = present_attrs
             .iter()
-            .find(|attr| matches!(attr.args, FieldAttributeArgs::Ignore))
+            .find(|attr| matches!(attr.args, FieldAttrArgs::Ignore))
         {
             return Err(syn::Error::new(attr.attr.span(), "`#[as_ref(ignore)]` cannot be used in the same struct as other `#[as_ref(...)]` attributes"));
         }
@@ -277,7 +277,7 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArg<'_>>> {
             .enumerate()
             .zip(attrs)
             .filter(|(_, attr)| attr.is_none())
-            .map(|((i, field), _)| FieldArg::new(field, false, i))
+            .map(|((i, field), _)| FieldArgs::new(field, false, i))
             .collect())
     } else {
         Ok(fields
@@ -285,11 +285,9 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArg<'_>>> {
             .enumerate()
             .zip(attrs)
             .filter_map(|((i, field), attr)| match attr.map(|attr| attr.args) {
-                Some(FieldAttributeArgs::AsRef) => Some(FieldArg::new(field, false, i)),
-                Some(FieldAttributeArgs::Forward) => {
-                    Some(FieldArg::new(field, true, i))
-                }
-                Some(FieldAttributeArgs::Ignore) => unreachable!(),
+                Some(FieldAttrArgs::AsRef) => Some(FieldArgs::new(field, false, i)),
+                Some(FieldAttrArgs::Forward) => Some(FieldArgs::new(field, true, i)),
+                Some(FieldAttrArgs::Ignore) => unreachable!(),
                 None => None,
             })
             .collect())
