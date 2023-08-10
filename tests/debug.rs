@@ -940,15 +940,43 @@ mod generic {
     fn generic_enum() {
         assert_eq!(
             format!("{:?}", GenericEnum::A::<_, u8> { field: 1 }),
-            "A { field: 1 }"
+            "A { field: 1 }",
         );
         assert_eq!(
             format!("{:#?}", GenericEnum::A::<_, u8> { field: 1 }),
-            "A {\n    field: 1,\n}"
+            "A {\n    field: 1,\n}",
         );
         assert_eq!(format!("{:?}", GenericEnum::B::<u8, _>(2)), "B(2)");
         assert_eq!(
             format!("{:#?}", GenericEnum::B::<u8, _>(2)),
+            "B(\n    2,\n)",
+        );
+    }
+
+    #[derive(derive_more::Debug)]
+    enum GenericEnumUnsized<A: ?Sized, B: ?Sized + 'static> {
+        A { field: Box<A> },
+        B(&'static B),
+    }
+    #[test]
+    fn generic_enum_unsized() {
+        assert_eq!(
+            format!("{:?}", GenericEnumUnsized::A::<i32, u8> { field: 1.into() }),
+            "A { field: 1 }",
+        );
+        assert_eq!(
+            format!(
+                "{:#?}",
+                GenericEnumUnsized::A::<i32, u8> { field: 1.into() },
+            ),
+            "A {\n    field: 1,\n}",
+        );
+        assert_eq!(
+            format!("{:?}", GenericEnumUnsized::B::<u8, i32>(&2)),
+            "B(2)",
+        );
+        assert_eq!(
+            format!("{:#?}", GenericEnumUnsized::B::<u8, i32>(&2)),
             "B(\n    2,\n)",
         );
     }
