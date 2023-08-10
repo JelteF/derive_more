@@ -117,6 +117,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// Representation of an [`Into`] derive macro struct container attribute.
 ///
 /// ```rust,ignore
+/// #[into]
 /// #[into(<types>)]
 /// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
 /// ```
@@ -138,13 +139,6 @@ impl StructAttribute {
         attrs: impl AsRef<[syn::Attribute]>,
         fields: &syn::Fields,
     ) -> syn::Result<Option<Self>> {
-        fn infer<T>(v: T) -> T
-        where
-            T: for<'a> FnOnce(ParseStream<'a>) -> syn::Result<StructAttribute>,
-        {
-            v
-        }
-
         attrs
             .as_ref()
             .iter()
@@ -158,8 +152,7 @@ impl StructAttribute {
                     (Some(_), None) | (None, None) => {}
                 };
 
-                let field_attr =
-                    attr.parse_args_with(infer(|stream| Self::parse(stream, fields)))?;
+                let field_attr = Self::parse_attr(attr, fields)?;
                 let out = attrs.get_or_insert_with(Self::default);
                 merge(&mut out.owned, field_attr.owned);
                 merge(&mut out.r#ref, field_attr.r#ref);
@@ -169,7 +162,22 @@ impl StructAttribute {
             })
     }
 
-    /// Parses a single [`StructAttribute`].
+    /// Parses a single [`StructAttribute`]
+    fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> syn::Result<Self> {
+        if matches!(attr.meta, syn::Meta::Path(_)) {
+            Ok(Self {
+                owned: Some(Punctuated::new()),
+                r#ref: None,
+                ref_mut: None,
+            })
+        } else {
+            attr.parse_args_with(|content: ParseStream<'_>| {
+                Self::parse(content, fields)
+            })
+        }
+    }
+
+    /// Parses a single [`StructAttribute`]'s arguments
     fn parse(content: ParseStream<'_>, fields: &syn::Fields) -> syn::Result<Self> {
         check_legacy_syntax(content, fields)?;
 
