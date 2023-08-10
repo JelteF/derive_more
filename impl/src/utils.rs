@@ -312,10 +312,6 @@ impl AttrParams {
             field: vec![],
         }
     }
-
-    pub fn ignore_and_forward() -> AttrParams {
-        AttrParams::new(vec!["ignore", "forward"])
-    }
 }
 
 impl<'input> State<'input> {
@@ -376,22 +372,6 @@ impl<'input> State<'input> {
         allowed_attr_params: AttrParams,
     ) -> Result<State<'arg_input>> {
         State::new_impl(input, trait_name, trait_attr, allowed_attr_params, true)
-    }
-
-    pub fn with_type_bound<'arg_input>(
-        input: &'arg_input DeriveInput,
-        trait_name: &'static str,
-        trait_attr: String,
-        allowed_attr_params: AttrParams,
-        add_type_bound: bool,
-    ) -> Result<State<'arg_input>> {
-        Self::new_impl(
-            input,
-            trait_name,
-            trait_attr,
-            allowed_attr_params,
-            add_type_bound,
-        )
     }
 
     fn new_impl<'arg_input>(
