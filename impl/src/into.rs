@@ -144,19 +144,11 @@ impl StructAttribute {
             .iter()
             .filter(|attr| attr.path().is_ident("into"))
             .try_fold(None, |mut attrs, attr| {
-                let merge = |out: &mut Option<_>, tys| match (out.as_mut(), tys) {
-                    (None, Some(tys)) => {
-                        *out = Some::<Punctuated<_, _>>(tys);
-                    }
-                    (Some(out), Some(tys)) => out.extend(tys),
-                    (Some(_), None) | (None, None) => {}
-                };
-
                 let field_attr = Self::parse_attr(attr, fields)?;
                 let out = attrs.get_or_insert_with(Self::default);
-                merge(&mut out.owned, field_attr.owned);
-                merge(&mut out.r#ref, field_attr.r#ref);
-                merge(&mut out.ref_mut, field_attr.ref_mut);
+                merge_tys(&mut out.owned, field_attr.owned);
+                merge_tys(&mut out.r#ref, field_attr.r#ref);
+                merge_tys(&mut out.ref_mut, field_attr.ref_mut);
 
                 Ok(attrs)
             })
@@ -165,11 +157,7 @@ impl StructAttribute {
     /// Parses a single [`StructAttribute`]
     fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
-            Ok(Self {
-                owned: Some(Punctuated::new()),
-                r#ref: None,
-                ref_mut: None,
-            })
+            Ok(Self::all_owned())
         } else {
             attr.parse_args_with(|content: ParseStream<'_>| {
                 Self::parse(content, fields)
@@ -178,7 +166,11 @@ impl StructAttribute {
     }
 
     /// Parses a single [`StructAttribute`]'s arguments
-    fn parse(content: ParseStream<'_>, fields: &syn::Fields) -> syn::Result<Self> {
+    fn parse<'a, F>(content: ParseStream<'_>, fields: &'a F) -> syn::Result<Self>
+    where
+        F: FieldsExt + ?Sized,
+        &'a F: IntoIterator<Item = &'a Field>,
+    {
         check_legacy_syntax(content, fields)?;
 
         let mut out = Self::default();
@@ -258,6 +250,14 @@ impl StructAttribute {
             Ok(out)
         }
     }
+
+    fn all_owned() -> Self {
+        Self {
+            owned: Some(Punctuated::new()),
+            r#ref: None,
+            ref_mut: None,
+        }
+    }
 }
 
 enum FieldAttribute {
@@ -266,10 +266,63 @@ enum FieldAttribute {
 }
 
 impl FieldAttribute {
-    fn parse(content: ParseStream, field: &Field) -> syn::Result<Self> {
-        check_legacy_syntax(content, std::slice::from_ref(field))?;
-        todo!()
+    fn parse_attrs(
+        attrs: impl AsRef<[syn::Attribute]>,
+        field: &Field,
+    ) -> syn::Result<Option<Self>> {
+        attrs
+            .as_ref()
+            .iter()
+            .filter(|attr| attr.path().is_ident("into"))
+            .try_fold(None, |attrs, attr| {
+                let field_attr = Self::parse_attr(attr, field)?;
+                match (attrs, field_attr) {
+                    (Some(Self::Args(mut args)), Self::Args(more)) => {
+                        merge_tys(&mut args.owned, more.owned);
+                        merge_tys(&mut args.r#ref, more.r#ref);
+                        merge_tys(&mut args.ref_mut, more.ref_mut);
+                        Ok(Some(Self::Args(args)))
+                    }
+                    (None, field_attr) => Ok(Some(field_attr)),
+                    (Some(_), _) => Err(syn::Error::new(
+                        attr.path().span(),
+                        "only single `#[into(...)]` attribute is allowed here",
+                    )),
+                }
+            })
     }
+
+    fn parse_attr(attr: &syn::Attribute, field: &Field) -> syn::Result<Self> {
+        if matches!(attr.meta, syn::Meta::Path(_)) {
+            Ok(Self::Args(StructAttribute::all_owned()))
+        } else {
+            attr.parse_args_with(|content: ParseStream| Self::parse(content, field))
+        }
+    }
+
+    fn parse(content: ParseStream, field: &Field) -> syn::Result<Self> {
+        let ahead = content.fork();
+        match ahead.parse::<syn::Path>() {
+            Ok(p) if p.is_ident("skip") | p.is_ident("ignore") => Ok(Self::Skip),
+            _ => {
+                let fields = std::slice::from_ref(field);
+                StructAttribute::parse(content, fields).map(Self::Args)
+            }
+        }
+    }
+}
+
+fn merge_tys(
+    out: &mut Option<Punctuated<Type, token::Comma>>,
+    tys: Option<Punctuated<Type, token::Comma>>,
+) {
+    match (out.as_mut(), tys) {
+        (None, Some(tys)) => {
+            *out = Some::<Punctuated<_, _>>(tys);
+        }
+        (Some(out), Some(tys)) => out.extend(tys),
+        (Some(_), None) | (None, None) => {}
+    };
 }
 
 /// `#[into(skip)]` field attribute.
