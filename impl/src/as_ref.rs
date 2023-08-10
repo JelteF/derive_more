@@ -149,7 +149,7 @@ impl FieldAttribute {
             if p.is_ident("ignore") {
                 return Ok(Self::Ignore);
             }
-            Err(syn::Error::new(p.span(), "unknown argument"))
+            Err(syn::Error::new(p.span(), "unknown argument, only `forward` and `ignore` are allowed"))
         })
     }
 }
