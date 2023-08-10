@@ -142,9 +142,9 @@ fn generic_bounds() {
 }
 
 #[derive(IntoIterator)]
-struct Generic3<'a, T> {
-    #[into_iterator(owned, ref, ref_mut)]
-    items: Vec<&'a mut T>,
+struct Generic3<'a, 'b, T> {
+    #[into_iterator(owned)]
+    items: &'a mut Vec<&'b mut T>,
 }
 
 #[test]
@@ -152,10 +152,15 @@ fn generic_refs() {
     let mut numbers = vec![1, 2, 3];
     let mut numbers2 = numbers.clone();
 
-    let number_refs = numbers.iter_mut().collect::<Vec<_>>();
-    let number_refs2 = numbers2.iter_mut().collect::<Vec<_>>();
+    let mut number_refs = numbers.iter_mut().collect::<Vec<_>>();
+    let mut number_refs2 = numbers2.iter_mut().collect::<Vec<_>>();
 
-    test_into_iter_all(Generic3 { items: number_refs }, number_refs2);
+    test_into_iter(
+        Generic3 {
+            items: &mut number_refs,
+        },
+        &number_refs2.iter_mut().collect::<Vec<_>>(),
+    )
 }
 
 #[derive(IntoIterator)]
