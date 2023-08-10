@@ -2,12 +2,13 @@
 #![allow(dead_code, unused_imports)]
 
 #[cfg(not(feature = "std"))]
+#[macro_use]
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use derive_more::IntoIterator;
 
