@@ -37,6 +37,7 @@ struct MyVec(Vec<i32>);
 #[test]
 fn tuple_single() {
     let numbers = vec![1, 2, 3];
+
     test_into_iter_all(MyVec(numbers.clone()), numbers);
 }
 
@@ -49,6 +50,7 @@ struct Numbers {
 #[test]
 fn named_single() {
     let numbers = vec![1, 2, 3];
+
     test_into_iter_all(
         Numbers {
             numbers: numbers.clone(),
@@ -67,6 +69,7 @@ struct Numbers2 {
 
 fn named_many() {
     let numbers = vec![1, 2, 3];
+
     test_into_iter_all(
         Numbers2 {
             numbers: numbers.clone(),
@@ -105,6 +108,7 @@ struct Generic1<T> {
 #[test]
 fn generic() {
     let numbers = vec![1, 2, 3];
+
     test_into_iter_all(
         Generic1 {
             items: numbers.clone(),
@@ -127,6 +131,7 @@ where
 fn generic_bounds() {
     let numbers = vec![1, 2, 3];
     let useless = false;
+
     test_into_iter_all(
         Generic2 {
             items: numbers.clone(),
@@ -146,8 +151,10 @@ struct Generic3<'a, T> {
 fn generic_refs() {
     let mut numbers = vec![1, 2, 3];
     let mut numbers2 = numbers.clone();
+
     let number_refs = numbers.iter_mut().collect::<Vec<_>>();
     let number_refs2 = numbers2.iter_mut().collect::<Vec<_>>();
+
     test_into_iter_all(Generic3 { items: number_refs }, number_refs2);
 }
 
@@ -161,6 +168,7 @@ struct Generic4<T> {
 #[test]
 fn generic_owned() {
     let numbers = vec![1, 2, 3];
+
     test_into_iter(
         Generic4 {
             items: numbers.clone(),
