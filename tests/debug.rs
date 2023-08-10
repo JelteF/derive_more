@@ -637,7 +637,7 @@ mod enums {
 
 mod generic {
     #[cfg(not(feature = "std"))]
-    use alloc::format;
+    use alloc::{boxed::Box, format};
     use core::fmt;
 
     use derive_more::Debug;
