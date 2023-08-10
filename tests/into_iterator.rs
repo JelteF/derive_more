@@ -7,16 +7,54 @@ extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
+use std::fmt::Debug;
+
 use derive_more::IntoIterator;
+
+fn test_into_iter<T: PartialEq + Debug, I: IntoIterator<Item = T>>(
+    iter: I,
+    vals: &[T],
+) {
+    assert_eq!(iter.into_iter().collect::<Vec<_>>(), vals);
+}
+
+fn test_into_iter_all<T, I>(mut iter: I, mut vals: Vec<T>)
+where
+    T: PartialEq + Debug,
+    I: IntoIterator<Item = T>,
+    for<'a> &'a I: IntoIterator<Item = &'a T>,
+    for<'a> &'a mut I: IntoIterator<Item = &'a mut T>,
+{
+    test_into_iter(&mut iter, &vals.iter_mut().collect::<Vec<_>>());
+    test_into_iter(&iter, &vals.iter().collect::<Vec<_>>());
+    test_into_iter(iter, &vals);
+}
 
 #[derive(IntoIterator)]
 #[into_iterator(owned, ref, ref_mut)]
 struct MyVec(Vec<i32>);
 
+#[test]
+fn tuple_single() {
+    let numbers = vec![1, 2, 3];
+    test_into_iter_all(MyVec(numbers.clone()), numbers);
+}
+
 #[derive(IntoIterator)]
 #[into_iterator(owned, ref, ref_mut)]
 struct Numbers {
     numbers: Vec<i32>,
+}
+
+#[test]
+fn named_single() {
+    let numbers = vec![1, 2, 3];
+    test_into_iter_all(
+        Numbers {
+            numbers: numbers.clone(),
+        },
+        numbers,
+    );
 }
 
 #[derive(IntoIterator)]
@@ -25,6 +63,18 @@ struct Numbers2 {
     numbers: Vec<i32>,
     useless: bool,
     useless2: bool,
+}
+
+fn named_many() {
+    let numbers = vec![1, 2, 3];
+    test_into_iter_all(
+        Numbers2 {
+            numbers: numbers.clone(),
+            useless: true,
+            useless2: true,
+        },
+        numbers,
+    );
 }
 
 #[derive(IntoIterator)]
@@ -52,6 +102,17 @@ struct Generic1<T> {
     items: Vec<T>,
 }
 
+#[test]
+fn generic() {
+    let numbers = vec![1, 2, 3];
+    test_into_iter_all(
+        Generic1 {
+            items: numbers.clone(),
+        },
+        numbers,
+    );
+}
+
 #[derive(IntoIterator)]
 struct Generic2<'a, T, U: Send>
 where
@@ -62,8 +123,30 @@ where
     useless: &'a U,
 }
 
+#[test]
+fn generic_bounds() {
+    let numbers = vec![1, 2, 3];
+    let useless = false;
+    test_into_iter_all(
+        Generic2 {
+            items: numbers.clone(),
+            useless: &useless,
+        },
+        numbers,
+    );
+}
+
 #[derive(IntoIterator)]
-struct Generic3<'a, 'b, T> {
+struct Generic3<'a, T> {
     #[into_iterator(owned, ref, ref_mut)]
-    items: &'a mut Vec<&'b mut T>,
+    items: Vec<&'a mut T>,
+}
+
+#[test]
+fn generic_refs() {
+    let mut numbers = vec![1, 2, 3];
+    let mut numbers2 = numbers.clone();
+    let number_refs = numbers.iter_mut().collect::<Vec<_>>();
+    let number_refs2 = numbers2.iter_mut().collect::<Vec<_>>();
+    test_into_iter_all(Generic3 { items: number_refs }, number_refs2);
 }
