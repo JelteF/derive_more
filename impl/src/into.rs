@@ -9,12 +9,12 @@ use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Ident,
+    token, Field, Ident,
 };
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, Either, FieldsExt as _},
+    utils::{polyfill, Either, FieldsExt},
 };
 
 /// Expands an [`Into`] derive macro.
@@ -298,10 +298,11 @@ impl Parse for SkipFieldAttribute {
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
-fn check_legacy_syntax(
-    tokens: ParseStream<'_>,
-    fields: &syn::Fields,
-) -> syn::Result<()> {
+fn check_legacy_syntax<'a, F>(tokens: ParseStream<'_>, fields: &'a F) -> syn::Result<()>
+where
+    F: FieldsExt,
+    &'a F: IntoIterator<Item = &'a Field>,
+{
     let span = tokens.span();
     let tokens = tokens.fork();
 
@@ -322,7 +323,7 @@ fn check_legacy_syntax(
         0 => None,
         1 => Some(
             fields
-                .iter()
+                .into_iter()
                 .next()
                 .unwrap_or_else(|| unreachable!("fields.len() == 1"))
                 .ty
@@ -332,7 +333,7 @@ fn check_legacy_syntax(
         _ => Some(format!(
             "({})",
             fields
-                .iter()
+                .into_iter()
                 .map(|f| f.ty.to_token_stream().to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
