@@ -150,3 +150,22 @@ fn generic_refs() {
     let number_refs2 = numbers2.iter_mut().collect::<Vec<_>>();
     test_into_iter_all(Generic3 { items: number_refs }, number_refs2);
 }
+
+#[derive(IntoIterator)]
+struct Generic4<T> {
+    #[into_iterator]
+    items: Vec<T>,
+    useless: bool,
+}
+
+#[test]
+fn generic_owned() {
+    let numbers = vec![1, 2, 3];
+    test_into_iter(
+        Generic4 {
+            items: numbers.clone(),
+            useless: true,
+        },
+        &numbers,
+    );
+}
