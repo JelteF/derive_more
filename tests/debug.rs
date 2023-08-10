@@ -667,6 +667,22 @@ mod generic {
     }
 
     #[derive(Debug)]
+    struct NamedGenericStructUnsized<T: ?Sized> {
+        field: T,
+    }
+    #[test]
+    fn named_generic_struct_unsized() {
+        assert_eq!(
+            format!("{:?}", NamedGenericStructUnsized { field: 1 }),
+            "NamedGenericStructUnsized { field: 1 }",
+        );
+        assert_eq!(
+            format!("{:#?}", NamedGenericStructUnsized { field: 1 }),
+            "NamedGenericStructUnsized {\n    field: 1,\n}",
+        );
+    }
+
+    #[derive(Debug)]
     struct NamedGenericStructIgnored<T> {
         #[debug(ignore)]
         field: T,
@@ -823,6 +839,20 @@ mod generic {
         assert_eq!(
             format!("{:#?}", UnnamedGenericStruct(2)),
             "UnnamedGenericStruct(\n    2,\n)",
+        );
+    }
+
+    #[derive(Debug)]
+    struct UnnamedGenericStructUnsized<T: ?Sized>(T);
+    #[test]
+    fn unnamed_generic_struct_unsized() {
+        assert_eq!(
+            format!("{:?}", UnnamedGenericStructUnsized(2)),
+            "UnnamedGenericStructUnsized(2)",
+        );
+        assert_eq!(
+            format!("{:#?}", UnnamedGenericStructUnsized(2)),
+            "UnnamedGenericStructUnsized(\n    2,\n)",
         );
     }
 
