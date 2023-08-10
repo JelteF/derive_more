@@ -1,0 +1,5 @@
+error: `AsRef` cannot be derived for unions
+ --> tests/compile_fail/as_ref/union.rs:2:1
+  |
+2 | union Foo {
+  | ^^^^^
