@@ -13,8 +13,15 @@ use syn::{
     TypeParamBound, Variant, WhereClause,
 };
 
+#[cfg(any(
+    feature = "debug",
+    feature = "display",
+    feature = "from",
+    feature = "into",
+))]
+pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
-pub(crate) use self::{either::Either, fields_ext::FieldsExt};
+pub(crate) use self::fields_ext::FieldsExt;
 
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
@@ -1326,10 +1333,16 @@ pub fn is_type_parameter_used_in_type(
     }
 }
 
-#[cfg(any(feature = "from", feature = "into"))]
+#[cfg(any(
+    feature = "debug",
+    feature = "display",
+    feature = "from",
+    feature = "into",
+))]
 mod either {
     use proc_macro2::TokenStream;
     use quote::ToTokens;
+    use syn::parse::{Parse, ParseStream};
 
     /// Either [`Left`] or [`Right`].
     ///
@@ -1341,6 +1354,20 @@ mod either {
 
         /// Right variant.
         Right(R),
+    }
+
+    impl<L, R> Parse for Either<L, R>
+    where
+        L: Parse,
+        R: Parse,
+    {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            if L::parse(&input.fork()).is_ok() {
+                L::parse(input).map(Self::Left)
+            } else {
+                R::parse(input).map(Self::Right)
+            }
+        }
     }
 
     impl<L, R, T> Iterator for Either<L, R>
