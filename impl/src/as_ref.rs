@@ -1,5 +1,5 @@
 use crate::utils::{add_where_clauses_for_new_ident, Either};
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream, Result},
@@ -125,14 +125,19 @@ impl Parse for StructAttributeArgs {
     }
 }
 
-enum FieldAttribute {
+struct FieldAttribute<'a> {
+    attr: &'a syn::Attribute,
+    args: FieldAttributeArgs,
+}
+
+enum FieldAttributeArgs {
     AsRef,
     Forward,
     Ignore,
 }
 
-impl FieldAttribute {
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
+impl<'a> FieldAttribute<'a> {
+    fn parse_attrs(attrs: &'a [syn::Attribute]) -> syn::Result<Option<Self>> {
         attrs
             .as_ref()
             .iter()
@@ -150,6 +155,15 @@ impl FieldAttribute {
             })
     }
 
+    fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
+        Ok(Self {
+            attr,
+            args: FieldAttributeArgs::parse_attr(attr)?,
+        })
+    }
+}
+
+impl FieldAttributeArgs {
     fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
             return Ok(Self::AsRef);
@@ -246,17 +260,15 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArg<'_>>> {
 
     let all = present_attrs
         .iter()
-        .all(|attr| matches!(attr, FieldAttribute::Ignore));
+        .all(|attr| matches!(attr.args, FieldAttributeArgs::Ignore));
 
-    if !all
-        && present_attrs
+    if !all {
+        if let Some(attr) = present_attrs
             .iter()
-            .any(|attr| matches!(attr, FieldAttribute::Ignore))
-    {
-        return Err(syn::Error::new(
-            Span::call_site(),
-            "`#[as_ref(ignore)]` cannot be used in the same struct as other `#[as_ref(...)]` attributes",
-        ));
+            .find(|attr| matches!(attr.args, FieldAttributeArgs::Ignore))
+        {
+            return Err(syn::Error::new(attr.attr.span(), "`#[as_ref(ignore)]` cannot be used in the same struct as other `#[as_ref(...)]` attributes"));
+        }
     }
 
     if all {
@@ -272,10 +284,12 @@ fn extract_many(fields: &'_ Fields) -> syn::Result<Vec<FieldArg<'_>>> {
             .iter()
             .enumerate()
             .zip(attrs)
-            .filter_map(|((i, field), attr)| match attr {
-                Some(FieldAttribute::AsRef) => Some(FieldArg::new(field, false, i)),
-                Some(FieldAttribute::Forward) => Some(FieldArg::new(field, true, i)),
-                Some(FieldAttribute::Ignore) => unreachable!(),
+            .filter_map(|((i, field), attr)| match attr.map(|attr| attr.args) {
+                Some(FieldAttributeArgs::AsRef) => Some(FieldArg::new(field, false, i)),
+                Some(FieldAttributeArgs::Forward) => {
+                    Some(FieldArg::new(field, true, i))
+                }
+                Some(FieldAttributeArgs::Ignore) => unreachable!(),
                 None => None,
             })
             .collect())
