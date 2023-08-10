@@ -77,18 +77,27 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     )*})
 }
 
-enum StructAttribute {
+struct StructAttribute<'a> {
+    args: StructAttributeArgs,
+    attr: &'a syn::Attribute,
+}
+
+enum StructAttributeArgs {
     Forward,
 }
 
-impl StructAttribute {
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
+impl<'a> StructAttribute<'a> {
+    fn parse_attrs(attrs: &'a [syn::Attribute]) -> syn::Result<Option<Self>> {
         attrs
             .as_ref()
             .iter()
             .filter(|attr| attr.path().is_ident("as_ref"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = attr.parse_args()?;
+                let field_args = attr.parse_args()?;
+                let field_attr = StructAttribute {
+                    args: field_args,
+                    attr,
+                };
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
@@ -101,13 +110,16 @@ impl StructAttribute {
     }
 }
 
-impl Parse for StructAttribute {
+impl Parse for StructAttributeArgs {
     fn parse(input: ParseStream) -> Result<Self> {
         input.parse::<syn::Path>().and_then(|path| {
             if path.is_ident("forward") {
                 Ok(Self::Forward)
             } else {
-                Err(syn::Error::new(path.span(), "unknown argument, only `forward` is allowed"))
+                Err(syn::Error::new(
+                    path.span(),
+                    "unknown argument, only `forward` is allowed",
+                ))
             }
         })
     }
@@ -149,7 +161,10 @@ impl FieldAttribute {
             if p.is_ident("ignore") {
                 return Ok(Self::Ignore);
             }
-            Err(syn::Error::new(p.span(), "unknown argument, only `forward` and `ignore` are allowed"))
+            Err(syn::Error::new(
+                p.span(),
+                "unknown argument, only `forward` and `ignore` are allowed",
+            ))
         })
     }
 }
@@ -191,7 +206,7 @@ fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArg<'
 
         let field = fields.next().ok_or_else(|| {
             syn::Error::new(
-                Span::call_site(),
+                struct_attr.attr.span(),
                 "`#[as_ref(...)]` can only be applied to structs with exactly one field",
             )
         })?;
@@ -210,7 +225,7 @@ fn extract_field_args(input: &'_ syn::DeriveInput) -> syn::Result<Vec<FieldArg<'
             ));
         }
 
-        let forward = matches!(struct_attr, StructAttribute::Forward);
+        let forward = matches!(struct_attr.args, StructAttributeArgs::Forward);
 
         Ok(vec![FieldArg::new(field, forward, 0)])
     } else {
