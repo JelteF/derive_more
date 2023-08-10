@@ -8,6 +8,8 @@
 use proc_macro::TokenStream;
 use syn::parse::Error as ParseError;
 
+#[cfg(any(feature = "as_ref", feature = "as_mut"))]
+mod ref_conv;
 mod utils;
 
 #[cfg(any(feature = "add_assign", feature = "mul_assign"))]

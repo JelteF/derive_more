@@ -19,6 +19,7 @@ use syn::{
     feature = "from",
     feature = "into",
     feature = "as_ref",
+    feature = "as_mut"
 ))]
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
@@ -1361,6 +1362,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "from",
     feature = "into",
     feature = "as_ref",
+    feature = "as_mut",
 ))]
 mod either {
     use proc_macro2::TokenStream;
