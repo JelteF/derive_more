@@ -260,6 +260,18 @@ impl StructAttribute {
     }
 }
 
+enum FieldAttribute {
+    Skip,
+    Args(StructAttribute),
+}
+
+impl FieldAttribute {
+    fn parse(content: ParseStream, field: &Field) -> syn::Result<Self> {
+        check_legacy_syntax(content, std::slice::from_ref(field))?;
+        todo!()
+    }
+}
+
 /// `#[into(skip)]` field attribute.
 struct SkipFieldAttribute;
 
@@ -300,7 +312,7 @@ impl Parse for SkipFieldAttribute {
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
 fn check_legacy_syntax<'a, F>(tokens: ParseStream<'_>, fields: &'a F) -> syn::Result<()>
 where
-    F: FieldsExt,
+    F: FieldsExt + ?Sized,
     &'a F: IntoIterator<Item = &'a Field>,
 {
     let span = tokens.span();

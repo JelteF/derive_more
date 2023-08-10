@@ -1443,7 +1443,7 @@ mod fields_ext {
         }
     }
 
-    impl<T> Len for Vec<T> {
+    impl<T> Len for [T] {
         fn len(&self) -> usize {
             self.len()
         }
