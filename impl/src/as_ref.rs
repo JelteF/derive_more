@@ -93,11 +93,8 @@ impl<'a> StructAttr<'a> {
             .iter()
             .filter(|attr| attr.path().is_ident("as_ref"))
             .try_fold(None, |mut attrs, attr| {
-                let field_args = attr.parse_args()?;
-                let field_attr = StructAttr {
-                    args: field_args,
-                    attr,
-                };
+                let args = attr.parse_args()?;
+                let field_attr = Self { args, attr };
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
@@ -143,7 +140,8 @@ impl<'a> FieldAttr<'a> {
             .iter()
             .filter(|attr| attr.path().is_ident("as_ref"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = Self::parse_attr(attr)?;
+                let args = FieldAttrArgs::parse_attr(attr)?;
+                let field_attr = Self { attr, args };
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
@@ -153,13 +151,6 @@ impl<'a> FieldAttr<'a> {
                     Ok(attrs)
                 }
             })
-    }
-
-    fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
-        Ok(Self {
-            attr,
-            args: FieldAttrArgs::parse_attr(attr)?,
-        })
     }
 }
 
