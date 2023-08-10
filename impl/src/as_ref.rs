@@ -107,7 +107,7 @@ impl Parse for StructAttribute {
             if path.is_ident("forward") {
                 Ok(Self::Forward)
             } else {
-                Err(syn::Error::new(path.span(), "unknown"))
+                Err(syn::Error::new(path.span(), "unknown argument, only `forward` is allowed"))
             }
         })
     }
