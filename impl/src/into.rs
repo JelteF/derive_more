@@ -63,20 +63,21 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     let struct_attr = struct_attr.or_else(|| {
         args.iter()
             .all(|arg| arg.is_none())
-            .then(StructAttribute::all_owned)
+            .then(IntoArgs::all_owned)
+            .map(|args| StructAttribute { args })
     });
 
     let mut expands = fields
         .iter()
         .zip(args)
-        .filter_map(|((field_ty, ident), attr)| {
-            attr.map(|attr| {
-                expand_attr(
+        .filter_map(|((field_ty, ident), args)| {
+            args.map(|args| {
+                expand_args(
                     &input.generics,
                     &input.ident,
                     std::slice::from_ref(field_ty),
                     std::slice::from_ref(ident),
-                    attr,
+                    args,
                 )
             })
         })
@@ -86,12 +87,12 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         let (fields_tys, fields_idents) =
             fields.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
 
-        let struct_expand = expand_attr(
+        let struct_expand = expand_args(
             &input.generics,
             &input.ident,
             &fields_tys,
             &fields_idents,
-            struct_attr,
+            struct_attr.args,
         )?;
 
         expands.extend(struct_expand);
@@ -100,12 +101,12 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     Ok(expands)
 }
 
-fn expand_attr(
+fn expand_args(
     generics: &syn::Generics,
     ident: &Ident,
     fields_tys: &[&syn::Type],
     fields_idents: &[Either<&Ident, syn::Index>],
-    attr: StructAttribute,
+    args: IntoArgs,
 ) -> syn::Result<TokenStream> {
     let expand_one = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
         let Some(tys) = tys else {
@@ -155,9 +156,9 @@ fn expand_attr(
         )
     };
     [
-        expand_one(attr.owned, false, false),
-        expand_one(attr.r#ref, true, false),
-        expand_one(attr.ref_mut, true, true),
+        expand_one(args.owned, false, false),
+        expand_one(args.r#ref, true, false),
+        expand_one(args.ref_mut, true, true),
     ]
     .into_iter()
     .flatten()
@@ -173,6 +174,11 @@ fn expand_attr(
 /// ```
 #[derive(Debug, Default)]
 struct StructAttribute {
+    args: IntoArgs,
+}
+
+#[derive(Debug, Default)]
+struct IntoArgs {
     /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
     owned: Option<Punctuated<Type, token::Comma>>,
 
@@ -196,9 +202,9 @@ impl StructAttribute {
             .try_fold(None, |mut attrs, attr| {
                 let field_attr = Self::parse_attr(attr, fields)?;
                 let out = attrs.get_or_insert_with(Self::default);
-                merge_tys(&mut out.owned, field_attr.owned);
-                merge_tys(&mut out.r#ref, field_attr.r#ref);
-                merge_tys(&mut out.ref_mut, field_attr.ref_mut);
+                merge_tys(&mut out.args.owned, field_attr.args.owned);
+                merge_tys(&mut out.args.r#ref, field_attr.args.r#ref);
+                merge_tys(&mut out.args.ref_mut, field_attr.args.ref_mut);
 
                 Ok(attrs)
             })
@@ -207,15 +213,19 @@ impl StructAttribute {
     /// Parses a single [`StructAttribute`]
     fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
-            Ok(Self::all_owned())
+            Ok(Self {
+                args: IntoArgs::all_owned(),
+            })
         } else {
             attr.parse_args_with(|content: ParseStream<'_>| {
-                Self::parse(content, fields)
+                IntoArgs::parse(content, fields).map(|args| Self { args })
             })
         }
     }
+}
 
-    /// Parses a single [`StructAttribute`]'s arguments
+impl IntoArgs {
+    /// Parses a set of [`IntoArgs`]
     fn parse<'a, F>(content: ParseStream<'_>, fields: &'a F) -> syn::Result<Self>
     where
         F: FieldsExt + ?Sized,
@@ -310,13 +320,22 @@ impl StructAttribute {
     }
 }
 
+/// Representation of an [`Into`] derive macro field attribute.
+///
+/// ```rust,ignore
+/// #[into]
+/// #[into(skip)]
+/// #[into(<types>)]
+/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
+/// ```
 #[derive(Debug)]
 enum FieldAttribute {
     Skip,
-    Args(StructAttribute),
+    Args(IntoArgs),
 }
 
 impl FieldAttribute {
+    /// Parses a [`FieldAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
         field: &Field,
@@ -343,14 +362,16 @@ impl FieldAttribute {
             })
     }
 
+    /// Parses a single [`FieldAttribute`]
     fn parse_attr(attr: &syn::Attribute, field: &Field) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
-            Ok(Self::Args(StructAttribute::all_owned()))
+            Ok(Self::Args(IntoArgs::all_owned()))
         } else {
             attr.parse_args_with(|content: ParseStream| Self::parse(content, field))
         }
     }
 
+    /// Parses a single [`FieldAttribute`]'s args
     fn parse(content: ParseStream, field: &Field) -> syn::Result<Self> {
         let ahead = content.fork();
         match ahead.parse::<syn::Path>() {
@@ -360,7 +381,7 @@ impl FieldAttribute {
             }
             _ => {
                 let fields = std::slice::from_ref(field);
-                StructAttribute::parse(content, fields).map(Self::Args)
+                IntoArgs::parse(content, fields).map(Self::Args)
             }
         }
     }
