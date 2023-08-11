@@ -1043,3 +1043,366 @@ mod multi_field {
         }
     }
 }
+
+mod field_attr {
+    use super::*;
+
+    mod fields_only {
+        use super::*;
+
+        #[derive(Debug, Into, Clone, Copy)]
+        struct Tuple(#[into] i32, f64, #[into] f64);
+
+        impl From<Tuple> for (i32, f64, f64) {
+            fn from(value: Tuple) -> Self {
+                (value.0, value.1, value.2)
+            }
+        }
+
+        impl From<Tuple> for (i32, f64) {
+            fn from(value: Tuple) -> Self {
+                (value.0, value.2)
+            }
+        }
+
+        #[test]
+        fn tuple() {
+            let foo = Tuple(1, 2.0, 3.0);
+
+            assert_eq!(1, foo.into());
+            assert_eq!(3.0, foo.into());
+        }
+
+        #[derive(Debug, Into, Clone, Copy)]
+        struct Struct {
+            #[into]
+            a: i32,
+            b: f64,
+            #[into]
+            c: f64,
+        }
+
+        impl From<Struct> for (i32, f64, f64) {
+            fn from(value: Struct) -> Self {
+                (value.a, value.b, value.c)
+            }
+        }
+
+        impl From<Struct> for (i32, f64) {
+            fn from(value: Struct) -> Self {
+                (value.a, value.c)
+            }
+        }
+
+        #[test]
+        fn named() {
+            let foo = Struct {
+                a: 1,
+                b: 2.0,
+                c: 3.0,
+            };
+
+            assert_eq!(1, foo.into());
+            assert_eq!(3.0, foo.into());
+        }
+
+        mod types {
+            use super::*;
+
+            #[derive(Debug, Into, Clone)]
+            struct Tuple(
+                #[into(Box<str>, Cow<'_, str>)] String,
+                f64,
+                #[into(f32, f64)] f32,
+            );
+
+            impl From<Tuple> for String {
+                fn from(value: Tuple) -> Self {
+                    value.0
+                }
+            }
+
+            impl From<Tuple> for (String, f64, f32) {
+                fn from(value: Tuple) -> Self {
+                    (value.0, value.1, value.2)
+                }
+            }
+
+            #[test]
+            fn tuple() {
+                let foo = Tuple("1".to_owned(), 2.0, 3.0);
+
+                assert_eq!(Box::<str>::from("1".to_owned()), foo.clone().into());
+                assert_eq!(Cow::Borrowed("1"), Cow::<str>::from(foo.clone()));
+                assert_eq!(3.0f32, foo.clone().into());
+                assert_eq!(3.0f64, foo.into());
+            }
+
+            #[derive(Debug, Into, Clone)]
+            struct Struct {
+                #[into(Box<str>, Cow<'_, str>)]
+                a: String,
+                b: f64,
+                #[into(f32, f64)]
+                c: f32,
+            }
+
+            impl From<Struct> for String {
+                fn from(value: Struct) -> Self {
+                    value.a
+                }
+            }
+
+            impl From<Struct> for (String, f64, f32) {
+                fn from(value: Struct) -> Self {
+                    (value.a, value.b, value.c)
+                }
+            }
+
+            impl From<Struct> for (Box<str>, f32) {
+                fn from(value: Struct) -> Self {
+                    (value.a.into(), value.c)
+                }
+            }
+
+            #[test]
+            fn named() {
+                let foo = Struct {
+                    a: "1".to_owned(),
+                    b: 2.0,
+                    c: 3.0,
+                };
+
+                assert_eq!(Box::<str>::from("1".to_owned()), foo.clone().into());
+                assert_eq!(Cow::Borrowed("1"), Cow::<str>::from(foo.clone()));
+                assert_eq!(3.0f32, foo.clone().into());
+                assert_eq!(3.0f64, foo.into());
+            }
+
+            mod ref_ {
+                use super::*;
+
+                #[derive(Debug, Into)]
+                struct Tuple(#[into(ref)] String, f64, #[into(ref)] f64);
+
+                impl<'a> From<&'a Tuple> for (&'a String, &'a f64, &'a f64) {
+                    fn from(value: &'a Tuple) -> Self {
+                        (&value.0, &value.1, &value.2)
+                    }
+                }
+
+                #[test]
+                fn tuple() {
+                    let foo = Tuple("1".to_owned(), 2.0, 3.0);
+
+                    assert_eq!(&"1".to_owned(), <&String>::from(&foo));
+                    assert_eq!(&3.0, <&f64>::from(&foo));
+                }
+
+                #[derive(Debug, Into)]
+                struct Struct {
+                    #[into(ref)]
+                    a: String,
+                    b: f64,
+                    #[into(ref)]
+                    c: f64,
+                }
+
+                impl<'a> From<&'a Struct> for (&'a String, &'a f64, &'a f64) {
+                    fn from(value: &'a Struct) -> Self {
+                        (&value.a, &value.b, &value.c)
+                    }
+                }
+
+                impl<'a> From<&'a Struct> for (&'a String, &'a f64) {
+                    fn from(value: &'a Struct) -> Self {
+                        (&value.a, &value.c)
+                    }
+                }
+
+                #[test]
+                fn named() {
+                    let foo = Struct {
+                        a: "1".to_owned(),
+                        b: 2.0,
+                        c: 3.0,
+                    };
+
+                    assert_eq!(&"1".to_owned(), <&String>::from(&foo));
+                    assert_eq!(&3.0, <&f64>::from(&foo));
+                }
+
+                mod types {
+                    use super::*;
+
+                    #[derive(Debug, Into)]
+                    struct Tuple(
+                        #[into(ref(Transmuted<i32>))] Wrapped<i32>,
+                        #[into(ref(Wrapped<i64>))] Wrapped<i64>,
+                    );
+
+                    #[test]
+                    fn tuple() {
+                        let foo = Tuple(Wrapped(1), Wrapped(2));
+
+                        assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
+                        assert_eq!(&Wrapped(2), <&Wrapped<i64>>::from(&foo));
+                    }
+
+                    #[derive(Debug, Into)]
+                    struct Struct {
+                        #[into(ref(Transmuted<i32>))]
+                        a: Wrapped<i32>,
+                        #[into(ref(Wrapped<i64>))]
+                        b: Wrapped<i64>,
+                    }
+
+                    #[test]
+                    fn named() {
+                        let foo = Struct {
+                            a: Wrapped(1),
+                            b: Wrapped(2),
+                        };
+
+                        assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
+                        assert_eq!(&Wrapped(2), <&Wrapped<i64>>::from(&foo));
+                    }
+                }
+
+                mod ref_mut {
+                    use super::*;
+
+                    #[derive(Debug, Into)]
+                    struct Tuple(#[into(ref_mut)] i32, f64, #[into(ref_mut)] f64);
+
+                    #[test]
+                    fn tuple() {
+                        let mut foo = Tuple(1, 2.0, 3.0);
+
+                        assert_eq!(&mut 1, <&mut i32>::from(&mut foo));
+                        assert_eq!(&mut 3.0, <&mut f64>::from(&mut foo));
+                    }
+
+                    #[derive(Debug, Into)]
+                    struct Struct {
+                        #[into(ref_mut)]
+                        a: i32,
+                        b: f64,
+                        #[into(ref_mut)]
+                        c: f64,
+                    }
+
+                    #[test]
+                    fn named() {
+                        let mut foo = Struct {
+                            a: 1,
+                            b: 2.0,
+                            c: 3.0,
+                        };
+
+                        assert_eq!(&mut 1, <&mut i32>::from(&mut foo));
+                        assert_eq!(&mut 3.0, <&mut f64>::from(&mut foo));
+                    }
+
+                    mod types {
+                        use super::*;
+
+                        #[derive(Debug, Into)]
+                        struct Tuple(
+                            #[into(ref_mut(Transmuted<i32>))] Wrapped<i32>,
+                            #[into(ref_mut(Wrapped<i64>))] Wrapped<i64>,
+                        );
+
+                        #[test]
+                        fn tuple() {
+                            let mut foo = Tuple(Wrapped(1), Wrapped(2));
+
+                            assert_eq!(
+                                &mut Transmuted(1),
+                                <&mut Transmuted<i32>>::from(&mut foo)
+                            );
+                            assert_eq!(
+                                &mut Wrapped(2),
+                                <&mut Wrapped<i64>>::from(&mut foo)
+                            );
+                        }
+
+                        #[derive(Debug, Into)]
+                        struct Struct {
+                            #[into(ref_mut(Transmuted<i32>))]
+                            a: Wrapped<i32>,
+                            #[into(ref_mut(Wrapped<i64>))]
+                            b: Wrapped<i64>,
+                        }
+
+                        #[test]
+                        fn named() {
+                            let mut foo = Struct {
+                                a: Wrapped(1),
+                                b: Wrapped(2),
+                            };
+
+                            assert_eq!(
+                                &mut Transmuted(1),
+                                <&mut Transmuted<i32>>::from(&mut foo)
+                            );
+                            assert_eq!(
+                                &mut Wrapped(2),
+                                <&mut Wrapped<i64>>::from(&mut foo)
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    mod both {
+        use super::*;
+
+        #[derive(Debug, Into)]
+        #[into(ref((Wrapped<i32>, Transmuted<f32>)))]
+        struct Tuple(
+            #[into(owned, ref(Transmuted<i32>))] Wrapped<i32>,
+            #[into(skip)] Wrapped<f32>,
+            #[into(ref_mut(Wrapped<f32>, Transmuted<f32>))] Wrapped<f32>,
+        );
+
+        #[test]
+        fn tuple() {
+            let mut foo = Tuple(Wrapped(1), Wrapped(2.0), Wrapped(3.0));
+
+            assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
+            assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut foo));
+            assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut foo));
+            assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&foo).into());
+            assert_eq!(Wrapped(1), foo.into());
+        }
+
+        #[derive(Debug, Into)]
+        #[into(ref((Wrapped<i32>, Transmuted<f32>)))]
+        struct Struct {
+            #[into(owned, ref(Transmuted<i32>))]
+            a: Wrapped<i32>,
+            #[into(skip)]
+            b: Wrapped<f32>,
+            #[into(ref_mut(Wrapped<f32>, Transmuted<f32>))]
+            c: Wrapped<f32>,
+        }
+
+        #[test]
+        fn named() {
+            let mut foo = Struct {
+                a: Wrapped(1),
+                b: Wrapped(2.0),
+                c: Wrapped(3.0),
+            };
+
+            assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
+            assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut foo));
+            assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut foo));
+            assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&foo).into());
+            assert_eq!(Wrapped(1), foo.into());
+        }
+    }
+}
