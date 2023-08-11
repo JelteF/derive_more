@@ -159,27 +159,6 @@ pub fn add_extra_ty_param_bound<'a>(
     generics
 }
 
-pub fn add_extra_ty_param_bound_ref<'a>(
-    generics: &'a Generics,
-    bound: &'a TokenStream,
-    ref_type: RefType,
-) -> Generics {
-    match ref_type {
-        RefType::No => add_extra_ty_param_bound(generics, bound),
-        _ => {
-            let generics = generics.clone();
-            let idents = generics.type_params().map(|x| &x.ident);
-            let ref_with_lifetime = ref_type.reference_with_lifetime();
-            add_extra_where_clauses(
-                &generics,
-                quote! {
-                    where #(#ref_with_lifetime #idents: #bound),*
-                },
-            )
-        }
-    }
-}
-
 pub fn add_extra_generic_param(
     generics: &Generics,
     generic_param: TokenStream,
