@@ -310,6 +310,7 @@ impl StructAttribute {
     }
 }
 
+#[derive(Debug)]
 enum FieldAttribute {
     Skip,
     Args(StructAttribute),
@@ -353,7 +354,10 @@ impl FieldAttribute {
     fn parse(content: ParseStream, field: &Field) -> syn::Result<Self> {
         let ahead = content.fork();
         match ahead.parse::<syn::Path>() {
-            Ok(p) if p.is_ident("skip") | p.is_ident("ignore") => Ok(Self::Skip),
+            Ok(p) if p.is_ident("skip") | p.is_ident("ignore") => {
+                content.advance_to(&ahead);
+                Ok(Self::Skip)
+            }
             _ => {
                 let fields = std::slice::from_ref(field);
                 StructAttribute::parse(content, fields).map(Self::Args)
