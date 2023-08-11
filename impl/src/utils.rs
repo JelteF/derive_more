@@ -1369,6 +1369,7 @@ mod either {
     ///
     /// [`Left`]: Either::Left
     /// [`Right`]: Either::Right
+    #[derive(Clone)]
     pub(crate) enum Either<L, R> {
         /// Left variant.
         Left(L),

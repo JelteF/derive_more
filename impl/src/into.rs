@@ -31,40 +31,82 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         )),
     }?;
 
-    let attr = StructAttribute::parse_attrs(&input.attrs, &data.fields)?
-        .unwrap_or_else(|| StructAttribute {
-            owned: Some(Punctuated::new()),
-            r#ref: None,
-            ref_mut: None,
-        });
-    let ident = &input.ident;
-    let fields = data
+    let struct_attr = StructAttribute::parse_attrs(&input.attrs, &data.fields)?;
+
+    let (fields, args) = data
         .fields
         .iter()
         .enumerate()
-        .filter_map(|(i, f)| match SkipFieldAttribute::parse_attrs(&f.attrs) {
-            Ok(None) => Some(Ok((
-                &f.ty,
-                f.ident
-                    .as_ref()
-                    .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left),
-            ))),
-            Ok(Some(_)) => None,
-            Err(e) => Some(Err(e)),
-        })
-        .collect::<syn::Result<Vec<_>>>()?;
-    let (fields_tys, fields_idents): (Vec<_>, Vec<_>) = fields.into_iter().unzip();
+        .filter_map(|(i, f)| {
+            let field_attr = match FieldAttribute::parse_attrs(&f.attrs, f) {
+                Ok(field_attr) => field_attr,
+                Err(err) => return Some(Err(err)),
+            };
 
-    expand_attr(&input.generics, ident, &fields_tys, &fields_idents, attr).collect()
+            let args = match field_attr {
+                Some(FieldAttribute::Skip) => return None,
+                Some(FieldAttribute::Args(args)) => Some(args),
+                None => None,
+            };
+
+            let ident = f
+                .ident
+                .as_ref()
+                .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left);
+
+            Some(Ok(((&f.ty, ident), args)))
+        })
+        .collect::<syn::Result<Vec<_>>>()?
+        .into_iter()
+        .unzip::<_, _, Vec<_>, Vec<_>>();
+
+    let struct_attr = struct_attr.or_else(|| {
+        args.iter()
+            .all(|arg| arg.is_none())
+            .then(StructAttribute::all_owned)
+    });
+
+    let mut expands = fields
+        .iter()
+        .zip(args)
+        .filter_map(|((field_ty, ident), attr)| {
+            attr.map(|attr| {
+                expand_attr(
+                    &input.generics,
+                    &input.ident,
+                    std::slice::from_ref(field_ty),
+                    std::slice::from_ref(ident),
+                    attr,
+                )
+            })
+        })
+        .collect::<syn::Result<TokenStream>>()?;
+
+    if let Some(struct_attr) = struct_attr {
+        let (fields_tys, fields_idents) =
+            fields.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
+
+        let struct_expand = expand_attr(
+            &input.generics,
+            &input.ident,
+            &fields_tys,
+            &fields_idents,
+            struct_attr,
+        )?;
+
+        expands.extend(struct_expand);
+    }
+
+    Ok(expands)
 }
 
-fn expand_attr<'a>(
-    generics: &'a syn::Generics,
-    ident: &'a Ident,
-    fields_tys: &'a [&syn::Type],
-    fields_idents: &'a [Either<&'a Ident, syn::Index>],
+fn expand_attr(
+    generics: &syn::Generics,
+    ident: &Ident,
+    fields_tys: &[&syn::Type],
+    fields_idents: &[Either<&Ident, syn::Index>],
     attr: StructAttribute,
-) -> impl Iterator<Item = syn::Result<TokenStream>> + 'a {
+) -> syn::Result<TokenStream> {
     let expand_one = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
         let Some(tys) = tys else {
             return Either::Left(iter::empty());
@@ -119,6 +161,7 @@ fn expand_attr<'a>(
     ]
     .into_iter()
     .flatten()
+    .collect()
 }
 
 /// Representation of an [`Into`] derive macro struct container attribute.
@@ -330,43 +373,6 @@ fn merge_tys(
         (Some(out), Some(tys)) => out.extend(tys),
         (Some(_), None) | (None, None) => {}
     };
-}
-
-/// `#[into(skip)]` field attribute.
-struct SkipFieldAttribute;
-
-impl SkipFieldAttribute {
-    /// Parses a [`SkipFieldAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
-        Ok(attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("into"))
-            .try_fold(None, |mut attrs, attr| {
-                let field_attr = attr.parse_args::<SkipFieldAttribute>()?;
-                if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
-                    Err(syn::Error::new(
-                        path.span(),
-                        "only single `#[into(...)]` attribute is allowed here",
-                    ))
-                } else {
-                    Ok(attrs)
-                }
-            })?
-            .map(|(_, attr)| attr))
-    }
-}
-
-impl Parse for SkipFieldAttribute {
-    fn parse(content: ParseStream) -> syn::Result<Self> {
-        match content.parse::<syn::Path>()? {
-            p if p.is_ident("skip") | p.is_ident("ignore") => Ok(Self),
-            p => Err(syn::Error::new(
-                p.span(),
-                format!("expected `skip`, found: `{}`", p.into_token_stream()),
-            )),
-        }
-    }
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
