@@ -1,0 +1,5 @@
+error: only single `#[into(...)]` attribute is allowed here
+ --> tests/compile_fail/into/multiple_skip.rs:4:7
+  |
+4 |     #[into(skip)]
+  |       ^^^^

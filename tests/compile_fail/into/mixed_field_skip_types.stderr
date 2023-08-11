@@ -1,0 +1,5 @@
+error: unexpected token
+ --> tests/compile_fail/into/mixed_field_skip_types.rs:3:16
+  |
+3 |     #[into(skip, i32)]
+  |                ^
