@@ -54,9 +54,18 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         })
         .collect::<syn::Result<Vec<_>>>()?;
     let (fields_tys, fields_idents): (Vec<_>, Vec<_>) = fields.into_iter().unzip();
-    let (fields_tys, fields_idents) = (&fields_tys, &fields_idents);
 
-    let expand = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
+    expand_attr(&input.generics, ident, &fields_tys, &fields_idents, attr).collect()
+}
+
+fn expand_attr<'a>(
+    generics: &'a syn::Generics,
+    ident: &'a Ident,
+    fields_tys: &'a [&syn::Type],
+    fields_idents: &'a [Either<&'a Ident, syn::Index>],
+    attr: StructAttribute,
+) -> impl Iterator<Item = syn::Result<TokenStream>> + 'a {
+    let expand_one = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
         let Some(tys) = tys else {
             return Either::Left(iter::empty());
         };
@@ -67,11 +76,11 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         let m = m.then(token::Mut::default);
 
         let gens = if let Some(lf) = lf.clone() {
-            let mut gens = input.generics.clone();
+            let mut gens = generics.clone();
             gens.params.push(syn::LifetimeParam::new(lf).into());
             Cow::Owned(gens)
         } else {
-            Cow::Borrowed(&input.generics)
+            Cow::Borrowed(generics)
         };
 
         Either::Right(
@@ -83,7 +92,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             .map(move |ty| {
                 let tys = fields_tys.validate_type(&ty)?.collect::<Vec<_>>();
                 let (impl_gens, _, where_clause) = gens.split_for_impl();
-                let (_, ty_gens, _) = input.generics.split_for_impl();
+                let (_, ty_gens, _) = generics.split_for_impl();
 
                 Ok(quote! {
                     #[automatically_derived]
@@ -103,15 +112,13 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             }),
         )
     };
-
     [
-        expand(attr.owned, false, false),
-        expand(attr.r#ref, true, false),
-        expand(attr.ref_mut, true, true),
+        expand_one(attr.owned, false, false),
+        expand_one(attr.r#ref, true, false),
+        expand_one(attr.ref_mut, true, true),
     ]
     .into_iter()
     .flatten()
-    .collect()
 }
 
 /// Representation of an [`Into`] derive macro struct container attribute.
