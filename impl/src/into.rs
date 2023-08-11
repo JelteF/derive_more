@@ -60,6 +60,9 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .into_iter()
         .unzip::<_, _, Vec<_>, Vec<_>>();
 
+    // Expand the version with all non-skipped fields if either
+    // there's an explicit struct attribute
+    // or there are no conversions into specific fields
     let struct_attr = struct_attr.or_else(|| {
         args.iter()
             .all(|arg| arg.is_none())
