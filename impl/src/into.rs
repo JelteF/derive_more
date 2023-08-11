@@ -67,7 +67,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         args.iter()
             .all(|arg| arg.is_none())
             .then(IntoArgs::all_owned)
-            .map(|args| StructAttribute { args })
+            .map(StructAttribute::new)
     });
 
     let mut expands = fields
@@ -193,6 +193,10 @@ struct IntoArgs {
 }
 
 impl StructAttribute {
+    fn new(args: IntoArgs) -> Self {
+        Self { args }
+    }
+
     /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
@@ -203,11 +207,11 @@ impl StructAttribute {
             .iter()
             .filter(|attr| attr.path().is_ident("into"))
             .try_fold(None, |mut attrs, attr| {
-                let field_attr = Self::parse_attr(attr, fields)?;
+                let attr = Self::parse_attr(attr, fields)?;
                 let out = attrs.get_or_insert_with(Self::default);
-                merge_tys(&mut out.args.owned, field_attr.args.owned);
-                merge_tys(&mut out.args.r#ref, field_attr.args.r#ref);
-                merge_tys(&mut out.args.ref_mut, field_attr.args.ref_mut);
+                merge_tys(&mut out.args.owned, attr.args.owned);
+                merge_tys(&mut out.args.r#ref, attr.args.r#ref);
+                merge_tys(&mut out.args.ref_mut, attr.args.ref_mut);
 
                 Ok(attrs)
             })
@@ -216,12 +220,10 @@ impl StructAttribute {
     /// Parses a single [`StructAttribute`]
     fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
-            Ok(Self {
-                args: IntoArgs::all_owned(),
-            })
+            Ok(Self::new(IntoArgs::all_owned()))
         } else {
             attr.parse_args_with(|content: ParseStream<'_>| {
-                IntoArgs::parse(content, fields).map(|args| Self { args })
+                IntoArgs::parse(content, fields).map(Self::new)
             })
         }
     }
