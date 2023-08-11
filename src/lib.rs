@@ -57,6 +57,14 @@ pub mod __private {
     pub use crate::vendor::thiserror::aserror::AsDynError;
 }
 
+/// Module containing macro definitions only, without corresponding traits.
+///
+/// Use it in your import paths, if you don't want to import traits, but only macros.
+pub mod derive {
+    #[doc(inline)]
+    pub use derive_more_impl::*;
+}
+
 // The modules containing error types and other helpers.
 
 #[cfg(feature = "add")]
