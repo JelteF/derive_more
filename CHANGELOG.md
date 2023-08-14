@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   and ignores field type itself.
 - The `Into` derive now uses `#[into(<types>)]` instead of `#[into(types(<types>))]`
   and ignores field type itself.
+- The `Into` derive now generates separate impls for each field with the `#[into(...)]`
+  attribute applied to it.
 - Importing a derive macro now also import its corresponding trait.
 
 ### Added
