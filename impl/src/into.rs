@@ -107,8 +107,8 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 }
 
 fn expand_args(
-    generics: &syn::Generics,
-    ident: &Ident,
+    input_generics: &syn::Generics,
+    input_ident: &Ident,
     fields_tys: &[&syn::Type],
     fields_idents: &[Either<&Ident, syn::Index>],
     args: IntoArgs,
@@ -124,11 +124,11 @@ fn expand_args(
         let m = m.then(token::Mut::default);
 
         let gens = if let Some(lf) = lf.clone() {
-            let mut gens = generics.clone();
+            let mut gens = input_generics.clone();
             gens.params.push(syn::LifetimeParam::new(lf).into());
             Cow::Owned(gens)
         } else {
-            Cow::Borrowed(generics)
+            Cow::Borrowed(input_generics)
         };
 
         Either::Right(
@@ -140,15 +140,15 @@ fn expand_args(
             .map(move |ty| {
                 let tys = fields_tys.validate_type(&ty)?.collect::<Vec<_>>();
                 let (impl_gens, _, where_clause) = gens.split_for_impl();
-                let (_, ty_gens, _) = generics.split_for_impl();
+                let (_, ty_gens, _) = input_generics.split_for_impl();
 
                 Ok(quote! {
                     #[automatically_derived]
-                    impl #impl_gens ::core::convert::From<#r #lf #m #ident #ty_gens>
+                    impl #impl_gens ::core::convert::From<#r #lf #m #input_ident #ty_gens>
                      for ( #( #r #lf #m #tys ),* ) #where_clause
                     {
                         #[inline]
-                        fn from(value: #r #lf #m #ident #ty_gens) -> Self {
+                        fn from(value: #r #lf #m #input_ident #ty_gens) -> Self {
                             (#(
                                 <#r #m #tys as ::core::convert::From<_>>::from(
                                     #r #m value. #fields_idents
