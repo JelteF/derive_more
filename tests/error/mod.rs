@@ -47,6 +47,7 @@ mod derives_for_enums_with_source;
 mod derives_for_generic_enums_with_source;
 mod derives_for_generic_structs_with_source;
 mod derives_for_structs_with_source;
+mod derives_forward;
 
 #[cfg(all(feature = "std", nightly))]
 mod nightly;
