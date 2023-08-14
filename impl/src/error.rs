@@ -167,7 +167,7 @@ fn allowed_attr_params() -> AttrParams {
         enum_: vec!["ignore", "forward"],
         struct_: vec!["ignore", "forward"],
         variant: vec!["ignore", "forward"],
-        field: vec!["ignore", "source", "backtrace", "forward"],
+        field: vec!["ignore", "source", "backtrace"],
     }
 }
 

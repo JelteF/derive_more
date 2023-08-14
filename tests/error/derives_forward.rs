@@ -76,33 +76,3 @@ fn variant_attr() {
     assert!(err_b.source().is_some());
     assert!(err_b.source().unwrap().is::<Inner>());
 }
-
-derive_display!(FieldAttr);
-#[derive(Debug, Error)]
-enum FieldAttr {
-    A {
-        #[error(forward, source)]
-        field: Inner,
-    },
-    B {
-        #[error(source)]
-        field: Inner,
-    },
-}
-
-#[test]
-fn field_attr() {
-    let err_a = FieldAttr::A {
-        field: Inner { source: SimpleErr },
-    };
-
-    let err_b = FieldAttr::B {
-        field: Inner { source: SimpleErr },
-    };
-
-    assert!(err_a.source().is_some());
-    assert!(err_a.source().unwrap().is::<SimpleErr>());
-
-    assert!(err_b.source().is_some());
-    assert!(err_b.source().unwrap().is::<Inner>());
-}
