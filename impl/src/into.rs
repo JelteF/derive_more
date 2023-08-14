@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, Either, FieldsExt},
+    utils::{polyfill, unzip3, Either, FieldsExt},
 };
 
 /// Expands an [`Into`] derive macro.
@@ -33,7 +33,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 
     let struct_attr = StructAttribute::parse_attrs(&input.attrs, &data.fields)?;
 
-    let (fields, args) = data
+    let fields_data = data
         .fields
         .iter()
         .enumerate()
@@ -54,25 +54,28 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 .as_ref()
                 .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left);
 
-            Some(Ok(((&f.ty, ident), args)))
+            Some(Ok((&f.ty, ident, args)))
         })
-        .collect::<syn::Result<Vec<_>>>()?
-        .into_iter()
-        .unzip::<_, _, Vec<_>, Vec<_>>();
+        .collect::<syn::Result<Vec<_>>>()?;
+
+    let (fields_tys, fields_idents, fields_args) =
+        unzip3::<_, _, _, Vec<_>, Vec<_>, Vec<_>, _>(fields_data);
 
     // Expand the version with all non-skipped fields if either
     // there's an explicit struct attribute
     // or there are no conversions into specific fields
     let struct_attr = struct_attr.or_else(|| {
-        args.iter()
+        fields_args
+            .iter()
             .all(|arg| arg.is_none())
             .then(IntoArgs::all_owned)
             .map(StructAttribute::new)
     });
 
-    let mut expands = fields
+    let mut expands = fields_tys
         .iter()
-        .zip(args)
+        .zip(&fields_idents)
+        .zip(fields_args)
         .filter_map(|((field_ty, ident), args)| {
             args.map(|args| {
                 expand_args(
@@ -87,9 +90,6 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .collect::<syn::Result<TokenStream>>()?;
 
     if let Some(struct_attr) = struct_attr {
-        let (fields_tys, fields_idents) =
-            fields.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
-
         let struct_expand = expand_args(
             &input.generics,
             &input.ident,
