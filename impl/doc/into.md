@@ -167,6 +167,27 @@ assert_eq!(1_u64, foo.clone().into());
 assert_eq!(&1_u8, <&u8>::from(&foo));
 ```
 
+Fields that have specific conversions into them can also be skipped
+
+```rust
+# use derive_more::Into;
+
+#[derive(Into)]
+#[into(ref((str, f64)))]
+struct Foo {
+    #[into(ref)]
+    #[into(skip)]
+    a: u8,
+    b: String,
+    c: f64,
+}
+
+let foo = Foo { a: 1, b: "string".to_owned(), c: 3.0 };
+
+assert_eq!(("string", &3.0), (&foo).into());
+assert_eq!(&1_u8, <&u8>::from(&foo));
+```
+
 ## Enums
 
 Deriving `Into` for enums is not supported as it would not always be successful,
