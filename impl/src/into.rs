@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, unzip3, Either, FieldsExt},
+    utils::{polyfill, unzip4, Either, FieldsExt},
 };
 
 /// Expands an [`Into`] derive macro.
@@ -37,29 +37,24 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .fields
         .iter()
         .enumerate()
-        .filter_map(|(i, f)| {
-            let field_attr = match FieldAttribute::parse_attrs(&f.attrs, f) {
-                Ok(field_attr) => field_attr,
-                Err(err) => return Some(Err(err)),
-            };
+        .map(|(i, f)| {
+            let field_attr = FieldAttribute::parse_attrs(&f.attrs, f)?;
 
-            let args = match field_attr {
-                Some(FieldAttribute::Skip) => return None,
-                Some(FieldAttribute::Args(args)) => Some(args),
-                None => None,
-            };
+            let skip = field_attr.as_ref().map(|attr| attr.skip).unwrap_or(false);
+
+            let args = field_attr.and_then(|attr| attr.args);
 
             let ident = f
                 .ident
                 .as_ref()
                 .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left);
 
-            Some(Ok((&f.ty, ident, args)))
+            Ok((&f.ty, ident, skip, args))
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
-    let (fields_tys, fields_idents, fields_args) =
-        unzip3::<_, _, _, Vec<_>, Vec<_>, Vec<_>, _>(fields_data);
+    let (fields_tys, fields_idents, skips, fields_args) =
+        unzip4::<_, _, _, _, Vec<_>, Vec<_>, Vec<_>, Vec<_>, _>(fields_data);
 
     // Expand the version with all non-skipped fields if either
     // there's an explicit struct attribute
@@ -67,7 +62,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     let struct_attr = struct_attr.or_else(|| {
         fields_args
             .iter()
-            .all(|arg| arg.is_none())
+            .all(|args| args.is_none())
             .then(IntoArgs::all_owned)
             .map(StructAttribute::new)
     });
@@ -90,6 +85,13 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .collect::<syn::Result<TokenStream>>()?;
 
     if let Some(struct_attr) = struct_attr {
+        let (fields_tys, fields_idents) = fields_tys
+            .iter()
+            .zip(fields_idents)
+            .zip(skips)
+            .filter_map(|(pair, skip)| (!skip).then_some(pair))
+            .unzip::<_, _, Vec<_>, Vec<_>>();
+
         let struct_expand = expand_args(
             &input.generics,
             &input.ident,
@@ -333,10 +335,10 @@ impl IntoArgs {
 /// #[into(<types>)]
 /// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
 /// ```
-#[derive(Debug)]
-enum FieldAttribute {
-    Skip,
-    Args(IntoArgs),
+#[derive(Debug, Default)]
+struct FieldAttribute {
+    skip: bool,
+    args: Option<IntoArgs>,
 }
 
 impl FieldAttribute {
@@ -349,28 +351,41 @@ impl FieldAttribute {
             .as_ref()
             .iter()
             .filter(|attr| attr.path().is_ident("into"))
-            .try_fold(None, |attrs, attr| {
+            .try_fold(None, |mut attrs, attr| {
                 let field_attr = Self::parse_attr(attr, field)?;
-                match (attrs, field_attr) {
-                    (Some(Self::Args(mut args)), Self::Args(more)) => {
+                let prev_attrs: &mut FieldAttribute =
+                    attrs.get_or_insert_with(Default::default);
+
+                match (prev_attrs.args.as_mut(), field_attr.args) {
+                    (Some(args), Some(more)) => {
                         merge_tys(&mut args.owned, more.owned);
                         merge_tys(&mut args.r#ref, more.r#ref);
                         merge_tys(&mut args.ref_mut, more.ref_mut);
-                        Ok(Some(Self::Args(args)))
                     }
-                    (None, field_attr) => Ok(Some(field_attr)),
-                    (Some(_), _) => Err(syn::Error::new(
+                    (None, Some(args)) => prev_attrs.args = Some(args),
+                    (_, None) => {}
+                };
+
+                if prev_attrs.skip && field_attr.skip {
+                    return Err(syn::Error::new(
                         attr.path().span(),
-                        "only single `#[into(...)]` attribute is allowed here",
-                    )),
+                        "only a single `#[into(skip)] attribute is allowed`",
+                    ));
                 }
+
+                prev_attrs.skip |= field_attr.skip;
+
+                Ok(attrs)
             })
     }
 
     /// Parses a single [`FieldAttribute`]
     fn parse_attr(attr: &syn::Attribute, field: &Field) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
-            Ok(Self::Args(IntoArgs::all_owned()))
+            Ok(Self {
+                skip: false,
+                args: Some(IntoArgs::all_owned()),
+            })
         } else {
             attr.parse_args_with(|content: ParseStream| Self::parse(content, field))
         }
@@ -382,11 +397,19 @@ impl FieldAttribute {
         match ahead.parse::<syn::Path>() {
             Ok(p) if p.is_ident("skip") | p.is_ident("ignore") => {
                 content.advance_to(&ahead);
-                Ok(Self::Skip)
+                Ok(Self {
+                    skip: true,
+                    args: None,
+                })
             }
             _ => {
                 let fields = std::slice::from_ref(field);
-                IntoArgs::parse(content, fields).map(Self::Args)
+                let args = IntoArgs::parse(content, fields)?;
+
+                Ok(Self {
+                    skip: false,
+                    args: Some(args),
+                })
             }
         }
     }

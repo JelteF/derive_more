@@ -1521,22 +1521,26 @@ mod fields_ext {
 }
 
 #[cfg(feature = "into")]
-pub fn unzip3<A, B, C, FromA, FromB, FromC, I>(it: I) -> (FromA, FromB, FromC)
+pub fn unzip4<A, B, C, D, FromA, FromB, FromC, FromD, I>(
+    it: I,
+) -> (FromA, FromB, FromC, FromD)
 where
-    I: IntoIterator<Item = (A, B, C)>,
+    I: IntoIterator<Item = (A, B, C, D)>,
     FromA: Default + Extend<A>,
     FromB: Default + Extend<B>,
     FromC: Default + Extend<C>,
+    FromD: Default + Extend<D>,
 {
     use std::iter::once;
 
     it.into_iter().fold(
-        (Default::default(), Default::default(), Default::default()),
-        |(mut as_, mut bs, mut cs), (a, b, c)| {
+        Default::default(),
+        |(mut as_, mut bs, mut cs, mut ds), (a, b, c, d)| {
             as_.extend(once(a));
             bs.extend(once(b));
             cs.extend(once(c));
-            (as_, bs, cs)
+            ds.extend(once(d));
+            (as_, bs, cs, ds)
         },
     )
 }
