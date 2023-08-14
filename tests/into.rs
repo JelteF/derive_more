@@ -1366,7 +1366,9 @@ mod field_attr {
         #[into(ref((Wrapped<i32>, Transmuted<f32>)))]
         struct Tuple(
             #[into(owned, ref(Transmuted<i32>))] Wrapped<i32>,
-            #[into(skip)] Wrapped<f32>,
+            #[into(skip)]
+            #[into(ref)]
+            Wrapped<f32>,
             #[into(ref_mut(Wrapped<f32>, Transmuted<f32>))] Wrapped<f32>,
         );
 
@@ -1378,6 +1380,7 @@ mod field_attr {
             assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut foo));
             assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut foo));
             assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&foo).into());
+            assert_eq!(&Wrapped(2.0), <&Wrapped<f32>>::from(&foo));
             assert_eq!(Wrapped(1), foo.into());
         }
 
@@ -1387,6 +1390,7 @@ mod field_attr {
             #[into(owned, ref(Transmuted<i32>))]
             a: Wrapped<i32>,
             #[into(skip)]
+            #[into(ref)]
             b: Wrapped<f32>,
             #[into(ref_mut(Wrapped<f32>, Transmuted<f32>))]
             c: Wrapped<f32>,
@@ -1404,6 +1408,7 @@ mod field_attr {
             assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut foo));
             assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut foo));
             assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&foo).into());
+            assert_eq!(&Wrapped(2.0), <&Wrapped<f32>>::from(&foo));
             assert_eq!(Wrapped(1), foo.into());
         }
     }
