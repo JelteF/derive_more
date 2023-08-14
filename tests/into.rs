@@ -1050,6 +1050,8 @@ mod field_attr {
     mod fields_only {
         use super::*;
 
+        // The manual impls are there to test that no extra ones were generated
+
         #[derive(Debug, Into, Clone, Copy)]
         struct Tuple(#[into] i32, f64, #[into] f64);
 
