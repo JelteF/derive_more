@@ -1,4 +1,4 @@
-use std::any;
+use core::error::{request_ref, request_value};
 
 use super::*;
 
@@ -19,7 +19,7 @@ struct StructAttr {
 
 impl StructAttr {
     fn get_source_backtrace(&self) -> &Backtrace {
-        any::request_ref(&self.source.source).unwrap()
+        request_ref(&self.source.source).unwrap()
     }
 }
 
@@ -35,8 +35,8 @@ fn struct_attr() {
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<BacktraceErr>());
-    assert!(any::request_ref::<Backtrace>(&err).is_some());
-    assert_eq!(any::request_value::<i32>(&err), Some(42));
+    assert!(request_ref::<Backtrace>(&err).is_some());
+    assert_eq!(request_value::<i32>(&err), Some(42));
     assert_bt!(==, err, .get_source_backtrace);
 }
 
@@ -56,7 +56,7 @@ enum EnumAttr {
 
 impl EnumAttr {
     fn get_source_backtrace(&self) -> &Backtrace {
-        any::request_ref(match self {
+        request_ref(match self {
             Self::A { source } => &source.source,
             Self::B { source } => &source.source,
         })
@@ -83,14 +83,14 @@ fn enum_attr() {
 
     assert!(err_a.source().is_some());
     assert!(err_a.source().unwrap().is::<BacktraceErr>());
-    assert!(any::request_ref::<Backtrace>(&err_a).is_some());
-    assert_eq!(any::request_value::<i32>(&err_a), Some(42));
+    assert!(request_ref::<Backtrace>(&err_a).is_some());
+    assert_eq!(request_value::<i32>(&err_a), Some(42));
     assert_bt!(==, err_a, .get_source_backtrace);
 
     assert!(err_b.source().is_some());
     assert!(err_b.source().unwrap().is::<BacktraceErr>());
-    assert!(any::request_ref::<Backtrace>(&err_b).is_some());
-    assert_eq!(any::request_value::<i32>(&err_b), Some(42));
+    assert!(request_ref::<Backtrace>(&err_b).is_some());
+    assert_eq!(request_value::<i32>(&err_b), Some(42));
     assert_bt!(==, err_b, .get_source_backtrace);
 }
 
@@ -110,7 +110,7 @@ enum VariantAttr {
 
 impl VariantAttr {
     fn get_source_backtrace(&self) -> &Backtrace {
-        any::request_ref(match self {
+        request_ref(match self {
             Self::A { source } => &source.source,
             Self::B { source } => &source.source,
         })
@@ -137,13 +137,13 @@ fn variant_attr() {
 
     assert!(err_a.source().is_some());
     assert!(err_a.source().unwrap().is::<BacktraceErr>());
-    assert!(any::request_ref::<Backtrace>(&err_a).is_some());
-    assert_eq!(any::request_value::<i32>(&err_a), Some(42));
+    assert!(request_ref::<Backtrace>(&err_a).is_some());
+    assert_eq!(request_value::<i32>(&err_a), Some(42));
     assert_bt!(==, err_a, .get_source_backtrace);
 
     assert!(err_b.source().is_some());
     assert!(err_b.source().unwrap().is::<Inner>());
-    assert!(any::request_ref::<Backtrace>(&err_b).is_some());
-    assert_eq!(any::request_value::<i32>(&err_b), Some(42));
+    assert!(request_ref::<Backtrace>(&err_b).is_some());
+    assert_eq!(request_value::<i32>(&err_b), Some(42));
     assert_bt!(==, err_b, .get_source_backtrace);
 }

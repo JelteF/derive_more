@@ -179,6 +179,6 @@ assert!(forwarded.source().unwrap().is::<Simple>());
 let forwarded_with_backtrace = CompoundError::ForwardedExplicitSourceWithBacktrace { explicit_source: WithSourceAndBacktrace { source: Simple, backtrace: Backtrace::capture() } };
 assert!(forwarded_with_backtrace.source().is_some());
 assert!(forwarded_with_backtrace.source().unwrap().is::<Simple>());
-assert!(any::request_ref::<Backtrace>(&forwarded_with_backtrace).is_some());
+assert!(request_ref::<Backtrace>(&forwarded_with_backtrace).is_some());
 # }
 ```
