@@ -5,11 +5,12 @@ pub(crate) mod r#mut;
 #[cfg(feature = "as_ref")]
 pub(crate) mod r#ref;
 
-use proc_macro2::{TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    spanned::Spanned, Token,
+    spanned::Spanned,
+    Token,
 };
 
 use crate::utils::{add_where_clauses_for_new_ident, Either};
