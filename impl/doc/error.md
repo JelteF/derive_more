@@ -52,6 +52,9 @@ A struct, enum, or enum variant can be annotated with `#[error(forward)]` to for
 the `source()` implementation to the source field (inferred or explicitly annotated),
 instead of returning the field itself.
 
+In general this approach is only recommended if the error is intended to be fully
+transparent, and forwards implementation of [`Display`](crate::Display) as well.
+
 ### What works in `no_std`?
 
 If you want to use the `Error` derive on `no_std` environments, then you need to
