@@ -49,8 +49,8 @@ enum EnumAttr {
         source: Inner,
     },
     B {
-        #[error(backtrace)]
-        source: Inner,
+        #[error(source, backtrace)]
+        explicit_source: Inner,
     },
 }
 
@@ -58,7 +58,7 @@ impl EnumAttr {
     fn get_source_backtrace(&self) -> &Backtrace {
         request_ref(match self {
             Self::A { source } => &source.source,
-            Self::B { source } => &source.source,
+            Self::B { explicit_source } => &explicit_source.source,
         })
         .unwrap()
     }
@@ -74,7 +74,7 @@ fn enum_attr() {
         },
     };
     let err_b = EnumAttr::B {
-        source: Inner {
+        explicit_source: Inner {
             source: BacktraceErr {
                 backtrace: Backtrace::force_capture(),
             },

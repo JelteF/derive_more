@@ -27,8 +27,13 @@ derive_display!(EnumAttr);
 #[derive(Debug, Error)]
 #[error(forward)]
 enum EnumAttr {
-    A { source: Inner },
-    B { source: Inner },
+    A {
+        source: Inner,
+    },
+    B {
+        #[error(source)]
+        explicit_source: Inner,
+    },
 }
 
 #[test]
@@ -38,7 +43,7 @@ fn enum_attr() {
     };
 
     let err_b = EnumAttr::B {
-        source: Inner { source: SimpleErr },
+        explicit_source: Inner { source: SimpleErr },
     };
 
     assert!(err_a.source().is_some());
