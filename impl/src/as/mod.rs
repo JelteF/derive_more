@@ -15,6 +15,7 @@ use syn::{
 
 use crate::utils::{add_where_clauses_for_new_ident, Either};
 
+/// Expands a [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
     input: &syn::DeriveInput,
     trait_ident: &syn::Ident,
@@ -89,16 +90,23 @@ pub fn expand(
     )*})
 }
 
+/// A [`AsRef`]/[`AsMut`] derive macro struct attribute with parsed arguments.
 struct StructAttr<'a> {
     args: StructAttrArgs,
     attr: &'a syn::Attribute,
 }
 
+/// Representation of a [`AsRef`]/[`AsMut`] derive macro struct attribute's arguments.
+///
+/// ```rust,ignore
+/// #[as_ref(forward)]
+/// ```
 enum StructAttrArgs {
     Forward,
 }
 
 impl<'a> StructAttr<'a> {
+    /// Parses a [`StructAttr`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: &'a [syn::Attribute],
         method_ident: &syn::Ident,
@@ -113,10 +121,7 @@ impl<'a> StructAttr<'a> {
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
-                        format!(
-                            "only single `#[{}(...)]` attribute is allowed here",
-                            method_ident
-                        ),
+                        format!("only single `#[{method_ident}(...)]` attribute is allowed here"),
                     ))
                 } else {
                     Ok(attrs)
@@ -140,18 +145,27 @@ impl Parse for StructAttrArgs {
     }
 }
 
+/// A [`AsRef`]/[`AsMut`] derive macro field attribute with parsed arguments.
 struct FieldAttr<'a> {
     attr: &'a syn::Attribute,
     args: FieldAttrArgs,
 }
 
+/// Representation of a [`AsRef`]/[`AsMut`] derive macro field attribute's arguments.
+///
+/// ```rust,ignore
+/// #[as_ref]
+/// #[as_ref(forward)]
+/// #[as_ref(ignore)]
+/// ```
 enum FieldAttrArgs {
-    AsRef,
+    Empty,
     Forward,
     Ignore,
 }
 
 impl<'a> FieldAttr<'a> {
+    /// Parses a [`FieldAttr`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: &'a [syn::Attribute],
         method_ident: &syn::Ident,
@@ -176,9 +190,10 @@ impl<'a> FieldAttr<'a> {
 }
 
 impl FieldAttrArgs {
+    /// Parses a [`FieldAttrArgs`] from the provided [`syn::Attribute`].
     fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
-            return Ok(Self::AsRef);
+            return Ok(Self::Empty);
         }
         attr.parse_args::<syn::Path>().and_then(|p| {
             if p.is_ident("forward") {
@@ -195,6 +210,7 @@ impl FieldAttrArgs {
     }
 }
 
+/// Parsed arguments to generate a single [`AsRef`]/[`AsMut`] impl
 struct FieldArgs<'a> {
     forward: bool,
     field: &'a syn::Field,
@@ -202,6 +218,9 @@ struct FieldArgs<'a> {
 }
 
 impl<'a> FieldArgs<'a> {
+    /// [`FieldArgs`] constructor
+    ///
+    /// `index` is used as `ident` for unnamed fields
     fn new(field: &'a syn::Field, forward: bool, index: usize) -> Self {
         Self {
             field,
@@ -214,6 +233,16 @@ impl<'a> FieldArgs<'a> {
     }
 }
 
+/// Extracts [`FieldArgs`] for each enabled field from provided [`syn::DeriveInput`]
+///
+/// # Enabled fields
+///
+/// If the struct is annotated, this is the struct's single field.
+/// If any field is annotated with argument `ignore`, each field that's not ignored.
+/// Otherwise, each annotated field.
+///
+/// Annotating multi-field structs is disallowed.
+/// Annotating some fields with argument `ignore`, and some with other arguments is disallowed.
 fn extract_field_args<'a>(
     input: &'a syn::DeriveInput,
     trait_ident: &syn::Ident,
@@ -269,6 +298,9 @@ fn extract_field_args<'a>(
     }
 }
 
+/// Extracts [`FieldArgs`] for each of the provided [`syn::Field`]s that's enabled.
+///
+/// See [`extract_field_args`] for enabled field semantics.
 fn extract_many<'a>(
     fields: &'a syn::Fields,
     method_ident: &syn::Ident,
@@ -317,7 +349,7 @@ fn extract_many<'a>(
             .enumerate()
             .zip(attrs)
             .filter_map(|((i, field), attr)| match attr.map(|attr| attr.args) {
-                Some(FieldAttrArgs::AsRef) => Some(FieldArgs::new(field, false, i)),
+                Some(FieldAttrArgs::Empty) => Some(FieldArgs::new(field, false, i)),
                 Some(FieldAttrArgs::Forward) => Some(FieldArgs::new(field, true, i)),
                 Some(FieldAttrArgs::Ignore) => unreachable!(),
                 None => None,
