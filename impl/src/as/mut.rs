@@ -12,9 +12,6 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 
     super::expand(
         input,
-        &trait_ident,
-        &method_ident,
-        &as_mut_type,
-        Some(&mutability),
+        (&trait_ident, &method_ident, &as_mut_type, Some(&mutability)),
     )
 }

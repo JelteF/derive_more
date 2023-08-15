@@ -15,13 +15,22 @@ use syn::{
 
 use crate::utils::{add_where_clauses_for_new_ident, Either};
 
+/// Type alias for an expansion context:
+/// - Derived trait [`syn::Ident`]
+/// - Derived trait method [`syn::Ident`]
+/// - Type name used as generic in blanket impls [`syn::Ident`]
+/// - Optional `mut` token used in expansion
+type ExpansionCtx<'a> = (
+    &'a syn::Ident,
+    &'a syn::Ident,
+    &'a syn::Ident,
+    Option<&'a Token![mut]>,
+);
+
 /// Expands a [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
     input: &syn::DeriveInput,
-    trait_ident: &syn::Ident,
-    method_ident: &syn::Ident,
-    conv_type: &syn::Ident,
-    mutability: Option<&Token![mut]>,
+    (trait_ident, method_ident, conv_type, mutability): ExpansionCtx<'_>,
 ) -> syn::Result<TokenStream> {
     let trait_path = quote! { ::derive_more::#trait_ident };
 

@@ -9,5 +9,5 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let trait_ident = format_ident!("{trait_name}");
     let method_ident = format_ident!("as_ref");
 
-    super::expand(input, &trait_ident, &method_ident, &as_ref_type, None)
+    super::expand(input, (&trait_ident, &method_ident, &as_ref_type, None))
 }
