@@ -1,0 +1,7 @@
+error: `#[error(forward)]` cannot be used when an error has no source
+ --> tests/compile_fail/error/forward_no_source_struct.rs:3:17
+  |
+3 | #[derive(Debug, Error)]
+  |                 ^^^^^
+  |
+  = note: this error originates in the derive macro `Error` (in Nightly builds, run with -Z macro-backtrace for more info)

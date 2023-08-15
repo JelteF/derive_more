@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
@@ -390,7 +390,12 @@ fn parse_fields_impl<'input, 'state, P>(
 where
     P: Fn(&str, &syn::Field, usize) -> bool,
 {
-    let MultiFieldData { fields, infos, .. } = state.enabled_fields_data();
+    let MultiFieldData {
+        fields,
+        infos,
+        variant_info,
+        ..
+    } = state.enabled_fields_data();
 
     let iter = fields
         .iter()
@@ -418,6 +423,11 @@ where
 
     if let Some((index, _, _)) = source {
         parsed_fields.source = Some(index);
+    } else if variant_info.forward {
+        return Err(syn::Error::new(
+            Span::call_site(),
+            "`#[error(forward)]` cannot be used when an error has no source",
+        ));
     }
 
     if let Some((index, _, _)) = backtrace {
