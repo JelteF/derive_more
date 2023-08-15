@@ -14,12 +14,12 @@ use syn::{
 };
 
 #[cfg(any(
+    feature = "as_ref",
+    feature = "as_mut",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
-    feature = "as_ref",
-    feature = "as_mut"
 ))]
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
@@ -1316,12 +1316,12 @@ pub fn is_type_parameter_used_in_type(
 }
 
 #[cfg(any(
+    feature = "as_ref",
+    feature = "as_mut",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
-    feature = "as_ref",
-    feature = "as_mut",
 ))]
 mod either {
     use proc_macro2::TokenStream;
@@ -1481,8 +1481,7 @@ mod fields_ext {
                         return Err(syn::Error::new(
                             other.span(),
                             format!(
-                                "expected tuple: `({}, {})`",
-                                other,
+                                "expected tuple: `({other}, {})`",
                                 (0..(self.len() - 1))
                                     .map(|_| "_")
                                     .collect::<Vec<_>>()

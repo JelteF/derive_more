@@ -1,17 +1,24 @@
-use crate::utils::{add_where_clauses_for_new_ident, Either};
-use proc_macro2::{Ident, TokenStream};
+//! Implementations of [`AsRef`]/[`AsMut`] derive macros.
+
+#[cfg(feature = "as_mut")]
+pub(crate) mod r#mut;
+#[cfg(feature = "as_ref")]
+pub(crate) mod r#ref;
+
+use proc_macro2::{TokenStream};
 use quote::quote;
 use syn::{
-    parse::{Parse, ParseStream, Result},
-    spanned::Spanned,
-    DeriveInput, Field, Fields, Index, Token,
+    parse::{Parse, ParseStream},
+    spanned::Spanned, Token,
 };
 
+use crate::utils::{add_where_clauses_for_new_ident, Either};
+
 pub fn expand(
-    input: &DeriveInput,
-    trait_ident: &Ident,
-    method_ident: &Ident,
-    conv_type: &Ident,
+    input: &syn::DeriveInput,
+    trait_ident: &syn::Ident,
+    method_ident: &syn::Ident,
+    conv_type: &syn::Ident,
     mutability: Option<&Token![mut]>,
 ) -> syn::Result<TokenStream> {
     let trait_path = quote! { ::derive_more::#trait_ident };
@@ -93,7 +100,7 @@ enum StructAttrArgs {
 impl<'a> StructAttr<'a> {
     fn parse_attrs(
         attrs: &'a [syn::Attribute],
-        method_ident: &Ident,
+        method_ident: &syn::Ident,
     ) -> syn::Result<Option<Self>> {
         attrs
             .as_ref()
@@ -118,7 +125,7 @@ impl<'a> StructAttr<'a> {
 }
 
 impl Parse for StructAttrArgs {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         input.parse::<syn::Path>().and_then(|path| {
             if path.is_ident("forward") {
                 Ok(Self::Forward)
@@ -146,7 +153,7 @@ enum FieldAttrArgs {
 impl<'a> FieldAttr<'a> {
     fn parse_attrs(
         attrs: &'a [syn::Attribute],
-        method_ident: &Ident,
+        method_ident: &syn::Ident,
     ) -> syn::Result<Option<Self>> {
         attrs
             .as_ref()
@@ -158,10 +165,7 @@ impl<'a> FieldAttr<'a> {
                 if attrs.replace(field_attr).is_some() {
                     Err(syn::Error::new(
                         attr.path().span(),
-                        format!(
-                            "only single `#[{}(...)]` attribute is allowed here",
-                            method_ident
-                        ),
+                        format!("only single `#[{method_ident}(...)]` attribute is allowed here"),
                     ))
                 } else {
                     Ok(attrs)
@@ -192,12 +196,12 @@ impl FieldAttrArgs {
 
 struct FieldArgs<'a> {
     forward: bool,
-    field: &'a Field,
-    ident: Either<&'a Ident, Index>,
+    field: &'a syn::Field,
+    ident: Either<&'a syn::Ident, syn::Index>,
 }
 
 impl<'a> FieldArgs<'a> {
-    fn new(field: &'a Field, forward: bool, index: usize) -> Self {
+    fn new(field: &'a syn::Field, forward: bool, index: usize) -> Self {
         Self {
             field,
             forward,
@@ -211,18 +215,18 @@ impl<'a> FieldArgs<'a> {
 
 fn extract_field_args<'a>(
     input: &'a syn::DeriveInput,
-    trait_ident: &Ident,
-    method_ident: &Ident,
+    trait_ident: &syn::Ident,
+    method_ident: &syn::Ident,
 ) -> syn::Result<Vec<FieldArgs<'a>>> {
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
         syn::Data::Enum(e) => Err(syn::Error::new(
             e.enum_token.span(),
-            format!("`{}` cannot be derived for enums", trait_ident),
+            format!("`{trait_ident}` cannot be derived for enums"),
         )),
         syn::Data::Union(u) => Err(syn::Error::new(
             u.union_token.span(),
-            format!("`{}` cannot be derived for unions", trait_ident),
+            format!("`{trait_ident}` cannot be derived for unions"),
         )),
     }?;
 
@@ -232,24 +236,27 @@ fn extract_field_args<'a>(
         let field = fields.next().ok_or_else(|| {
             syn::Error::new(
                 struct_attr.attr.span(),
-                format!("`#[{}(...)]` can only be applied to structs with exactly one field", method_ident),
+                format!(
+                    "`#[{method_ident}(...)]` can only be applied to structs with exactly one \
+                     field",
+                ),
             )
         })?;
 
         if FieldAttr::parse_attrs(&field.attrs, method_ident)?.is_some() {
             return Err(syn::Error::new(
                 field.span(),
-                format!(
-                    "`#[{}(...)]` cannot be applied to both struct and field",
-                    method_ident
-                ),
+                format!("`#[{method_ident}(...)]` cannot be applied to both struct and field"),
             ));
         }
 
         if let Some(other_field) = fields.next() {
             return Err(syn::Error::new(
                 other_field.span(),
-                format!("`#[{}(...)]` can only be applied to structs with exactly one field", method_ident),
+                format!(
+                    "`#[{method_ident}(...)]` can only be applied to structs with exactly one \
+                     field",
+                ),
             ));
         }
 
@@ -262,8 +269,8 @@ fn extract_field_args<'a>(
 }
 
 fn extract_many<'a>(
-    fields: &'a Fields,
-    method_ident: &Ident,
+    fields: &'a syn::Fields,
+    method_ident: &syn::Ident,
 ) -> syn::Result<Vec<FieldArgs<'a>>> {
     let attrs = fields
         .iter()
@@ -284,7 +291,14 @@ fn extract_many<'a>(
             .iter()
             .find(|attr| matches!(attr.args, FieldAttrArgs::Ignore))
         {
-            return Err(syn::Error::new(attr.attr.span(), format!("`#[{0}(ignore)]` cannot be used in the same struct as other `#[{0}(...)]` attributes", method_ident)));
+            return Err(syn::Error::new(
+                attr.attr.span(),
+                format!(
+                    "`#[{0}(ignore)]` cannot be used in the same struct as other `#[{0}(...)]` \
+                     attributes",
+                    method_ident,
+                ),
+            ));
         }
     }
 
