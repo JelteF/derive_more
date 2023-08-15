@@ -77,7 +77,7 @@ fn expand_struct(
             .ident
             .clone()
             .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-        quote! { let #var = &self.#member; }
+        quote! { let #var = &&self.#member; }
     });
 
     let body = quote! {

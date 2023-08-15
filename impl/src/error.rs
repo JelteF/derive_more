@@ -47,7 +47,7 @@ pub fn expand(
 
     let provide = provide.map(|provide| {
         quote! {
-            fn provide<'_demand>(&'_demand self, demand: &mut ::core::any::Demand<'_demand>) {
+            fn provide<'_request>(&'_request self, request: &mut ::core::error::Request<'_request>) {
                 #provide
             }
         }
@@ -205,7 +205,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
         let source_provider = self.source.map(|source| {
             let source_expr = &self.data.members[source];
             quote! {
-                ::derive_more::Error::provide(&#source_expr, demand);
+                ::derive_more::Error::provide(&#source_expr, request);
             }
         });
         let backtrace_provider = self
@@ -215,7 +215,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
             .then(|| {
                 let backtrace_expr = &self.data.members[backtrace];
                 quote! {
-                    demand.provide_ref::<::std::backtrace::Backtrace>(&#backtrace_expr);
+                    request.provide_ref::<::std::backtrace::Backtrace>(&#backtrace_expr);
                 }
             });
 
@@ -235,7 +235,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 let pattern = self.data.matcher(&[source], &[quote! { source }]);
                 Some(quote! {
                     #pattern => {
-                        ::derive_more::Error::provide(source, demand);
+                        ::derive_more::Error::provide(source, request);
                     }
                 })
             }
@@ -246,8 +246,8 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 );
                 Some(quote! {
                     #pattern => {
-                        demand.provide_ref::<::std::backtrace::Backtrace>(backtrace);
-                        ::derive_more::Error::provide(source, demand);
+                        request.provide_ref::<::std::backtrace::Backtrace>(backtrace);
+                        ::derive_more::Error::provide(source, request);
                     }
                 })
             }
@@ -255,7 +255,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
                 let pattern = self.data.matcher(&[backtrace], &[quote! { backtrace }]);
                 Some(quote! {
                     #pattern => {
-                        demand.provide_ref::<::std::backtrace::Backtrace>(backtrace);
+                        request.provide_ref::<::std::backtrace::Backtrace>(backtrace);
                     }
                 })
             }

@@ -637,7 +637,7 @@ mod enums {
 
 mod generic {
     #[cfg(not(feature = "std"))]
-    use alloc::format;
+    use alloc::{boxed::Box, format};
     use core::fmt;
 
     use derive_more::Debug;
@@ -663,6 +663,22 @@ mod generic {
         assert_eq!(
             format!("{:#?}", NamedGenericStruct { field: 1 }),
             "NamedGenericStruct {\n    field: 1,\n}",
+        );
+    }
+
+    #[derive(Debug)]
+    struct NamedGenericStructUnsized<T: ?Sized> {
+        field: T,
+    }
+    #[test]
+    fn named_generic_struct_unsized() {
+        assert_eq!(
+            format!("{:?}", NamedGenericStructUnsized { field: 1 }),
+            "NamedGenericStructUnsized { field: 1 }",
+        );
+        assert_eq!(
+            format!("{:#?}", NamedGenericStructUnsized { field: 1 }),
+            "NamedGenericStructUnsized {\n    field: 1,\n}",
         );
     }
 
@@ -827,6 +843,20 @@ mod generic {
     }
 
     #[derive(Debug)]
+    struct UnnamedGenericStructUnsized<T: ?Sized>(T);
+    #[test]
+    fn unnamed_generic_struct_unsized() {
+        assert_eq!(
+            format!("{:?}", UnnamedGenericStructUnsized(2)),
+            "UnnamedGenericStructUnsized(2)",
+        );
+        assert_eq!(
+            format!("{:#?}", UnnamedGenericStructUnsized(2)),
+            "UnnamedGenericStructUnsized(\n    2,\n)",
+        );
+    }
+
+    #[derive(Debug)]
     struct UnnamedGenericStructIgnored<T>(#[debug(skip)] T);
     #[test]
     fn unnamed_generic_struct_ignored() {
@@ -910,15 +940,43 @@ mod generic {
     fn generic_enum() {
         assert_eq!(
             format!("{:?}", GenericEnum::A::<_, u8> { field: 1 }),
-            "A { field: 1 }"
+            "A { field: 1 }",
         );
         assert_eq!(
             format!("{:#?}", GenericEnum::A::<_, u8> { field: 1 }),
-            "A {\n    field: 1,\n}"
+            "A {\n    field: 1,\n}",
         );
         assert_eq!(format!("{:?}", GenericEnum::B::<u8, _>(2)), "B(2)");
         assert_eq!(
             format!("{:#?}", GenericEnum::B::<u8, _>(2)),
+            "B(\n    2,\n)",
+        );
+    }
+
+    #[derive(derive_more::Debug)]
+    enum GenericEnumUnsized<A: ?Sized, B: ?Sized + 'static> {
+        A { field: Box<A> },
+        B(&'static B),
+    }
+    #[test]
+    fn generic_enum_unsized() {
+        assert_eq!(
+            format!("{:?}", GenericEnumUnsized::A::<i32, u8> { field: 1.into() }),
+            "A { field: 1 }",
+        );
+        assert_eq!(
+            format!(
+                "{:#?}",
+                GenericEnumUnsized::A::<i32, u8> { field: 1.into() },
+            ),
+            "A {\n    field: 1,\n}",
+        );
+        assert_eq!(
+            format!("{:?}", GenericEnumUnsized::B::<u8, i32>(&2)),
+            "B(2)",
+        );
+        assert_eq!(
+            format!("{:#?}", GenericEnumUnsized::B::<u8, i32>(&2)),
             "B(\n    2,\n)",
         );
     }
