@@ -13,7 +13,7 @@ use syn::{
     Token,
 };
 
-use crate::utils::{add_where_clauses_for_new_ident, Either};
+use crate::utils::{add_extra_generic_type_param, add_extra_where_clauses, Either};
 
 /// Type alias for an expansion context:
 /// - Derived trait [`syn::Ident`]
@@ -53,18 +53,22 @@ pub fn expand(
                         return_type
                     ) = if forward {
                         let trait_path = quote! { #trait_path<#conv_type> };
-                        let type_where_clauses = quote! {
-                            where #field_type: #trait_path
-                        };
-                        let new_generics = add_where_clauses_for_new_ident(
+
+                        let with_constraint = add_extra_where_clauses(
                             &input.generics,
-                            &[field],
-                            conv_type,
-                            type_where_clauses,
-                            false,
+                            quote! {
+                                where #field_type: #trait_path
+                            },
+                        );
+                        let new_generics = add_extra_generic_type_param(
+                            &with_constraint,
+                            quote! {
+                                #conv_type: ?::core::marker::Sized
+                            },
                         );
                         let (impl_generics, _, where_clause) =
                             new_generics.split_for_impl();
+
                         let casted_trait = quote! { <#field_type as #trait_path> };
 
                         (
