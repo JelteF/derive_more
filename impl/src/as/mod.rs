@@ -38,65 +38,64 @@ pub fn expand(
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let input_type = &input.ident;
 
-    let sub_items: Vec<_> = field_args
-        .into_iter()
-        .map(
-            |FieldArgs {
-                 forward,
-                 field,
-                 ident,
-             }| {
-                let member = quote! { self.#ident };
-                let field_type = &field.ty;
-                if forward {
-                    let trait_path = quote! { #trait_path<#conv_type> };
-                    let type_where_clauses = quote! {
-                        where #field_type: #trait_path
-                    };
-                    let new_generics = add_where_clauses_for_new_ident(
-                        &input.generics,
-                        &[field],
-                        conv_type,
-                        type_where_clauses,
-                        false,
-                    );
-                    let (impl_generics, _, where_clause) =
-                        new_generics.split_for_impl();
-                    let casted_trait = quote! { <#field_type as #trait_path> };
-                    (
-                        quote! { #casted_trait::#method_ident(& #mutability #member) },
-                        quote! { #impl_generics },
-                        quote! { #where_clause },
-                        quote! { #trait_path },
-                        quote! { & #mutability #conv_type },
-                    )
-                } else {
-                    (
-                        quote! { & #mutability #member },
-                        quote! { #impl_generics },
-                        quote! { #where_clause },
-                        quote! { #trait_path<#field_type> },
-                        quote! { & #mutability #field_type },
-                    )
-                }
-            },
-        )
-        .collect();
-    let bodies = sub_items.iter().map(|i| &i.0);
-    let impl_generics = sub_items.iter().map(|i| &i.1);
-    let where_clauses = sub_items.iter().map(|i| &i.2);
-    let trait_paths = sub_items.iter().map(|i| &i.3);
-    let return_types = sub_items.iter().map(|i| &i.4);
+    Ok(
+        field_args
+            .into_iter()
+            .map(
+                |FieldArgs {forward, field, ident}| {
+                    let member = quote! { self.#ident };
+                    let field_type = &field.ty;
+                    let (
+                        body,
+                        impl_generics,
+                        where_clause,
+                        trait_path,
+                        return_type
+                    ) = if forward {
+                        let trait_path = quote! { #trait_path<#conv_type> };
+                        let type_where_clauses = quote! {
+                            where #field_type: #trait_path
+                        };
+                        let new_generics = add_where_clauses_for_new_ident(
+                            &input.generics,
+                            &[field],
+                            conv_type,
+                            type_where_clauses,
+                            false,
+                        );
+                        let (impl_generics, _, where_clause) =
+                            new_generics.split_for_impl();
+                        let casted_trait = quote! { <#field_type as #trait_path> };
 
-    Ok(quote! {#(
-        #[automatically_derived]
-        impl #impl_generics #trait_paths for #input_type #ty_generics #where_clauses {
-            #[inline]
-            fn #method_ident(& #mutability self) -> #return_types {
-                #bodies
-            }
-        }
-    )*})
+                        (
+                            quote! { #casted_trait::#method_ident(& #mutability #member) },
+                            quote! { #impl_generics },
+                            quote! { #where_clause },
+                            quote! { #trait_path },
+                            quote! { & #mutability #conv_type },
+                        )
+                    } else {
+                        (
+                            quote! { & #mutability #member },
+                            quote! { #impl_generics },
+                            quote! { #where_clause },
+                            quote! { #trait_path<#field_type> },
+                            quote! { & #mutability #field_type },
+                        )
+                    };
+
+                    quote! {
+                        #[automatically_derived]
+                        impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
+                            #[inline]
+                            fn #method_ident(& #mutability self) -> #return_type {
+                                #body
+                            }
+                        }
+                    }
+                })
+            .collect()
+    )
 }
 
 /// A [`AsRef`]/[`AsMut`] derive macro struct attribute with parsed arguments.
