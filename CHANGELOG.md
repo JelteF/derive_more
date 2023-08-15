@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `Into` derive now uses `#[into(<types>)]` instead of `#[into(types(<types>))]`
   and ignores field type itself.
 - Importing a derive macro now also import its corresponding trait.
+- The `Error` derive is updated with changes to the `error_generic_member_access` unstable feature
 
 ### Added
 
