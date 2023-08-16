@@ -5,7 +5,7 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::{string::String, vec, vec::Vec};
+use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
 use core::ptr;
 
 use derive_more::AsRef;
@@ -22,26 +22,42 @@ fn single_field_tuple() {
 
 #[derive(AsRef)]
 #[as_ref(forward)]
-struct SingleFieldForward(Vec<i32>);
+struct SingleFieldTupleForward(Vec<i32>);
 
 #[test]
-fn single_field_forward() {
-    let item = SingleFieldForward(vec![]);
-    let _: &[i32] = (&item).as_ref();
+fn single_field_tuple_forward() {
+    let item = SingleFieldTupleForward(vec![]);
+
+    let rf: &[i32] = item.as_ref();
+    assert!(ptr::eq(rf, item.0.as_ref()));
 }
 
 #[derive(AsRef)]
-struct SingleFieldStruct {
+struct SingleFieldNamed {
     first: String,
 }
 
 #[test]
-fn single_field_struct() {
-    let item = SingleFieldStruct {
+fn single_field_named() {
+    let item = SingleFieldNamed {
         first: "test".into(),
     };
 
     assert!(ptr::eq(&item.first, item.as_ref()));
+}
+
+#[derive(AsRef)]
+#[as_ref(forward)]
+struct SingleFieldNamedForward {
+    first: Vec<i32>,
+}
+
+#[test]
+fn single_field_named_forward() {
+    let item = SingleFieldNamedForward { first: vec![] };
+
+    let rf: &[i32] = item.as_ref();
+    assert!(ptr::eq(rf, item.first.as_ref()));
 }
 
 #[cfg(feature = "std")]
@@ -62,7 +78,7 @@ mod pathbuf {
     }
 
     #[derive(AsRef)]
-    struct MultiFieldStruct {
+    struct MultiFieldNamed {
         #[as_ref]
         first: String,
         #[as_ref]
@@ -71,8 +87,8 @@ mod pathbuf {
     }
 
     #[test]
-    fn multi_field_struct() {
-        let item = MultiFieldStruct {
+    fn multi_field_named() {
+        let item = MultiFieldNamed {
             first: "test".into(),
             second: PathBuf::new(),
             third: vec![],
@@ -81,6 +97,35 @@ mod pathbuf {
         assert!(ptr::eq(&item.first, item.as_ref()));
         assert!(ptr::eq(&item.second, item.as_ref()));
     }
+}
+
+#[derive(AsRef)]
+struct AnnotatedTupleForward(#[as_ref(forward)] String, i32);
+
+#[test]
+fn annotated_tuple_forward() {
+    let item = AnnotatedTupleForward("test".into(), 0);
+
+    let rf: &str = item.as_ref();
+    assert!(ptr::eq(rf, item.0.as_ref()));
+}
+
+#[derive(AsRef)]
+struct AnnotatedNamedForward {
+    #[as_ref(forward)]
+    first: String,
+    second: i32,
+}
+
+#[test]
+fn annotated_named_forward() {
+    let item = AnnotatedNamedForward {
+        first: "test".into(),
+        second: 0,
+    };
+
+    let rf: &str = item.as_ref();
+    assert!(ptr::eq(rf, item.first.as_ref()));
 }
 
 #[derive(AsRef)]
@@ -93,6 +138,40 @@ fn single_field_generic_struct() {
     let item = SingleFieldGenericStruct { first: "test" };
 
     assert!(ptr::eq(&item.first, item.as_ref()));
+}
+
+#[derive(AsRef)]
+#[as_ref(forward)]
+struct SingleFieldGenericStructForward<T> {
+    first: T,
+}
+
+#[test]
+fn single_field_generic_struct_forward() {
+    let item = SingleFieldGenericStruct {
+        first: "test".to_owned(),
+    };
+
+    let rf: &str = item.as_ref();
+    assert!(ptr::eq(rf, item.first.as_ref()));
+}
+
+#[derive(AsRef)]
+struct AnnotatedGenericStructForward<T> {
+    #[as_ref(forward)]
+    first: T,
+    second: i32,
+}
+
+#[test]
+fn annotated_generic_struct_forward() {
+    let item = AnnotatedGenericStructForward {
+        first: "test".to_owned(),
+        second: 0,
+    };
+
+    let rf: &str = item.as_ref();
+    assert!(ptr::eq(rf, item.first.as_ref()));
 }
 
 #[derive(AsRef)]
