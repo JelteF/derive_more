@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, unzip4, Either, FieldsExt},
+    utils::{polyfill, Either, FieldsExt},
 };
 
 /// Expands an [`Into`] derive macro.
@@ -49,12 +49,11 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 .as_ref()
                 .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left);
 
-            Ok((&f.ty, ident, skip, args))
+            Ok(((&f.ty, ident, skip), args))
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
-    let (fields_tys, fields_idents, skips, fields_args) =
-        unzip4::<_, _, _, _, Vec<_>, Vec<_>, Vec<_>, Vec<_>, _>(fields_data);
+    let (fields, fields_args) = fields_data.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
 
     // Expand the version with all non-skipped fields if either
     // there's an explicit struct attribute
@@ -67,11 +66,10 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             .map(StructAttribute::new)
     });
 
-    let mut expands = fields_tys
+    let mut expands = fields
         .iter()
-        .zip(&fields_idents)
         .zip(fields_args)
-        .filter_map(|((field_ty, ident), args)| {
+        .filter_map(|((field_ty, ident, _), args)| {
             args.map(|args| {
                 expand_args(
                     &input.generics,
@@ -85,11 +83,11 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .collect::<syn::Result<TokenStream>>()?;
 
     if let Some(struct_attr) = struct_attr {
-        let (fields_tys, fields_idents) = fields_tys
-            .iter()
-            .zip(fields_idents)
-            .zip(skips)
-            .filter_map(|(pair, skip)| (!skip).then_some(pair))
+        let (fields_tys, fields_idents) = fields
+            .into_iter()
+            .filter_map(|(field_ty, field_ident, skip)| {
+                (!skip).then_some((field_ty, field_ident))
+            })
             .unzip::<_, _, Vec<_>, Vec<_>>();
 
         let struct_expand = expand_args(
