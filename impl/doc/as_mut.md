@@ -121,8 +121,23 @@ struct MyWrapper {
 }
 ```
 
+Similarly, if a field is annotated with `#[as_mut(forward)]`, no other
+conversions can be used.
 
-
+```rust,compile_fail
+# use derive_more::AsMut;
+#
+// Error! Conflicting implementations of `AsMut<i32>`
+// note: upstream crates may add a new impl of trait `AsMut<i32>`
+// for type `String` in future versions
+#[derive(AsMut)]
+struct ForwardWithOther {
+    #[as_mut(forward)]
+    str: String,
+    #[as_mut]
+    number: i32,
+}
+```
 
 ## Enums
 

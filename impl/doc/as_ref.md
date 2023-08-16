@@ -122,8 +122,23 @@ struct MyWrapper {
 }
 ```
 
+Similarly, if a field is annotated with `#[as_ref(forward)]`, no other
+conversions can be used.
 
-
+```rust,compile_fail
+# use derive_more::AsRef;
+#
+// Error! Conflicting implementations of `AsRef<i32>`
+// note: upstream crates may add a new impl of trait `AsRef<i32>`
+// for type `String` in future versions
+#[derive(AsRef)]
+struct ForwardWithOther {
+    #[as_ref(forward)]
+    str: String,
+    #[as_ref]
+    number: i32,
+}
+```
 
 ## Enums
 
