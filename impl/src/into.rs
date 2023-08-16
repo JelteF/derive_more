@@ -9,7 +9,7 @@ use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Field, Ident,
+    token,
 };
 
 use crate::{
@@ -106,11 +106,12 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     Ok(expands)
 }
 
+/// Expands [`From`] impls for a set of fields with the given `[IntoArgs]`
 fn expand_args(
     input_generics: &syn::Generics,
-    input_ident: &Ident,
+    input_ident: &syn::Ident,
     fields_tys: &[&syn::Type],
-    fields_idents: &[Either<&Ident, syn::Index>],
+    fields_idents: &[Either<&syn::Ident, syn::Index>],
     args: IntoArgs,
 ) -> syn::Result<TokenStream> {
     let expand_one = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
@@ -182,6 +183,11 @@ struct StructAttribute {
     args: IntoArgs,
 }
 
+/// A set of type arguments for a set of fields
+///
+/// For
+/// [`None`] represents no conversions of the given type
+/// An empty [`Punctuated`] represents a conversion into the field types
 #[derive(Debug, Default)]
 struct IntoArgs {
     /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
@@ -236,7 +242,7 @@ impl IntoArgs {
     fn parse<'a, F>(content: ParseStream<'_>, fields: &'a F) -> syn::Result<Self>
     where
         F: FieldsExt + ?Sized,
-        &'a F: IntoIterator<Item = &'a Field>,
+        &'a F: IntoIterator<Item = &'a syn::Field>,
     {
         check_legacy_syntax(content, fields)?;
 
@@ -271,8 +277,8 @@ impl IntoArgs {
 
         while !content.is_empty() {
             let ahead = content.fork();
-            let res = if ahead.peek(Ident::peek_any) {
-                ahead.call(Ident::parse_any).map(Into::into)
+            let res = if ahead.peek(syn::Ident::peek_any) {
+                ahead.call(syn::Ident::parse_any).map(Into::into)
             } else {
                 ahead.parse::<syn::Path>()
             };
@@ -345,7 +351,7 @@ impl FieldAttribute {
     /// Parses a [`FieldAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(
         attrs: impl AsRef<[syn::Attribute]>,
-        field: &Field,
+        field: &syn::Field,
     ) -> syn::Result<Option<Self>> {
         attrs
             .as_ref()
@@ -380,7 +386,7 @@ impl FieldAttribute {
     }
 
     /// Parses a single [`FieldAttribute`]
-    fn parse_attr(attr: &syn::Attribute, field: &Field) -> syn::Result<Self> {
+    fn parse_attr(attr: &syn::Attribute, field: &syn::Field) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
             Ok(Self {
                 skip: false,
@@ -392,7 +398,7 @@ impl FieldAttribute {
     }
 
     /// Parses a single [`FieldAttribute`]'s args
-    fn parse(content: ParseStream, field: &Field) -> syn::Result<Self> {
+    fn parse(content: ParseStream, field: &syn::Field) -> syn::Result<Self> {
         let ahead = content.fork();
         match ahead.parse::<syn::Path>() {
             Ok(p) if p.is_ident("skip") | p.is_ident("ignore") => {
@@ -432,7 +438,7 @@ fn merge_tys(
 fn check_legacy_syntax<'a, F>(tokens: ParseStream<'_>, fields: &'a F) -> syn::Result<()>
 where
     F: FieldsExt + ?Sized,
-    &'a F: IntoIterator<Item = &'a Field>,
+    &'a F: IntoIterator<Item = &'a syn::Field>,
 {
     let span = tokens.span();
     let tokens = tokens.fork();
