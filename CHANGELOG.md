@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `Into` derive now generates separate impls for each field with the `#[into(...)]`
   attribute applied to it.
 - Importing a derive macro now also import its corresponding trait.
+- The `Error` derive is updated with changes to the `error_generic_member_access` unstable feature for nightly users. ([#200](https://github.com/JelteF/derive_more/pull/200), [#294](https://github.com/JelteF/derive_more/pull/294))
 
 ### Added
 
