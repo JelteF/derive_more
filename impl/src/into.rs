@@ -183,7 +183,6 @@ struct StructAttribute {
 
 /// A set of type arguments for a set of fields
 ///
-/// For
 /// [`None`] represents no conversions of the given type
 /// An empty [`Punctuated`] represents a conversion into the field types
 #[derive(Debug, Default)]
