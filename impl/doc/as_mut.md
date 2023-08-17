@@ -50,13 +50,13 @@ This generates:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<__AsMutT: ?::core::marker::Sized> ::core::convert::AsMut<__AsMutT> for SingleFieldForward
+impl<__AsT: ?::core::marker::Sized> ::core::convert::AsMut<__AsT> for SingleFieldForward
 where
-    Vec<i32>: ::core::convert::AsMut<__AsMutT>,
+    Vec<i32>: ::core::convert::AsMut<__AsT>,
 {
     #[inline]
-    fn as_mut(&mut self) -> &mut __AsMutT {
-        <Vec<i32> as ::core::convert::AsMut<__AsMutT>>::as_mut(&mut self.0)
+    fn as_mut(&mut self) -> &mut __AsT {
+        <Vec<i32> as ::core::convert::AsMut<__AsT>>::as_mut(&mut self.0)
     }
 }
 ```
@@ -69,7 +69,7 @@ where
 When `AsMut` is derived for a struct with more than one field (including tuple
 structs), you must also mark one or more fields with the `#[as_mut]` attribute.
 An implementation will be generated for each indicated field.
-You can also exclude a specific field by using `#[as_mut(ignore)]`.
+You can also exclude a specific field by using `#[as_mut(ignore)]` (or `#[as_mut(ignore)]`).
 
 ```rust
 # use derive_more::AsMut;
@@ -121,8 +121,8 @@ struct MyWrapper {
 }
 ```
 
-Similarly, if a field is annotated with `#[as_mut(forward)]`, no other
-conversions can be used.
+Similarly, if some field is annotated with `#[as_mut(forward)]`, no other
+field can be marked.
 
 ```rust,compile_fail
 # use derive_more::AsMut;

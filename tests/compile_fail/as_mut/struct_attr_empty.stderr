@@ -1,5 +1,5 @@
-error: `#[as_mut(...)]` can only be applied to structs with exactly one field
- --> tests/compile_fail/as_mut/struct_attr_empty.rs:2:1
+error: `#[as_mut(...)]` attribute can only be placed on structs with exactly one field
+ --> tests/compile_fail/as_mut/struct_attr_empty.rs:3:1
   |
-2 | #[as_mut(forward)]
-  | ^
+3 | struct Foo;
+  | ^^^^^^

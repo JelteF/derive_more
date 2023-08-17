@@ -21,6 +21,16 @@ fn single_field_tuple() {
 }
 
 #[derive(AsMut)]
+struct SingleFieldGenericTuple<T>(T);
+
+#[test]
+fn single_field_generic_tuple() {
+    let mut item = SingleFieldGenericTuple("test".to_owned());
+
+    assert!(ptr::eq(&mut item.0, item.as_mut()));
+}
+
+#[derive(AsMut)]
 #[as_mut(forward)]
 struct SingleFieldTupleForward(Vec<i32>);
 
@@ -29,6 +39,40 @@ fn single_field_tuple_forward() {
     let mut item = SingleFieldTupleForward(vec![]);
 
     let rf: &mut [i32] = item.as_mut();
+    assert!(ptr::eq(rf, item.0.as_mut()));
+}
+
+#[derive(AsMut)]
+#[as_mut(forward)]
+struct SingleFieldGenericTupleForward<T>(T);
+
+#[test]
+fn single_field_generic_tuple_forward() {
+    let mut item = SingleFieldGenericTupleForward("test".to_owned());
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.0.as_mut()));
+}
+
+#[derive(AsMut)]
+struct SingleFieldTupleFieldForward(#[as_mut(forward)] Vec<i32>);
+
+#[test]
+fn single_field_tuple_field_forward() {
+    let mut item = SingleFieldTupleForward(vec![]);
+
+    let rf: &mut [i32] = item.as_mut();
+    assert!(ptr::eq(rf, item.0.as_mut()));
+}
+
+#[derive(AsMut)]
+struct SingleFieldGenericTupleFieldForward<T>(#[as_mut(forward)] T);
+
+#[test]
+fn single_field_generic_tuple_field_forward() {
+    let mut item = SingleFieldGenericTupleFieldForward("test".to_owned());
+
+    let rf: &mut str = item.as_mut();
     assert!(ptr::eq(rf, item.0.as_mut()));
 }
 
@@ -47,6 +91,18 @@ fn single_field_named() {
 }
 
 #[derive(AsMut)]
+struct SingleFieldGenericNamed<T> {
+    first: T,
+}
+
+#[test]
+fn single_field_generic_named() {
+    let mut item = SingleFieldGenericNamed { first: "test" };
+
+    assert!(ptr::eq(&mut item.first, item.as_mut()));
+}
+
+#[derive(AsMut)]
 #[as_mut(forward)]
 struct SingleFieldNamedForward {
     first: String,
@@ -56,6 +112,112 @@ struct SingleFieldNamedForward {
 fn single_field_named_forward() {
     let mut item = SingleFieldNamedForward {
         first: "test".into(),
+    };
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.first.as_mut()));
+}
+
+#[derive(AsMut)]
+#[as_mut(forward)]
+struct SingleFieldGenericNamedForward<T> {
+    first: T,
+}
+
+#[test]
+fn single_field_generic_named_forward() {
+    let mut item = SingleFieldGenericNamedForward {
+        first: "test".to_owned(),
+    };
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.first.as_mut()));
+}
+
+#[derive(AsMut)]
+struct SingleFieldNamedFieldForward {
+    #[as_mut(forward)]
+    first: String,
+}
+
+#[test]
+fn single_field_named_field_forward() {
+    let mut item = SingleFieldNamedFieldForward {
+        first: "test".into(),
+    };
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.first.as_mut()));
+}
+
+#[derive(AsMut)]
+struct SingleFieldGenericNamedFieldForward<T> {
+    #[as_mut(forward)]
+    first: T,
+}
+
+#[test]
+fn single_field_generic_named_field_forward() {
+    let mut item = SingleFieldGenericNamedFieldForward {
+        first: "test".to_owned(),
+    };
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.first.as_mut()));
+}
+
+#[derive(AsMut)]
+struct AnnotatedTupleForward(#[as_mut(forward)] String, i32);
+
+#[test]
+fn annotated_tuple_forward() {
+    let mut item = AnnotatedTupleForward("test".into(), 0);
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.0.as_mut()));
+}
+
+#[derive(AsMut)]
+struct AnnotatedGenericTupleForward<T>(#[as_mut(forward)] T, i32);
+
+#[test]
+fn annotated_generic_tuple_forward() {
+    let mut item = AnnotatedGenericTupleForward("test".to_owned(), 0);
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.0.as_mut()));
+}
+
+#[derive(AsMut)]
+struct AnnotatedNamedForward {
+    #[as_mut(forward)]
+    first: String,
+    second: i32,
+}
+
+#[test]
+fn annotated_named_forward() {
+    let mut item = AnnotatedNamedForward {
+        first: "test".into(),
+        second: 0,
+    };
+
+    let rf: &mut str = item.as_mut();
+    assert!(ptr::eq(rf, item.first.as_mut()));
+}
+
+#[derive(AsMut)]
+struct AnnotatedGenericNamedForward<T> {
+    #[as_mut(forward)]
+    first: T,
+    second: i32,
+}
+
+#[test]
+fn annotated_generic_named_forward() {
+    let mut item = AnnotatedGenericNamedForward {
+        first: "test".to_owned(),
+        second: 0,
     };
 
     let rf: &mut str = item.as_mut();
@@ -120,79 +282,4 @@ mod pathbuf {
         assert!(ptr::eq(&mut item.first, item.as_mut()));
         assert!(ptr::eq(&mut item.second, item.as_mut()));
     }
-}
-
-#[derive(AsMut)]
-struct AnnotatedTupleForward(#[as_mut(forward)] String, i32);
-
-#[test]
-fn annotated_tuple_forward() {
-    let mut item = AnnotatedTupleForward("test".into(), 0);
-
-    let rf: &mut str = item.as_mut();
-    assert!(ptr::eq(rf, item.0.as_mut()));
-}
-
-#[derive(AsMut)]
-struct AnnotatedNamedForward {
-    #[as_mut(forward)]
-    first: String,
-    second: i32,
-}
-
-#[test]
-fn annotated_named_forward() {
-    let mut item = AnnotatedNamedForward {
-        first: "test".into(),
-        second: 0,
-    };
-
-    let rf: &mut str = item.as_mut();
-    assert!(ptr::eq(rf, item.first.as_mut()));
-}
-
-#[derive(AsMut)]
-struct SingleFieldGenericStruct<T> {
-    first: T,
-}
-
-#[test]
-fn single_field_generic_struct() {
-    let mut item = SingleFieldGenericStruct { first: "test" };
-
-    assert!(ptr::eq(&mut item.first, item.as_mut()));
-}
-
-#[derive(AsMut)]
-#[as_mut(forward)]
-struct SingleFieldGenericStructForward<T> {
-    first: T,
-}
-
-#[test]
-fn single_field_generic_struct_forward() {
-    let mut item = SingleFieldGenericStructForward {
-        first: "test".to_owned(),
-    };
-
-    let rf: &mut str = item.as_mut();
-    assert!(ptr::eq(rf, item.first.as_mut()));
-}
-
-#[derive(AsMut)]
-struct AnnotatedGenericStructForward<T> {
-    #[as_mut(forward)]
-    first: T,
-    second: i32,
-}
-
-#[test]
-fn annotated_generic_struct_forward() {
-    let mut item = AnnotatedGenericStructForward {
-        first: "test".to_owned(),
-        second: 0,
-    };
-
-    let rf: &mut str = item.as_mut();
-    assert!(ptr::eq(rf, item.first.as_mut()));
 }

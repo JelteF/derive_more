@@ -1,5 +1,0 @@
-error: `#[as_ref(ignore)]` cannot be used in the same struct as other `#[as_ref(...)]` attributes
- --> tests/compile_fail/as_ref/ignore_and_others.rs:5:5
-  |
-5 |     #[as_ref(ignore)]
-  |     ^

@@ -6,260 +6,23 @@ pub(crate) mod r#mut;
 pub(crate) mod r#ref;
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{
-    parse::{Parse, ParseStream},
+    parse::{discouraged::Speculative as _, Parse, ParseStream},
+    parse_quote,
     spanned::Spanned,
     Token,
 };
 
-use crate::utils::{add_extra_generic_type_param, add_extra_where_clauses, Either};
+use crate::utils::{forward, skip, Either, Spanning};
 
-/// Type alias for an expansion context:
-/// - Derived trait [`syn::Ident`]
-/// - Derived trait method [`syn::Ident`]
-/// - Type name used as generic in blanket impls [`syn::Ident`]
-/// - Optional `mut` token used in expansion
-type ExpansionCtx<'a> = (
-    &'a syn::Ident,
-    &'a syn::Ident,
-    &'a syn::Ident,
-    Option<&'a Token![mut]>,
-);
-
-/// Expands a [`AsRef`]/[`AsMut`] derive macro.
+/// Expands an [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
     input: &syn::DeriveInput,
-    (trait_ident, method_ident, conv_type, mutability): ExpansionCtx<'_>,
+    trait_info: ExpansionCtx<'_>,
 ) -> syn::Result<TokenStream> {
-    let trait_path = quote! { ::derive_more::#trait_ident };
+    let (trait_ident, attr_ident, _) = trait_info;
 
-    let field_args = extract_field_args(input, trait_ident, method_ident)?;
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-    let input_type = &input.ident;
-
-    Ok(
-        field_args
-            .into_iter()
-            .map(
-                |FieldArgs {forward, field, ident}| {
-                    let member = quote! { self.#ident };
-                    let field_type = &field.ty;
-                    let (
-                        body,
-                        impl_generics,
-                        where_clause,
-                        trait_path,
-                        return_type
-                    ) = if forward {
-                        let trait_path = quote! { #trait_path<#conv_type> };
-
-                        let with_constraint = add_extra_where_clauses(
-                            &input.generics,
-                            quote! {
-                                where #field_type: #trait_path
-                            },
-                        );
-                        let new_generics = add_extra_generic_type_param(
-                            &with_constraint,
-                            quote! {
-                                #conv_type: ?::core::marker::Sized
-                            },
-                        );
-                        let (impl_generics, _, where_clause) =
-                            new_generics.split_for_impl();
-
-                        let casted_trait = quote! { <#field_type as #trait_path> };
-
-                        (
-                            quote! { #casted_trait::#method_ident(& #mutability #member) },
-                            quote! { #impl_generics },
-                            quote! { #where_clause },
-                            quote! { #trait_path },
-                            quote! { & #mutability #conv_type },
-                        )
-                    } else {
-                        (
-                            quote! { & #mutability #member },
-                            quote! { #impl_generics },
-                            quote! { #where_clause },
-                            quote! { #trait_path<#field_type> },
-                            quote! { & #mutability #field_type },
-                        )
-                    };
-
-                    quote! {
-                        #[automatically_derived]
-                        impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
-                            #[inline]
-                            fn #method_ident(& #mutability self) -> #return_type {
-                                #body
-                            }
-                        }
-                    }
-                })
-            .collect()
-    )
-}
-
-/// A [`AsRef`]/[`AsMut`] derive macro struct attribute with parsed arguments.
-struct StructAttr<'a> {
-    args: StructAttrArgs,
-    attr: &'a syn::Attribute,
-}
-
-/// Representation of a [`AsRef`]/[`AsMut`] derive macro struct attribute's arguments.
-///
-/// ```rust,ignore
-/// #[as_ref(forward)]
-/// ```
-enum StructAttrArgs {
-    Forward,
-}
-
-impl<'a> StructAttr<'a> {
-    /// Parses a [`StructAttr`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(
-        attrs: &'a [syn::Attribute],
-        method_ident: &syn::Ident,
-    ) -> syn::Result<Option<Self>> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident(method_ident))
-            .try_fold(None, |mut attrs, attr| {
-                let args = attr.parse_args()?;
-                let field_attr = Self { args, attr };
-                if attrs.replace(field_attr).is_some() {
-                    Err(syn::Error::new(
-                        attr.path().span(),
-                        format!("only single `#[{method_ident}(...)]` attribute is allowed here"),
-                    ))
-                } else {
-                    Ok(attrs)
-                }
-            })
-    }
-}
-
-impl Parse for StructAttrArgs {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        input.parse::<syn::Path>().and_then(|path| {
-            if path.is_ident("forward") {
-                Ok(Self::Forward)
-            } else {
-                Err(syn::Error::new(
-                    path.span(),
-                    "unknown argument, only `forward` is allowed",
-                ))
-            }
-        })
-    }
-}
-
-/// A [`AsRef`]/[`AsMut`] derive macro field attribute with parsed arguments.
-struct FieldAttr<'a> {
-    attr: &'a syn::Attribute,
-    args: FieldAttrArgs,
-}
-
-/// Representation of a [`AsRef`]/[`AsMut`] derive macro field attribute's arguments.
-///
-/// ```rust,ignore
-/// #[as_ref]
-/// #[as_ref(forward)]
-/// #[as_ref(ignore)]
-/// ```
-enum FieldAttrArgs {
-    Empty,
-    Forward,
-    Ignore,
-}
-
-impl<'a> FieldAttr<'a> {
-    /// Parses a [`FieldAttr`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(
-        attrs: &'a [syn::Attribute],
-        method_ident: &syn::Ident,
-    ) -> syn::Result<Option<Self>> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident(method_ident))
-            .try_fold(None, |mut attrs, attr| {
-                let args = FieldAttrArgs::parse_attr(attr)?;
-                let field_attr = Self { attr, args };
-                if attrs.replace(field_attr).is_some() {
-                    Err(syn::Error::new(
-                        attr.path().span(),
-                        format!("only single `#[{method_ident}(...)]` attribute is allowed here"),
-                    ))
-                } else {
-                    Ok(attrs)
-                }
-            })
-    }
-}
-
-impl FieldAttrArgs {
-    /// Parses a [`FieldAttrArgs`] from the provided [`syn::Attribute`].
-    fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
-        if matches!(attr.meta, syn::Meta::Path(_)) {
-            return Ok(Self::Empty);
-        }
-        attr.parse_args::<syn::Path>().and_then(|p| {
-            if p.is_ident("forward") {
-                return Ok(Self::Forward);
-            }
-            if p.is_ident("ignore") {
-                return Ok(Self::Ignore);
-            }
-            Err(syn::Error::new(
-                p.span(),
-                "unknown argument, only `forward` and `ignore` are allowed",
-            ))
-        })
-    }
-}
-
-/// Parsed arguments to generate a single [`AsRef`]/[`AsMut`] impl
-struct FieldArgs<'a> {
-    forward: bool,
-    field: &'a syn::Field,
-    ident: Either<&'a syn::Ident, syn::Index>,
-}
-
-impl<'a> FieldArgs<'a> {
-    /// [`FieldArgs`] constructor
-    ///
-    /// `index` is used as `ident` for unnamed fields
-    fn new(field: &'a syn::Field, forward: bool, index: usize) -> Self {
-        Self {
-            field,
-            forward,
-            ident: field
-                .ident
-                .as_ref()
-                .map_or_else(|| Either::Right(syn::Index::from(index)), Either::Left),
-        }
-    }
-}
-
-/// Extracts [`FieldArgs`] for each enabled field from provided [`syn::DeriveInput`]
-///
-/// # Enabled fields
-///
-/// If the struct is annotated, this is the struct's single field.
-/// If any field is annotated with argument `ignore`, each field that's not ignored.
-/// Otherwise, each annotated field.
-///
-/// Annotating multi-field structs is disallowed.
-/// Annotating some fields with argument `ignore`, and some with other arguments is disallowed.
-fn extract_field_args<'a>(
-    input: &'a syn::DeriveInput,
-    trait_ident: &syn::Ident,
-    method_ident: &syn::Ident,
-) -> syn::Result<Vec<FieldArgs<'a>>> {
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
         syn::Data::Enum(e) => Err(syn::Error::new(
@@ -272,100 +35,264 @@ fn extract_field_args<'a>(
         )),
     }?;
 
-    if let Some(struct_attr) = StructAttr::parse_attrs(&input.attrs, method_ident)? {
-        let mut fields = data.fields.iter();
-
-        let field = fields.next().ok_or_else(|| {
-            syn::Error::new(
-                struct_attr.attr.span(),
+    let expansions = if StructAttribute::parse_attrs(&input.attrs, attr_ident)?
+        .is_some()
+    {
+        if data.fields.len() != 1 {
+            return Err(syn::Error::new(
+                if data.fields.is_empty() {
+                    data.struct_token.span
+                } else {
+                    data.fields.span()
+                },
                 format!(
-                    "`#[{method_ident}(...)]` can only be applied to structs with exactly one \
-                     field",
+                    "`#[{attr_ident}(...)]` attribute can only be placed on structs with exactly \
+                     one field",
                 ),
-            )
-        })?;
+            ));
+        }
 
-        if FieldAttr::parse_attrs(&field.attrs, method_ident)?.is_some() {
+        let field = data.fields.iter().next().unwrap();
+        if FieldAttribute::parse_attrs(&field.attrs, attr_ident)?.is_some() {
             return Err(syn::Error::new(
                 field.span(),
-                format!("`#[{method_ident}(...)]` cannot be applied to both struct and field"),
+                format!("`#[{attr_ident}(...)]` cannot be placed on both struct and its field"),
             ));
         }
 
-        if let Some(other_field) = fields.next() {
-            return Err(syn::Error::new(
-                other_field.span(),
-                format!(
-                    "`#[{method_ident}(...)]` can only be applied to structs with exactly one \
-                     field",
-                ),
-            ));
-        }
-
-        let forward = matches!(struct_attr.args, StructAttrArgs::Forward);
-
-        Ok(vec![FieldArgs::new(field, forward, 0)])
+        vec![Expansion {
+            trait_info,
+            ident: &input.ident,
+            generics: &input.generics,
+            field,
+            field_index: 0,
+            forward: true,
+        }]
     } else {
-        extract_many(&data.fields, method_ident)
+        let attrs = data
+            .fields
+            .iter()
+            .map(|field| FieldAttribute::parse_attrs(&field.attrs, attr_ident))
+            .collect::<syn::Result<Vec<_>>>()?;
+
+        let present_attrs = attrs.iter().filter_map(Option::as_ref).collect::<Vec<_>>();
+
+        let all = present_attrs
+            .iter()
+            .all(|attr| matches!(attr.item, FieldAttribute::Skip(_)));
+
+        if !all {
+            if let Some(skip_attr) = present_attrs.iter().find_map(|attr| {
+                if let FieldAttribute::Skip(skip) = &attr.item {
+                    Some(attr.as_ref().map(|_| skip))
+                } else {
+                    None
+                }
+            }) {
+                return Err(syn::Error::new(
+                    skip_attr.span(),
+                    format!(
+                        "`#[{attr_ident}({})]` cannot be used in the same struct with other \
+                         `#[{attr_ident}(...)]` attributes",
+                        skip_attr.name(),
+                    ),
+                ));
+            }
+        }
+
+        if all {
+            data.fields
+                .iter()
+                .enumerate()
+                .zip(attrs)
+                .filter_map(|((i, field), attr)| {
+                    attr.is_none().then_some(Expansion {
+                        trait_info,
+                        ident: &input.ident,
+                        generics: &input.generics,
+                        field,
+                        field_index: i,
+                        forward: false,
+                    })
+                })
+                .collect()
+        } else {
+            data.fields
+                .iter()
+                .enumerate()
+                .zip(attrs)
+                .filter_map(|((i, field), attr)| match attr.map(Spanning::into_inner) {
+                    attr @ Some(FieldAttribute::Empty | FieldAttribute::Forward(_)) => {
+                        Some(Expansion {
+                            trait_info,
+                            ident: &input.ident,
+                            generics: &input.generics,
+                            field,
+                            field_index: i,
+                            forward: matches!(attr, Some(FieldAttribute::Forward(_))),
+                        })
+                    }
+                    Some(FieldAttribute::Skip(_)) => unreachable!(),
+                    None => None,
+                })
+                .collect()
+        }
+    };
+    Ok(expansions
+        .into_iter()
+        .map(ToTokens::into_token_stream)
+        .collect())
+}
+
+/// Type alias for an expansion context:
+/// - [`syn::Ident`] of the derived trait.
+/// - [`syn::Ident`] of the derived trait method.
+/// - Optional `mut` token indicating [`AsMut`] expansion.
+type ExpansionCtx<'a> = (&'a syn::Ident, &'a syn::Ident, Option<&'a Token![mut]>);
+
+/// Expansion of a macro for generating [`AsRef`]/[`AsMut`] implementation for a single field of a
+/// struct.
+struct Expansion<'a> {
+    /// [`ExpansionCtx] of the derived trait.
+    trait_info: ExpansionCtx<'a>,
+
+    /// [`syn::Ident`] of the struct.
+    ident: &'a syn::Ident,
+
+    /// [`syn::Generics`] of the struct.
+    generics: &'a syn::Generics,
+
+    /// [`syn::Field`] of the struct.
+    field: &'a syn::Field,
+
+    /// Index of the [`syn::Field`].
+    field_index: usize,
+
+    /// Indicator whether `forward` implementation should be expanded.
+    forward: bool,
+}
+
+impl<'a> ToTokens for Expansion<'a> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let field_ty = &self.field.ty;
+        let field_ident = self.field.ident.as_ref().map_or_else(
+            || Either::Right(syn::Index::from(self.field_index)),
+            Either::Left,
+        );
+
+        let return_ty = if self.forward {
+            quote! { __AsT }
+        } else {
+            quote! { #field_ty }
+        };
+
+        let (trait_ident, method_ident, mut_) = &self.trait_info;
+        let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
+
+        let ty_ident = &self.ident;
+        let mut generics = self.generics.clone();
+        if self.forward {
+            generics.params.push(parse_quote! { #return_ty });
+            generics
+                .make_where_clause()
+                .predicates
+                .extend::<[syn::WherePredicate; 2]>([
+                    parse_quote! { #return_ty: ?::core::marker::Sized },
+                    parse_quote! { #field_ty: #trait_ty },
+                ]);
+        }
+        let (impl_gens, _, where_clause) = generics.split_for_impl();
+        let (_, ty_gens, _) = self.generics.split_for_impl();
+
+        let mut body = quote! { & #mut_ self.#field_ident };
+        if self.forward {
+            body = quote! {
+                <#field_ty as #trait_ty>::#method_ident(#body)
+            };
+        }
+
+        quote! {
+            #[automatically_derived]
+            impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
+                #[inline]
+                fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
+                    #body
+                }
+            }
+        }
+        .to_tokens(tokens)
     }
 }
 
-/// Extracts [`FieldArgs`] for each of the provided [`syn::Field`]s that's enabled.
+/// Representation of an [`AsRef`]/[`AsMut`] derive macro struct container attribute.
 ///
-/// See [`extract_field_args`] for enabled field semantics.
-fn extract_many<'a>(
-    fields: &'a syn::Fields,
-    method_ident: &syn::Ident,
-) -> syn::Result<Vec<FieldArgs<'a>>> {
-    let attrs = fields
-        .iter()
-        .map(|field| FieldAttr::parse_attrs(&field.attrs, method_ident))
-        .collect::<syn::Result<Vec<_>>>()?;
+/// ```rust,ignore
+/// #[as_ref(forward)]
+/// ```
+type StructAttribute = forward::Attribute;
 
-    let present_attrs = attrs
-        .iter()
-        .filter_map(|attr| attr.as_ref())
-        .collect::<Vec<_>>();
+/// Representation of an [`AsRef`]/[`AsMut`] derive macro field attribute.
+///
+/// ```rust,ignore
+/// #[as_ref]
+/// #[as_ref(forward)]
+/// #[as_ref(skip)] #[as_ref(ignore)]
+/// ```
+enum FieldAttribute {
+    Empty,
+    Forward(forward::Attribute),
+    Skip(skip::Attribute),
+}
 
-    let all = present_attrs
-        .iter()
-        .all(|attr| matches!(attr.args, FieldAttrArgs::Ignore));
-
-    if !all {
-        if let Some(attr) = present_attrs
-            .iter()
-            .find(|attr| matches!(attr.args, FieldAttrArgs::Ignore))
-        {
-            return Err(syn::Error::new(
-                attr.attr.span(),
-                format!(
-                    "`#[{0}(ignore)]` cannot be used in the same struct as other `#[{0}(...)]` \
-                     attributes",
-                    method_ident,
-                ),
-            ));
+impl Parse for FieldAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        if input.is_empty() {
+            return Ok(Self::Empty);
         }
-    }
 
-    if all {
-        Ok(fields
-            .iter()
-            .enumerate()
-            .zip(attrs)
-            .filter(|(_, attr)| attr.is_none())
-            .map(|((i, field), _)| FieldArgs::new(field, false, i))
-            .collect())
-    } else {
-        Ok(fields
-            .iter()
-            .enumerate()
-            .zip(attrs)
-            .filter_map(|((i, field), attr)| match attr.map(|attr| attr.args) {
-                Some(FieldAttrArgs::Empty) => Some(FieldArgs::new(field, false, i)),
-                Some(FieldAttrArgs::Forward) => Some(FieldArgs::new(field, true, i)),
-                Some(FieldAttrArgs::Ignore) => unreachable!(),
-                None => None,
+        let ahead = input.fork();
+        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+            input.advance_to(&ahead);
+            return Ok(Self::Forward(attr));
+        }
+
+        let ahead = input.fork();
+        if let Ok(attr) = ahead.parse::<skip::Attribute>() {
+            input.advance_to(&ahead);
+            return Ok(Self::Skip(attr));
+        }
+
+        Err(syn::Error::new(
+            input.span(),
+            "only `forward` or `skip`/`ignore` allowed here",
+        ))
+    }
+}
+
+impl FieldAttribute {
+    /// Parses a [`FieldAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
+    ///
+    /// [`Span`]: proc_macro2::Span
+    fn parse_attrs(
+        attrs: &[syn::Attribute],
+        attr_ident: &syn::Ident,
+    ) -> syn::Result<Option<Spanning<Self>>> {
+        attrs.iter()
+            .filter(|attr| attr.path().is_ident(attr_ident))
+            .try_fold(None, |mut attrs, attr| {
+                let parsed = Spanning::new(if matches!(attr.meta, syn::Meta::Path(_)) {
+                    Self::Empty
+                } else {
+                    attr.parse_args()?
+                }, attr.span());
+                if attrs.replace(parsed).is_some() {
+                    Err(syn::Error::new(
+                        attr.span(),
+                        format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
+                    ))
+                } else {
+                    Ok(attrs)
+                }
             })
-            .collect())
     }
 }

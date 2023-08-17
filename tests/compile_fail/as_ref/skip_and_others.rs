@@ -2,7 +2,7 @@
 struct Foo {
     #[as_ref]
     bar: i32,
-    #[as_ref(ignore)]
+    #[as_ref(skip)]
     baz: f32,
 }
 
