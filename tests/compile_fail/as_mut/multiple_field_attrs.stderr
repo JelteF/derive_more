@@ -1,0 +1,5 @@
+error: only single `#[as_mut(...)]` attribute is allowed here
+ --> tests/compile_fail/as_mut/multiple_field_attrs.rs:4:5
+  |
+4 |     #[as_mut(forward)]
+  |     ^

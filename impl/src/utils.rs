@@ -14,14 +14,19 @@ use syn::{
 };
 
 #[cfg(any(
+    feature = "as_ref",
+    feature = "as_mut",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
 ))]
 pub(crate) use self::either::Either;
+
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
+#[cfg(any(feature = "as_ref", feature = "as_mut"))]
+pub(crate) use self::spanning::Spanning;
 
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
@@ -289,10 +294,6 @@ impl AttrParams {
             field: vec![],
         }
     }
-
-    pub fn ignore_and_forward() -> AttrParams {
-        AttrParams::new(vec!["ignore", "forward"])
-    }
 }
 
 impl<'input> State<'input> {
@@ -353,22 +354,6 @@ impl<'input> State<'input> {
         allowed_attr_params: AttrParams,
     ) -> Result<State<'arg_input>> {
         State::new_impl(input, trait_name, trait_attr, allowed_attr_params, true)
-    }
-
-    pub fn with_type_bound<'arg_input>(
-        input: &'arg_input DeriveInput,
-        trait_name: &'static str,
-        trait_attr: String,
-        allowed_attr_params: AttrParams,
-        add_type_bound: bool,
-    ) -> Result<State<'arg_input>> {
-        Self::new_impl(
-            input,
-            trait_name,
-            trait_attr,
-            allowed_attr_params,
-            add_type_bound,
-        )
     }
 
     fn new_impl<'arg_input>(
@@ -1333,7 +1318,99 @@ pub fn is_type_parameter_used_in_type(
     }
 }
 
+#[cfg(any(feature = "as_ref", feature = "as_mut"))]
+pub(crate) mod forward {
+    use syn::{
+        parse::{Parse, ParseStream},
+        spanned::Spanned as _,
+    };
+
+    use super::Spanning;
+
+    /// Representation of a `forward` attribute.
+    ///
+    /// ```rust,ignore
+    /// #[<attribute>(forward)]
+    /// ```
+    pub(crate) struct Attribute;
+
+    impl Parse for Attribute {
+        fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
+            match content.parse::<syn::Path>()? {
+                p if p.is_ident("forward") => Ok(Self),
+                p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
+            }
+        }
+    }
+
+    impl Attribute {
+        /// Parses an [`Attribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
+        ///
+        /// [`Span`]: proc_macro2::Span
+        pub(crate) fn parse_attrs(
+            attrs: impl AsRef<[syn::Attribute]>,
+            attr_ident: &syn::Ident,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            attrs
+                .as_ref()
+                .iter()
+                .filter(|attr| attr.path().is_ident(attr_ident))
+                .try_fold(None, |mut attrs, attr| {
+                    let parsed = Spanning::new(attr.parse_args::<Self>()?, attr.span());
+                    if attrs.replace(parsed).is_some() {
+                        Err(syn::Error::new(
+                            attr.span(),
+                            format!(
+                                "only single `#[{attr_ident}(forward)]` attribute is allowed here",
+                            ),
+                        ))
+                    } else {
+                        Ok(attrs)
+                    }
+                })
+        }
+    }
+}
+
+#[cfg(any(feature = "as_ref", feature = "as_mut"))]
+pub(crate) mod skip {
+    use syn::{
+        parse::{Parse, ParseStream},
+        spanned::Spanned as _,
+    };
+
+    /// Representation of a `skip`/`ignore` attribute.
+    ///
+    /// ```rust,ignore
+    /// #[<attribute>(skip)]
+    /// #[<attribute>(ignore)]
+    /// ```
+    pub(crate) struct Attribute(&'static str);
+
+    impl Parse for Attribute {
+        fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
+            match content.parse::<syn::Path>()? {
+                p if p.is_ident("skip") => Ok(Self("skip")),
+                p if p.is_ident("ignore") => Ok(Self("ignore")),
+                p => Err(syn::Error::new(
+                    p.span(),
+                    "only `skip`/`ignore` allowed here",
+                )),
+            }
+        }
+    }
+
+    impl Attribute {
+        /// Returns the concrete name of this attribute (`skip` or `ignore`).
+        pub(crate) const fn name(&self) -> &'static str {
+            self.0
+        }
+    }
+}
+
 #[cfg(any(
+    feature = "as_ref",
+    feature = "as_mut",
     feature = "debug",
     feature = "display",
     feature = "from",
@@ -1348,6 +1425,7 @@ mod either {
     ///
     /// [`Left`]: Either::Left
     /// [`Right`]: Either::Right
+    #[derive(Clone, Copy, Debug)]
     pub(crate) enum Either<L, R> {
         /// Left variant.
         Left(L),
@@ -1395,6 +1473,81 @@ mod either {
                 Either::Left(l) => l.to_tokens(tokens),
                 Either::Right(r) => r.to_tokens(tokens),
             }
+        }
+    }
+}
+
+#[cfg(any(feature = "as_ref", feature = "as_mut"))]
+mod spanning {
+    use std::ops::{Deref, DerefMut};
+
+    use proc_macro2::Span;
+
+    /// Wrapper for non-[`Spanned`] types to hold their [`Span`].
+    ///
+    /// [`Spanned`]: syn::spanned::Spanned
+    #[derive(Clone, Copy, Debug)]
+    pub(crate) struct Spanning<T: ?Sized> {
+        /// [`Span`] of the `item`.
+        pub(crate) span: Span,
+
+        /// Item the [`Span`] is held for.
+        pub(crate) item: T,
+    }
+
+    impl<T: ?Sized> Spanning<T> {
+        /// Creates a new [`Spanning`] `item`, attaching the provided [`Span`] to it.
+        pub(crate) const fn new(item: T, span: Span) -> Self
+        where
+            T: Sized,
+        {
+            Self { span, item }
+        }
+
+        /// Destructures this [`Spanning`] wrapper returning the underlying `item`.
+        pub fn into_inner(self) -> T
+        where
+            T: Sized,
+        {
+            self.item
+        }
+
+        /// Returns the [`Span`] contained in this [`Spanning`] wrapper.
+        pub(crate) const fn span(&self) -> Span {
+            self.span
+        }
+
+        /// Converts this `&`[`Spanning`]`<T>` into [`Spanning`]`<&T>` (moves the reference inside).
+        pub(crate) const fn as_ref(&self) -> Spanning<&T> {
+            Spanning {
+                span: self.span,
+                item: &self.item,
+            }
+        }
+
+        /// Maps the wrapped `item` with the provided `f`unction, preserving the current [`Span`].
+        pub(crate) fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanning<U>
+        where
+            T: Sized,
+        {
+            Spanning {
+                span: self.span,
+                item: f(self.item),
+            }
+        }
+    }
+
+    impl<T: ?Sized> Deref for Spanning<T> {
+        type Target = T;
+
+        fn deref(&self) -> &Self::Target {
+            &self.item
+        }
+    }
+
+    impl<T: ?Sized> DerefMut for Spanning<T> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.item
         }
     }
 }
@@ -1497,8 +1650,7 @@ mod fields_ext {
                         return Err(syn::Error::new(
                             other.span(),
                             format!(
-                                "expected tuple: `({}, {})`",
-                                other,
+                                "expected tuple: `({other}, {})`",
                                 (0..(self.len() - 1))
                                     .map(|_| "_")
                                     .collect::<Vec<_>>()

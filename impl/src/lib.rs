@@ -21,10 +21,8 @@ mod add_assign_like;
 mod add_helpers;
 #[cfg(any(feature = "add", feature = "mul"))]
 mod add_like;
-#[cfg(feature = "as_mut")]
-mod as_mut;
-#[cfg(feature = "as_ref")]
-mod as_ref;
+#[cfg(any(feature = "as_ref", feature = "as_mut"))]
+mod r#as;
 #[cfg(feature = "constructor")]
 mod constructor;
 #[cfg(feature = "deref")]
@@ -135,9 +133,9 @@ create_derive!(
     bit_xor_assign_derive,
 );
 
-create_derive!("as_mut", as_mut, AsMut, as_mut_derive, as_mut);
+create_derive!("as_mut", r#as::r#mut, AsMut, as_mut_derive, as_mut);
 
-create_derive!("as_ref", as_ref, AsRef, as_ref_derive, as_ref);
+create_derive!("as_ref", r#as::r#ref, AsRef, as_ref_derive, as_ref);
 
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 

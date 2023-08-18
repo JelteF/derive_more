@@ -1,0 +1,5 @@
+error: only single `#[as_ref(...)]` attribute is allowed here
+ --> tests/compile_fail/as_ref/multiple_field_attrs.rs:4:5
+  |
+4 |     #[as_ref(forward)]
+  |     ^
