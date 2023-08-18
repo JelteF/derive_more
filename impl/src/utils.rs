@@ -25,7 +25,12 @@ pub(crate) use self::either::Either;
 
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
-#[cfg(any(feature = "as_ref", feature = "as_mut", feature = "from"))]
+#[cfg(any(
+    feature = "as_ref",
+    feature = "as_mut",
+    feature = "from",
+    feature = "into"
+))]
 pub(crate) use self::spanning::Spanning;
 
 #[derive(Clone, Copy, Default)]
@@ -1372,7 +1377,12 @@ pub(crate) mod forward {
     }
 }
 
-#[cfg(any(feature = "as_ref", feature = "as_mut", feature = "from"))]
+#[cfg(any(
+    feature = "as_ref",
+    feature = "as_mut",
+    feature = "from",
+    feature = "into"
+))]
 pub(crate) mod skip {
     use syn::{
         parse::{Parse, ParseStream},
@@ -1504,7 +1514,12 @@ mod either {
     }
 }
 
-#[cfg(any(feature = "as_ref", feature = "as_mut", feature = "from"))]
+#[cfg(any(
+    feature = "as_ref",
+    feature = "as_mut",
+    feature = "from",
+    feature = "into"
+))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
 
