@@ -21,33 +21,33 @@ mod single_field {
         use super::*;
 
         #[derive(AsMut)]
-        struct NoAttr(String);
+        struct Nothing(String);
 
         #[test]
-        fn no_attr() {
-            let mut item = NoAttr("test".to_owned());
+        fn nothing() {
+            let mut item = Nothing("test".to_owned());
 
             assert!(ptr::eq(item.as_mut(), &mut item.0));
         }
 
         #[derive(AsMut)]
         #[as_mut(forward)]
-        struct StructForward(String);
+        struct Forward(String);
 
         #[test]
-        fn struct_forward() {
-            let mut item = StructForward("test".to_owned());
+        fn forward() {
+            let mut item = Forward("test".to_owned());
 
             let rf: &mut str = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
         }
 
         #[derive(AsMut)]
-        struct FieldEmpty(#[as_mut] String);
+        struct Field(#[as_mut] String);
 
         #[test]
-        fn field_empty() {
-            let mut item = FieldEmpty("test".to_owned());
+        fn field() {
+            let mut item = Field("test".to_owned());
 
             assert!(ptr::eq(item.as_mut(), &mut item.0));
         }
@@ -67,33 +67,33 @@ mod single_field {
             use super::*;
 
             #[derive(AsMut)]
-            struct NoAttr<T>(T);
+            struct Nothing<T>(T);
 
             #[test]
-            fn no_attr() {
-                let mut item = NoAttr("test".to_owned());
+            fn nothing() {
+                let mut item = Nothing("test".to_owned());
 
                 assert!(ptr::eq(item.as_mut(), &mut item.0));
             }
 
             #[derive(AsMut)]
             #[as_mut(forward)]
-            struct StructForward<T>(T);
+            struct Forward<T>(T);
 
             #[test]
-            fn struct_forward() {
-                let mut item = StructForward("test".to_owned());
+            fn forward() {
+                let mut item = Forward("test".to_owned());
 
                 let rf: &mut str = item.as_mut();
                 assert!(ptr::eq(rf, item.0.as_mut()));
             }
 
             #[derive(AsMut)]
-            struct FieldEmpty<T>(#[as_mut] T);
+            struct Field<T>(#[as_mut] T);
 
             #[test]
-            fn field_empty() {
-                let mut item = FieldEmpty("test".to_owned());
+            fn field() {
+                let mut item = Field("test".to_owned());
 
                 assert!(ptr::eq(item.as_mut(), &mut item.0));
             }
@@ -115,13 +115,13 @@ mod single_field {
         use super::*;
 
         #[derive(AsMut)]
-        struct NoAttr {
+        struct Nothing {
             first: String,
         }
 
         #[test]
-        fn no_attr() {
-            let mut item = NoAttr {
+        fn nothing() {
+            let mut item = Nothing {
                 first: "test".to_owned(),
             };
 
@@ -130,13 +130,13 @@ mod single_field {
 
         #[derive(AsMut)]
         #[as_mut(forward)]
-        struct StructForward {
+        struct Forward {
             first: String,
         }
 
         #[test]
-        fn struct_forward() {
-            let mut item = StructForward {
+        fn forward() {
+            let mut item = Forward {
                 first: "test".to_owned(),
             };
 
@@ -145,14 +145,14 @@ mod single_field {
         }
 
         #[derive(AsMut)]
-        struct FieldEmpty {
+        struct Field {
             #[as_mut]
             first: String,
         }
 
         #[test]
-        fn field_empty() {
-            let mut item = FieldEmpty {
+        fn field() {
+            let mut item = Field {
                 first: "test".to_owned(),
             };
 
@@ -179,13 +179,13 @@ mod single_field {
             use super::*;
 
             #[derive(AsMut)]
-            struct NoAttr<T> {
+            struct Nothing<T> {
                 first: T,
             }
 
             #[test]
-            fn no_attr() {
-                let mut item = NoAttr {
+            fn nothing() {
+                let mut item = Nothing {
                     first: "test".to_owned(),
                 };
 
@@ -194,13 +194,13 @@ mod single_field {
 
             #[derive(AsMut)]
             #[as_mut(forward)]
-            struct StructForward<T> {
+            struct Forward<T> {
                 first: T,
             }
 
             #[test]
             fn struct_forward() {
-                let mut item = StructForward {
+                let mut item = Forward {
                     first: "test".to_owned(),
                 };
 
@@ -209,14 +209,14 @@ mod single_field {
             }
 
             #[derive(AsMut)]
-            struct FieldEmpty<T> {
+            struct Field<T> {
                 #[as_mut]
                 first: T,
             }
 
             #[test]
-            fn field_empty() {
-                let mut item = FieldEmpty {
+            fn field() {
+                let mut item = Field {
                     first: "test".to_owned(),
                 };
 
@@ -249,11 +249,11 @@ mod multi_field {
         use super::*;
 
         #[derive(AsMut)]
-        struct NoAttr(String, i32);
+        struct Nothing(String, i32);
 
         #[test]
-        fn no_attr() {
-            let mut item = NoAttr("test".to_owned(), 0);
+        fn nothing() {
+            let mut item = Nothing("test".to_owned(), 0);
 
             assert!(ptr::eq(item.as_mut(), &mut item.0));
             assert!(ptr::eq(item.as_mut(), &mut item.1));
@@ -262,6 +262,8 @@ mod multi_field {
         #[derive(AsMut)]
         struct Skip(String, i32, #[as_mut(skip)] f64);
 
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for the skipped field, by
+        // producing trait implementations conflict error during compilation, if it does.
         impl AsMut<f64> for Skip {
             fn as_mut(&mut self) -> &mut f64 {
                 &mut self.2
@@ -277,17 +279,19 @@ mod multi_field {
         }
 
         #[derive(AsMut)]
-        struct FieldEmpty(#[as_mut] String, #[as_mut] i32, f64);
+        struct Field(#[as_mut] String, #[as_mut] i32, f64);
 
-        impl AsMut<f64> for FieldEmpty {
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for the third field, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsMut<f64> for Field {
             fn as_mut(&mut self) -> &mut f64 {
                 &mut self.2
             }
         }
 
         #[test]
-        fn field_empty() {
-            let mut item = FieldEmpty("test".to_owned(), 0, 0.0);
+        fn field() {
+            let mut item = Field("test".to_owned(), 0, 0.0);
 
             assert!(ptr::eq(item.as_mut(), &mut item.0));
             assert!(ptr::eq(item.as_mut(), &mut item.1));
@@ -308,11 +312,11 @@ mod multi_field {
             use super::*;
 
             #[derive(AsMut)]
-            struct NoAttr<T, U>(Vec<T>, VecDeque<U>);
+            struct Nothing<T, U>(Vec<T>, VecDeque<U>);
 
             #[test]
-            fn no_attr() {
-                let mut item = NoAttr(vec![1], VecDeque::from([2]));
+            fn nothing() {
+                let mut item = Nothing(vec![1], VecDeque::from([2]));
 
                 assert!(ptr::eq(item.as_mut(), &mut item.0));
                 assert!(ptr::eq(item.as_mut(), &mut item.1));
@@ -330,11 +334,11 @@ mod multi_field {
             }
 
             #[derive(AsMut)]
-            struct FieldEmpty<T, U, V>(#[as_mut] Vec<T>, #[as_mut] VecDeque<U>, V);
+            struct Field<T, U, V>(#[as_mut] Vec<T>, #[as_mut] VecDeque<U>, V);
 
             #[test]
-            fn field_empty() {
-                let mut item = FieldEmpty(vec![1], VecDeque::from([2]), 0);
+            fn field() {
+                let mut item = Field(vec![1], VecDeque::from([2]), 0);
 
                 assert!(ptr::eq(item.as_mut(), &mut item.0));
                 assert!(ptr::eq(item.as_mut(), &mut item.1));
@@ -357,14 +361,14 @@ mod multi_field {
         use super::*;
 
         #[derive(AsMut)]
-        struct NoAttr {
+        struct Nothing {
             first: String,
             second: i32,
         }
 
         #[test]
-        fn no_attr() {
-            let mut item = NoAttr {
+        fn nothing() {
+            let mut item = Nothing {
                 first: "test".to_owned(),
                 second: 0,
             };
@@ -381,6 +385,8 @@ mod multi_field {
             third: f64,
         }
 
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for the skipped field, by
+        // producing trait implementations conflict error during compilation, if it does.
         impl AsMut<f64> for Skip {
             fn as_mut(&mut self) -> &mut f64 {
                 &mut self.third
@@ -400,7 +406,7 @@ mod multi_field {
         }
 
         #[derive(AsMut)]
-        struct FieldEmpty {
+        struct Field {
             #[as_mut]
             first: String,
             #[as_mut]
@@ -408,15 +414,17 @@ mod multi_field {
             third: f64,
         }
 
-        impl AsMut<f64> for FieldEmpty {
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for the `third` field, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsMut<f64> for Field {
             fn as_mut(&mut self) -> &mut f64 {
                 &mut self.third
             }
         }
 
         #[test]
-        fn field_empty() {
-            let mut item = FieldEmpty {
+        fn field() {
+            let mut item = Field {
                 first: "test".to_owned(),
                 second: 0,
                 third: 0.0,
@@ -448,14 +456,14 @@ mod multi_field {
             use super::*;
 
             #[derive(AsMut)]
-            struct NoAttr<T, U> {
+            struct Nothing<T, U> {
                 first: Vec<T>,
                 second: VecDeque<U>,
             }
 
             #[test]
-            fn no_attr() {
-                let mut item = NoAttr {
+            fn nothing() {
+                let mut item = Nothing {
                     first: vec![1],
                     second: VecDeque::from([2]),
                 };
@@ -485,7 +493,7 @@ mod multi_field {
             }
 
             #[derive(AsMut)]
-            struct FieldEmpty<T, U, V> {
+            struct Field<T, U, V> {
                 #[as_mut]
                 first: Vec<T>,
                 #[as_mut]
@@ -494,8 +502,8 @@ mod multi_field {
             }
 
             #[test]
-            fn field_empty() {
-                let mut item = FieldEmpty {
+            fn field() {
+                let mut item = Field {
                     first: vec![1],
                     second: VecDeque::from([2]),
                     third: 0,
