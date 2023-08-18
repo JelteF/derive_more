@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   and ignores field type itself.
 - Importing a derive macro now also import its corresponding trait.
 - The `Error` derive is updated with changes to the `error_generic_member_access` unstable feature for nightly users. ([#200](https://github.com/JelteF/derive_more/pull/200), [#294](https://github.com/JelteF/derive_more/pull/294))
+- The `as_mut` feature is removed, and the `AsMut` derive is now part of the `as_ref` feature
+  ([#295](https://github.com/JelteF/derive_more/pull/295))
 
 ### Added
 
