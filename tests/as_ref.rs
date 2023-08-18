@@ -5,192 +5,523 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::{borrow::ToOwned, string::String, vec, vec::Vec};
+use alloc::{borrow::ToOwned, collections::VecDeque, string::String, vec, vec::Vec};
+
+#[cfg(feature = "std")]
+use std::collections::VecDeque;
+
 use core::ptr;
 
 use derive_more::AsRef;
 
-#[derive(AsRef)]
-struct SingleFieldTuple(String);
-
-#[test]
-fn single_field_tuple() {
-    let item = SingleFieldTuple("test".into());
-
-    assert!(ptr::eq(&item.0, item.as_ref()));
-}
-
-#[derive(AsRef)]
-#[as_ref(forward)]
-struct SingleFieldTupleForward(Vec<i32>);
-
-#[test]
-fn single_field_tuple_forward() {
-    let item = SingleFieldTupleForward(vec![]);
-
-    let rf: &[i32] = item.as_ref();
-    assert!(ptr::eq(rf, item.0.as_ref()));
-}
-
-#[derive(AsRef)]
-struct SingleFieldNamed {
-    first: String,
-}
-
-#[test]
-fn single_field_named() {
-    let item = SingleFieldNamed {
-        first: "test".into(),
-    };
-
-    assert!(ptr::eq(&item.first, item.as_ref()));
-}
-
-#[derive(AsRef)]
-#[as_ref(forward)]
-struct SingleFieldNamedForward {
-    first: Vec<i32>,
-}
-
-#[test]
-fn single_field_named_forward() {
-    let item = SingleFieldNamedForward { first: vec![] };
-
-    let rf: &[i32] = item.as_ref();
-    assert!(ptr::eq(rf, item.first.as_ref()));
-}
-
-#[cfg(feature = "std")]
-mod pathbuf {
-    use std::path::PathBuf;
-
+mod single_field {
     use super::*;
 
-    #[derive(AsRef)]
-    struct MultiFieldTuple(#[as_ref] String, #[as_ref] PathBuf, Vec<usize>);
+    mod tuple {
+        use super::*;
 
-    #[test]
-    fn multi_field_tuple() {
-        let item = MultiFieldTuple("test".into(), PathBuf::new(), vec![]);
+        #[derive(AsRef)]
+        struct NoAttr(String);
 
-        assert!(ptr::eq(&item.0, item.as_ref()));
-        assert!(ptr::eq(&item.1, item.as_ref()));
+        #[test]
+        fn no_attr() {
+            let item = NoAttr("test".to_owned());
+
+            assert!(ptr::eq(item.as_ref(), &item.0));
+        }
+
+        #[derive(AsRef)]
+        #[as_ref(forward)]
+        struct StructForward(String);
+
+        #[test]
+        fn struct_forward() {
+            let item = StructForward("test".to_owned());
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+        }
+
+        #[derive(AsRef)]
+        struct FieldEmpty(#[as_ref] String);
+
+        #[test]
+        fn field_empty() {
+            let item = FieldEmpty("test".to_owned());
+
+            assert!(ptr::eq(item.as_ref(), &item.0));
+        }
+
+        #[derive(AsRef)]
+        struct FieldForward(#[as_ref(forward)] String);
+
+        #[test]
+        fn field_forward() {
+            let item = FieldForward("test".to_owned());
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+        }
+
+        mod generic {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct NoAttr<T>(T);
+
+            #[test]
+            fn no_attr() {
+                let item = NoAttr("test".to_owned());
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref(forward)]
+            struct StructForward<T>(T);
+
+            #[test]
+            fn struct_forward() {
+                let item = StructForward("test".to_owned());
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldEmpty<T>(#[as_ref] T);
+
+            #[test]
+            fn field_empty() {
+                let item = FieldEmpty("test".to_owned());
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+            }
+
+            #[derive(AsRef)]
+            struct FieldForward<T>(#[as_ref(forward)] T);
+
+            #[test]
+            fn field_forward() {
+                let item = FieldForward("test".to_owned());
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+        }
     }
 
-    #[derive(AsRef)]
-    struct MultiFieldNamed {
-        #[as_ref]
-        first: String,
-        #[as_ref]
-        second: PathBuf,
-        third: Vec<usize>,
+    mod named {
+        use super::*;
+
+        #[derive(AsRef)]
+        struct NoAttr {
+            first: String,
+        }
+
+        #[test]
+        fn no_attr() {
+            let item = NoAttr {
+                first: "test".to_owned(),
+            };
+
+            assert!(ptr::eq(item.as_ref(), &item.first));
+        }
+
+        #[derive(AsRef)]
+        #[as_ref(forward)]
+        struct StructForward {
+            first: String,
+        }
+
+        #[test]
+        fn struct_forward() {
+            let item = StructForward {
+                first: "test".to_owned(),
+            };
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+        }
+
+        #[derive(AsRef)]
+        struct FieldEmpty {
+            #[as_ref]
+            first: String,
+        }
+
+        #[test]
+        fn field_empty() {
+            let item = FieldEmpty {
+                first: "test".to_owned(),
+            };
+
+            assert!(ptr::eq(item.as_ref(), &item.first));
+        }
+
+        #[derive(AsRef)]
+        struct FieldForward {
+            #[as_ref(forward)]
+            first: String,
+        }
+
+        #[test]
+        fn field_forward() {
+            let item = FieldForward {
+                first: "test".to_owned(),
+            };
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+        }
+
+        mod generic {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct NoAttr<T> {
+                first: T,
+            }
+
+            #[test]
+            fn no_attr() {
+                let item = NoAttr {
+                    first: "test".to_owned(),
+                };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref(forward)]
+            struct StructForward<T> {
+                first: T,
+            }
+
+            #[test]
+            fn struct_forward() {
+                let item = StructForward {
+                    first: "test".to_owned(),
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldEmpty<T> {
+                #[as_ref]
+                first: T,
+            }
+
+            #[test]
+            fn field_empty() {
+                let item = FieldEmpty {
+                    first: "test".to_owned(),
+                };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+            }
+
+            #[derive(AsRef)]
+            struct FieldForward<T> {
+                #[as_ref(forward)]
+                first: T,
+            }
+
+            #[test]
+            fn field_forward() {
+                let item = FieldForward {
+                    first: "test".to_owned(),
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+        }
+    }
+}
+
+mod multi_field {
+    use super::*;
+
+    mod tuple {
+        use super::*;
+
+        #[derive(AsRef)]
+        struct NoAttr(String, i32);
+
+        #[test]
+        fn no_attr() {
+            let item = NoAttr("test".to_owned(), 0);
+
+            assert!(ptr::eq(item.as_ref(), &item.0));
+            assert!(ptr::eq(item.as_ref(), &item.1));
+        }
+
+        #[derive(AsRef)]
+        struct Skip(String, i32, #[as_ref(skip)] f64);
+
+        impl AsRef<f64> for Skip {
+            fn as_ref(&self) -> &f64 {
+                &self.2
+            }
+        }
+
+        #[test]
+        fn skip() {
+            let item = Skip("test".to_owned(), 0, 0.0);
+
+            assert!(ptr::eq(item.as_ref(), &item.0));
+            assert!(ptr::eq(item.as_ref(), &item.1));
+        }
+
+        #[derive(AsRef)]
+        struct FieldEmpty(#[as_ref] String, #[as_ref] i32, f64);
+
+        impl AsRef<f64> for FieldEmpty {
+            fn as_ref(&self) -> &f64 {
+                &self.2
+            }
+        }
+
+        #[test]
+        fn field_empty() {
+            let item = FieldEmpty("test".to_owned(), 0, 0.0);
+
+            assert!(ptr::eq(item.as_ref(), &item.0));
+            assert!(ptr::eq(item.as_ref(), &item.1));
+        }
+
+        #[derive(AsRef)]
+        struct FieldForward(#[as_ref(forward)] String, i32);
+
+        #[test]
+        fn field_forward() {
+            let item = FieldForward("test".to_owned(), 0);
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+        }
+
+        mod generic {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct NoAttr<T, U>(Vec<T>, VecDeque<U>);
+
+            #[test]
+            fn no_attr() {
+                let item = NoAttr(vec![1], VecDeque::from([2]));
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+                assert!(ptr::eq(item.as_ref(), &item.1));
+            }
+
+            #[derive(AsRef)]
+            struct Skip<T, U, V>(Vec<T>, VecDeque<U>, #[as_ref(skip)] V);
+
+            #[test]
+            fn skip() {
+                let item = Skip(vec![1], VecDeque::from([2]), 0);
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+                assert!(ptr::eq(item.as_ref(), &item.1));
+            }
+
+            #[derive(AsRef)]
+            struct FieldEmpty<T, U, V>(#[as_ref] Vec<T>, #[as_ref] VecDeque<U>, V);
+
+            #[test]
+            fn field_empty() {
+                let item = FieldEmpty(vec![1], VecDeque::from([2]), 0);
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+                assert!(ptr::eq(item.as_ref(), &item.1));
+            }
+
+            #[derive(AsRef)]
+            struct FieldForward<T, U>(#[as_ref(forward)] T, U);
+
+            #[test]
+            fn field_forward() {
+                let item = FieldForward("test".to_owned(), 0);
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+        }
     }
 
-    #[test]
-    fn multi_field_named() {
-        let item = MultiFieldNamed {
-            first: "test".into(),
-            second: PathBuf::new(),
-            third: vec![],
-        };
+    mod named {
+        use super::*;
 
-        assert!(ptr::eq(&item.first, item.as_ref()));
-        assert!(ptr::eq(&item.second, item.as_ref()));
+        #[derive(AsRef)]
+        struct NoAttr {
+            first: String,
+            second: i32,
+        }
+
+        #[test]
+        fn no_attr() {
+            let item = NoAttr {
+                first: "test".to_owned(),
+                second: 0,
+            };
+
+            assert!(ptr::eq(item.as_ref(), &item.first));
+            assert!(ptr::eq(item.as_ref(), &item.second));
+        }
+
+        #[derive(AsRef)]
+        struct Skip {
+            first: String,
+            second: i32,
+            #[as_ref(skip)]
+            third: f64,
+        }
+
+        impl AsRef<f64> for Skip {
+            fn as_ref(&self) -> &f64 {
+                &self.third
+            }
+        }
+
+        #[test]
+        fn skip() {
+            let item = Skip {
+                first: "test".to_owned(),
+                second: 0,
+                third: 0.0,
+            };
+
+            assert!(ptr::eq(item.as_ref(), &item.first));
+            assert!(ptr::eq(item.as_ref(), &item.second));
+        }
+
+        #[derive(AsRef)]
+        struct FieldEmpty {
+            #[as_ref]
+            first: String,
+            #[as_ref]
+            second: i32,
+            third: f64,
+        }
+
+        impl AsRef<f64> for FieldEmpty {
+            fn as_ref(&self) -> &f64 {
+                &self.third
+            }
+        }
+
+        #[test]
+        fn field_empty() {
+            let item = FieldEmpty {
+                first: "test".to_owned(),
+                second: 0,
+                third: 0.0,
+            };
+
+            assert!(ptr::eq(item.as_ref(), &item.first));
+            assert!(ptr::eq(item.as_ref(), &item.second));
+        }
+
+        #[derive(AsRef)]
+        struct FieldForward {
+            #[as_ref(forward)]
+            first: String,
+            second: i32,
+        }
+
+        #[test]
+        fn field_forward() {
+            let item = FieldForward {
+                first: "test".to_owned(),
+                second: 0,
+            };
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+        }
+
+        mod generic {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct NoAttr<T, U> {
+                first: Vec<T>,
+                second: VecDeque<U>,
+            }
+
+            #[test]
+            fn no_attr() {
+                let item = NoAttr {
+                    first: vec![1],
+                    second: VecDeque::from([2]),
+                };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+                assert!(ptr::eq(item.as_ref(), &item.second));
+            }
+
+            #[derive(AsRef)]
+            struct Skip<T, U, V> {
+                first: Vec<T>,
+                second: VecDeque<U>,
+                #[as_ref(skip)]
+                third: V,
+            }
+
+            #[test]
+            fn skip() {
+                let item = Skip {
+                    first: vec![1],
+                    second: VecDeque::from([2]),
+                    third: 0,
+                };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+                assert!(ptr::eq(item.as_ref(), &item.second));
+            }
+
+            #[derive(AsRef)]
+            struct FieldEmpty<T, U, V> {
+                #[as_ref]
+                first: Vec<T>,
+                #[as_ref]
+                second: VecDeque<U>,
+                third: V,
+            }
+
+            #[test]
+            fn field_empty() {
+                let item = FieldEmpty {
+                    first: vec![1],
+                    second: VecDeque::from([2]),
+                    third: 0,
+                };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+                assert!(ptr::eq(item.as_ref(), &item.second));
+            }
+
+            #[derive(AsRef)]
+            struct FieldForward<T, U> {
+                #[as_ref(forward)]
+                first: T,
+                second: U,
+            }
+
+            #[test]
+            fn field_forward() {
+                let item = FieldForward {
+                    first: "test".to_owned(),
+                    second: 0,
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+        }
     }
-}
-
-#[derive(AsRef)]
-struct AnnotatedTupleForward(#[as_ref(forward)] String, i32);
-
-#[test]
-fn annotated_tuple_forward() {
-    let item = AnnotatedTupleForward("test".into(), 0);
-
-    let rf: &str = item.as_ref();
-    assert!(ptr::eq(rf, item.0.as_ref()));
-}
-
-#[derive(AsRef)]
-struct AnnotatedNamedForward {
-    #[as_ref(forward)]
-    first: String,
-    second: i32,
-}
-
-#[test]
-fn annotated_named_forward() {
-    let item = AnnotatedNamedForward {
-        first: "test".into(),
-        second: 0,
-    };
-
-    let rf: &str = item.as_ref();
-    assert!(ptr::eq(rf, item.first.as_ref()));
-}
-
-#[derive(AsRef)]
-struct SingleFieldGenericStruct<T> {
-    first: T,
-}
-
-#[test]
-fn single_field_generic_struct() {
-    let item = SingleFieldGenericStruct { first: "test" };
-
-    assert!(ptr::eq(&item.first, item.as_ref()));
-}
-
-#[derive(AsRef)]
-#[as_ref(forward)]
-struct SingleFieldGenericStructForward<T> {
-    first: T,
-}
-
-#[test]
-fn single_field_generic_struct_forward() {
-    let item = SingleFieldGenericStruct {
-        first: "test".to_owned(),
-    };
-
-    let rf: &str = item.as_ref();
-    assert!(ptr::eq(rf, item.first.as_ref()));
-}
-
-#[derive(AsRef)]
-struct AnnotatedGenericStructForward<T> {
-    #[as_ref(forward)]
-    first: T,
-    second: i32,
-}
-
-#[test]
-fn annotated_generic_struct_forward() {
-    let item = AnnotatedGenericStructForward {
-        first: "test".to_owned(),
-        second: 0,
-    };
-
-    let rf: &str = item.as_ref();
-    assert!(ptr::eq(rf, item.first.as_ref()));
-}
-
-#[derive(AsRef)]
-struct MultiFieldGenericStruct<T, U> {
-    #[as_ref]
-    first: Vec<T>,
-    #[as_ref]
-    second: [U; 2],
-    third: Vec<usize>,
-}
-
-#[test]
-fn multi_field_generic_struct() {
-    let item = MultiFieldGenericStruct {
-        first: b"test".to_vec(),
-        second: [0i32, 1i32],
-        third: vec![],
-    };
-
-    assert!(ptr::eq(&item.first, item.as_ref()));
-    assert!(ptr::eq(&item.second, item.as_ref()));
 }
