@@ -29,7 +29,8 @@ pub(crate) use self::fields_ext::FieldsExt;
     feature = "as_ref",
     feature = "as_mut",
     feature = "from",
-    feature = "into"
+    feature = "into",
+    feature = "debug",
 ))]
 pub(crate) use self::spanning::Spanning;
 
@@ -1381,7 +1382,8 @@ pub(crate) mod forward {
     feature = "as_ref",
     feature = "as_mut",
     feature = "from",
-    feature = "into"
+    feature = "into",
+    feature = "debug",
 ))]
 pub(crate) mod skip {
     use syn::{
@@ -1518,7 +1520,8 @@ mod either {
     feature = "as_ref",
     feature = "as_mut",
     feature = "from",
-    feature = "into"
+    feature = "into",
+    feature = "debug",
 ))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
