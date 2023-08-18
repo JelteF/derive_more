@@ -1379,6 +1379,8 @@ pub(crate) mod skip {
         spanned::Spanned as _,
     };
 
+    use super::Spanning;
+
     /// Representation of a `skip`/`ignore` attribute.
     ///
     /// ```rust,ignore
@@ -1386,6 +1388,31 @@ pub(crate) mod skip {
     /// #[<attribute>(ignore)]
     /// ```
     pub(crate) struct Attribute(&'static str);
+
+    impl Attribute {
+        pub(crate) fn parse_attrs(
+            attrs: impl AsRef<[syn::Attribute]>,
+            attr_ident: &syn::Ident,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            attrs
+                .as_ref()
+                .iter()
+                .filter(|attr| attr.path().is_ident(attr_ident))
+                .try_fold(None, |mut attrs, attr| {
+                    let parsed = Spanning::new(attr.parse_args()?, attr.span());
+                    if attrs.replace(parsed).is_some() {
+                        Err(syn::Error::new(
+                            attr.span(),
+                            format!(
+                                "only single `#[{attr_ident}(skip)]`/`#[{attr_ident}(ignore)]` attribute is allowed here"
+                            ),
+                        ))
+                    } else {
+                        Ok(attrs)
+                    }
+                })
+        }
+    }
 
     impl Parse for Attribute {
         fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
