@@ -130,6 +130,7 @@ impl StructAttribute {
             return Ok(Self::Forward(attr));
         }
 
+        let ahead = input.fork();
         match ahead.parse::<syn::Path>() {
             Ok(p) if p.is_ident("types") => legacy_error(&ahead, input.span(), fields),
             _ => input
@@ -205,16 +206,14 @@ impl VariantAttribute {
             }
 
             let ahead = input.fork();
-            if ahead
-                .parse::<syn::Path>()
-                .is_ok_and(|p| p.is_ident("types"))
-            {
-                return legacy_error(&ahead, input.span(), fields);
+            match ahead.parse::<syn::Path>() {
+                Ok(p) if p.is_ident("types") => {
+                    legacy_error(&ahead, input.span(), fields)
+                }
+                _ => input
+                    .parse_terminated(Type::parse, token::Comma)
+                    .map(Self::Types),
             }
-
-            input
-                .parse_terminated(Type::parse, token::Comma)
-                .map(Self::Types)
         })
     }
 }
