@@ -21,7 +21,6 @@ use syn::{
     feature = "into",
 ))]
 pub(crate) use self::either::Either;
-
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
 #[cfg(feature = "as_ref")]

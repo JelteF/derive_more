@@ -145,7 +145,7 @@ re_export_traits!(
     BitXorAssign,
     SubAssign,
 );
-re_export_traits!("as_ref", as_ref_traits, core::convert, AsRef, AsMut);
+re_export_traits!("as_ref", as_ref_traits, core::convert, AsMut, AsRef);
 re_export_traits!("debug", debug_traits, core::fmt, Debug);
 re_export_traits!("deref", deref_traits, core::ops, Deref);
 re_export_traits!("deref_mut", deref_mut_traits, core::ops, DerefMut);
