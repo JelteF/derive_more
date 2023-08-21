@@ -145,8 +145,7 @@ re_export_traits!(
     BitXorAssign,
     SubAssign,
 );
-re_export_traits!("as_mut", as_mut_traits, core::convert, AsMut);
-re_export_traits!("as_ref", as_ref_traits, core::convert, AsRef);
+re_export_traits!("as_ref", as_ref_traits, core::convert, AsMut, AsRef);
 re_export_traits!("debug", debug_traits, core::fmt, Debug);
 re_export_traits!("deref", deref_traits, core::ops, Deref);
 re_export_traits!("deref_mut", deref_mut_traits, core::ops, DerefMut);
@@ -216,11 +215,8 @@ pub use derive_more_impl::{
     AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, SubAssign,
 };
 
-#[cfg(feature = "as_mut")]
-pub use derive_more_impl::AsMut;
-
 #[cfg(feature = "as_ref")]
-pub use derive_more_impl::AsRef;
+pub use derive_more_impl::{AsMut, AsRef};
 
 #[cfg(feature = "constructor")]
 pub use derive_more_impl::Constructor;
@@ -289,7 +285,6 @@ pub use derive_more_impl::Unwrap;
     feature = "full",
     feature = "add",
     feature = "add_assign",
-    feature = "as_mut",
     feature = "as_ref",
     feature = "constructor",
     feature = "debug",
