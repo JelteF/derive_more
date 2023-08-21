@@ -61,9 +61,10 @@ struct Foo<'a, T1, T2: Trait, T3> {
 ```
 
 The following where clauses would be generated:
-* `T1: Display + Pointer`
-* `<T2 as Trait>::Type: Debug`
-* `Bar<T3>: Display`
+* `T1: Display`
+* `<T2 as Trait>::Type: Display`
+* `Vec<T3>: Debug`
+* `&'a T1: Pointer`
 
 
 ### Custom trait bounds
