@@ -1,0 +1,5 @@
+error: `#[as_mut(ignore)]` cannot be used in the same struct with other `#[as_mut(...)]` attributes
+ --> tests/compile_fail/as_mut/skip_and_others.rs:5:5
+  |
+5 |     #[as_mut(ignore)]
+  |     ^

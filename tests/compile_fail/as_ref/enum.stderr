@@ -1,0 +1,5 @@
+error: `AsRef` cannot be derived for enums
+ --> tests/compile_fail/as_ref/enum.rs:2:1
+  |
+2 | enum Foo {
+  | ^^^^

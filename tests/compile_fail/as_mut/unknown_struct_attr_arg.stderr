@@ -1,0 +1,5 @@
+error: only `forward` allowed here
+ --> tests/compile_fail/as_mut/unknown_struct_attr_arg.rs:2:10
+  |
+2 | #[as_mut(baz)]
+  |          ^^^

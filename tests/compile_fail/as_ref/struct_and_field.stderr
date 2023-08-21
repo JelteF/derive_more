@@ -1,0 +1,5 @@
+error: `#[as_ref(...)]` cannot be placed on both struct and its field
+ --> tests/compile_fail/as_ref/struct_and_field.rs:4:5
+  |
+4 |     #[as_ref]
+  |     ^

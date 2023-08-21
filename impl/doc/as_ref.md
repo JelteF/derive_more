@@ -50,13 +50,13 @@ This generates:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<__AsRefT: ?::core::marker::Sized> ::core::convert::AsRef<__AsRefT> for SingleFieldForward
+impl<__AsT: ?::core::marker::Sized> ::core::convert::AsRef<__AsT> for SingleFieldForward
 where
-    Vec<i32>: ::core::convert::AsRef<__AsRefT>,
+    Vec<i32>: ::core::convert::AsRef<__AsT>,
 {
     #[inline]
-    fn as_ref(&self) -> &__AsRefT {
-        <Vec<i32> as ::core::convert::AsRef<__AsRefT>>::as_ref(&self.0)
+    fn as_ref(&self) -> &__AsT {
+        <Vec<i32> as ::core::convert::AsRef<__AsT>>::as_ref(&self.0)
     }
 }
 ```
@@ -69,7 +69,7 @@ where
 When `AsRef` is derived for a struct with more than one field (including tuple
 structs), you must also mark one or more fields with the `#[as_ref]` attribute.
 An implementation will be generated for each indicated field.
-You can also exclude a specific field by using `#[as_ref(ignore)]`.
+You can also exclude a specific field by using `#[as_ref(skip)]` (or `#[as_ref(ignore)]`).
 
 ```rust
 # use derive_more::AsRef;
@@ -122,8 +122,23 @@ struct MyWrapper {
 }
 ```
 
+Similarly, if some field is annotated with `#[as_ref(forward)]`, no other
+field can be marked.
 
-
+```rust,compile_fail
+# use derive_more::AsRef;
+#
+// Error! Conflicting implementations of `AsRef<i32>`
+// note: upstream crates may add a new impl of trait `AsRef<i32>`
+// for type `String` in future versions
+#[derive(AsRef)]
+struct ForwardWithOther {
+    #[as_ref(forward)]
+    str: String,
+    #[as_ref]
+    number: i32,
+}
+```
 
 ## Enums
 
