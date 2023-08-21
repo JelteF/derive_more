@@ -15,19 +15,16 @@ use syn::{
 
 #[cfg(any(
     feature = "as_ref",
-    feature = "as_mut",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
 ))]
 pub(crate) use self::either::Either;
-
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
 #[cfg(any(
     feature = "as_ref",
-    feature = "as_mut",
     feature = "from",
     feature = "into",
     feature = "debug",
@@ -1324,7 +1321,7 @@ pub fn is_type_parameter_used_in_type(
     }
 }
 
-#[cfg(any(feature = "as_ref", feature = "as_mut", feature = "from"))]
+#[cfg(any(feature = "as_ref", feature = "from"))]
 pub(crate) mod forward {
     use syn::{
         parse::{Parse, ParseStream},
@@ -1380,7 +1377,6 @@ pub(crate) mod forward {
 
 #[cfg(any(
     feature = "as_ref",
-    feature = "as_mut",
     feature = "from",
     feature = "into",
     feature = "debug",
@@ -1449,7 +1445,6 @@ pub(crate) mod skip {
 
 #[cfg(any(
     feature = "as_ref",
-    feature = "as_mut",
     feature = "debug",
     feature = "display",
     feature = "from",
@@ -1518,7 +1513,6 @@ mod either {
 
 #[cfg(any(
     feature = "as_ref",
-    feature = "as_mut",
     feature = "from",
     feature = "into",
     feature = "debug",
