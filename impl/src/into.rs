@@ -44,129 +44,46 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 
             let args = field_attr.and_then(|attr| attr.args);
 
-            let ident = f
-                .ident
-                .as_ref()
-                .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left);
-
-            Ok(((&f.ty, ident, skip), args))
+            Ok(((i, f, skip), args))
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
     let (fields, fields_args) = fields_data.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
 
-    // Expand the version with all non-skipped fields if either
-    // there's an explicit struct attribute
-    // or there are no conversions into specific fields
     let struct_attr = struct_attr.or_else(|| {
         fields_args
             .iter()
-            .all(|args| args.is_none())
+            .all(Option::is_none)
             .then(IntoArgs::all_owned)
             .map(StructAttribute::new)
     });
 
-    let mut expands = fields
+    let mut expansions: Vec<_> = fields
         .iter()
         .zip(fields_args)
-        .filter_map(|((field_ty, ident, _), args)| {
-            args.map(|args| {
-                expand_args(
-                    &input.generics,
-                    &input.ident,
-                    std::slice::from_ref(field_ty),
-                    std::slice::from_ref(ident),
-                    args,
-                )
+        .filter_map(|(&(i, field, _), args)| {
+            args.map(|args| Expansion {
+                input_ident: &input.ident,
+                input_generics: &input.generics,
+                fields: vec![(i, field)],
+                args,
             })
         })
-        .collect::<syn::Result<TokenStream>>()?;
+        .collect();
 
-    if let Some(struct_attr) = struct_attr {
-        let (fields_tys, fields_idents) = fields
-            .into_iter()
-            .filter_map(|(field_ty, field_ident, skip)| {
-                (!skip).then_some((field_ty, field_ident))
-            })
-            .unzip::<_, _, Vec<_>, Vec<_>>();
-
-        let struct_expand = expand_args(
-            &input.generics,
-            &input.ident,
-            &fields_tys,
-            &fields_idents,
-            struct_attr.args,
-        )?;
-
-        expands.extend(struct_expand);
+    if let Some(attr) = struct_attr {
+        expansions.push(Expansion {
+            input_ident: &input.ident,
+            input_generics: &input.generics,
+            fields: fields
+                .into_iter()
+                .filter_map(|(i, f, skip)| (!skip).then_some((i, f)))
+                .collect(),
+            args: attr.args,
+        });
     }
 
-    Ok(expands)
-}
-
-/// Expands [`From`] impls for a set of fields with the given `[IntoArgs]`
-fn expand_args(
-    input_generics: &syn::Generics,
-    input_ident: &syn::Ident,
-    fields_tys: &[&syn::Type],
-    fields_idents: &[Either<&syn::Ident, syn::Index>],
-    args: IntoArgs,
-) -> syn::Result<TokenStream> {
-    let expand_one = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
-        let Some(tys) = tys else {
-            return Either::Left(iter::empty());
-        };
-
-        let lf =
-            r.then(|| syn::Lifetime::new("'__derive_more_into", Span::call_site()));
-        let r = r.then(token::And::default);
-        let m = m.then(token::Mut::default);
-
-        let gens = if let Some(lf) = lf.clone() {
-            let mut gens = input_generics.clone();
-            gens.params.push(syn::LifetimeParam::new(lf).into());
-            Cow::Owned(gens)
-        } else {
-            Cow::Borrowed(input_generics)
-        };
-
-        Either::Right(
-            if tys.is_empty() {
-                Either::Left(iter::once(Type::tuple(fields_tys.clone())))
-            } else {
-                Either::Right(tys.into_iter())
-            }
-            .map(move |ty| {
-                let tys = fields_tys.validate_type(&ty)?.collect::<Vec<_>>();
-                let (impl_gens, _, where_clause) = gens.split_for_impl();
-                let (_, ty_gens, _) = input_generics.split_for_impl();
-
-                Ok(quote! {
-                    #[automatically_derived]
-                    impl #impl_gens ::core::convert::From<#r #lf #m #input_ident #ty_gens>
-                     for ( #( #r #lf #m #tys ),* ) #where_clause
-                    {
-                        #[inline]
-                        fn from(value: #r #lf #m #input_ident #ty_gens) -> Self {
-                            (#(
-                                <#r #m #tys as ::core::convert::From<_>>::from(
-                                    #r #m value. #fields_idents
-                                )
-                            ),*)
-                        }
-                    }
-                })
-            }),
-        )
-    };
-    [
-        expand_one(args.owned, false, false),
-        expand_one(args.r#ref, true, false),
-        expand_one(args.ref_mut, true, true),
-    ]
-    .into_iter()
-    .flatten()
-    .collect()
+    expansions.into_iter().map(Expansion::expand).collect()
 }
 
 /// Representation of an [`Into`] derive macro struct container attribute.
@@ -429,6 +346,93 @@ fn merge_tys(
         (Some(out), Some(tys)) => out.extend(tys),
         (Some(_), None) | (None, None) => {}
     };
+}
+
+/// Expansion of a macro for generating [`From`] implementations
+struct Expansion<'a> {
+    /// Struct [`Ident`]
+    input_ident: &'a syn::Ident,
+    /// Struct [`Generics`]
+    input_generics: &'a syn::Generics,
+    /// Fields to convert from, with their indices
+    fields: Vec<(usize, &'a syn::Field)>,
+    /// Arguments specifying conversions
+    args: IntoArgs,
+}
+
+impl<'a> Expansion<'a> {
+    fn expand(self) -> syn::Result<TokenStream> {
+        let Self {
+            input_ident,
+            input_generics,
+            fields,
+            args,
+        } = self;
+
+        let fields_idents: Vec<_> = fields
+            .iter()
+            .map(|(i, f)| {
+                f.ident
+                    .as_ref()
+                    .map_or_else(|| Either::Left(syn::Index::from(*i)), Either::Right)
+            })
+            .collect();
+        let fields_tys: Vec<_> = fields.iter().map(|(_, f)| &f.ty).collect();
+        let fields_tuple = Type::tuple(fields_tys.clone());
+
+        [
+            (&args.owned, false, false),
+            (&args.r#ref, true, false),
+            (&args.ref_mut, true, true),
+        ]
+        .into_iter()
+        .filter_map(|(out_tys, r, m)| {
+            out_tys.as_ref().map(|out_tys| {
+                let lf = r.then(|| {
+                    syn::Lifetime::new("'__derive_more_into", Span::call_site())
+                });
+                let r = r.then(token::And::default);
+                let m = m.then(token::Mut::default);
+
+                let gens = if let Some(lf) = lf.clone() {
+                    let mut gens = input_generics.clone();
+                    gens.params.push(syn::LifetimeParam::new(lf).into());
+                    Cow::Owned(gens)
+                } else {
+                    Cow::Borrowed(input_generics)
+                };
+
+                let (impl_gens, _, where_clause) = gens.split_for_impl();
+                let (_, ty_gens, _) = input_generics.split_for_impl();
+
+                if out_tys.is_empty() {
+                    Either::Left(iter::once(&fields_tuple))
+                } else {
+                    Either::Right(out_tys.iter())
+                }.map(|out_ty| {
+                    let tys: Vec<_> = fields_tys.validate_type(out_ty)?.collect();
+
+                    Ok(quote! {
+                        #[automatically_derived]
+                        impl #impl_gens ::core::convert::From<#r #lf #m #input_ident #ty_gens>
+                            for ( #( #r #lf #m #tys ),* ) #where_clause
+                        {
+                            #[inline]
+                            fn from(value: #r #lf #m #input_ident #ty_gens) -> Self {
+                                (#(
+                                    <#r #m #tys as ::core::convert::From<_>>::from(
+                                        #r #m value. #fields_idents
+                                    )
+                                ),*)
+                            }
+                        }
+                    })
+                })
+                .collect::<syn::Result<TokenStream>>()
+            })
+        })
+        .collect()
+    }
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
