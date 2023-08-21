@@ -74,16 +74,9 @@ could be used during formatting. This can be done with a `#[display(bound(...))]
 `#[display(bound(...))]` accepts code tokens in a format similar to the format
 used in angle bracket list (or `where` clause predicates): `T: MyTrait, U: Trait1 + Trait2`.
 
-Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
-by traits, i.e. no lifetime parameters or lifetime bounds allowed in bound-string.
+Explicitly specified bounds are added to the inferred ones.
 
-`#[display("fmt", ...)]` arguments are parsed as an arbitrary Rust expression and passed to generated
-`write!` as-is, it's impossible to meaningfully infer any kind of trait bounds for generic type parameters
-used this way. That means that you'll **have to** explicitly specify all trait bound used. Either in the
-struct/enum definition, or via `#[display(bound(...))]` attribute.
-
-Note how we have to bound `U` and `V` by `Display` in the following example, as no bound is inferred.
-Not even `Display`.
+Note how no `V: Display` bound is necessary.
 
 ```rust
 # use derive_more::Display;
