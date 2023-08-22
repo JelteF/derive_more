@@ -146,7 +146,7 @@ impl StructAttribute {
 /// #[from]
 /// #[from(<types>)]
 /// #[from(forward)]
-/// #[from(skip)]
+/// #[from(skip)] #[from(ignore)]
 /// ```
 enum VariantAttribute {
     /// Explicitly derive [`From`].

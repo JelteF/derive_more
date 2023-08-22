@@ -255,7 +255,7 @@ impl StructAttribute {
     }
 }
 
-/// `#[into(skip)]` field attribute.
+/// `#[into(skip)]`/`#[into(ignore)]` field attribute.
 type SkipFieldAttribute = skip::Attribute;
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
