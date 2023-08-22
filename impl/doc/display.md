@@ -20,10 +20,7 @@ inner variable. If there is no such variable, or there is more than 1, an error 
 ## The format of the format
 
 You supply a format by attaching an attribute of the syntax: `#[display("...", args...)]`.
-The format supplied is passed verbatim to `write!`. The arguments supplied handled specially,
-due to constraints in the syntax of attributes. In the case of an argument being a simple
-identifier, it is passed verbatim. If an argument is a string, it is **parsed as an expression**,
-and then passed to `write!`.
+The format supplied is passed verbatim to `write!`.
 
 The variables available in the arguments is `self` and each member of the variant,
 with members of tuple structs being named with a leading underscore and their index,
@@ -43,6 +40,7 @@ requires a separate `debug` feature.
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type
 arguments used during formatting are bound by respective formatting trait.
+Bounds can only be inferred this way if a field is used directly in the interpolation.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
@@ -61,9 +59,10 @@ struct Foo<'a, T1, T2: Trait, T3> {
 ```
 
 The following where clauses would be generated:
-* `T1: Display + Pointer`
-* `<T2 as Trait>::Type: Debug`
-* `Bar<T3>: Display`
+* `T1: Display`
+* `<T2 as Trait>::Type: Display`
+* `Vec<T3>: Debug`
+* `&'a T1: Pointer`
 
 
 ### Custom trait bounds
@@ -74,16 +73,13 @@ could be used during formatting. This can be done with a `#[display(bound(...))]
 `#[display(bound(...))]` accepts code tokens in a format similar to the format
 used in angle bracket list (or `where` clause predicates): `T: MyTrait, U: Trait1 + Trait2`.
 
-Only type parameters defined on a struct allowed to appear in bound-string and they can only be bound
-by traits, i.e. no lifetime parameters or lifetime bounds allowed in bound-string.
-
 `#[display("fmt", ...)]` arguments are parsed as an arbitrary Rust expression and passed to generated
 `write!` as-is, it's impossible to meaningfully infer any kind of trait bounds for generic type parameters
-used this way. That means that you'll **have to** explicitly specify all trait bound used. Either in the
-struct/enum definition, or via `#[display(bound(...))]` attribute.
+used this way. That means that you'll **have to** explicitly specify all the required trait bounds of the
+expression. Either in the struct/enum definition, or via `#[display(bound(...))]` attribute.
 
-Note how we have to bound `U` and `V` by `Display` in the following example, as no bound is inferred.
-Not even `Display`.
+Explicitly specified bounds are added to the inferred ones. Note how no `V: Display` bound is necessary,
+because it's inferred already.
 
 ```rust
 # use derive_more::Display;

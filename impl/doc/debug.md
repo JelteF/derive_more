@@ -2,7 +2,7 @@
 
 This derive macro is a clever superset of `Debug` from standard library. Additional features include:
 - not imposing redundant trait bounds;
-- `#[debug(skip)]` attribute to skip formatting struct field or enum variant;
+- `#[debug(skip)]` (or `#[debug(ignore)]`) attribute to skip formatting struct field or enum variant;
 - `#[debug("...", args...)]` to specify custom formatting either for the whole struct or enum variant, or its particular field;
 - `#[debug(bounds(...))]` to impose additional custom trait bounds.
 
@@ -39,7 +39,7 @@ struct Foo<'a, T1, T2: Trait, T3, T4> {
     c: Vec<T3>,
     #[debug("{d:p}")]
     d: &'a T1,
-    #[debug(skip)]
+    #[debug(skip)] // or #[debug(ignore)]
     e: T4,
 }
 
@@ -80,7 +80,7 @@ struct MyStruct<T, U, V, F> {
     b: U,
     #[debug("{c}")]
     c: V,
-    #[debug(skip)]
+    #[debug(skip)] // or #[debug(ignore)]
     d: F,
 }
 
@@ -110,7 +110,7 @@ struct StructFormat(&'static str, u8);
 enum E {
     Skipped {
         x: u32,
-        #[debug(skip)]
+        #[debug(skip)] // or #[debug(ignore)]
         y: u32,
     },
     Binary {

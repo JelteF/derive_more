@@ -99,7 +99,6 @@ impl AsMut<[u8]> for Types {
 When `AsMut` is derived for a struct with more than one field (including tuple
 structs), you must also mark one or more fields with the `#[as_mut]` attribute.
 An implementation will be generated for each indicated field.
-You can also exclude a specific field by using `#[as_mut(ignore)]` (or `#[as_mut(ignore)]`).
 
 ```rust
 # use derive_more::AsMut;
@@ -135,8 +134,46 @@ impl AsMut<i32> for MyWrapper {
 }
 ```
 
-Note that `AsMut<T>` may only be implemented once for any given type `T`. This means any attempt to
-mark more than one field of the same type with `#[as_mut]` will result in a compilation error.
+
+### Skipping
+
+Or vice versa: you can exclude a specific field by using `#[as_mut(skip)]` (or
+`#[as_mut(ignore)]`). Then, implementations will be generated for non-indicated fields.
+
+```rust
+# use derive_more::AsMut;
+#
+#[derive(AsMut)]
+struct MyWrapper {
+    #[as_mut(skip)]
+    name: String,
+    #[as_mut(ignore)]
+    num: i32,
+    valid: bool,
+}
+```
+
+Generates:
+
+```rust
+# struct MyWrapper {
+#     name: String,
+#     num: i32,
+#     valid: bool,
+# }
+impl AsMut<bool> for MyWrapper {
+    fn as_mut(&mut self) -> &mut bool {
+        &mut self.valid
+    }
+}
+```
+
+
+### Coherence
+
+Note that `AsMut<T>` may only be implemented once for any given type `T`.
+This means any attempt to mark more than one field of the same type with
+`#[as_mut]` will result in a compilation error.
 
 ```rust,compile_fail
 # use derive_more::AsMut;
@@ -190,6 +227,8 @@ let mut item = Types {
 let _: &mut str = item.as_mut();
 let _: &mut [u8] = item.as_mut();
 ```
+
+
 
 ## Enums
 

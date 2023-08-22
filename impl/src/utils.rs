@@ -23,7 +23,12 @@ use syn::{
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
-#[cfg(feature = "as_ref")]
+#[cfg(any(
+    feature = "as_ref",
+    feature = "debug",
+    feature = "from",
+    feature = "into",
+))]
 pub(crate) use self::spanning::Spanning;
 
 #[derive(Clone, Copy, Default)]
@@ -1316,7 +1321,7 @@ pub fn is_type_parameter_used_in_type(
     }
 }
 
-#[cfg(feature = "as_ref")]
+#[cfg(any(feature = "as_ref", feature = "from"))]
 pub(crate) mod forward {
     use syn::{
         parse::{Parse, ParseStream},
@@ -1370,12 +1375,19 @@ pub(crate) mod forward {
     }
 }
 
-#[cfg(feature = "as_ref")]
+#[cfg(any(
+    feature = "as_ref",
+    feature = "debug",
+    feature = "from",
+    feature = "into",
+))]
 pub(crate) mod skip {
     use syn::{
         parse::{Parse, ParseStream},
         spanned::Spanned as _,
     };
+
+    use super::Spanning;
 
     /// Representation of a `skip`/`ignore` attribute.
     ///
@@ -1402,6 +1414,33 @@ pub(crate) mod skip {
         /// Returns the concrete name of this attribute (`skip` or `ignore`).
         pub(crate) const fn name(&self) -> &'static str {
             self.0
+        }
+
+        /// Parses an [`Attribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
+        ///
+        /// [`Span`]: proc_macro2::Span
+        pub(crate) fn parse_attrs(
+            attrs: impl AsRef<[syn::Attribute]>,
+            attr_ident: &syn::Ident,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            attrs
+                .as_ref()
+                .iter()
+                .filter(|attr| attr.path().is_ident(attr_ident))
+                .try_fold(None, |mut attrs, attr| {
+                    let parsed = Spanning::new(attr.parse_args()?, attr.span());
+                    if attrs.replace(parsed).is_some() {
+                        Err(syn::Error::new(
+                            attr.span(),
+                            format!(
+                                "only single `#[{attr_ident}(skip)]`/`#[{attr_ident}(ignore)]` \
+                                 attribute is allowed here",
+                            ),
+                        ))
+                    } else {
+                        Ok(attrs)
+                    }
+                })
         }
     }
 }
@@ -1474,7 +1513,12 @@ mod either {
     }
 }
 
-#[cfg(feature = "as_ref")]
+#[cfg(any(
+    feature = "as_ref",
+    feature = "debug",
+    feature = "from",
+    feature = "into",
+))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
 
