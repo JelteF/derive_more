@@ -58,6 +58,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add support for container format in `Debug` derive with the same syntax as `Display` derives.
   ([#279](https://github.com/JelteF/derive_more/pull/279))
 - `derive_more::derive` module exporting only macros, without traits. ([#290](https://github.com/JelteF/derive_more/pull/290))
+- Add support for selective forwarding in the `AsRef`/`AsMut` derive
+  ([#298](https://github.com/JelteF/derive_more/pull/298))
 
 ### Changed
 
