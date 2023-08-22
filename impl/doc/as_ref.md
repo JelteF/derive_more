@@ -31,7 +31,7 @@ impl AsRef<String> for MyWrapper {
 }
 ```
 
-It's also possible to use the `#[as_ref(forward)]` attribute to forward
+The `#[as_ref(forward)]` attribute can be used to forward
 to the `as_ref` implementation of the field. So here `SingleFieldForward`
 implements all `AsRef` for all types that `Vec<i32>` implements `AsRef` for.
 
@@ -61,6 +61,37 @@ where
 }
 ```
 
+It's also possible to specify concrete types to derive forwarded
+impls for with `#[as_ref(<types>)]`.
+
+```rust
+# use derive_more::AsRef;
+#
+#[derive(AsRef)]
+#[as_ref(str, [u8])]
+struct Types(String);
+
+let item = Types("test".to_owned());
+let _: &str = item.as_ref();
+let _: &[u8] = item.as_ref();
+```
+
+Generates:
+
+```rust
+# struct Types(String);
+impl AsRef<str> for Types {
+    fn as_ref(&self) -> &str {
+        <String as ::core::convert::AsRef<str>>::as_ref(&self.0)
+    }
+}
+
+impl AsRef<[u8]> for Types {
+    fn as_ref(&self) -> &[u8] {
+        <String as ::core::convert::AsRef<[u8]>>::as_ref(&self.0)
+    }
+}
+```
 
 
 
@@ -139,6 +170,29 @@ struct ForwardWithOther {
     number: i32,
 }
 ```
+
+Multiple forwarded impls with concrete types, however, can be used.
+
+```rust
+# use derive_more::AsRef;
+#
+#[derive(AsRef)]
+struct Types {
+    #[as_ref(str)]
+    str: String,
+    #[as_ref([u8])]
+    vec: Vec<u8>,
+}
+
+let item = Types {
+    str: "test".to_owned(),
+    vec: vec![0u8],
+};
+
+let _: &str = item.as_ref();
+let _: &[u8] = item.as_ref();
+```
+
 
 ## Enums
 

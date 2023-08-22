@@ -31,7 +31,7 @@ impl AsMut<String> for MyWrapper {
 }
 ```
 
-It's also possible to use the `#[as_mut(forward)]` attribute to forward
+The `#[as_mut(forward)]` attribute can be used to forward
 to the `as_mut` implementation of the field. So here `SingleFieldForward`
 implements all `AsMut` for all types that `Vec<i32>` implements `AsMut` for.
 
@@ -61,7 +61,37 @@ where
 }
 ```
 
+It's also possible to specify concrete types to derive forwarded
+impls for with `#[as_mut(<types>)]`.
 
+```rust
+# use derive_more::AsMut;
+#
+#[derive(AsMut)]
+#[as_mut(str, [u8])]
+struct Types(String);
+
+let mut item = Types("test".to_owned());
+let _: &mut str = item.as_mut();
+let _: &mut [u8] = item.as_mut();
+```
+
+Generates:
+
+```rust
+# struct Types(String);
+impl AsMut<str> for Types {
+    fn as_mut(&mut self) -> &mut str {
+        <String as ::core::convert::AsMut<str>>::as_mut(&mut self.0)
+    }
+}
+
+impl AsMut<[u8]> for Types {
+    fn as_mut(&mut self) -> &mut [u8] {
+        <String as ::core::convert::AsMut<[u8]>>::as_mut(&mut self.0)
+    }
+}
+```
 
 
 ## Structs with Multiple Fields
@@ -137,6 +167,28 @@ struct ForwardWithOther {
     #[as_mut]
     number: i32,
 }
+```
+
+Multiple forwarded impls with concrete types, however, can be used.
+
+```rust
+# use derive_more::AsMut;
+#
+#[derive(AsMut)]
+struct Types {
+    #[as_mut(str)]
+    str: String,
+    #[as_mut([u8])]
+    vec: Vec<u8>,
+}
+
+let mut item = Types {
+    str: "test".to_owned(),
+    vec: vec![0u8],
+};
+
+let _: &mut str = item.as_mut();
+let _: &mut [u8] = item.as_mut();
 ```
 
 ## Enums
