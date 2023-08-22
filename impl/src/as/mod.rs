@@ -8,11 +8,15 @@ use quote::{quote, ToTokens};
 use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream},
     parse_quote,
+    punctuated::Punctuated,
     spanned::Spanned,
     Token,
 };
 
-use crate::utils::{forward, skip, Either, Spanning};
+use crate::{
+    parsing::Type,
+    utils::{forward, skip, Either, Spanning},
+};
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
@@ -33,8 +37,8 @@ pub fn expand(
         )),
     }?;
 
-    let expansions = if StructAttribute::parse_attrs(&input.attrs, attr_ident)?
-        .is_some()
+    let expansions = if let Some(args) =
+        StructAttribute::parse_attrs(&input.attrs, attr_ident)?
     {
         if data.fields.len() != 1 {
             return Err(syn::Error::new(
@@ -64,7 +68,7 @@ pub fn expand(
             generics: &input.generics,
             field,
             field_index: 0,
-            forward: true,
+            args: Some(args.into_inner()),
         }]
     } else {
         let attrs = data
@@ -110,7 +114,7 @@ pub fn expand(
                         generics: &input.generics,
                         field,
                         field_index: i,
-                        forward: false,
+                        args: None,
                     })
                 })
                 .collect()
@@ -120,14 +124,18 @@ pub fn expand(
                 .enumerate()
                 .zip(attrs)
                 .filter_map(|((i, field), attr)| match attr.map(Spanning::into_inner) {
-                    attr @ Some(FieldAttribute::Empty | FieldAttribute::Forward(_)) => {
+                    attr @ Some(FieldAttribute::Empty | FieldAttribute::Args(_)) => {
                         Some(Expansion {
                             trait_info,
                             ident: &input.ident,
                             generics: &input.generics,
                             field,
                             field_index: i,
-                            forward: matches!(attr, Some(FieldAttribute::Forward(_))),
+                            args: if let Some(FieldAttribute::Args(args)) = attr {
+                                Some(args)
+                            } else {
+                                None
+                            },
                         })
                     }
                     Some(FieldAttribute::Skip(_)) => unreachable!(),
@@ -167,58 +175,58 @@ struct Expansion<'a> {
     field_index: usize,
 
     /// Indicator whether `forward` implementation should be expanded.
-    forward: bool,
+    args: Option<AsArgs>,
 }
 
 impl<'a> ToTokens for Expansion<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let field_ty = &self.field.ty;
-        let field_ident = self.field.ident.as_ref().map_or_else(
-            || Either::Right(syn::Index::from(self.field_index)),
-            Either::Left,
-        );
+        // let field_ty = &self.field.ty;
+        // let field_ident = self.field.ident.as_ref().map_or_else(
+        //     || Either::Right(syn::Index::from(self.field_index)),
+        //     Either::Left,
+        // );
 
-        let return_ty = if self.forward {
-            quote! { __AsT }
-        } else {
-            quote! { #field_ty }
-        };
+        // let return_ty = if self.forward {
+        //     quote! { __AsT }
+        // } else {
+        //     quote! { #field_ty }
+        // };
 
-        let (trait_ident, method_ident, mut_) = &self.trait_info;
-        let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
+        // let (trait_ident, method_ident, mut_) = &self.trait_info;
+        // let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
 
-        let ty_ident = &self.ident;
-        let mut generics = self.generics.clone();
-        if self.forward {
-            generics.params.push(parse_quote! { #return_ty });
-            generics
-                .make_where_clause()
-                .predicates
-                .extend::<[syn::WherePredicate; 2]>([
-                    parse_quote! { #return_ty: ?::core::marker::Sized },
-                    parse_quote! { #field_ty: #trait_ty },
-                ]);
-        }
-        let (impl_gens, _, where_clause) = generics.split_for_impl();
-        let (_, ty_gens, _) = self.generics.split_for_impl();
+        // let ty_ident = &self.ident;
+        // let mut generics = self.generics.clone();
+        // if self.forward {
+        //     generics.params.push(parse_quote! { #return_ty });
+        //     generics
+        //         .make_where_clause()
+        //         .predicates
+        //         .extend::<[syn::WherePredicate; 2]>([
+        //             parse_quote! { #return_ty: ?::core::marker::Sized },
+        //             parse_quote! { #field_ty: #trait_ty },
+        //         ]);
+        // }
+        // let (impl_gens, _, where_clause) = generics.split_for_impl();
+        // let (_, ty_gens, _) = self.generics.split_for_impl();
 
-        let mut body = quote! { & #mut_ self.#field_ident };
-        if self.forward {
-            body = quote! {
-                <#field_ty as #trait_ty>::#method_ident(#body)
-            };
-        }
+        // let mut body = quote! { & #mut_ self.#field_ident };
+        // if self.forward {
+        //     body = quote! {
+        //         <#field_ty as #trait_ty>::#method_ident(#body)
+        //     };
+        // }
 
-        quote! {
-            #[automatically_derived]
-            impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
-                #[inline]
-                fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
-                    #body
-                }
-            }
-        }
-        .to_tokens(tokens)
+        // quote! {
+        //     #[automatically_derived]
+        //     impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
+        //         #[inline]
+        //         fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
+        //             #body
+        //         }
+        //     }
+        // }
+        // .to_tokens(tokens)
     }
 }
 
@@ -226,20 +234,27 @@ impl<'a> ToTokens for Expansion<'a> {
 ///
 /// ```rust,ignore
 /// #[as_ref(forward)]
+/// #[as_ref(<types>)]
 /// ```
-type StructAttribute = forward::Attribute;
+type StructAttribute = AsArgs;
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro field attribute.
 ///
 /// ```rust,ignore
 /// #[as_ref]
 /// #[as_ref(forward)]
+/// #[as_ref(<types>)]
 /// #[as_ref(skip)] #[as_ref(ignore)]
 /// ```
 enum FieldAttribute {
     Empty,
-    Forward(forward::Attribute),
+    Args(AsArgs),
     Skip(skip::Attribute),
+}
+
+enum AsArgs {
+    Forward(forward::Attribute),
+    Types(Punctuated<Type, Token![,]>),
 }
 
 impl Parse for FieldAttribute {
@@ -249,21 +264,12 @@ impl Parse for FieldAttribute {
         }
 
         let ahead = input.fork();
-        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
-            input.advance_to(&ahead);
-            return Ok(Self::Forward(attr));
-        }
-
-        let ahead = input.fork();
         if let Ok(attr) = ahead.parse::<skip::Attribute>() {
             input.advance_to(&ahead);
             return Ok(Self::Skip(attr));
         }
 
-        Err(syn::Error::new(
-            input.span(),
-            "only `forward` or `skip`/`ignore` allowed here",
-        ))
+        input.parse::<AsArgs>().map(Self::Args)
     }
 }
 
@@ -275,21 +281,75 @@ impl FieldAttribute {
         attrs: &[syn::Attribute],
         attr_ident: &syn::Ident,
     ) -> syn::Result<Option<Spanning<Self>>> {
-        attrs.iter()
+        attrs
+            .iter()
             .filter(|attr| attr.path().is_ident(attr_ident))
-            .try_fold(None, |mut attrs, attr| {
-                let parsed = Spanning::new(if matches!(attr.meta, syn::Meta::Path(_)) {
-                    Self::Empty
+            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
+                let parsed = Spanning::new(
+                    if matches!(attr.meta, syn::Meta::Path(_)) {
+                        Self::Empty
+                    } else {
+                        attr.parse_args()?
+                    },
+                    attr.span(),
+                );
+
+
+                if let Some(prev) = attrs {
+                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
+                    match (prev.item, parsed.item) {
+                        (Self::Args(AsArgs::Types(mut tys)), Self::Args(AsArgs::Types(more))) => {
+                            tys.extend(more);
+                            Ok(Some(Spanning::new(Self::Args(AsArgs::Types(tys)), span)))
+                        }
+                        _ => Err(syn::Error::new(
+                            span,
+                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here")
+                        ))
+                    }
                 } else {
-                    attr.parse_args()?
-                }, attr.span());
-                if attrs.replace(parsed).is_some() {
-                    Err(syn::Error::new(
-                        attr.span(),
-                        format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
-                    ))
+                    Ok(Some(parsed))
+                }
+            })
+    }
+}
+
+impl Parse for AsArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let ahead = input.fork();
+        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+            return Ok(Self::Forward(attr));
+        }
+
+        input
+            .parse_terminated(Type::parse, Token![,])
+            .map(Self::Types)
+    }
+}
+
+impl StructAttribute {
+    fn parse_attrs(
+        attrs: &[syn::Attribute],
+        attr_ident: &syn::Ident,
+    ) -> syn::Result<Option<Spanning<Self>>> {
+        attrs.iter().filter(|attr| attr.path().is_ident(attr_ident))
+            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
+                let parsed: Spanning<Self> = Spanning::new(attr.parse_args()?, attr.span());
+
+                if let Some(prev) = attrs {
+                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
+                    match (prev.item, parsed.item) {
+                        (Self::Types(mut tys), Self::Types(more)) => {
+                            tys.extend(more);
+                            Ok(Some(Spanning::new(Self::Types(tys), span)))
+                        },
+                        _ => Err(syn::Error::new(
+                            span,
+                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
+                        ))
+                    }
                 } else {
-                    Ok(attrs)
+                    Ok(Some(parsed))
                 }
             })
     }
