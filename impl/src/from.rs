@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, Either},
+    utils::{forward, polyfill, skip, Either},
 };
 
 /// Expands a [`From`] derive macro.
@@ -44,7 +44,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                         Some(
                             VariantAttribute::From
                                 | VariantAttribute::Types(_)
-                                | VariantAttribute::Forward
+                                | VariantAttribute::Forward(_)
                         ),
                     ) {
                         has_explicit_from = true;
@@ -87,7 +87,7 @@ enum StructAttribute {
     Types(Punctuated<Type, token::Comma>),
 
     /// Forward [`From`] implementation.
-    Forward,
+    Forward(forward::Attribute),
 }
 
 impl StructAttribute {
@@ -125,11 +125,13 @@ impl StructAttribute {
     /// Parses single [`StructAttribute`].
     fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> syn::Result<Self> {
         let ahead = input.fork();
+        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+            input.advance_to(&ahead);
+            return Ok(Self::Forward(attr));
+        }
+
+        let ahead = input.fork();
         match ahead.parse::<syn::Path>() {
-            Ok(p) if p.is_ident("forward") => {
-                input.advance_to(&ahead);
-                Ok(Self::Forward)
-            }
             Ok(p) if p.is_ident("types") => legacy_error(&ahead, input.span(), fields),
             _ => input
                 .parse_terminated(Type::parse, token::Comma)
@@ -144,7 +146,7 @@ impl StructAttribute {
 /// #[from]
 /// #[from(<types>)]
 /// #[from(forward)]
-/// #[from(skip)]
+/// #[from(skip)] #[from(ignore)]
 /// ```
 enum VariantAttribute {
     /// Explicitly derive [`From`].
@@ -154,10 +156,10 @@ enum VariantAttribute {
     Types(Punctuated<Type, token::Comma>),
 
     /// Forward [`From`] implementation.
-    Forward,
+    Forward(forward::Attribute),
 
     /// Skip variant.
-    Skip,
+    Skip(skip::Attribute),
 }
 
 impl VariantAttribute {
@@ -192,15 +194,19 @@ impl VariantAttribute {
 
         attr.parse_args_with(|input: ParseStream<'_>| {
             let ahead = input.fork();
+            if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+                input.advance_to(&ahead);
+                return Ok(Self::Forward(attr));
+            }
+
+            let ahead = input.fork();
+            if let Ok(attr) = ahead.parse::<skip::Attribute>() {
+                input.advance_to(&ahead);
+                return Ok(Self::Skip(attr));
+            }
+
+            let ahead = input.fork();
             match ahead.parse::<syn::Path>() {
-                Ok(p) if p.is_ident("forward") => {
-                    input.advance_to(&ahead);
-                    Ok(Self::Forward)
-                }
-                Ok(p) if p.is_ident("skip") || p.is_ident("ignore") => {
-                    input.advance_to(&ahead);
-                    Ok(Self::Skip)
-                }
                 Ok(p) if p.is_ident("types") => {
                     legacy_error(&ahead, input.span(), fields)
                 }
@@ -216,7 +222,7 @@ impl From<StructAttribute> for VariantAttribute {
     fn from(value: StructAttribute) -> Self {
         match value {
             StructAttribute::Types(tys) => Self::Types(tys),
-            StructAttribute::Forward => Self::Forward,
+            StructAttribute::Forward(attr) => Self::Forward(attr),
         }
     }
 }
@@ -312,7 +318,7 @@ impl<'a> Expansion<'a> {
                     }
                 })
             }
-            (Some(VariantAttribute::Forward), _) => {
+            (Some(VariantAttribute::Forward(_)), _) => {
                 let mut i = 0;
                 let mut gen_idents = Vec::with_capacity(self.fields.len());
                 let init = self.expand_fields(|ident, ty, index| {
@@ -356,7 +362,7 @@ impl<'a> Expansion<'a> {
                     }
                 })
             }
-            (Some(VariantAttribute::Skip), _) | (None, true) => {
+            (Some(VariantAttribute::Skip(_)), _) | (None, true) => {
                 Ok(TokenStream::new())
             }
         }

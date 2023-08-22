@@ -69,7 +69,6 @@ where
 When `AsRef` is derived for a struct with more than one field (including tuple
 structs), you must also mark one or more fields with the `#[as_ref]` attribute.
 An implementation will be generated for each indicated field.
-You can also exclude a specific field by using `#[as_ref(skip)]` (or `#[as_ref(ignore)]`).
 
 ```rust
 # use derive_more::AsRef;
@@ -105,6 +104,43 @@ impl AsRef<i32> for MyWrapper {
 }
 ```
 
+
+### Skipping
+
+Or vice versa: you can exclude a specific field by using `#[as_ref(skip)]` (or
+`#[as_ref(ignore)]`). Then, implementations will be generated for non-indicated fields.
+
+```rust
+# use derive_more::AsRef;
+#
+#[derive(AsRef)]
+struct MyWrapper {
+    #[as_ref(skip)]
+    name: String,
+    #[as_ref(ignore)]
+    num: i32,
+    valid: bool,
+}
+```
+
+Generates:
+
+```rust
+# struct MyWrapper {
+#     name: String,
+#     num: i32,
+#     valid: bool,
+# }
+impl AsRef<bool> for MyWrapper {
+    fn as_ref(&self) -> &bool {
+        &self.valid
+    }
+}
+```
+
+
+### Coherence
+
 Note that `AsRef<T>` may only be implemented once for any given type `T`.
 This means any attempt to mark more than one field of the same type with
 `#[as_ref]` will result in a compilation error.
@@ -139,6 +175,9 @@ struct ForwardWithOther {
     number: i32,
 }
 ```
+
+
+
 
 ## Enums
 
