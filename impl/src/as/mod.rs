@@ -39,7 +39,7 @@ pub fn expand(
         )),
     }?;
 
-    let expansions = if let Some(args) =
+    let expansions = if let Some(attr) =
         StructAttribute::parse_attrs(&input.attrs, attr_ident)?
     {
         if data.fields.len() != 1 {
@@ -70,7 +70,7 @@ pub fn expand(
             generics: &input.generics,
             field,
             field_index: 0,
-            args: Some(args.into_inner()),
+            args: Some(attr.into_inner()),
         }]
     } else {
         let attrs = data
@@ -273,6 +273,11 @@ enum FieldAttribute {
 }
 
 /// Arguments specifying which conversions should be generated
+///
+/// ```rust,ignore
+/// #[as_ref(forward)]
+/// #[as_ref(<types>)]x
+/// ```
 enum AsArgs {
     /// Blanket impl, fully forwarding to the field type
     Forward(forward::Attribute),
@@ -336,6 +341,7 @@ impl FieldAttribute {
             })
     }
 
+    /// Conversion into arguments on the attribute, if any
     fn into_args(self) -> Option<AsArgs> {
         match self {
             Self::Args(args) => Some(args),
