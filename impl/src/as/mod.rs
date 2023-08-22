@@ -126,18 +126,14 @@ pub fn expand(
                 .enumerate()
                 .zip(attrs)
                 .filter_map(|((i, field), attr)| match attr.map(Spanning::into_inner) {
-                    attr @ Some(FieldAttribute::Empty | FieldAttribute::Args(_)) => {
+                    Some(attr @ (FieldAttribute::Empty | FieldAttribute::Args(_))) => {
                         Some(Expansion {
                             trait_info,
                             ident: &input.ident,
                             generics: &input.generics,
                             field,
                             field_index: i,
-                            args: if let Some(FieldAttribute::Args(args)) = attr {
-                                Some(args)
-                            } else {
-                                None
-                            },
+                            args: attr.into_args(),
                         })
                     }
                     Some(FieldAttribute::Skip(_)) => unreachable!(),
@@ -338,6 +334,13 @@ impl FieldAttribute {
                     Ok(Some(parsed))
                 }
             })
+    }
+
+    fn into_args(self) -> Option<AsArgs> {
+        match self {
+            Self::Args(args) => Some(args),
+            Self::Empty | Self::Skip(_) => None,
+        }
     }
 }
 
