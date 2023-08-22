@@ -212,16 +212,20 @@ impl<'a> ToTokens for Expansion<'a> {
             .map(|return_ty| {
                 let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
 
-                let generics = if blanket {
+                let generics = if forward_impl {
                     let mut generics = self.generics.clone();
-                    generics.params.push(parse_quote! { #return_ty });
+                    if blanket {
+                        generics.params.push(parse_quote! { #return_ty });
+                        generics
+                            .make_where_clause()
+                            .predicates
+                            .push(parse_quote! { #return_ty: ?::core::marker::Sized });
+                    }
                     generics
                         .make_where_clause()
                         .predicates
-                        .extend::<[syn::WherePredicate; 2]>([
-                            parse_quote! { #return_ty: ?::core::marker::Sized },
-                            parse_quote! { #field_ty: #trait_ty },
-                        ]);
+                        .push(parse_quote! { #field_ty: #trait_ty });
+
                     Cow::Owned(generics)
                 } else {
                     Cow::Borrowed(self.generics)
