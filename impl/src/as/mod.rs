@@ -158,7 +158,7 @@ pub fn expand(
 /// - Optional `mut` token indicating [`AsMut`] expansion.
 type ExpansionCtx<'a> = (&'a syn::Ident, &'a syn::Ident, Option<&'a Token![mut]>);
 
-/// Expansion of a macro for generating [`AsRef`]/[`AsMut`] implementation for a single field of a
+/// Expansion of a macro for generating [`AsRef`]/[`AsMut`] implementations for a single field of a
 /// struct.
 struct Expansion<'a> {
     /// [`ExpansionCtx] of the derived trait.
@@ -176,7 +176,7 @@ struct Expansion<'a> {
     /// Index of the [`syn::Field`].
     field_index: usize,
 
-    /// Arguments on the attribute
+    /// Arguments specifying which conversions should be generated
     args: Option<AsArgs>,
 }
 
