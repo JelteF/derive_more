@@ -20,10 +20,7 @@ inner variable. If there is no such variable, or there is more than 1, an error 
 ## The format of the format
 
 You supply a format by attaching an attribute of the syntax: `#[display("...", args...)]`.
-The format supplied is passed verbatim to `write!`. The arguments supplied handled specially,
-due to constraints in the syntax of attributes. In the case of an argument being a simple
-identifier, it is passed verbatim. If an argument is a string, it is **parsed as an expression**,
-and then passed to `write!`.
+The format supplied is passed verbatim to `write!`.
 
 The variables available in the arguments is `self` and each member of the variant,
 with members of tuple structs being named with a leading underscore and their index,
@@ -43,6 +40,7 @@ requires a separate `debug` feature.
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type
 arguments used during formatting are bound by respective formatting trait.
+Bounds can only be inferred this way when a field is used directly in the interpolation.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
