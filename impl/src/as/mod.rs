@@ -3,6 +3,8 @@
 pub(crate) mod r#mut;
 pub(crate) mod r#ref;
 
+use std::borrow::Cow;
+
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
@@ -174,59 +176,77 @@ struct Expansion<'a> {
     /// Index of the [`syn::Field`].
     field_index: usize,
 
-    /// Indicator whether `forward` implementation should be expanded.
+    /// Arguments on the attribute
     args: Option<AsArgs>,
 }
 
 impl<'a> ToTokens for Expansion<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        // let field_ty = &self.field.ty;
-        // let field_ident = self.field.ident.as_ref().map_or_else(
-        //     || Either::Right(syn::Index::from(self.field_index)),
-        //     Either::Left,
-        // );
+        let field_ty = &self.field.ty;
+        let field_ident = self.field.ident.as_ref().map_or_else(
+            || Either::Right(syn::Index::from(self.field_index)),
+            Either::Left,
+        );
 
-        // let return_ty = if self.forward {
-        //     quote! { __AsT }
-        // } else {
-        //     quote! { #field_ty }
-        // };
+        let (trait_ident, method_ident, mut_) = &self.trait_info;
 
-        // let (trait_ident, method_ident, mut_) = &self.trait_info;
-        // let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
+        let ty_ident = &self.ident;
 
-        // let ty_ident = &self.ident;
-        // let mut generics = self.generics.clone();
-        // if self.forward {
-        //     generics.params.push(parse_quote! { #return_ty });
-        //     generics
-        //         .make_where_clause()
-        //         .predicates
-        //         .extend::<[syn::WherePredicate; 2]>([
-        //             parse_quote! { #return_ty: ?::core::marker::Sized },
-        //             parse_quote! { #field_ty: #trait_ty },
-        //         ]);
-        // }
-        // let (impl_gens, _, where_clause) = generics.split_for_impl();
-        // let (_, ty_gens, _) = self.generics.split_for_impl();
+        let (blanket, forward_impl, return_tys) = match &self.args {
+            Some(AsArgs::Forward(_)) => {
+                (true, true, Either::Left(std::iter::once(quote! { __AsT })))
+            }
+            Some(AsArgs::Types(tys)) => (
+                false,
+                true,
+                Either::Right(tys.iter().map(ToTokens::into_token_stream)),
+            ),
+            None => (
+                false,
+                false,
+                Either::Left(std::iter::once(quote! { #field_ty })),
+            ),
+        };
 
-        // let mut body = quote! { & #mut_ self.#field_ident };
-        // if self.forward {
-        //     body = quote! {
-        //         <#field_ty as #trait_ty>::#method_ident(#body)
-        //     };
-        // }
+        return_tys
+            .map(|return_ty| {
+                let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
 
-        // quote! {
-        //     #[automatically_derived]
-        //     impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
-        //         #[inline]
-        //         fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
-        //             #body
-        //         }
-        //     }
-        // }
-        // .to_tokens(tokens)
+                let generics = if blanket {
+                    let mut generics = self.generics.clone();
+                    generics.params.push(parse_quote! { #return_ty });
+                    generics
+                        .make_where_clause()
+                        .predicates
+                        .extend::<[syn::WherePredicate; 2]>([
+                            parse_quote! { #return_ty: ?::core::marker::Sized },
+                            parse_quote! { #field_ty: #trait_ty },
+                        ]);
+                    Cow::Owned(generics)
+                } else {
+                    Cow::Borrowed(self.generics)
+                };
+
+                let (impl_gens, _, where_clause) = generics.split_for_impl();
+                let (_, ty_gens, _) = self.generics.split_for_impl();
+
+                let mut body = quote! { & #mut_ self.#field_ident };
+                if forward_impl {
+                    body = quote! { <#field_ty as #trait_ty>::#method_ident(#body) };
+                }
+
+                quote! {
+                    #[automatically_derived]
+                    impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
+                        #[inline]
+                        fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
+                            #body
+                        }
+                    }
+                }
+            })
+            .collect::<TokenStream>()
+            .to_tokens(tokens);
     }
 }
 
@@ -252,8 +272,11 @@ enum FieldAttribute {
     Skip(skip::Attribute),
 }
 
+/// Arguments specifying which conversions should be generated
 enum AsArgs {
+    /// Blanket impl, fully forwarding to the field type
     Forward(forward::Attribute),
+    /// Forward implementation, but only impl for specified types
     Types(Punctuated<Type, Token![,]>),
 }
 
@@ -318,6 +341,7 @@ impl Parse for AsArgs {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let ahead = input.fork();
         if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+            input.advance_to(&ahead);
             return Ok(Self::Forward(attr));
         }
 
@@ -328,6 +352,9 @@ impl Parse for AsArgs {
 }
 
 impl StructAttribute {
+    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
+    ///
+    /// [`Span`]: proc_macro2::Span
     fn parse_attrs(
         attrs: &[syn::Attribute],
         attr_ident: &syn::Ident,
