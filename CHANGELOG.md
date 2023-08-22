@@ -76,6 +76,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   `Box<dyn Error + Send + 'static>`
 - Fix bounds on derived `IntoIterator` impls for generic structs.
   ([#284](https://github.com/JelteF/derive_more/pull/284))
+- Fix documentation of generated bounds in `Display` derive.
+  ([#297](https://github.com/JelteF/derive_more/pull/297))
 
 ## 0.99.10 - 2020-09-11
 
