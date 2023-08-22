@@ -1,8 +1,6 @@
 //! Implementations of [`AsRef`]/[`AsMut`] derive macros.
 
-#[cfg(feature = "as_mut")]
 pub(crate) mod r#mut;
-#[cfg(feature = "as_ref")]
 pub(crate) mod r#ref;
 
 use proc_macro2::TokenStream;

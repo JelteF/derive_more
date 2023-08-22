@@ -48,7 +48,6 @@ default = ["std"]
 
 add_assign = ["derive_more-impl/add_assign"]
 add = ["derive_more-impl/add"]
-as_mut = ["derive_more-impl/as_mut"]
 as_ref = ["derive_more-impl/as_ref"]
 constructor = ["derive_more-impl/constructor"]
 debug = ["derive_more-impl/debug"]
@@ -75,7 +74,6 @@ std = []
 full = [
     "add",
     "add_assign",
-    "as_mut",
     "as_ref",
     "constructor",
     "debug",
@@ -114,7 +112,7 @@ required-features = ["add"]
 [[test]]
 name = "as_mut"
 path = "tests/as_mut.rs"
-required-features = ["as_mut"]
+required-features = ["as_ref"]
 
 [[test]]
 name = "as_ref"
@@ -229,7 +227,7 @@ required-features = ["try_unwrap"]
 [[test]]
 name = "compile_fail"
 path = "tests/compile_fail/mod.rs"
-required-features = ["as_ref", "as_mut", "debug", "display", "from", "into"]
+required-features = ["as_ref", "debug", "display", "from", "into"]
 
 [[test]]
 name = "no_std"

@@ -11,6 +11,8 @@ use syn::{
     Ident,
 };
 
+use crate::utils::skip;
+
 use super::{ContainerAttributes, FmtAttribute};
 
 /// Expands a [`fmt::Debug`] derive macro.
@@ -175,7 +177,7 @@ enum FieldAttribute {
     Fmt(FmtAttribute),
 
     /// Attribute for skipping field.
-    Skip,
+    Skip(skip::Attribute),
 }
 
 impl FieldAttribute {
@@ -207,17 +209,7 @@ impl Parse for FieldAttribute {
         if input.peek(syn::LitStr) {
             input.parse().map(Self::Fmt)
         } else {
-            let _ = input.parse::<syn::Path>().and_then(|p| {
-                if ["skip", "ignore"].into_iter().any(|i| p.is_ident(i)) {
-                    Ok(p)
-                } else {
-                    Err(syn::Error::new(
-                        p.span(),
-                        "unknown attribute, expected `skip` or `ignore`",
-                    ))
-                }
-            })?;
-            Ok(Self::Skip)
+            input.parse::<skip::Attribute>().map(Self::Skip)
         }
     }
 }
@@ -289,7 +281,7 @@ impl<'a> Expansion<'a> {
                 let out = unnamed.unnamed.iter().enumerate().try_fold(
                     out,
                     |out, (i, field)| match FieldAttribute::parse_attrs(&field.attrs)? {
-                        Some(FieldAttribute::Skip) => {
+                        Some(FieldAttribute::Skip(_)) => {
                             exhaustive = false;
                             Ok::<_, syn::Error>(out)
                         }
@@ -329,7 +321,7 @@ impl<'a> Expansion<'a> {
                         });
                         let field_str = field_ident.to_string();
                         match FieldAttribute::parse_attrs(&field.attrs)? {
-                            Some(FieldAttribute::Skip) => {
+                            Some(FieldAttribute::Skip(_)) => {
                                 exhaustive = false;
                                 Ok::<_, syn::Error>(out)
                             }
@@ -376,7 +368,7 @@ impl<'a> Expansion<'a> {
                             },
                         ));
                     }
-                    Some(FieldAttribute::Skip) => {}
+                    Some(FieldAttribute::Skip(_)) => {}
                     None => out.extend([parse_quote! { #ty: ::core::fmt::Debug }]),
                 }
                 Ok(out)
