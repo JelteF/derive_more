@@ -14,6 +14,9 @@ use core::ptr;
 
 use derive_more::AsMut;
 
+#[derive(AsMut)]
+struct Foo(i32, f64, bool);
+
 mod single_field {
     use super::*;
 
@@ -63,6 +66,51 @@ mod single_field {
             assert!(ptr::eq(rf, item.0.as_mut()));
         }
 
+        #[derive(AsMut)]
+        #[as_mut(i32, f64)]
+        struct Types(Foo);
+
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsMut<bool> for Types {
+            fn as_mut(&mut self) -> &mut bool {
+                self.0.as_mut()
+            }
+        }
+
+        #[test]
+        fn types() {
+            let mut item = Types(Foo(1, 2.0, false));
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.0.as_mut()));
+
+            let rf: &mut f64 = item.as_mut();
+            assert!(ptr::eq(rf, item.0.as_mut()));
+        }
+
+        #[derive(AsMut)]
+        struct FieldTypes(#[as_mut(i32, f64)] Foo);
+
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsMut<bool> for FieldTypes {
+            fn as_mut(&mut self) -> &mut bool {
+                self.0.as_mut()
+            }
+        }
+
+        #[test]
+        fn field_types() {
+            let mut item = FieldTypes(Foo(1, 2.0, false));
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.0.as_mut()));
+
+            let rf: &mut f64 = item.as_mut();
+            assert!(ptr::eq(rf, item.0.as_mut()));
+        }
+
         mod generic {
             use super::*;
 
@@ -106,6 +154,51 @@ mod single_field {
                 let mut item = FieldForward("test".to_owned());
 
                 let rf: &mut str = item.as_mut();
+                assert!(ptr::eq(rf, item.0.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            #[as_mut(i32, f64)]
+            struct Types<T>(T);
+
+            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsMut<bool>> AsMut<bool> for Types<T> {
+                fn as_mut(&mut self) -> &mut bool {
+                    self.0.as_mut()
+                }
+            }
+
+            #[test]
+            fn types() {
+                let mut item = Types(Foo(1, 2.0, false));
+
+                let rf: &mut i32 = item.as_mut();
+                assert!(ptr::eq(rf, item.0.as_mut()));
+
+                let rf: &mut f64 = item.as_mut();
+                assert!(ptr::eq(rf, item.0.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct FieldTypes<T>(#[as_mut(i32, f64)] T);
+
+            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsMut<bool>> AsMut<bool> for FieldTypes<T> {
+                fn as_mut(&mut self) -> &mut bool {
+                    self.0.as_mut()
+                }
+            }
+
+            #[test]
+            fn field_types() {
+                let mut item = FieldTypes(Foo(1, 2.0, false));
+
+                let rf: &mut i32 = item.as_mut();
+                assert!(ptr::eq(rf, item.0.as_mut()));
+
+                let rf: &mut f64 = item.as_mut();
                 assert!(ptr::eq(rf, item.0.as_mut()));
             }
         }
@@ -175,6 +268,60 @@ mod single_field {
             assert!(ptr::eq(rf, item.first.as_mut()));
         }
 
+        #[derive(AsMut)]
+        #[as_mut(i32, f64)]
+        struct Types {
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsMut<bool> for Types {
+            fn as_mut(&mut self) -> &mut bool {
+                self.first.as_mut()
+            }
+        }
+
+        #[test]
+        fn types() {
+            let mut item = Types {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.first.as_mut()));
+
+            let rf: &mut f64 = item.as_mut();
+            assert!(ptr::eq(rf, item.first.as_mut()));
+        }
+
+        #[derive(AsMut)]
+        struct FieldTypes {
+            #[as_mut(i32, f64)]
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsMut<bool> for FieldTypes {
+            fn as_mut(&mut self) -> &mut bool {
+                self.first.as_mut()
+            }
+        }
+
+        #[test]
+        fn field_types() {
+            let mut item = FieldTypes {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.first.as_mut()));
+
+            let rf: &mut f64 = item.as_mut();
+            assert!(ptr::eq(rf, item.first.as_mut()));
+        }
+
         mod generic {
             use super::*;
 
@@ -236,6 +383,60 @@ mod single_field {
                 };
 
                 let rf: &mut str = item.as_mut();
+                assert!(ptr::eq(rf, item.first.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            #[as_mut(i32, f64)]
+            struct Types<T> {
+                first: T,
+            }
+
+            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsMut<bool>> AsMut<bool> for Types<T> {
+                fn as_mut(&mut self) -> &mut bool {
+                    self.first.as_mut()
+                }
+            }
+
+            #[test]
+            fn types() {
+                let mut item = Types {
+                    first: Foo(1, 2.0, false),
+                };
+
+                let rf: &mut i32 = item.as_mut();
+                assert!(ptr::eq(rf, item.first.as_mut()));
+
+                let rf: &mut f64 = item.as_mut();
+                assert!(ptr::eq(rf, item.first.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct FieldTypes<T> {
+                #[as_mut(i32, f64)]
+                first: T,
+            }
+
+            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsMut<bool>> AsMut<bool> for FieldTypes<T> {
+                fn as_mut(&mut self) -> &mut bool {
+                    self.first.as_mut()
+                }
+            }
+
+            #[test]
+            fn field_types() {
+                let mut item = FieldTypes {
+                    first: Foo(1, 2.0, false),
+                };
+
+                let rf: &mut i32 = item.as_mut();
+                assert!(ptr::eq(rf, item.first.as_mut()));
+
+                let rf: &mut f64 = item.as_mut();
                 assert!(ptr::eq(rf, item.first.as_mut()));
             }
         }
@@ -308,6 +509,20 @@ mod multi_field {
             assert!(ptr::eq(rf, item.0.as_mut()));
         }
 
+        #[derive(AsMut)]
+        struct Types(#[as_mut(str)] String, #[as_mut([u8])] Vec<u8>);
+
+        #[test]
+        fn types() {
+            let mut item = Types("test".to_owned(), vec![0]);
+
+            let rf: &mut str = item.as_mut();
+            assert!(ptr::eq(rf, item.0.as_mut()));
+
+            let rf: &mut [u8] = item.as_mut();
+            assert!(ptr::eq(rf, item.1.as_mut()));
+        }
+
         mod generic {
             use super::*;
 
@@ -353,6 +568,20 @@ mod multi_field {
 
                 let rf: &mut str = item.as_mut();
                 assert!(ptr::eq(rf, item.0.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct Types<T, U>(#[as_mut(str)] T, #[as_mut([u8])] U);
+
+            #[test]
+            fn types() {
+                let mut item = Types("test".to_owned(), vec![0]);
+
+                let rf: &mut str = item.as_mut();
+                assert!(ptr::eq(rf, item.0.as_mut()));
+
+                let rf: &mut [u8] = item.as_mut();
+                assert!(ptr::eq(rf, item.1.as_mut()));
             }
         }
     }
@@ -452,6 +681,28 @@ mod multi_field {
             assert!(ptr::eq(rf, item.first.as_mut()));
         }
 
+        #[derive(AsMut)]
+        struct Types {
+            #[as_mut(str)]
+            first: String,
+            #[as_mut([u8])]
+            second: Vec<u8>,
+        }
+
+        #[test]
+        fn types() {
+            let mut item = Types {
+                first: "test".to_owned(),
+                second: vec![0],
+            };
+
+            let rf: &mut str = item.as_mut();
+            assert!(ptr::eq(rf, item.first.as_mut()));
+
+            let rf: &mut [u8] = item.as_mut();
+            assert!(ptr::eq(rf, item.second.as_mut()));
+        }
+
         mod generic {
             use super::*;
 
@@ -529,6 +780,28 @@ mod multi_field {
 
                 let rf: &mut str = item.as_mut();
                 assert!(ptr::eq(rf, item.first.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct Types<T, U> {
+                #[as_mut(str)]
+                first: T,
+                #[as_mut([u8])]
+                second: U,
+            }
+
+            #[test]
+            fn types() {
+                let mut item = Types {
+                    first: "test".to_owned(),
+                    second: vec![0],
+                };
+
+                let rf: &mut str = item.as_mut();
+                assert!(ptr::eq(rf, item.first.as_mut()));
+
+                let rf: &mut [u8] = item.as_mut();
+                assert!(ptr::eq(rf, item.second.as_mut()));
             }
         }
     }

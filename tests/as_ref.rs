@@ -14,6 +14,9 @@ use core::ptr;
 
 use derive_more::AsRef;
 
+#[derive(AsRef)]
+struct Foo(i32, f64, bool);
+
 mod single_field {
     use super::*;
 
@@ -63,6 +66,51 @@ mod single_field {
             assert!(ptr::eq(rf, item.0.as_ref()));
         }
 
+        #[derive(AsRef)]
+        #[as_ref(i32, f64)]
+        struct Types(Foo);
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for Types {
+            fn as_ref(&self) -> &bool {
+                self.0.as_ref()
+            }
+        }
+
+        #[test]
+        fn types() {
+            let item = Types(Foo(1, 2.0, false));
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+
+            let rf: &f64 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+        }
+
+        #[derive(AsRef)]
+        struct FieldTypes(#[as_ref(i32, f64)] Foo);
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for FieldTypes {
+            fn as_ref(&self) -> &bool {
+                self.0.as_ref()
+            }
+        }
+
+        #[test]
+        fn field_types() {
+            let item = FieldTypes(Foo(1, 2.0, false));
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+
+            let rf: &f64 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+        }
+
         mod generic {
             use super::*;
 
@@ -106,6 +154,51 @@ mod single_field {
                 let item = FieldForward("test".to_owned());
 
                 let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref(i32, f64)]
+            struct Types<T>(T);
+
+            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsRef<bool>> AsRef<bool> for Types<T> {
+                fn as_ref(&self) -> &bool {
+                    self.0.as_ref()
+                }
+            }
+
+            #[test]
+            fn types() {
+                let item = Types(Foo(1, 2.0, false));
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &f64 = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldTypes<T>(#[as_ref(i32, f64)] T);
+
+            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsRef<bool>> AsRef<bool> for FieldTypes<T> {
+                fn as_ref(&self) -> &bool {
+                    self.0.as_ref()
+                }
+            }
+
+            #[test]
+            fn field_types() {
+                let item = FieldTypes(Foo(1, 2.0, false));
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &f64 = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
             }
         }
@@ -175,6 +268,60 @@ mod single_field {
             assert!(ptr::eq(rf, item.first.as_ref()));
         }
 
+        #[derive(AsRef)]
+        #[as_ref(i32, f64)]
+        struct Types {
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for Types {
+            fn as_ref(&self) -> &bool {
+                self.first.as_ref()
+            }
+        }
+
+        #[test]
+        fn types() {
+            let item = Types {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+
+            let rf: &f64 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+        }
+
+        #[derive(AsRef)]
+        struct FieldTypes {
+            #[as_ref(i32, f64)]
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for FieldTypes {
+            fn as_ref(&self) -> &bool {
+                self.first.as_ref()
+            }
+        }
+
+        #[test]
+        fn field_types() {
+            let item = FieldTypes {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+
+            let rf: &f64 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+        }
+
         mod generic {
             use super::*;
 
@@ -236,6 +383,60 @@ mod single_field {
                 };
 
                 let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref(i32, f64)]
+            struct Types<T> {
+                first: T,
+            }
+
+            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsRef<bool>> AsRef<bool> for Types<T> {
+                fn as_ref(&self) -> &bool {
+                    self.first.as_ref()
+                }
+            }
+
+            #[test]
+            fn types() {
+                let item = Types {
+                    first: Foo(1, 2.0, false),
+                };
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &f64 = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldTypes<T> {
+                #[as_ref(i32, f64)]
+                first: T,
+            }
+
+            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+            // producing trait implementations conflict error during compilation, if it does.
+            impl<T: AsRef<bool>> AsRef<bool> for FieldTypes<T> {
+                fn as_ref(&self) -> &bool {
+                    self.first.as_ref()
+                }
+            }
+
+            #[test]
+            fn field_types() {
+                let item = FieldTypes {
+                    first: Foo(1, 2.0, false),
+                };
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &f64 = item.as_ref();
                 assert!(ptr::eq(rf, item.first.as_ref()));
             }
         }
@@ -308,6 +509,20 @@ mod multi_field {
             assert!(ptr::eq(rf, item.0.as_ref()));
         }
 
+        #[derive(AsRef)]
+        struct Types(#[as_ref(str)] String, #[as_ref([u8])] Vec<u8>);
+
+        #[test]
+        fn types() {
+            let item = Types("test".to_owned(), vec![0]);
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+
+            let rf: &[u8] = item.as_ref();
+            assert!(ptr::eq(rf, item.1.as_ref()));
+        }
+
         mod generic {
             use super::*;
 
@@ -353,6 +568,20 @@ mod multi_field {
 
                 let rf: &str = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct Types<T, U>(#[as_ref(str)] T, #[as_ref([u8])] U);
+
+            #[test]
+            fn types() {
+                let item = Types("test".to_owned(), vec![0u8]);
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &[u8] = item.as_ref();
+                assert!(ptr::eq(rf, item.1.as_ref()));
             }
         }
     }
@@ -452,6 +681,28 @@ mod multi_field {
             assert!(ptr::eq(rf, item.first.as_ref()));
         }
 
+        #[derive(AsRef)]
+        struct Types {
+            #[as_ref(str)]
+            first: String,
+            #[as_ref([u8])]
+            second: Vec<u8>,
+        }
+
+        #[test]
+        fn types() {
+            let item = Types {
+                first: "test".to_owned(),
+                second: vec![0u8],
+            };
+
+            let rf: &str = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+
+            let rf: &[u8] = item.as_ref();
+            assert!(ptr::eq(rf, item.second.as_ref()));
+        }
+
         mod generic {
             use super::*;
 
@@ -529,6 +780,28 @@ mod multi_field {
 
                 let rf: &str = item.as_ref();
                 assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct Types<T, U> {
+                #[as_ref(str)]
+                first: T,
+                #[as_ref([u8])]
+                second: U,
+            }
+
+            #[test]
+            fn types() {
+                let item = Types {
+                    first: "test".to_owned(),
+                    second: vec![0u8],
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &[u8] = item.as_ref();
+                assert!(ptr::eq(rf, item.second.as_ref()));
             }
         }
     }
