@@ -330,7 +330,7 @@ impl FieldAttribute {
                             Ok(Some(Spanning::new(Self::Args(AsArgs::Types(tys)), span)))
                         }
                         _ => Err(syn::Error::new(
-                            span,
+                            parsed.span,
                             format!("only single `#[{attr_ident}(...)]` attribute is allowed here")
                         ))
                     }
@@ -375,7 +375,7 @@ impl StructAttribute {
                             Ok(Some(Spanning::new(Self::Types(tys), span)))
                         },
                         _ => Err(syn::Error::new(
-                            span,
+                            parsed.span,
                             format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
                         ))
                     }
