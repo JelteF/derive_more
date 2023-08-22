@@ -40,7 +40,7 @@ requires a separate `debug` feature.
 
 When deriving `Display` (or other formatting trait) for a generic struct/enum, all generic type
 arguments used during formatting are bound by respective formatting trait.
-Bounds can only be inferred this way when a field is used directly in the interpolation.
+Bounds can only be inferred this way if a field is used directly in the interpolation.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
@@ -73,9 +73,13 @@ could be used during formatting. This can be done with a `#[display(bound(...))]
 `#[display(bound(...))]` accepts code tokens in a format similar to the format
 used in angle bracket list (or `where` clause predicates): `T: MyTrait, U: Trait1 + Trait2`.
 
-Explicitly specified bounds are added to the inferred ones.
+`#[display("fmt", ...)]` arguments are parsed as an arbitrary Rust expression and passed to generated
+`write!` as-is, it's impossible to meaningfully infer any kind of trait bounds for generic type parameters
+used this way. That means that you'll **have to** explicitly specify all the required trait bounds of the
+expression. Either in the struct/enum definition, or via `#[display(bound(...))]` attribute.
 
-Note how no `V: Display` bound is necessary.
+Explicitly specified bounds are added to the inferred ones. Note how no `V: Display` bound is necessary,
+because it's inferred already.
 
 ```rust
 # use derive_more::Display;
