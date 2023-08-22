@@ -1328,8 +1328,6 @@ pub(crate) mod forward {
         spanned::Spanned as _,
     };
 
-    use super::Spanning;
-
     /// Representation of a `forward` attribute.
     ///
     /// ```rust,ignore
@@ -1343,34 +1341,6 @@ pub(crate) mod forward {
                 p if p.is_ident("forward") => Ok(Self),
                 p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
             }
-        }
-    }
-
-    impl Attribute {
-        /// Parses an [`Attribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-        ///
-        /// [`Span`]: proc_macro2::Span
-        pub(crate) fn parse_attrs(
-            attrs: impl AsRef<[syn::Attribute]>,
-            attr_ident: &syn::Ident,
-        ) -> syn::Result<Option<Spanning<Self>>> {
-            attrs
-                .as_ref()
-                .iter()
-                .filter(|attr| attr.path().is_ident(attr_ident))
-                .try_fold(None, |mut attrs, attr| {
-                    let parsed = Spanning::new(attr.parse_args::<Self>()?, attr.span());
-                    if attrs.replace(parsed).is_some() {
-                        Err(syn::Error::new(
-                            attr.span(),
-                            format!(
-                                "only single `#[{attr_ident}(forward)]` attribute is allowed here",
-                            ),
-                        ))
-                    } else {
-                        Ok(attrs)
-                    }
-                })
         }
     }
 }
