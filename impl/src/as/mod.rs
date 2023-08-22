@@ -276,7 +276,7 @@ enum FieldAttribute {
 ///
 /// ```rust,ignore
 /// #[as_ref(forward)]
-/// #[as_ref(<types>)]x
+/// #[as_ref(<types>)]
 /// ```
 enum AsArgs {
     /// Blanket impl, fully forwarding to the field type
@@ -341,7 +341,7 @@ impl FieldAttribute {
             })
     }
 
-    /// Conversion into arguments on the attribute, if any
+    /// Extracts conversion arguments on the attribute, if any
     fn into_args(self) -> Option<AsArgs> {
         match self {
             Self::Args(args) => Some(args),
