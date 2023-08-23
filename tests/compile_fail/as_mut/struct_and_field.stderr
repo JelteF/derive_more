@@ -1,0 +1,5 @@
+error: `#[as_mut(...)]` cannot be placed on both struct and its field
+ --> tests/compile_fail/as_mut/struct_and_field.rs:4:5
+  |
+4 |     #[as_mut]
+  |     ^

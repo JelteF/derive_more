@@ -1,0 +1,5 @@
+error: only `forward` or `skip`/`ignore` allowed here
+ --> tests/compile_fail/as_ref/unknown_field_attr_arg.rs:3:14
+  |
+3 |     #[as_ref(baz)]
+  |              ^^^

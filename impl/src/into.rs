@@ -3,7 +3,7 @@
 use std::{borrow::Cow, iter};
 
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens as _};
+use quote::{format_ident, quote, ToTokens as _};
 use syn::{
     ext::IdentExt as _,
     parse::{discouraged::Speculative as _, Parse, ParseStream},
@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, Either, FieldsExt as _},
+    utils::{polyfill, skip, Either, FieldsExt as _},
 };
 
 /// Expands an [`Into`] derive macro.
@@ -42,15 +42,18 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .fields
         .iter()
         .enumerate()
-        .filter_map(|(i, f)| match SkipFieldAttribute::parse_attrs(&f.attrs) {
-            Ok(None) => Some(Ok((
-                &f.ty,
-                f.ident
-                    .as_ref()
-                    .map_or_else(|| Either::Right(syn::Index::from(i)), Either::Left),
-            ))),
-            Ok(Some(_)) => None,
-            Err(e) => Some(Err(e)),
+        .filter_map(|(i, f)| {
+            match SkipFieldAttribute::parse_attrs(&f.attrs, &format_ident!("into")) {
+                Ok(None) => Some(Ok((
+                    &f.ty,
+                    f.ident.as_ref().map_or_else(
+                        || Either::Right(syn::Index::from(i)),
+                        Either::Left,
+                    ),
+                ))),
+                Ok(Some(_)) => None,
+                Err(e) => Some(Err(e)),
+            }
         })
         .collect::<syn::Result<Vec<_>>>()?;
     let (fields_tys, fields_idents): (Vec<_>, Vec<_>) = fields.into_iter().unzip();
@@ -252,42 +255,8 @@ impl StructAttribute {
     }
 }
 
-/// `#[into(skip)]` field attribute.
-struct SkipFieldAttribute;
-
-impl SkipFieldAttribute {
-    /// Parses a [`SkipFieldAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
-        Ok(attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("into"))
-            .try_fold(None, |mut attrs, attr| {
-                let field_attr = attr.parse_args::<SkipFieldAttribute>()?;
-                if let Some((path, _)) = attrs.replace((attr.path(), field_attr)) {
-                    Err(syn::Error::new(
-                        path.span(),
-                        "only single `#[into(...)]` attribute is allowed here",
-                    ))
-                } else {
-                    Ok(attrs)
-                }
-            })?
-            .map(|(_, attr)| attr))
-    }
-}
-
-impl Parse for SkipFieldAttribute {
-    fn parse(content: ParseStream) -> syn::Result<Self> {
-        match content.parse::<syn::Path>()? {
-            p if p.is_ident("skip") | p.is_ident("ignore") => Ok(Self),
-            p => Err(syn::Error::new(
-                p.span(),
-                format!("expected `skip`, found: `{}`", p.into_token_stream()),
-            )),
-        }
-    }
-}
+/// `#[into(skip)]`/`#[into(ignore)]` field attribute.
+type SkipFieldAttribute = skip::Attribute;
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
 fn check_legacy_syntax(

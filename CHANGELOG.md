@@ -36,7 +36,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `Into` derive now uses `#[into(<types>)]` instead of `#[into(types(<types>))]`
   and ignores field type itself.
 - Importing a derive macro now also import its corresponding trait.
-- The `Error` derive is updated with changes to the `error_generic_member_access` unstable feature for nightly users. ([#200](https://github.com/JelteF/derive_more/pull/200), [#294](https://github.com/JelteF/derive_more/pull/294))
+- The `Error` derive is updated with changes to the `error_generic_member_access`
+  unstable feature for nightly users. ([#200](https://github.com/JelteF/derive_more/pull/200),
+  [#294](https://github.com/JelteF/derive_more/pull/294))
+- The `as_mut` feature is removed, and the `AsMut` derive is now gated by the
+  `as_ref` feature. ([#295](https://github.com/JelteF/derive_more/pull/295))
 
 ### Added
 
@@ -53,8 +57,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#206](https://github.com/JelteF/derive_more/pull/206))
 - Add support for container format in `Debug` derive with the same syntax as `Display` derives.
   ([#279](https://github.com/JelteF/derive_more/pull/279))
-- `derive_more::derive` module exporting only macros, without traits. ([#290](https://github.com/JelteF/derive_more/pull/290))
-- Add support for source forwarding in `Error` derive. ([#293](https://github.com/JelteF/derive_more/pull/293))
+- `derive_more::derive` module exporting only macros, without traits.
+  ([#290](https://github.com/JelteF/derive_more/pull/290))
+- Add support for source forwarding in `Error` derive.
+  ([#293](https://github.com/JelteF/derive_more/pull/293))
 
 ### Changed
 
@@ -77,6 +83,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   `Box<dyn Error + Send + 'static>`
 - Fix bounds on derived `IntoIterator` impls for generic structs.
   ([#284](https://github.com/JelteF/derive_more/pull/284))
+- Fix documentation of generated bounds in `Display` derive.
+  ([#297](https://github.com/JelteF/derive_more/pull/297))
 
 ## 0.99.10 - 2020-09-11
 

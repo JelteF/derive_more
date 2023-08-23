@@ -87,8 +87,7 @@ These are traits that are used to convert automatically between types.
 3. [`FromStr`]
 4. [`TryInto`]
 5. [`IntoIterator`]
-6. [`AsRef`]
-7. [`AsMut`]
+6. [`AsRef`], [`AsMut`]
 
 
 ### Formatting traits

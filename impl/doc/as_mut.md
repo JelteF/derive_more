@@ -50,13 +50,13 @@ This generates:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<__AsMutT: ?::core::marker::Sized> ::core::convert::AsMut<__AsMutT> for SingleFieldForward
+impl<__AsT: ?::core::marker::Sized> ::core::convert::AsMut<__AsT> for SingleFieldForward
 where
-    Vec<i32>: ::core::convert::AsMut<__AsMutT>,
+    Vec<i32>: ::core::convert::AsMut<__AsT>,
 {
     #[inline]
-    fn as_mut(&mut self) -> &mut __AsMutT {
-        <Vec<i32> as ::core::convert::AsMut<__AsMutT>>::as_mut(&mut self.0)
+    fn as_mut(&mut self) -> &mut __AsT {
+        <Vec<i32> as ::core::convert::AsMut<__AsT>>::as_mut(&mut self.0)
     }
 }
 ```
@@ -69,7 +69,6 @@ where
 When `AsMut` is derived for a struct with more than one field (including tuple
 structs), you must also mark one or more fields with the `#[as_mut]` attribute.
 An implementation will be generated for each indicated field.
-You can also exclude a specific field by using `#[as_mut(ignore)]`.
 
 ```rust
 # use derive_more::AsMut;
@@ -105,8 +104,46 @@ impl AsMut<i32> for MyWrapper {
 }
 ```
 
-Note that `AsMut<T>` may only be implemented once for any given type `T`. This means any attempt to
-mark more than one field of the same type with `#[as_mut]` will result in a compilation error.
+
+### Skipping
+
+Or vice versa: you can exclude a specific field by using `#[as_mut(skip)]` (or
+`#[as_mut(ignore)]`). Then, implementations will be generated for non-indicated fields.
+
+```rust
+# use derive_more::AsMut;
+#
+#[derive(AsMut)]
+struct MyWrapper {
+    #[as_mut(skip)]
+    name: String,
+    #[as_mut(ignore)]
+    num: i32,
+    valid: bool,
+}
+```
+
+Generates:
+
+```rust
+# struct MyWrapper {
+#     name: String,
+#     num: i32,
+#     valid: bool,
+# }
+impl AsMut<bool> for MyWrapper {
+    fn as_mut(&mut self) -> &mut bool {
+        &mut self.valid
+    }
+}
+```
+
+
+### Coherence
+
+Note that `AsMut<T>` may only be implemented once for any given type `T`.
+This means any attempt to mark more than one field of the same type with
+`#[as_mut]` will result in a compilation error.
 
 ```rust,compile_fail
 # use derive_more::AsMut;
@@ -118,6 +155,24 @@ struct MyWrapper {
     str1: String,
     #[as_mut]
     str2: String,
+}
+```
+
+Similarly, if some field is annotated with `#[as_mut(forward)]`, no other
+field can be marked.
+
+```rust,compile_fail
+# use derive_more::AsMut;
+#
+// Error! Conflicting implementations of `AsMut<i32>`
+// note: upstream crates may add a new impl of trait `AsMut<i32>`
+// for type `String` in future versions
+#[derive(AsMut)]
+struct ForwardWithOther {
+    #[as_mut(forward)]
+    str: String,
+    #[as_mut]
+    number: i32,
 }
 ```
 

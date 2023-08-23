@@ -48,7 +48,6 @@ default = []
 
 add = []
 add_assign = []
-as_mut = []
 as_ref = []
 constructor = []
 debug = ["syn/extra-traits", "dep:unicode-xid"]
@@ -74,7 +73,6 @@ unwrap = ["dep:convert_case"]
 full = [
     "add",
     "add_assign",
-    "as_mut",
     "as_ref",
     "constructor",
     "debug",

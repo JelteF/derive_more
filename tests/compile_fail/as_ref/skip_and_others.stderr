@@ -1,0 +1,5 @@
+error: `#[as_ref(skip)]` cannot be used in the same struct with other `#[as_ref(...)]` attributes
+ --> tests/compile_fail/as_ref/skip_and_others.rs:5:5
+  |
+5 |     #[as_ref(skip)]
+  |     ^
