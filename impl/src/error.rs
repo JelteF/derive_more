@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{spanned::Spanned as _, Error, Result};
 
@@ -110,9 +110,13 @@ fn render_enum(
     let mut source_match_arms = Vec::new();
     let mut provide_match_arms = Vec::new();
 
-    for variant in state.enabled_variant_data().variants {
+    let variant_data = state.enabled_variant_data();
+
+    for (variant, variant_info) in variant_data.variants.iter().zip(&variant_data.infos)
+    {
         let default_info = FullMetaInfo {
             enabled: true,
+            forward: variant_info.forward,
             ..FullMetaInfo::default()
         };
 
@@ -160,9 +164,9 @@ fn render_enum(
 
 fn allowed_attr_params() -> AttrParams {
     AttrParams {
-        enum_: vec!["ignore"],
-        struct_: vec!["ignore"],
-        variant: vec!["ignore"],
+        enum_: vec!["ignore", "forward"],
+        struct_: vec!["ignore", "forward"],
+        variant: vec!["ignore", "forward"],
         field: vec!["ignore", "source", "backtrace"],
     }
 }
@@ -189,13 +193,21 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
         let source = self.source?;
         let ident = &self.data.members[source];
-        Some(render_some(quote! { #ident }))
+        if self.data.infos[source].forward {
+            Some(quote! { ::derive_more::Error::source(&#ident) })
+        } else {
+            Some(render_some(quote! { #ident }))
+        }
     }
 
     fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         let source = self.source?;
         let pattern = self.data.matcher(&[source], &[quote! { source }]);
-        let expr = render_some(quote! { source });
+        let expr = if self.data.infos[source].forward {
+            quote! { ::derive_more::Error::source(source) }
+        } else {
+            render_some(quote! { source })
+        };
         Some(quote! { #pattern => #expr })
     }
 
@@ -378,7 +390,12 @@ fn parse_fields_impl<'input, 'state, P>(
 where
     P: Fn(&str, &syn::Field, usize) -> bool,
 {
-    let MultiFieldData { fields, infos, .. } = state.enabled_fields_data();
+    let MultiFieldData {
+        fields,
+        infos,
+        variant_info,
+        ..
+    } = state.enabled_fields_data();
 
     let iter = fields
         .iter()
@@ -406,6 +423,11 @@ where
 
     if let Some((index, _, _)) = source {
         parsed_fields.source = Some(index);
+    } else if variant_info.forward {
+        return Err(syn::Error::new(
+            Span::call_site(),
+            "`#[error(forward)]` cannot be used when an error has no source",
+        ));
     }
 
     if let Some((index, _, _)) = backtrace {

@@ -32,6 +32,11 @@ often [`From` as well](crate::From).
    called `Backtrace`. Then it would return that field as the `backtrace`.
 3. One of the fields is annotated with `#[error(backtrace)]`. Then it would
    return that field as the `backtrace`.
+4. The source field is annotated with `#[error(backtrace)]`. Then it would
+   forward implementation to the source.
+
+If the source field is annotated with `#[error(backtrace)]`, and another field
+is also annotated/was inferred, both backtraces will be provided.
 
 ### Ignoring fields for derives
 
@@ -41,6 +46,14 @@ detecting `backtrace` and `source`. It's also possible to mark a field only
 ignored for one of these methods by using `#[error(not(backtrace))]` or
 `#[error(not(source))]`.
 
+### Source Forwarding
+
+A struct, enum, or enum variant can be annotated with `#[error(forward)]` to forward
+the `source()` implementation to the source field (inferred or explicitly annotated),
+instead of returning the field itself.
+
+In general this approach is only recommended if the error is intended to be fully
+transparent, and forwards implementation of [`Display`](crate::Display) as well.
 
 ### What works in `no_std`?
 
@@ -127,6 +140,17 @@ enum CompoundError {
     },
     Tuple(WithExplicitSource),
     WithoutSource(#[error(not(source))] Tuple),
+    #[error(forward)]
+    #[from(ignore)]
+    ForwardedImplicitSource {
+        source: WithSource,
+    },
+    #[error(forward)]
+    #[from(ignore)]
+    ForwardedExplicitSourceWithBacktrace {
+        #[error(source, backtrace)]
+        explicit_source: WithSourceAndBacktrace,
+    }
 }
 
 assert!(Simple.source().is_none());
@@ -147,5 +171,14 @@ assert!(CompoundError::from(Simple).source().is_some());
 assert!(CompoundError::from(WithSource::default()).source().is_some());
 assert!(CompoundError::from(WithExplicitSource::default()).source().is_some());
 assert!(CompoundError::from(Tuple::default()).source().is_none());
+
+let forwarded = CompoundError::ForwardedImplicitSource { source: WithSource::default() };
+assert!(forwarded.source().is_some());
+assert!(forwarded.source().unwrap().is::<Simple>());
+
+let forwarded_with_backtrace = CompoundError::ForwardedExplicitSourceWithBacktrace { explicit_source: WithSourceAndBacktrace { source: Simple, backtrace: Backtrace::capture() } };
+assert!(forwarded_with_backtrace.source().is_some());
+assert!(forwarded_with_backtrace.source().unwrap().is::<Simple>());
+assert!(request_ref::<Backtrace>(&forwarded_with_backtrace).is_some());
 # }
 ```
