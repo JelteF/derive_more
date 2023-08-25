@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, Either, FieldsExt},
+    utils::{polyfill, skip, Either, FieldsExt},
 };
 
 /// Expands an [`Into`] derive macro.
@@ -40,7 +40,10 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .map(|(i, f)| {
             let field_attr = FieldAttribute::parse_attrs(&f.attrs, f)?;
 
-            let skip = field_attr.as_ref().map(|attr| attr.skip).unwrap_or(false);
+            let skip = field_attr
+                .as_ref()
+                .map(|attr| attr.skip.is_some())
+                .unwrap_or(false);
 
             let args = field_attr.and_then(|attr| attr.args);
 
@@ -257,7 +260,7 @@ impl IntoArgs {
 /// ```
 #[derive(Debug, Default)]
 struct FieldAttribute {
-    skip: bool,
+    skip: Option<skip::Attribute>,
     args: Option<IntoArgs>,
 }
 
@@ -286,14 +289,14 @@ impl FieldAttribute {
                     (_, None) => {}
                 };
 
-                if prev_attrs.skip && field_attr.skip {
-                    return Err(syn::Error::new(
-                        attr.path().span(),
-                        "only a single `#[into(skip)] attribute is allowed`",
-                    ));
+                if let Some(skip) = field_attr.skip {
+                    if prev_attrs.skip.replace(skip).is_some() {
+                        return Err(syn::Error::new(
+                            attr.path().span(),
+                            "only a single `#[into(skip)] attribute is allowed`",
+                        ));
+                    }
                 }
-
-                prev_attrs.skip |= field_attr.skip;
 
                 Ok(attrs)
             })
@@ -303,7 +306,7 @@ impl FieldAttribute {
     fn parse_attr(attr: &syn::Attribute, field: &syn::Field) -> syn::Result<Self> {
         if matches!(attr.meta, syn::Meta::Path(_)) {
             Ok(Self {
-                skip: false,
+                skip: None,
                 args: Some(IntoArgs::all_owned()),
             })
         } else {
@@ -314,24 +317,20 @@ impl FieldAttribute {
     /// Parses a single [`FieldAttribute`]'s args
     fn parse(content: ParseStream, field: &syn::Field) -> syn::Result<Self> {
         let ahead = content.fork();
-        match ahead.parse::<syn::Path>() {
-            Ok(p) if p.is_ident("skip") | p.is_ident("ignore") => {
-                content.advance_to(&ahead);
-                Ok(Self {
-                    skip: true,
-                    args: None,
-                })
-            }
-            _ => {
-                let fields = std::slice::from_ref(field);
-                let args = IntoArgs::parse(content, fields)?;
-
-                Ok(Self {
-                    skip: false,
-                    args: Some(args),
-                })
-            }
+        if let Ok(attr) = ahead.parse::<skip::Attribute>() {
+            content.advance_to(&ahead);
+            return Ok(Self {
+                skip: Some(attr),
+                args: None,
+            });
         }
+
+        let fields = std::slice::from_ref(field);
+        let args = IntoArgs::parse(content, fields)?;
+        Ok(Self {
+            skip: None,
+            args: Some(args),
+        })
     }
 }
 

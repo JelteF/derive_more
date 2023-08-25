@@ -697,6 +697,19 @@ mod generic {
         }
 
         #[test]
+        fn debug() {
+            #[derive(Debug)]
+            struct OnlyDebug;
+
+            #[derive(Display)]
+            #[display("{:?}", _0)]
+            struct Struct<T>(T);
+
+            let s = Struct(OnlyDebug);
+            assert_eq!(s.to_string(), "OnlyDebug");
+        }
+
+        #[test]
         fn underscored_simple() {
             #[derive(Display)]
             #[display("{_0} {_1}")]
@@ -707,10 +720,23 @@ mod generic {
         }
 
         #[test]
+        fn underscored_debug() {
+            #[derive(Debug)]
+            struct OnlyDebug;
+
+            #[derive(Display)]
+            #[display("{_0:?}")]
+            struct Struct<T>(T);
+
+            let s = Struct(OnlyDebug);
+            assert_eq!(s.to_string(), "OnlyDebug");
+        }
+
+        #[test]
         fn redundant() {
             #[derive(Display)]
-            #[display(bound(T1: ::core::fmt::Display, T2: ::core::fmt::Display))]
-            #[display("{} {}", _0, _1)]
+            #[display(bound(T1: ::core::fmt::Display, T2: ::core::fmt::Debug))]
+            #[display("{} {:?}", _0, _1)]
             struct Struct<T1, T2>(T1, T2);
 
             let s = Struct(10, 20);
@@ -720,8 +746,8 @@ mod generic {
         #[test]
         fn underscored_redundant() {
             #[derive(Display)]
-            #[display(bound(T1: ::core::fmt::Display, T2: ::core::fmt::Display))]
-            #[display("{_0} {_1}")]
+            #[display(bound(T1: ::core::fmt::Display, T2: ::core::fmt::Debug))]
+            #[display("{_0} {_1:?}")]
             struct Struct<T1, T2>(T1, T2);
 
             let s = Struct(10, 20);
@@ -730,6 +756,9 @@ mod generic {
 
         #[test]
         fn complex() {
+            #[derive(Debug)]
+            struct DebugOnly;
+
             trait Trait1 {
                 fn function1(&self) -> &'static str;
             }
@@ -750,17 +779,26 @@ mod generic {
                 }
             }
 
+            impl Trait1 for DebugOnly {
+                fn function1(&self) -> &'static str {
+                    "MAN"
+                }
+            }
+
             #[derive(Display)]
-            #[display(bound(T1: Trait1 + Trait2, T2: Trait1 + Trait2))]
-            #[display("{} {} {} {}", _0.function1(), _0, _1.function2(), _1)]
+            #[display(bound(T1: Trait1 + Trait2, T2: Trait1))]
+            #[display("{} {} {} {} {:?}", _0.function1(), _0, _0.function2(), _1.function1(), _1)]
             struct Struct<T1, T2>(T1, T2);
 
-            let s = Struct(10, 20);
-            assert_eq!(s.to_string(), "WHAT 10 EVER 20");
+            let s = Struct(10, DebugOnly);
+            assert_eq!(s.to_string(), "WHAT 10 EVER MAN DebugOnly");
         }
 
         #[test]
         fn underscored_complex() {
+            #[derive(Debug)]
+            struct DebugOnly;
+
             trait Trait1 {
                 fn function1(&self) -> &'static str;
             }
@@ -781,13 +819,42 @@ mod generic {
                 }
             }
 
+            impl Trait1 for DebugOnly {
+                fn function1(&self) -> &'static str {
+                    "MAN"
+                }
+            }
+
             #[derive(Display)]
-            #[display(bound(T1: Trait1 + Trait2, T2: Trait1 + Trait2))]
-            #[display("{} {_0} {} {_1}", _0.function1(), _1.function2())]
+            #[display(bound(T1: Trait1 + Trait2, T2: Trait1))]
+            #[display("{} {_0} {} {} {_1:?}", _0.function1(), _0.function2(), _1.function1())]
             struct Struct<T1, T2>(T1, T2);
 
-            let s = Struct(10, 20);
-            assert_eq!(s.to_string(), "WHAT 10 EVER 20");
+            let s = Struct(10, DebugOnly);
+            assert_eq!(s.to_string(), "WHAT 10 EVER MAN DebugOnly");
+        }
+
+        #[test]
+        fn explicit_only() {
+            trait Trait {
+                fn function(&self) -> &'static str;
+            }
+
+            struct NoDisplay;
+
+            impl Trait for NoDisplay {
+                fn function(&self) -> &'static str {
+                    "no display"
+                }
+            }
+
+            #[derive(Display)]
+            #[display(bound(T: Trait))]
+            #[display("{}", _0.function())]
+            struct Struct<T>(T);
+
+            let s = Struct(NoDisplay);
+            assert_eq!(s.to_string(), "no display");
         }
     }
 }

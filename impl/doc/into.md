@@ -77,7 +77,7 @@ assert_eq!(&mut 2, <&mut i32>::from(&mut Int(2)));
 ```
 
 In case there are fields, that shouldn't be included in the conversion, use the
-`#[into(skip)]` attribute.
+`#[into(skip)]` (or `#[into(ignore)]`) attribute.
 
 ```rust
 # use std::marker::PhantomData;
@@ -90,7 +90,7 @@ In case there are fields, that shouldn't be included in the conversion, use the
 #[into(i32, i64, i128)]
 struct Mass<Unit> {
     value: i32,
-    #[into(skip)]
+    #[into(skip)] // or #[into(ignore)]
     _unit: PhantomData<Unit>,
 }
 
@@ -187,6 +187,9 @@ let foo = Foo { a: 1, b: "string".to_owned(), c: 3.0 };
 assert_eq!(("string", &3.0), (&foo).into());
 assert_eq!(&1_u8, <&u8>::from(&foo));
 ```
+
+
+
 
 ## Enums
 
