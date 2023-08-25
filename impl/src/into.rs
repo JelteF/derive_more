@@ -254,7 +254,7 @@ impl IntoArgs {
 ///
 /// ```rust,ignore
 /// #[into]
-/// #[into(skip)]
+/// #[into(skip)] #[into(ignore)]
 /// #[into(<types>)]
 /// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
 /// ```
@@ -293,7 +293,7 @@ impl FieldAttribute {
                     if prev_attrs.skip.replace(skip).is_some() {
                         return Err(syn::Error::new(
                             attr.path().span(),
-                            "only a single `#[into(skip)] attribute is allowed`",
+                            "only a single `#[into(skip)]`/`#[into(ignore)]` attribute is allowed`",
                         ));
                     }
                 }
