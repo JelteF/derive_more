@@ -98,6 +98,37 @@ mod single_field {
         }
 
         #[derive(AsRef)]
+        #[as_ref(i32, Foo)]
+        struct TypesWithInner(Foo);
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for TypesWithInner {
+            fn as_ref(&self) -> &bool {
+                self.0.as_ref()
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<f64> for TypesWithInner {
+            fn as_ref(&self) -> &f64 {
+                self.0.as_ref()
+            }
+        }
+
+        #[test]
+        fn types_with_inner() {
+            let item = TypesWithInner(Foo(1, 2.0, false));
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.0));
+        }
+
+        #[derive(AsRef)]
         struct FieldTypes(#[as_ref(i32, f64)] Foo);
 
         // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
@@ -125,6 +156,38 @@ mod single_field {
 
             let rf: &f64 = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
+        }
+
+        type RenamedFoo = Foo;
+
+        #[derive(AsRef)]
+        struct FieldTypesWithRenamedInner(#[as_ref(i32, RenamedFoo)] Foo);
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for FieldTypesWithRenamedInner {
+            fn as_ref(&self) -> &bool {
+                self.0.as_ref()
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<f64> for FieldTypesWithRenamedInner {
+            fn as_ref(&self) -> &f64 {
+                self.0.as_ref()
+            }
+        }
+
+        #[test]
+        fn field_types_with_renamed_inner() {
+            let item = FieldTypesWithRenamedInner(Foo(1, 2.0, false));
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.0));
         }
 
         mod generic {
@@ -320,6 +383,41 @@ mod single_field {
         }
 
         #[derive(AsRef)]
+        #[as_ref(i32, Foo)]
+        struct TypesWithInner {
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for TypesWithInner {
+            fn as_ref(&self) -> &bool {
+                self.first.as_ref()
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<f64> for TypesWithInner {
+            fn as_ref(&self) -> &f64 {
+                self.first.as_ref()
+            }
+        }
+
+        #[test]
+        fn types_with_inner() {
+            let item = TypesWithInner {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.first));
+        }
+
+        #[derive(AsRef)]
         struct FieldTypes {
             #[as_ref(i32, f64)]
             first: Foo,
@@ -352,6 +450,43 @@ mod single_field {
 
             let rf: &f64 = item.as_ref();
             assert!(ptr::eq(rf, item.first.as_ref()));
+        }
+
+        type RenamedFoo = Foo;
+
+        #[derive(AsRef)]
+        struct FieldTypesWithRenamedInner {
+            #[as_ref(i32, RenamedFoo)]
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<bool> for FieldTypesWithRenamedInner {
+            fn as_ref(&self) -> &bool {
+                self.first.as_ref()
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<f64> for FieldTypesWithRenamedInner {
+            fn as_ref(&self) -> &f64 {
+                self.first.as_ref()
+            }
+        }
+
+        #[test]
+        fn field_types_with_renamed_inner() {
+            let item = FieldTypesWithRenamedInner {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.first));
         }
 
         mod generic {
@@ -542,15 +677,7 @@ mod multi_field {
         }
 
         #[derive(AsRef)]
-        struct Types(#[as_ref(str)] String, #[as_ref([u8])] Vec<u8>);
-
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsRef<String> for Types {
-            fn as_ref(&self) -> &String {
-                &self.0
-            }
-        }
+        struct Types(#[as_ref(str, String)] String, #[as_ref([u8])] Vec<u8>);
 
         // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
         // producing trait implementations conflict error during compilation, if it does.
@@ -731,18 +858,10 @@ mod multi_field {
 
         #[derive(AsRef)]
         struct Types {
-            #[as_ref(str)]
+            #[as_ref(str, String)]
             first: String,
             #[as_ref([u8])]
             second: Vec<u8>,
-        }
-
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsRef<String> for Types {
-            fn as_ref(&self) -> &String {
-                &self.first
-            }
         }
 
         // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
