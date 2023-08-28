@@ -17,7 +17,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{forward, skip, Either, Spanning},
+    utils::{forward, skip, Either, Spanning, types},
 };
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
@@ -256,7 +256,10 @@ impl<'a> ToTokens for Expansion<'a> {
 /// #[as_ref(forward)]
 /// #[as_ref(<types>)]
 /// ```
-type StructAttribute = AsArgs;
+type StructAttribute = Either<forward::Attribute, types::Attribute>;
+
+// TODO: temp
+type AsArgs = StructAttribute;
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro field attribute.
 ///
@@ -270,19 +273,6 @@ enum FieldAttribute {
     Empty,
     Args(AsArgs),
     Skip(skip::Attribute),
-}
-
-/// Arguments specifying which conversions should be generated
-///
-/// ```rust,ignore
-/// #[as_ref(forward)]
-/// #[as_ref(<types>)]
-/// ```
-enum AsArgs {
-    /// Blanket impl, fully forwarding to the field type
-    Forward(forward::Attribute),
-    /// Forward implementation, but only impl for specified types
-    Types(Punctuated<Type, Token![,]>),
 }
 
 impl Parse for FieldAttribute {
@@ -350,47 +340,3 @@ impl FieldAttribute {
     }
 }
 
-impl Parse for AsArgs {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let ahead = input.fork();
-        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
-            input.advance_to(&ahead);
-            return Ok(Self::Forward(attr));
-        }
-
-        input
-            .parse_terminated(Type::parse, Token![,])
-            .map(Self::Types)
-    }
-}
-
-impl StructAttribute {
-    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-    ///
-    /// [`Span`]: proc_macro2::Span
-    fn parse_attrs(
-        attrs: &[syn::Attribute],
-        attr_ident: &syn::Ident,
-    ) -> syn::Result<Option<Spanning<Self>>> {
-        attrs.iter().filter(|attr| attr.path().is_ident(attr_ident))
-            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
-                let parsed: Spanning<Self> = Spanning::new(attr.parse_args()?, attr.span());
-
-                if let Some(prev) = attrs {
-                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    match (prev.item, parsed.item) {
-                        (Self::Types(mut tys), Self::Types(more)) => {
-                            tys.extend(more);
-                            Ok(Some(Spanning::new(Self::Types(tys), span)))
-                        },
-                        _ => Err(syn::Error::new(
-                            parsed.span,
-                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
-                        ))
-                    }
-                } else {
-                    Ok(Some(parsed))
-                }
-            })
-    }
-}

@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{polyfill, skip, Either, FieldsExt as _},
+    utils::{attr::ParseMultiple as _, polyfill, skip, Either, FieldsExt as _},
 };
 
 /// Expands an [`Into`] derive macro.

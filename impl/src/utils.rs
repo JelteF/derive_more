@@ -1328,6 +1328,8 @@ pub(crate) mod forward {
         spanned::Spanned as _,
     };
 
+    use super::attr;
+
     /// Representation of a `forward` attribute.
     ///
     /// ```rust,ignore
@@ -1336,11 +1338,55 @@ pub(crate) mod forward {
     pub(crate) struct Attribute;
 
     impl Parse for Attribute {
-        fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
-            match content.parse::<syn::Path>()? {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            match input.parse::<syn::Path>()? {
                 p if p.is_ident("forward") => Ok(Self),
                 p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
             }
+        }
+    }
+
+    impl attr::ParseMultiple for Attribute {}
+}
+
+#[cfg(any(feature = "as_ref", feature = "from"))]
+pub(crate) mod types {
+    use syn::{
+        parse::{Parse, ParseStream},
+        punctuated::Punctuated,
+        Token,
+    };
+
+    use crate::parsing;
+
+    use super::{attr, Spanning};
+
+    /// Representation of an attribute, containing a list of types.
+    ///
+    /// ```rust,ignore
+    /// #[<attribute>(<types>)]
+    /// ```
+    pub(crate) struct Attribute(pub(crate) Punctuated<parsing::Type, Token![,]>);
+
+    impl Parse for Attribute {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            input
+                .parse_terminated(parsing::Type::parse, Token![,])
+                .map(Self)
+        }
+    }
+
+    impl attr::ParseMultiple for Attribute {
+        fn merge_attrs(
+            mut prev: Spanning<Self>,
+            new: Spanning<Self>,
+            _: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            prev.item.0.extend(new.item.0);
+            Ok(Spanning::new(
+                prev.item,
+                prev.span.join(new.span).unwrap_or(prev.span),
+            ))
         }
     }
 }
@@ -1357,7 +1403,7 @@ pub(crate) mod skip {
         spanned::Spanned as _,
     };
 
-    use super::Spanning;
+    use super::{attr, Spanning};
 
     /// Representation of a `skip`/`ignore` attribute.
     ///
@@ -1385,32 +1431,20 @@ pub(crate) mod skip {
         pub(crate) const fn name(&self) -> &'static str {
             self.0
         }
+    }
 
-        /// Parses an [`Attribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-        ///
-        /// [`Span`]: proc_macro2::Span
-        pub(crate) fn parse_attrs(
-            attrs: impl AsRef<[syn::Attribute]>,
-            attr_ident: &syn::Ident,
-        ) -> syn::Result<Option<Spanning<Self>>> {
-            attrs
-                .as_ref()
-                .iter()
-                .filter(|attr| attr.path().is_ident(attr_ident))
-                .try_fold(None, |mut attrs, attr| {
-                    let parsed = Spanning::new(attr.parse_args()?, attr.span());
-                    if attrs.replace(parsed).is_some() {
-                        Err(syn::Error::new(
-                            attr.span(),
-                            format!(
-                                "only single `#[{attr_ident}(skip)]`/`#[{attr_ident}(ignore)]` \
-                                 attribute is allowed here",
-                            ),
-                        ))
-                    } else {
-                        Ok(attrs)
-                    }
-                })
+    impl attr::ParseMultiple for Attribute {
+        fn merge_attrs(
+            _: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Err(syn::Error::new(
+                new.span,
+                format!(
+                    "only single `#[{name}(skip)]`/`#[{name}(ignore)]` attribute is allowed here",
+                ),
+            ))
         }
     }
 }
@@ -1425,7 +1459,7 @@ pub(crate) mod skip {
 mod either {
     use proc_macro2::TokenStream;
     use quote::ToTokens;
-    use syn::parse::{Parse, ParseStream};
+    use syn::parse::{discouraged::Speculative as _, Parse, ParseStream};
 
     /// Either [`Left`] or [`Right`].
     ///
@@ -1446,10 +1480,12 @@ mod either {
         R: Parse,
     {
         fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-            if L::parse(&input.fork()).is_ok() {
-                L::parse(input).map(Self::Left)
+            let ahead = input.fork();
+            if let Ok(left) = ahead.parse::<L>() {
+                input.advance_to(&ahead);
+                Ok(Self::Left(left))
             } else {
-                R::parse(input).map(Self::Right)
+                input.parse::<R>().map(Self::Right)
             }
         }
     }
@@ -1463,8 +1499,8 @@ mod either {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                Either::Left(left) => left.next(),
-                Either::Right(right) => right.next(),
+                Self::Left(left) => left.next(),
+                Self::Right(right) => right.next(),
             }
         }
     }
@@ -1476,8 +1512,8 @@ mod either {
     {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             match self {
-                Either::Left(l) => l.to_tokens(tokens),
-                Either::Right(r) => r.to_tokens(tokens),
+                Self::Left(l) => l.to_tokens(tokens),
+                Self::Right(r) => r.to_tokens(tokens),
             }
         }
     }
@@ -1559,6 +1595,96 @@ mod spanning {
     impl<T: ?Sized> DerefMut for Spanning<T> {
         fn deref_mut(&mut self) -> &mut Self::Target {
             &mut self.item
+        }
+    }
+}
+
+#[cfg(any(
+    feature = "as_ref",
+    feature = "debug",
+    feature = "from",
+    feature = "into",
+))]
+pub(crate) mod attr {
+    use syn::{parse::Parse, spanned::Spanned as _};
+
+    use super::{Either, Spanning};
+
+    /// Parsing of a typed attribute from multiple [`syn::Attribute`]s.
+    pub(crate) trait ParseMultiple: Parse + Sized {
+        /// Parses this attribute for the provided single [`syn::Attribute`].
+        ///
+        /// Required, because with [`Parse`] we only able to parse inner attribute tokens, which
+        /// doesn't work for attributes with empty arguments, like `#[attr]`.
+        ///
+        /// Override this method if the default [`syn::Attribute::parse_args()`] is not enough.
+        fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
+            attr.parse_args()
+        }
+
+        /// Merges multiple values of this attribute into a single one.
+        ///
+        /// Default implementation only errors, disallowing multiple values of the same attribute.
+        fn merge_attrs(
+            _prev: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Err(syn::Error::new(
+                new.span,
+                format!("only single `#[{name}(...)]` attribute is allowed here"),
+            ))
+        }
+
+        /// Parses this attribute from the provided multiple [`syn::Attribute`]s, merging them, and
+        /// preserving their [`Span`].
+        ///
+        /// [`Span`]: proc_macro2::Span
+        fn parse_attrs(
+            attrs: impl AsRef<[syn::Attribute]>,
+            name: &syn::Ident,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            attrs
+                .as_ref()
+                .iter()
+                .filter(|attr| attr.path().is_ident(name))
+                .try_fold(None, |merged, attr| {
+                    let parsed = Spanning::new(Self::parse_attr(attr)?, attr.span());
+                    if let Some(prev) = merged {
+                        Self::merge_attrs(prev, parsed, name).map(Some)
+                    } else {
+                        Ok(Some(parsed))
+                    }
+                })
+        }
+    }
+
+    impl<L: ParseMultiple, R: ParseMultiple> ParseMultiple for Either<L, R> {
+        fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
+            L::parse_attr(attr)
+                .map(Self::Left)
+                .or_else(|_| R::parse_attr(attr).map(Self::Right))
+        }
+
+        fn merge_attrs(
+            prev: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Ok(match (prev.item, new.item) {
+                (Self::Left(p), Self::Left(n)) => {
+                    L::merge_attrs(Spanning::new(p, prev.span), Spanning::new(n, new.span), name)?
+                        .map(Self::Left)
+                },
+                (Self::Right(p), Self::Right(n)) => {
+                    R::merge_attrs(Spanning::new(p, prev.span), Spanning::new(n, new.span), name)?
+                        .map(Self::Right)
+                },
+                _ => return Err(syn::Error::new(
+                    new.span,
+                    format!("only single kind of `#[{name}(...)]` attribute is allowed here"),
+                ))
+            })
         }
     }
 }
