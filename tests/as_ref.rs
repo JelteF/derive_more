@@ -78,6 +78,14 @@ mod single_field {
             }
         }
 
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<Foo> for Types {
+            fn as_ref(&self) -> &Foo {
+                &self.0
+            }
+        }
+
         #[test]
         fn types() {
             let item = Types(Foo(1, 2.0, false));
@@ -97,6 +105,14 @@ mod single_field {
         impl AsRef<bool> for FieldTypes {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<Foo> for FieldTypes {
+            fn as_ref(&self) -> &Foo {
+                &self.0
             }
         }
 
@@ -282,6 +298,14 @@ mod single_field {
             }
         }
 
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<Foo> for Types {
+            fn as_ref(&self) -> &Foo {
+                &self.first
+            }
+        }
+
         #[test]
         fn types() {
             let item = Types {
@@ -306,6 +330,14 @@ mod single_field {
         impl AsRef<bool> for FieldTypes {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<Foo> for FieldTypes {
+            fn as_ref(&self) -> &Foo {
+                &self.first
             }
         }
 
@@ -512,6 +544,22 @@ mod multi_field {
         #[derive(AsRef)]
         struct Types(#[as_ref(str)] String, #[as_ref([u8])] Vec<u8>);
 
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<String> for Types {
+            fn as_ref(&self) -> &String {
+                &self.0
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<Vec<u8>> for Types {
+            fn as_ref(&self) -> &Vec<u8> {
+                &self.1
+            }
+        }
+
         #[test]
         fn types() {
             let item = Types("test".to_owned(), vec![0]);
@@ -687,6 +735,22 @@ mod multi_field {
             first: String,
             #[as_ref([u8])]
             second: Vec<u8>,
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<String> for Types {
+            fn as_ref(&self) -> &String {
+                &self.first
+            }
+        }
+
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
+        // producing trait implementations conflict error during compilation, if it does.
+        impl AsRef<Vec<u8>> for Types {
+            fn as_ref(&self) -> &Vec<u8> {
+                &self.second
+            }
         }
 
         #[test]
