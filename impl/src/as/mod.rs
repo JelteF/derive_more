@@ -185,10 +185,9 @@ impl<'a> ToTokens for Expansion<'a> {
         );
 
         let (trait_ident, method_ident, mut_) = &self.trait_info;
-
         let ty_ident = &self.ident;
 
-        let (blanket, forward_impl, return_tys) = match &self.args {
+        let (is_blanket, is_forward, return_tys) = match &self.args {
             Some(AsArgs::Forward(_)) => {
                 (true, true, Either::Left(std::iter::once(quote! { __AsT })))
             }
@@ -208,9 +207,9 @@ impl<'a> ToTokens for Expansion<'a> {
             .map(|return_ty| {
                 let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
 
-                let generics = if forward_impl {
+                let generics = if is_forward {
                     let mut generics = self.generics.clone();
-                    if blanket {
+                    if is_blanket {
                         generics.params.push(parse_quote! { #return_ty });
                         generics
                             .make_where_clause()
@@ -231,7 +230,7 @@ impl<'a> ToTokens for Expansion<'a> {
                 let (_, ty_gens, _) = self.generics.split_for_impl();
 
                 let mut body = quote! { & #mut_ self.#field_ident };
-                if forward_impl {
+                if is_forward {
                     body = quote! { <#field_ty as #trait_ty>::#method_ident(#body) };
                 }
 
@@ -270,19 +269,6 @@ enum FieldAttribute {
     Empty,
     Args(AsArgs),
     Skip(skip::Attribute),
-}
-
-/// Arguments specifying which conversions should be generated
-///
-/// ```rust,ignore
-/// #[as_ref(forward)]
-/// #[as_ref(<types>)]
-/// ```
-enum AsArgs {
-    /// Blanket impl, fully forwarding to the field type
-    Forward(forward::Attribute),
-    /// Forward implementation, but only impl for specified types
-    Types(Punctuated<Type, Token![,]>),
 }
 
 impl Parse for FieldAttribute {
@@ -341,13 +327,27 @@ impl FieldAttribute {
             })
     }
 
-    /// Extracts conversion arguments on the attribute, if any
+    /// Extracts conversion arguments on the attribute, if any.
     fn into_args(self) -> Option<AsArgs> {
         match self {
             Self::Args(args) => Some(args),
             Self::Empty | Self::Skip(_) => None,
         }
     }
+}
+
+/// Arguments specifying which conversions should be generated.
+///
+/// ```rust,ignore
+/// #[as_ref(forward)]
+/// #[as_ref(<types>)]
+/// ```
+enum AsArgs {
+    /// Blanket impl, fully forwarding to the field type.
+    Forward(forward::Attribute),
+
+    /// Forward implementation, but only impl for specified types.
+    Types(Punctuated<Type, Token![,]>),
 }
 
 impl Parse for AsArgs {
