@@ -70,16 +70,18 @@ mod single_field {
         #[as_mut(i32, f64)]
         struct Types(Foo);
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsMut<bool> for Types {
             fn as_mut(&mut self) -> &mut bool {
                 self.0.as_mut()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsMut` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsMut<Foo> for Types {
             fn as_mut(&mut self) -> &mut Foo {
                 &mut self.0
@@ -100,16 +102,18 @@ mod single_field {
         #[derive(AsMut)]
         struct FieldTypes(#[as_mut(i32, f64)] Foo);
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsMut<bool> for FieldTypes {
             fn as_mut(&mut self) -> &mut bool {
                 self.0.as_mut()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsMut` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsMut<Foo> for FieldTypes {
             fn as_mut(&mut self) -> &mut Foo {
                 &mut self.0
@@ -177,8 +181,9 @@ mod single_field {
             #[as_mut(i32, f64)]
             struct Types<T>(T);
 
-            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsMut<bool>> AsMut<bool> for Types<T> {
                 fn as_mut(&mut self) -> &mut bool {
                     self.0.as_mut()
@@ -199,8 +204,9 @@ mod single_field {
             #[derive(AsMut)]
             struct FieldTypes<T>(#[as_mut(i32, f64)] T);
 
-            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsMut<bool>> AsMut<bool> for FieldTypes<T> {
                 fn as_mut(&mut self) -> &mut bool {
                     self.0.as_mut()
@@ -290,16 +296,18 @@ mod single_field {
             first: Foo,
         }
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsMut<bool> for Types {
             fn as_mut(&mut self) -> &mut bool {
                 self.first.as_mut()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsMut` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsMut<Foo> for Types {
             fn as_mut(&mut self) -> &mut Foo {
                 &mut self.first
@@ -325,16 +333,18 @@ mod single_field {
             first: Foo,
         }
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsMut<bool> for FieldTypes {
             fn as_mut(&mut self) -> &mut bool {
                 self.first.as_mut()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsMut` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsMut<Foo> for FieldTypes {
             fn as_mut(&mut self) -> &mut Foo {
                 &mut self.first
@@ -424,8 +434,9 @@ mod single_field {
                 first: T,
             }
 
-            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsMut<bool>> AsMut<bool> for Types<T> {
                 fn as_mut(&mut self) -> &mut bool {
                     self.first.as_mut()
@@ -451,8 +462,9 @@ mod single_field {
                 first: T,
             }
 
-            // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsMut<bool>> AsMut<bool> for FieldTypes<T> {
                 fn as_mut(&mut self) -> &mut bool {
                     self.first.as_mut()
@@ -542,17 +554,9 @@ mod multi_field {
         }
 
         #[derive(AsMut)]
-        struct Types(#[as_mut(str)] String, #[as_mut([u8])] Vec<u8>);
+        struct Types(#[as_mut(str, String)] String, #[as_mut([u8])] Vec<u8>);
 
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsMut<String> for Types {
-            fn as_mut(&mut self) -> &mut String {
-                &mut self.0
-            }
-        }
-
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
+        // Asserts that the macro expansion doesn't generate `AsMut` impl for the field type, by
         // producing trait implementations conflict error during compilation, if it does.
         impl AsMut<Vec<u8>> for Types {
             fn as_mut(&mut self) -> &mut Vec<u8> {
@@ -566,6 +570,9 @@ mod multi_field {
 
             let rf: &mut str = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
+
+            let rf: &mut String = item.as_mut();
+            assert!(ptr::eq(rf, &mut item.0));
 
             let rf: &mut [u8] = item.as_mut();
             assert!(ptr::eq(rf, item.1.as_mut()));
@@ -731,18 +738,10 @@ mod multi_field {
 
         #[derive(AsMut)]
         struct Types {
-            #[as_mut(str)]
+            #[as_mut(str, String)]
             first: String,
             #[as_mut([u8])]
             second: Vec<u8>,
-        }
-
-        // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsMut<String> for Types {
-            fn as_mut(&mut self) -> &mut String {
-                &mut self.first
-            }
         }
 
         // Asserts that the macro expansion doesn't generate `AsMut` impl for unmentioned type, by
@@ -762,6 +761,9 @@ mod multi_field {
 
             let rf: &mut str = item.as_mut();
             assert!(ptr::eq(rf, item.first.as_mut()));
+
+            let rf: &mut String = item.as_mut();
+            assert!(ptr::eq(rf, &mut item.first));
 
             let rf: &mut [u8] = item.as_mut();
             assert!(ptr::eq(rf, item.second.as_mut()));

@@ -70,16 +70,18 @@ mod single_field {
         #[as_ref(i32, f64)]
         struct Types(Foo);
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing  atrait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for Types {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsRef<Foo> for Types {
             fn as_ref(&self) -> &Foo {
                 &self.0
@@ -101,18 +103,11 @@ mod single_field {
         #[as_ref(i32, Foo)]
         struct TypesWithInner(Foo);
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for TypesWithInner {
             fn as_ref(&self) -> &bool {
-                self.0.as_ref()
-            }
-        }
-
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsRef<f64> for TypesWithInner {
-            fn as_ref(&self) -> &f64 {
                 self.0.as_ref()
             }
         }
@@ -131,16 +126,18 @@ mod single_field {
         #[derive(AsRef)]
         struct FieldTypes(#[as_ref(i32, f64)] Foo);
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for FieldTypes {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsRef<Foo> for FieldTypes {
             fn as_ref(&self) -> &Foo {
                 &self.0
@@ -163,18 +160,11 @@ mod single_field {
         #[derive(AsRef)]
         struct FieldTypesWithRenamedInner(#[as_ref(i32, RenamedFoo)] Foo);
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for FieldTypesWithRenamedInner {
             fn as_ref(&self) -> &bool {
-                self.0.as_ref()
-            }
-        }
-
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsRef<f64> for FieldTypesWithRenamedInner {
-            fn as_ref(&self) -> &f64 {
                 self.0.as_ref()
             }
         }
@@ -240,8 +230,9 @@ mod single_field {
             #[as_ref(i32, f64)]
             struct Types<T>(T);
 
-            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for Types<T> {
                 fn as_ref(&self) -> &bool {
                     self.0.as_ref()
@@ -262,8 +253,9 @@ mod single_field {
             #[derive(AsRef)]
             struct FieldTypes<T>(#[as_ref(i32, f64)] T);
 
-            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for FieldTypes<T> {
                 fn as_ref(&self) -> &bool {
                     self.0.as_ref()
@@ -353,16 +345,18 @@ mod single_field {
             first: Foo,
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for Types {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsRef<Foo> for Types {
             fn as_ref(&self) -> &Foo {
                 &self.first
@@ -388,18 +382,11 @@ mod single_field {
             first: Foo,
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for TypesWithInner {
             fn as_ref(&self) -> &bool {
-                self.first.as_ref()
-            }
-        }
-
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsRef<f64> for TypesWithInner {
-            fn as_ref(&self) -> &f64 {
                 self.first.as_ref()
             }
         }
@@ -423,16 +410,18 @@ mod single_field {
             first: Foo,
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for FieldTypes {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
+        // the field type, by producing a trait implementations conflict error
+        // during compilation, if it does.
         impl AsRef<Foo> for FieldTypes {
             fn as_ref(&self) -> &Foo {
                 &self.first
@@ -460,18 +449,11 @@ mod single_field {
             first: Foo,
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
         impl AsRef<bool> for FieldTypesWithRenamedInner {
             fn as_ref(&self) -> &bool {
-                self.first.as_ref()
-            }
-        }
-
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-        // producing trait implementations conflict error during compilation, if it does.
-        impl AsRef<f64> for FieldTypesWithRenamedInner {
-            fn as_ref(&self) -> &f64 {
                 self.first.as_ref()
             }
         }
@@ -559,8 +541,9 @@ mod single_field {
                 first: T,
             }
 
-            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for Types<T> {
                 fn as_ref(&self) -> &bool {
                     self.first.as_ref()
@@ -586,8 +569,9 @@ mod single_field {
                 first: T,
             }
 
-            // Asserts that the macro expansion doesn't generate `AsRef` impl for unmentioned type, by
-            // producing trait implementations conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+            // impl forwarding to the field type, by producing a trait implementations
+            // conflict error during compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for FieldTypes<T> {
                 fn as_ref(&self) -> &bool {
                     self.first.as_ref()
@@ -679,7 +663,7 @@ mod multi_field {
         #[derive(AsRef)]
         struct Types(#[as_ref(str, String)] String, #[as_ref([u8])] Vec<u8>);
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for the field type, by
         // producing trait implementations conflict error during compilation, if it does.
         impl AsRef<Vec<u8>> for Types {
             fn as_ref(&self) -> &Vec<u8> {
@@ -864,7 +848,7 @@ mod multi_field {
             second: Vec<u8>,
         }
 
-        // Asserts that the macro expansion doesn't generate `AsRef` impl for the third field, by
+        // Asserts that the macro expansion doesn't generate `AsRef` impl for the field type, by
         // producing trait implementations conflict error during compilation, if it does.
         impl AsRef<Vec<u8>> for Types {
             fn as_ref(&self) -> &Vec<u8> {
