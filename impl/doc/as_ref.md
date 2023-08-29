@@ -106,7 +106,7 @@ An implementation will be generated for each indicated field.
 #
 #[derive(AsRef)]
 struct MyWrapper {
-    #[as_ref]
+    #[as_ref(str)]
     name: String,
     #[as_ref]
     num: i32,
@@ -122,9 +122,9 @@ Generates:
 #     num: i32,
 #     valid: bool,
 # }
-impl AsRef<String> for MyWrapper {
+impl AsRef<str> for MyWrapper {
     fn as_ref(&self) -> &String {
-        &self.name
+        <String as ::core::convert::AsRef<str>>::as_ref(&self.name)
     }
 }
 
@@ -134,6 +134,21 @@ impl AsRef<i32> for MyWrapper {
     }
 }
 ```
+
+Only conversions that use a single field are possible with this derive.
+Something like this wouldn't work, due to the nature of the `AsRef` trait:
+
+```rust,compile_fail
+# use derive_more::AsRef
+#
+// Error! `#[as_ref(...)]` attribute can only be placed on structs with exactly one field
+#[derive(AsRef)]
+#[as_ref((str, [u8]))]
+struct MyWrapper(String, Vec<u8>)
+```
+
+If you need to convert into multiple references, consider using the
+[`Into`](crate::Into) derive with `#[into(ref)]`.
 
 
 ### Skipping

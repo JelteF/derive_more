@@ -105,7 +105,7 @@ An implementation will be generated for each indicated field.
 #
 #[derive(AsMut)]
 struct MyWrapper {
-    #[as_mut]
+    #[as_mut(str)]
     name: String,
     #[as_mut]
     num: i32,
@@ -121,9 +121,9 @@ Generates:
 #     num: i32,
 #     valid: bool,
 # }
-impl AsMut<String> for MyWrapper {
+impl AsMut<str> for MyWrapper {
     fn as_mut(&mut self) -> &mut String {
-        &mut self.name
+        <String as ::core::convert::AsMut<str>>::as_mut(&mut self.name)
     }
 }
 
@@ -134,6 +134,20 @@ impl AsMut<i32> for MyWrapper {
 }
 ```
 
+Only conversions that use a single field are possible with this derive.
+Something like this wouldn't work, due to the nature of the `AsMut` trait:
+
+```rust,compile_fail
+# use derive_more::AsRef
+#
+// Error! `#[as_ref(...)]` attribute can only be placed on structs with exactly one field
+#[derive(AsRef)]
+#[as_ref((str, [u8]))]
+struct MyWrapper(String, Vec<u8>)
+```
+
+If you need to convert into multiple references, consider using the
+[`Into`](crate::Into) derive with `#[into(ref_mut)]`.
 
 ### Skipping
 
