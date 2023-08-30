@@ -15,10 +15,7 @@ use syn::{
     Token,
 };
 
-use crate::{
-    parsing::Type,
-    utils::{forward, skip, Either, Spanning},
-};
+use crate::utils::{forward, skip, Either, Spanning};
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
@@ -347,7 +344,7 @@ enum AsArgs {
     Forward(forward::Attribute),
 
     /// Forward implementation, but only impl for specified types.
-    Types(Punctuated<Type, Token![,]>),
+    Types(Punctuated<syn::Type, Token![,]>),
 }
 
 impl Parse for AsArgs {
@@ -359,7 +356,7 @@ impl Parse for AsArgs {
         }
 
         input
-            .parse_terminated(Type::parse, Token![,])
+            .parse_terminated(syn::Type::parse, Token![,])
             .map(Self::Types)
     }
 }
