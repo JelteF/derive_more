@@ -228,7 +228,7 @@ impl<'a> ToTokens for Expansion<'a> {
                             .predicates
                             .push(parse_quote! { #return_ty: ?::core::marker::Sized });
                     }
-                    if contains_param {
+                    if is_blanket || contains_param {
                         generics
                             .make_where_clause()
                             .predicates
@@ -245,7 +245,7 @@ impl<'a> ToTokens for Expansion<'a> {
 
                 let mut body = quote! { & #mut_ self.#field_ident };
                 if is_forward {
-                    if contains_param {
+                    if is_blanket || contains_param {
                         body = quote! {
                             <#field_ty as #trait_ty>::#method_ident(#body)
                         };
