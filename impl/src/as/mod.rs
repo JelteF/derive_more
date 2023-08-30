@@ -15,7 +15,7 @@ use syn::{
     Token,
 };
 
-use crate::utils::{forward, skip, Either, Spanning};
+use crate::utils::{contains_any_of, forward, skip, Either, HashSet, Spanning};
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
@@ -185,23 +185,38 @@ impl<'a> ToTokens for Expansion<'a> {
         let ty_ident = &self.ident;
 
         let (is_blanket, is_forward, return_tys) = match &self.args {
-            Some(AsArgs::Forward(_)) => {
-                (true, true, Either::Left(std::iter::once(quote! { __AsT })))
-            }
-            Some(AsArgs::Types(tys)) => (
-                false,
+            Some(AsArgs::Forward(_)) => (
                 true,
-                Either::Right(tys.iter().map(ToTokens::into_token_stream)),
+                true,
+                Either::Left(std::iter::once(Cow::Owned(parse_quote! { __AsT }))),
             ),
+            Some(AsArgs::Types(tys)) => {
+                (false, true, Either::Right(tys.iter().map(Cow::Borrowed)))
+            }
             None => (
                 false,
                 false,
-                Either::Left(std::iter::once(quote! { #field_ty })),
+                Either::Left(std::iter::once(Cow::Borrowed(field_ty))),
             ),
         };
 
+        let param_idents: HashSet<_> = self
+            .generics
+            .type_params()
+            .map(|param| &param.ident)
+            .collect();
+
+        let field_contains_param = contains_any_of(&self.field.ty, &param_idents);
+
         return_tys
             .map(|return_ty| {
+                let contains_param =
+                    field_contains_param || contains_any_of(&return_ty, &param_idents);
+
+                let is_field_type = &self.field.ty == return_ty.as_ref();
+
+                let is_forward = is_forward && !is_field_type;
+
                 let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
 
                 let generics = if is_forward {
@@ -213,10 +228,12 @@ impl<'a> ToTokens for Expansion<'a> {
                             .predicates
                             .push(parse_quote! { #return_ty: ?::core::marker::Sized });
                     }
-                    generics
-                        .make_where_clause()
-                        .predicates
-                        .push(parse_quote! { #field_ty: #trait_ty });
+                    if contains_param {
+                        generics
+                            .make_where_clause()
+                            .predicates
+                            .push(parse_quote! { #field_ty: #trait_ty });
+                    }
 
                     Cow::Owned(generics)
                 } else {
@@ -228,7 +245,19 @@ impl<'a> ToTokens for Expansion<'a> {
 
                 let mut body = quote! { & #mut_ self.#field_ident };
                 if is_forward {
-                    body = quote! { <#field_ty as #trait_ty>::#method_ident(#body) };
+                    if contains_param {
+                        body = quote! {
+                            <#field_ty as #trait_ty>::#method_ident(#body)
+                        };
+                    } else {
+                        body = quote! {
+                            use ::derive_more::__private::ExtractRef as _;
+
+                            let conv: ::derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
+                                = Default::default();
+                            (&&conv).__extract_ref(#body)
+                        };
+                    }
                 }
 
                 quote! {

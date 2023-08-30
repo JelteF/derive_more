@@ -31,6 +31,9 @@ pub(crate) use self::fields_ext::FieldsExt;
 ))]
 pub(crate) use self::spanning::Spanning;
 
+#[cfg(feature = "as_ref")]
+pub(crate) use self::type_search::contains_any_of;
+
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
 
@@ -1709,7 +1712,10 @@ mod type_search {
         }
     }
 
-    pub fn contains_any_of(ty: &syn::Type, search: &HashSet<&syn::Ident>) -> bool {
+    pub(crate) fn contains_any_of(
+        ty: &syn::Type,
+        search: &HashSet<&syn::Ident>,
+    ) -> bool {
         let mut visitor = TypeSearchVisitor {
             search,
             found: false,
