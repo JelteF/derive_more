@@ -57,7 +57,7 @@ pub mod __private {
     pub use crate::vendor::thiserror::aserror::AsDynError;
 
     #[cfg(feature = "as_ref")]
-    pub use crate::r#as::{Conv, GetRef};
+    pub use crate::r#as::{Conv, ExtractRef};
 }
 
 /// Module containing macro definitions only, without corresponding traits.
