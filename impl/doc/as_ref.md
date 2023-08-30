@@ -61,34 +61,44 @@ where
 }
 ```
 
-It's also possible to specify concrete types to derive forwarded
-impls for with `#[as_ref(<types>)]`.
+It's also possible to specify concrete types to derive impls for with `#[as_ref(<types>)]`.
+
+These types can include both the type of the field, and types for which the field type implements `AsRef`.
 
 ```rust
 # use derive_more::AsRef;
 #
 #[derive(AsRef)]
-#[as_ref(str, [u8])]
+#[as_ref(str, [u8], String)]
 struct Types(String);
 
 let item = Types("test".to_owned());
 let _: &str = item.as_ref();
 let _: &[u8] = item.as_ref();
+let _: &String = item.as_ref();
 ```
 
-Generates:
+When either the field type or the type specified to convert into contain type parameters,
+they're compared for string equality, and when there's no match assumed to be different types.
+
+For example
 
 ```rust
-# struct Types(String);
-impl AsRef<str> for Types {
-    fn as_ref(&self) -> &str {
-        <String as ::core::convert::AsRef<str>>::as_ref(&self.0)
-    }
-}
+# use derive_more::AsRef;
+#
+#[derive(AsRef)]
+#[as_ref(i32)]
+struct Generic<T>(T);
+```
 
-impl AsRef<[u8]> for Types {
-    fn as_ref(&self) -> &[u8] {
-        <String as ::core::convert::AsRef<[u8]>>::as_ref(&self.0)
+Generates a forwarded impl
+
+```rust
+# struct Generic<T>(T);
+#
+impl<T: AsRef<i32>> AsRef<i32> for Generic<T> {
+    fn as_ref(&self) -> &i32 {
+        <T as ::core::convert::AsRef<i32>>::as_ref(&self.0)
     }
 }
 ```
@@ -123,7 +133,7 @@ Generates:
 #     valid: bool,
 # }
 impl AsRef<str> for MyWrapper {
-    fn as_ref(&self) -> &String {
+    fn as_ref(&self) -> &str {
         <String as ::core::convert::AsRef<str>>::as_ref(&self.name)
     }
 }

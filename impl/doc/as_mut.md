@@ -61,34 +61,44 @@ where
 }
 ```
 
-It's also possible to specify concrete types to derive forwarded
-impls for with `#[as_mut(<types>)]`.
+It's also possible to specify concrete types to derive impls for with `#[as_mut(<types>)]`.
+
+These types can include both the type of the field, and types for which the field type implements `AsMut`.
 
 ```rust
 # use derive_more::AsMut;
 #
 #[derive(AsMut)]
-#[as_mut(str, [u8])]
+#[as_mut(str, [u8], String)]
 struct Types(String);
 
 let mut item = Types("test".to_owned());
 let _: &mut str = item.as_mut();
 let _: &mut [u8] = item.as_mut();
+let _: &mut String = item.as_mut();_
 ```
 
-Generates:
+When either the field type or the type specified to convert into contain type parameters,
+they're compared for string equality, and when there's no match assumed to be different types.
+
+For example
 
 ```rust
-# struct Types(String);
-impl AsMut<str> for Types {
-    fn as_mut(&mut self) -> &mut str {
-        <String as ::core::convert::AsMut<str>>::as_mut(&mut self.0)
-    }
-}
+# use derive_more::AsMut;
+#
+#[derive(AsMut)]
+#[as_ref(i32)]
+struct Generic<T>(T);
+```
 
-impl AsMut<[u8]> for Types {
-    fn as_mut(&mut self) -> &mut [u8] {
-        <String as ::core::convert::AsMut<[u8]>>::as_mut(&mut self.0)
+Generates a forwarded impl
+
+```rust
+# struct Generic<T>(T);
+#
+impl<T: AsMut<i32>> AsMut<i32> for Generic<T> {
+    fn as_mut(&self) -> &i32 {
+        <T as ::core::convert::AsMut<i32>>::as_mut(&mut self.0)
     }
 }
 ```
