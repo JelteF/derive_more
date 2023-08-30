@@ -71,7 +71,7 @@ mod single_field {
         struct Types(Foo);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing  atrait implementations
+        // impl forwarding to the field type, by producing  a trait implementations
         // conflict error during compilation, if it does.
         impl AsRef<bool> for Types {
             fn as_ref(&self) -> &bool {
@@ -251,6 +251,17 @@ mod single_field {
             }
 
             #[derive(AsRef)]
+            #[as_ref(Vec<T>)]
+            struct TypesInner<T>(Vec<T>);
+
+            #[test]
+            fn types_inner() {
+                let item = TypesInner(vec![1i32]);
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+            }
+
+            #[derive(AsRef)]
             struct FieldTypes<T>(#[as_ref(i32, f64)] T);
 
             // Asserts that the macro expansion doesn't generate a blanket `AsRef`
@@ -271,6 +282,16 @@ mod single_field {
 
                 let rf: &f64 = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldTypesInner<T>(#[as_ref(Vec<T>)] Vec<T>);
+
+            #[test]
+            fn field_types_inner() {
+                let item = FieldTypesInner(vec![1i32]);
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
             }
         }
     }
@@ -564,6 +585,19 @@ mod single_field {
             }
 
             #[derive(AsRef)]
+            #[as_ref(Vec<T>)]
+            struct TypesInner<T> {
+                first: Vec<T>,
+            }
+
+            #[test]
+            fn types_inner() {
+                let item = TypesInner { first: vec![1i32] };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+            }
+
+            #[derive(AsRef)]
             struct FieldTypes<T> {
                 #[as_ref(i32, f64)]
                 first: T,
@@ -589,6 +623,19 @@ mod single_field {
 
                 let rf: &f64 = item.as_ref();
                 assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldTypesInner<T> {
+                #[as_ref(Vec<T>)]
+                first: Vec<T>,
+            }
+
+            #[test]
+            fn field_types_inner() {
+                let item = FieldTypesInner { first: vec![1i32] };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
             }
         }
     }
@@ -678,6 +725,9 @@ mod multi_field {
             let rf: &str = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
 
+            let rf: &String = item.as_ref();
+            assert!(ptr::eq(rf, &item.0));
+
             let rf: &[u8] = item.as_ref();
             assert!(ptr::eq(rf, item.1.as_ref()));
         }
@@ -741,6 +791,16 @@ mod multi_field {
 
                 let rf: &[u8] = item.as_ref();
                 assert!(ptr::eq(rf, item.1.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct TypesInner<T, U>(#[as_ref(Vec<T>)] Vec<T>, U);
+
+            #[test]
+            fn types_inner() {
+                let item = TypesInner(vec![1i32], 2i32);
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
             }
         }
     }
@@ -866,6 +926,9 @@ mod multi_field {
             let rf: &str = item.as_ref();
             assert!(ptr::eq(rf, item.first.as_ref()));
 
+            let rf: &String = item.as_ref();
+            assert!(ptr::eq(rf, &item.first));
+
             let rf: &[u8] = item.as_ref();
             assert!(ptr::eq(rf, item.second.as_ref()));
         }
@@ -969,6 +1032,23 @@ mod multi_field {
 
                 let rf: &[u8] = item.as_ref();
                 assert!(ptr::eq(rf, item.second.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct TypesInner<T, U> {
+                #[as_ref(Vec<T>)]
+                first: Vec<T>,
+                second: U,
+            }
+
+            #[test]
+            fn types_inner() {
+                let item = TypesInner {
+                    first: vec![1i32],
+                    second: 2i32,
+                };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
             }
         }
     }
