@@ -1681,3 +1681,41 @@ mod fields_ext {
 
     impl<T: Len + ?Sized> FieldsExt for T {}
 }
+
+#[cfg(feature = "as_ref")]
+mod type_search {
+    use syn::visit::Visit;
+
+    use super::HashSet;
+
+    struct TypeSearchVisitor<'a> {
+        search: &'a HashSet<&'a syn::Ident>,
+        found: bool,
+    }
+
+    impl<'a, 'ast> Visit<'ast> for TypeSearchVisitor<'a> {
+        fn visit_type(&mut self, ty: &'ast syn::Type) {
+            if self.found {
+                return;
+            }
+
+            if let syn::Type::Path(syn::TypePath { path, .. }) = ty {
+                self.found = path
+                    .get_ident()
+                    .map_or(false, |ident| self.search.contains(ident));
+            }
+
+            syn::visit::visit_type(self, ty);
+        }
+    }
+
+    pub fn contains_any_of(ty: &syn::Type, search: &HashSet<&syn::Ident>) -> bool {
+        let mut visitor = TypeSearchVisitor {
+            search,
+            found: false,
+        };
+
+        visitor.visit_type(ty);
+        visitor.found
+    }
+}
