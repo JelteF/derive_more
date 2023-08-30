@@ -55,6 +55,9 @@ pub mod __private {
 
     #[cfg(feature = "error")]
     pub use crate::vendor::thiserror::aserror::AsDynError;
+
+    #[cfg(feature = "as_ref")]
+    pub use crate::r#as::{Conv, GetRef};
 }
 
 /// Module containing macro definitions only, without corresponding traits.
@@ -76,6 +79,9 @@ pub use crate::add::{BinaryError, WrongVariantError};
 mod ops;
 #[cfg(any(feature = "add", feature = "not"))]
 pub use crate::ops::UnitError;
+
+#[cfg(feature = "as_ref")]
+mod r#as;
 
 #[cfg(feature = "debug")]
 mod fmt;
