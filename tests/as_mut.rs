@@ -14,8 +14,25 @@ use core::ptr;
 
 use derive_more::AsMut;
 
-#[derive(AsMut)]
 struct Foo(i32, f64, bool);
+
+impl AsMut<i32> for Foo {
+    fn as_mut(&mut self) -> &mut i32 {
+        &mut self.0
+    }
+}
+
+impl AsMut<f64> for Foo {
+    fn as_mut(&mut self) -> &mut f64 {
+        &mut self.1
+    }
+}
+
+impl AsMut<bool> for Foo {
+    fn as_mut(&mut self) -> &mut bool {
+        &mut self.2
+    }
+}
 
 mod single_field {
     use super::*;

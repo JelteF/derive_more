@@ -14,8 +14,25 @@ use core::ptr;
 
 use derive_more::AsRef;
 
-#[derive(AsRef)]
 struct Foo(i32, f64, bool);
+
+impl AsRef<i32> for Foo {
+    fn as_ref(&self) -> &i32 {
+        &self.0
+    }
+}
+
+impl AsRef<f64> for Foo {
+    fn as_ref(&self) -> &f64 {
+        &self.1
+    }
+}
+
+impl AsRef<bool> for Foo {
+    fn as_ref(&self) -> &bool {
+        &self.2
+    }
+}
 
 mod single_field {
     use super::*;
