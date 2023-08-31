@@ -205,28 +205,42 @@ impl<'a> ToTokens for Expansion<'a> {
         };
 
         for return_ty in return_tys {
+            use ImplKind::*;
+
+            /// The kind of impl generated, chosen based on attribute args.
+            enum ImplKind {
+                /// Returns a reference to a field.
+                Direct,
+                /// Calls `as_ref`/`as_mut` on a field
+                Forwarded,
+                /// Uses autoderef-based specialization to determine whether
+                /// to use direct or forwarded based on whether the field
+                /// and return type match.
+                Specialized,
+            }
+
             let impl_kind = 'ver: {
                 if is_blanket {
-                    break 'ver ImplKind::Forwarded;
+                    break 'ver Forwarded;
                 }
 
                 if field_ty == return_ty.as_ref() {
-                    break 'ver ImplKind::Direct;
+                    break 'ver Direct;
                 }
 
                 if field_contains_param
                     || type_contains_any_of(&return_ty, &param_idents)
                 {
-                    break 'ver ImplKind::Forwarded;
+                    break 'ver Forwarded;
                 }
 
-                ImplKind::Specialized
+                Specialized
             };
 
             let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
 
             let generics = match &impl_kind {
-                ImplKind::Forwarded => {
+                Forwarded => {
                     let mut generics = self.generics.clone();
 
                     generics
@@ -242,20 +256,18 @@ impl<'a> ToTokens for Expansion<'a> {
 
                     Cow::Owned(generics)
                 }
-                ImplKind::Direct | ImplKind::Specialized => {
-                    Cow::Borrowed(self.generics)
-                }
+                Direct | Specialized => Cow::Borrowed(self.generics),
             };
 
             let (impl_gens, _, where_clause) = generics.split_for_impl();
             let (_, ty_gens, _) = self.generics.split_for_impl();
 
             let body = match &impl_kind {
-                ImplKind::Direct => Cow::Borrowed(&field_ref),
-                ImplKind::Forwarded => Cow::Owned(quote! {
+                Direct => Cow::Borrowed(&field_ref),
+                Forwarded => Cow::Owned(quote! {
                     <#field_ty as #trait_ty>::#method_ident(#field_ref)
                 }),
-                ImplKind::Specialized => Cow::Owned(quote! {
+                Specialized => Cow::Owned(quote! {
                     use ::derive_more::__private::ExtractRef as _;
 
                     let conv =
@@ -277,18 +289,6 @@ impl<'a> ToTokens for Expansion<'a> {
             .to_tokens(tokens);
         }
     }
-}
-
-/// The kind of impl generated, chosen based on attribute args.
-enum ImplKind {
-    /// Returns a reference to a field.
-    Direct,
-    /// Calls `as_ref`/`as_mut` on a field
-    Forwarded,
-    /// Uses autoderef-based specialization to determine whether
-    /// to use direct or forwarded based on whether the field
-    /// and return type match.
-    Specialized,
 }
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro struct container attribute.
