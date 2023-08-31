@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-pub struct Conv<Frm: ?Sized, To: ?Sized>(PhantomData<(Box<Frm>, Box<To>)>);
+pub struct Conv<Frm: ?Sized, To: ?Sized>(PhantomData<(*const Frm, *const To)>);
 
 impl<Frm: ?Sized, To: ?Sized> Default for Conv<Frm, To> {
     fn default() -> Self {
