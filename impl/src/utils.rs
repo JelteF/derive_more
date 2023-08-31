@@ -32,7 +32,7 @@ pub(crate) use self::fields_ext::FieldsExt;
 pub(crate) use self::spanning::Spanning;
 
 #[cfg(feature = "as_ref")]
-pub(crate) use self::type_search::type_contains_any_of;
+pub(crate) use self::param_search::{contains_any_of, ParamSearch};
 
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
@@ -1686,13 +1686,18 @@ mod fields_ext {
 }
 
 #[cfg(feature = "as_ref")]
-mod type_search {
+mod param_search {
     use syn::visit::Visit;
 
     use super::HashSet;
 
+    pub(crate) struct ParamSearch<'a> {
+        pub param_tys: HashSet<&'a syn::Ident>,
+        pub param_lfs: HashSet<&'a syn::Ident>,
+    }
+
     struct TypeSearchVisitor<'a> {
-        search: &'a HashSet<&'a syn::Ident>,
+        search: &'a ParamSearch<'a>,
         found: bool,
     }
 
@@ -1705,17 +1710,24 @@ mod type_search {
             if let syn::Type::Path(syn::TypePath { path, .. }) = ty {
                 self.found = path
                     .get_ident()
-                    .map_or(false, |ident| self.search.contains(ident));
+                    .map_or(false, |ident| self.search.param_tys.contains(ident));
             }
 
             syn::visit::visit_type(self, ty);
         }
+
+        fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
+            if self.found {
+                return;
+            }
+
+            self.found = self.search.param_lfs.contains(&lf.ident);
+
+            syn::visit::visit_lifetime(self, lf)
+        }
     }
 
-    pub(crate) fn type_contains_any_of(
-        ty: &syn::Type,
-        search: &HashSet<&syn::Ident>,
-    ) -> bool {
+    pub(crate) fn contains_any_of(ty: &syn::Type, search: &ParamSearch<'_>) -> bool {
         let mut visitor = TypeSearchVisitor {
             search,
             found: false,

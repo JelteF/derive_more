@@ -15,7 +15,9 @@ use syn::{
     Token,
 };
 
-use crate::utils::{forward, skip, type_contains_any_of, Either, HashSet, Spanning};
+use crate::utils::{
+    contains_any_of, forward, skip, Either, HashSet, ParamSearch, Spanning,
+};
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
@@ -186,13 +188,24 @@ impl<'a> ToTokens for Expansion<'a> {
 
         let field_ref = quote! { & #mut_ self.#field_ident };
 
-        let param_idents: HashSet<_> = self
+        let param_tys: HashSet<_> = self
             .generics
             .type_params()
             .map(|param| &param.ident)
             .collect();
 
-        let field_contains_param = type_contains_any_of(field_ty, &param_idents);
+        let param_lfs: HashSet<_> = self
+            .generics
+            .lifetimes()
+            .map(|param| &param.lifetime.ident)
+            .collect();
+
+        let param_search = ParamSearch {
+            param_tys,
+            param_lfs,
+        };
+
+        let field_contains_param = contains_any_of(field_ty, &param_search);
 
         let is_blanket = matches!(&self.args, Some(AsArgs::Forward(_)));
 
@@ -228,9 +241,7 @@ impl<'a> ToTokens for Expansion<'a> {
                     break 'ver Direct;
                 }
 
-                if field_contains_param
-                    || type_contains_any_of(&return_ty, &param_idents)
-                {
+                if field_contains_param || contains_any_of(&return_ty, &param_search) {
                     break 'ver Forwarded;
                 }
 
