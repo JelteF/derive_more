@@ -353,12 +353,10 @@ impl FieldAttribute {
 
                 if let Some(prev) = attrs {
                     let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    match (prev.item, parsed.item) {
-                        (Self::Args(AsArgs::Types(mut tys)), Self::Args(AsArgs::Types(more))) => {
-                            tys.extend(more);
-                            Ok(Some(Spanning::new(Self::Args(AsArgs::Types(tys)), span)))
-                        }
-                        _ => Err(syn::Error::new(
+                    if let Some(new) = prev.item.merge(parsed.item) {
+                        Ok(Some(Spanning::new(new, span)))
+                    } else {
+                        Err(syn::Error::new(
                             parsed.span,
                             format!("only single `#[{attr_ident}(...)]` attribute is allowed here")
                         ))
@@ -376,6 +374,15 @@ impl FieldAttribute {
             Self::Empty | Self::Skip(_) => None,
         }
     }
+
+    /// Merges two [`FieldAttribute`]s, if possible
+    fn merge(self, other: Self) -> Option<Self> {
+        if let (Self::Args(args), Self::Args(more)) = (self, other) {
+            args.merge(more).map(Self::Args)
+        } else {
+            None
+        }
+    }
 }
 
 /// Arguments specifying which conversions should be generated.
@@ -391,6 +398,18 @@ enum AsArgs {
     /// Impl for specified types, which can include both the type of the field,
     /// and types for which the field type implements `AsRef`
     Types(Punctuated<syn::Type, Token![,]>),
+}
+
+impl AsArgs {
+    /// Merges two [`AsArgs`], if possible
+    fn merge(self, other: Self) -> Option<Self> {
+        if let (Self::Types(mut tys), Self::Types(more)) = (self, other) {
+            tys.extend(more);
+            Some(Self::Types(tys))
+        } else {
+            None
+        }
+    }
 }
 
 impl Parse for AsArgs {
@@ -421,12 +440,10 @@ impl StructAttribute {
 
                 if let Some(prev) = attrs {
                     let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    match (prev.item, parsed.item) {
-                        (Self::Types(mut tys), Self::Types(more)) => {
-                            tys.extend(more);
-                            Ok(Some(Spanning::new(Self::Types(tys), span)))
-                        },
-                        _ => Err(syn::Error::new(
+                    if let Some(new) = prev.item.merge(parsed.item) {
+                        Ok(Some(Spanning::new(new, span)))
+                    } else {
+                        Err(syn::Error::new(
                             parsed.span,
                             format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
                         ))
