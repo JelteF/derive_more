@@ -200,9 +200,16 @@ impl<'a> ToTokens for Expansion<'a> {
             .map(|param| &param.lifetime.ident)
             .collect();
 
+        let param_consts: HashSet<_> = self
+            .generics
+            .const_params()
+            .map(|param| &param.ident)
+            .collect();
+
         let param_search = ParamSearch {
             param_tys,
             param_lfs,
+            param_consts,
         };
 
         let field_contains_param = contains_any_of(field_ty, &param_search);
