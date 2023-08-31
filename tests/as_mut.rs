@@ -123,6 +123,33 @@ mod single_field {
             assert!(ptr::eq(rf, &mut item.0));
         }
 
+        type RenamedFoo = Foo;
+
+        #[derive(AsMut)]
+        #[as_mut(i32, RenamedFoo)]
+        struct TypesWithRenamedInner(Foo);
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+
+        impl AsMut<bool> for TypesWithRenamedInner {
+            fn as_mut(&mut self) -> &mut bool {
+                self.0.as_mut()
+            }
+        }
+
+        #[test]
+        fn types_with_renamed_inner() {
+            let mut item = TypesWithRenamedInner(Foo(1, 2.0, false));
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.0.as_mut()));
+
+            let rf: &mut Foo = item.as_mut();
+            assert!(ptr::eq(rf, &mut item.0));
+        }
+
         #[derive(AsMut)]
         struct FieldTypes(#[as_mut(i32, f64)] Foo);
 
@@ -170,6 +197,29 @@ mod single_field {
         #[test]
         fn field_types_with_inner() {
             let mut item = FieldTypesWithInner(Foo(1, 2.0, false));
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.0.as_mut()));
+
+            let rf: &mut Foo = item.as_mut();
+            assert!(ptr::eq(rf, &mut item.0));
+        }
+
+        #[derive(AsMut)]
+        struct FieldTypesWithRenamedInner(#[as_mut(i32, RenamedFoo)] Foo);
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+        impl AsMut<bool> for FieldTypesWithRenamedInner {
+            fn as_mut(&mut self) -> &mut bool {
+                self.0.as_mut()
+            }
+        }
+
+        #[test]
+        fn field_types_with_renamed_inner() {
+            let mut item = FieldTypesWithRenamedInner(Foo(1, 2.0, false));
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
@@ -423,6 +473,36 @@ mod single_field {
             assert!(ptr::eq(rf, &mut item.first));
         }
 
+        type RenamedFoo = Foo;
+
+        #[derive(AsMut)]
+        #[as_mut(i32, RenamedFoo)]
+        struct TypesWithRenamedInner {
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+        impl AsMut<bool> for TypesWithRenamedInner {
+            fn as_mut(&mut self) -> &mut bool {
+                self.first.as_mut()
+            }
+        }
+
+        #[test]
+        fn types_with_renamed_inner() {
+            let mut item = TypesWithRenamedInner {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.first.as_mut()));
+
+            let rf: &mut Foo = item.as_mut();
+            assert!(ptr::eq(rf, &mut item.first));
+        }
+
         #[derive(AsMut)]
         struct FieldTypes {
             #[as_mut(i32, f64)]
@@ -478,6 +558,34 @@ mod single_field {
         #[test]
         fn field_types_with_inner() {
             let mut item = FieldTypesWithInner {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &mut i32 = item.as_mut();
+            assert!(ptr::eq(rf, item.first.as_mut()));
+
+            let rf: &mut Foo = item.as_mut();
+            assert!(ptr::eq(rf, &mut item.first));
+        }
+
+        #[derive(AsMut)]
+        struct FieldTypesWithRenamedInner {
+            #[as_mut(i32, RenamedFoo)]
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsMut`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+        impl AsMut<bool> for FieldTypesWithRenamedInner {
+            fn as_mut(&mut self) -> &mut bool {
+                self.first.as_mut()
+            }
+        }
+
+        #[test]
+        fn field_types_with_renamed_inner() {
+            let mut item = FieldTypesWithRenamedInner {
                 first: Foo(1, 2.0, false),
             };
 
@@ -703,8 +811,13 @@ mod multi_field {
             assert!(ptr::eq(rf, item.0.as_mut()));
         }
 
+        type RenamedString = String;
+
         #[derive(AsMut)]
-        struct Types(#[as_mut(str, String)] String, #[as_mut([u8])] Vec<u8>);
+        struct Types(
+            #[as_mut(str, RenamedString)] String,
+            #[as_mut([u8])] Vec<u8>,
+        );
 
         // Asserts that the macro expansion doesn't generate `AsMut` impl for the field type, by
         // producing trait implementations conflict error during compilation, if it does.
@@ -790,13 +903,23 @@ mod multi_field {
             }
 
             #[derive(AsMut)]
-            struct TypesInner<T, U>(#[as_mut(Vec<T>)] Vec<T>, U);
+            struct TypesWithInner<T, U>(
+                #[as_mut(Vec<T>, [T])] Vec<T>,
+                #[as_mut(str)] U,
+            );
 
             #[test]
-            fn types_inner() {
-                let mut item = TypesInner(vec![1i32], 2i32);
+            fn types_with_inner() {
+                let mut item = TypesWithInner(vec![1i32], "a".to_owned());
 
-                assert!(ptr::eq(item.as_mut(), &mut item.0));
+                let rf: &mut Vec<i32> = item.as_mut();
+                assert!(ptr::eq(rf, &mut item.0));
+
+                let rf: &mut [i32] = item.as_mut();
+                assert!(ptr::eq(rf, item.0.as_mut()));
+
+                let rf: &mut str = item.as_mut();
+                assert!(ptr::eq(rf, item.1.as_mut()));
             }
         }
     }
@@ -896,9 +1019,11 @@ mod multi_field {
             assert!(ptr::eq(rf, item.first.as_mut()));
         }
 
+        type RenamedString = String;
+
         #[derive(AsMut)]
         struct Types {
-            #[as_mut(str, String)]
+            #[as_mut(str, RenamedString)]
             first: String,
             #[as_mut([u8])]
             second: Vec<u8>,
@@ -1031,20 +1156,28 @@ mod multi_field {
             }
 
             #[derive(AsMut)]
-            struct TypesInner<T, U> {
-                #[as_mut(Vec<T>)]
+            struct TypesWithInner<T, U> {
+                #[as_mut(Vec<T>, [T])]
                 first: Vec<T>,
+                #[as_mut(str)]
                 second: U,
             }
 
             #[test]
             fn types_inner() {
-                let mut item = TypesInner {
+                let mut item = TypesWithInner {
                     first: vec![1i32],
-                    second: 2i32,
+                    second: "a".to_owned(),
                 };
 
-                assert!(ptr::eq(item.as_mut(), &mut item.first));
+                let rf: &mut Vec<i32> = item.as_mut();
+                assert!(ptr::eq(rf, &mut item.first));
+
+                let rf: &mut [i32] = item.as_mut();
+                assert!(ptr::eq(rf, item.first.as_mut()));
+
+                let rf: &mut str = item.as_mut();
+                assert!(ptr::eq(rf, item.second.as_mut()));
             }
         }
     }

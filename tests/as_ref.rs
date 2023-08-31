@@ -123,6 +123,33 @@ mod single_field {
             assert!(ptr::eq(rf, &item.0));
         }
 
+        type RenamedFoo = Foo;
+
+        #[derive(AsRef)]
+        #[as_ref(i32, RenamedFoo)]
+        struct TypesWithRenamedInner(Foo);
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+
+        impl AsRef<bool> for TypesWithRenamedInner {
+            fn as_ref(&self) -> &bool {
+                self.0.as_ref()
+            }
+        }
+
+        #[test]
+        fn types_with_renamed_inner() {
+            let item = TypesWithRenamedInner(Foo(1, 2.0, false));
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.0));
+        }
+
         #[derive(AsRef)]
         struct FieldTypes(#[as_ref(i32, f64)] Foo);
 
@@ -155,7 +182,28 @@ mod single_field {
             assert!(ptr::eq(rf, item.0.as_ref()));
         }
 
-        type RenamedFoo = Foo;
+        #[derive(AsRef)]
+        struct FieldTypesWithInner(#[as_ref(i32, Foo)] Foo);
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+        impl AsRef<bool> for FieldTypesWithInner {
+            fn as_ref(&self) -> &bool {
+                self.0.as_ref()
+            }
+        }
+
+        #[test]
+        fn field_types_with_inner() {
+            let item = FieldTypesWithInner(Foo(1, 2.0, false));
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.0.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.0));
+        }
 
         #[derive(AsRef)]
         struct FieldTypesWithRenamedInner(#[as_ref(i32, RenamedFoo)] Foo);
@@ -425,6 +473,36 @@ mod single_field {
             assert!(ptr::eq(rf, &item.first));
         }
 
+        type RenamedFoo = Foo;
+
+        #[derive(AsRef)]
+        #[as_ref(i32, RenamedFoo)]
+        struct TypesWithRenamedInner {
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+        impl AsRef<bool> for TypesWithRenamedInner {
+            fn as_ref(&self) -> &bool {
+                self.first.as_ref()
+            }
+        }
+
+        #[test]
+        fn types_with_renamed_inner() {
+            let item = TypesWithRenamedInner {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.first));
+        }
+
         #[derive(AsRef)]
         struct FieldTypes {
             #[as_ref(i32, f64)]
@@ -462,7 +540,33 @@ mod single_field {
             assert!(ptr::eq(rf, item.first.as_ref()));
         }
 
-        type RenamedFoo = Foo;
+        #[derive(AsRef)]
+        struct FieldTypesWithInner {
+            #[as_ref(i32, Foo)]
+            first: Foo,
+        }
+
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
+        // impl forwarding to the field type, by producing a trait implementations
+        // conflict error during compilation, if it does.
+        impl AsRef<bool> for FieldTypesWithInner {
+            fn as_ref(&self) -> &bool {
+                self.first.as_ref()
+            }
+        }
+
+        #[test]
+        fn field_types_with_inner() {
+            let item = FieldTypesWithInner {
+                first: Foo(1, 2.0, false),
+            };
+
+            let rf: &i32 = item.as_ref();
+            assert!(ptr::eq(rf, item.first.as_ref()));
+
+            let rf: &Foo = item.as_ref();
+            assert!(ptr::eq(rf, &item.first));
+        }
 
         #[derive(AsRef)]
         struct FieldTypesWithRenamedInner {
@@ -707,8 +811,13 @@ mod multi_field {
             assert!(ptr::eq(rf, item.0.as_ref()));
         }
 
+        type RenamedString = String;
+
         #[derive(AsRef)]
-        struct Types(#[as_ref(str, String)] String, #[as_ref([u8])] Vec<u8>);
+        struct Types(
+            #[as_ref(str, RenamedString)] String,
+            #[as_ref([u8])] Vec<u8>,
+        );
 
         // Asserts that the macro expansion doesn't generate `AsRef` impl for the field type, by
         // producing trait implementations conflict error during compilation, if it does.
@@ -794,13 +903,23 @@ mod multi_field {
             }
 
             #[derive(AsRef)]
-            struct TypesInner<T, U>(#[as_ref(Vec<T>)] Vec<T>, U);
+            struct TypesWithInner<T, U>(
+                #[as_ref(Vec<T>, [T])] Vec<T>,
+                #[as_ref(str)] U,
+            );
 
             #[test]
-            fn types_inner() {
-                let item = TypesInner(vec![1i32], 2i32);
+            fn types_with_inner() {
+                let item = TypesWithInner(vec![1i32], "a".to_owned());
 
-                assert!(ptr::eq(item.as_ref(), &item.0));
+                let rf: &Vec<i32> = item.as_ref();
+                assert!(ptr::eq(rf, &item.0));
+
+                let rf: &[i32] = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.1.as_ref()));
             }
         }
     }
@@ -900,9 +1019,11 @@ mod multi_field {
             assert!(ptr::eq(rf, item.first.as_ref()));
         }
 
+        type RenamedString = String;
+
         #[derive(AsRef)]
         struct Types {
-            #[as_ref(str, String)]
+            #[as_ref(str, RenamedString)]
             first: String,
             #[as_ref([u8])]
             second: Vec<u8>,
@@ -1035,20 +1156,28 @@ mod multi_field {
             }
 
             #[derive(AsRef)]
-            struct TypesInner<T, U> {
-                #[as_ref(Vec<T>)]
+            struct TypesWithInner<T, U> {
+                #[as_ref(Vec<T>, [T])]
                 first: Vec<T>,
+                #[as_ref(str)]
                 second: U,
             }
 
             #[test]
-            fn types_inner() {
-                let item = TypesInner {
+            fn types_with_inner() {
+                let item = TypesWithInner {
                     first: vec![1i32],
-                    second: 2i32,
+                    second: "a".to_owned(),
                 };
 
-                assert!(ptr::eq(item.as_ref(), &item.first));
+                let rf: &Vec<i32> = item.as_ref();
+                assert!(ptr::eq(rf, &item.first));
+
+                let rf: &[i32] = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.second.as_ref()));
             }
         }
     }
