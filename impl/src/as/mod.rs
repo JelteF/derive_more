@@ -184,21 +184,7 @@ impl<'a> ToTokens for Expansion<'a> {
         let (trait_ident, method_ident, mut_) = &self.trait_info;
         let ty_ident = &self.ident;
 
-        let (is_blanket, is_forward, return_tys) = match &self.args {
-            Some(AsArgs::Forward(_)) => (
-                true,
-                true,
-                Either::Left(std::iter::once(Cow::Owned(parse_quote! { __AsT }))),
-            ),
-            Some(AsArgs::Types(tys)) => {
-                (false, true, Either::Right(tys.iter().map(Cow::Borrowed)))
-            }
-            None => (
-                false,
-                false,
-                Either::Left(std::iter::once(Cow::Borrowed(field_ty))),
-            ),
-        };
+        let field_ref = quote! { & #mut_ self.#field_ident };
 
         let param_idents: HashSet<_> = self
             .generics
@@ -208,71 +194,92 @@ impl<'a> ToTokens for Expansion<'a> {
 
         let field_contains_param = contains_any_of(&self.field.ty, &param_idents);
 
-        return_tys
-            .map(|return_ty| {
-                let contains_param =
-                    field_contains_param || contains_any_of(&return_ty, &param_idents);
+        let is_blanket = matches!(&self.args, Some(AsArgs::Forward(_)));
 
-                let is_field_type = &self.field.ty == return_ty.as_ref();
+        let return_tys = match &self.args {
+            Some(AsArgs::Forward(_)) => {
+                Either::Left(std::iter::once(Cow::Owned(parse_quote! { __AsT })))
+            }
+            Some(AsArgs::Types(tys)) => Either::Right(tys.iter().map(Cow::Borrowed)),
+            None => Either::Left(std::iter::once(Cow::Borrowed(field_ty))),
+        };
 
-                let is_forward = is_forward && !is_field_type;
+        for return_ty in return_tys {
+            let impl_version = 'ver: {
+                if is_blanket {
+                    break 'ver ImplVersion::Forwarded;
+                }
 
-                let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
+                if field_ty == return_ty.as_ref() {
+                    break 'ver ImplVersion::Direct;
+                }
 
-                let generics = if is_forward {
+                if field_contains_param || contains_any_of(&return_ty, &param_idents) {
+                    break 'ver ImplVersion::Forwarded;
+                }
+
+                ImplVersion::Specialized
+            };
+
+            let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
+
+            let generics = match &impl_version {
+                ImplVersion::Forwarded => {
                     let mut generics = self.generics.clone();
+
+                    generics
+                        .make_where_clause()
+                        .predicates
+                        .push(parse_quote! { #field_ty: #trait_ty });
+
                     if is_blanket {
-                        generics.params.push(parse_quote! { #return_ty });
                         generics
-                            .make_where_clause()
-                            .predicates
+                            .params
                             .push(parse_quote! { #return_ty: ?::core::marker::Sized });
-                    }
-                    if is_blanket || contains_param {
-                        generics
-                            .make_where_clause()
-                            .predicates
-                            .push(parse_quote! { #field_ty: #trait_ty });
                     }
 
                     Cow::Owned(generics)
-                } else {
+                }
+                ImplVersion::Direct | ImplVersion::Specialized => {
                     Cow::Borrowed(self.generics)
-                };
+                }
+            };
 
-                let (impl_gens, _, where_clause) = generics.split_for_impl();
-                let (_, ty_gens, _) = self.generics.split_for_impl();
+            let (impl_gens, _, where_clause) = generics.split_for_impl();
+            let (_, ty_gens, _) = self.generics.split_for_impl();
 
-                let mut body = quote! { & #mut_ self.#field_ident };
-                if is_forward {
-                    if is_blanket || contains_param {
-                        body = quote! {
-                            <#field_ty as #trait_ty>::#method_ident(#body)
-                        };
-                    } else {
-                        body = quote! {
-                            use ::derive_more::__private::ExtractRef as _;
+            let body = match &impl_version {
+                ImplVersion::Direct => Cow::Borrowed(&field_ref),
+                ImplVersion::Forwarded => Cow::Owned(quote! {
+                    <#field_ty as #trait_ty>::#method_ident(#field_ref)
+                }),
+                ImplVersion::Specialized => Cow::Owned(quote! {
+                    use ::derive_more::__private::ExtractRef as _;
 
-                            let conv: ::derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
-                                = Default::default();
-                            (&&conv).__extract_ref(#body)
-                        };
+                    let conv: ::derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
+                        = Default::default();
+                    (&&conv).__extract_ref(#field_ref)
+                }),
+            };
+
+            quote! {
+                #[automatically_derived]
+                impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
+                    #[inline]
+                    fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
+                        #body
                     }
                 }
-
-                quote! {
-                    #[automatically_derived]
-                    impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
-                        #[inline]
-                        fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
-                            #body
-                        }
-                    }
-                }
-            })
-            .collect::<TokenStream>()
+            }
             .to_tokens(tokens);
+        }
     }
+}
+
+enum ImplVersion {
+    Direct,
+    Specialized,
+    Forwarded,
 }
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro struct container attribute.
