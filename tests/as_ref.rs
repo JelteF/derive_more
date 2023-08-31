@@ -921,6 +921,16 @@ mod multi_field {
                 let rf: &str = item.as_ref();
                 assert!(ptr::eq(rf, item.1.as_ref()));
             }
+
+            #[derive(AsRef)]
+            struct FieldNonGeneric<T>(#[as_ref([T])] Vec<i32>, T);
+
+            #[test]
+            fn field_non_generic() {
+                let item = FieldNonGeneric(vec![], 2i32);
+
+                assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
+            }
         }
     }
 
@@ -1178,6 +1188,23 @@ mod multi_field {
 
                 let rf: &str = item.as_ref();
                 assert!(ptr::eq(rf, item.second.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldNonGeneric<T> {
+                #[as_ref([T])]
+                first: Vec<i32>,
+                second: T,
+            }
+
+            #[test]
+            fn field_non_generic() {
+                let item = FieldNonGeneric {
+                    first: vec![],
+                    second: 2i32,
+                };
+
+                assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }
         }
     }
