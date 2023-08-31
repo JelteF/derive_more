@@ -34,6 +34,14 @@ impl AsRef<bool> for Foo {
     }
 }
 
+struct Bar<T>(T);
+
+impl AsRef<i32> for Bar<&'static i32> {
+    fn as_ref(&self) -> &i32 {
+        self.0
+    }
+}
+
 mod single_field {
     use super::*;
 
@@ -357,6 +365,27 @@ mod single_field {
                 let item = FieldTypesInner(vec![1i32]);
 
                 assert!(ptr::eq(item.as_ref(), &item.0));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref(i32)]
+            struct Lifetime<'a>(Bar<&'a i32>);
+
+            #[test]
+            fn lifetime() {
+                let item = Lifetime(Bar(&1));
+
+                assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldLifetime<'a>(#[as_ref(i32)] Bar<&'a i32>);
+
+            #[test]
+            fn field_lifetime() {
+                let item = FieldLifetime(Bar(&1));
+
+                assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
         }
     }
@@ -757,6 +786,32 @@ mod single_field {
                 let item = FieldTypesInner { first: vec![1i32] };
 
                 assert!(ptr::eq(item.as_ref(), &item.first));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref(i32)]
+            struct Lifetime<'a> {
+                first: Bar<&'a i32>,
+            }
+
+            #[test]
+            fn lifetime() {
+                let item = Lifetime { first: Bar(&1) };
+
+                assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldLifetime<'a> {
+                #[as_ref(i32)]
+                first: Bar<&'a i32>,
+            }
+
+            #[test]
+            fn field_lifetime() {
+                let item = FieldLifetime { first: Bar(&1) };
+
+                assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }
         }
     }

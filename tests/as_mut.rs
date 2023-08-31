@@ -34,6 +34,21 @@ impl AsMut<bool> for Foo {
     }
 }
 
+struct Bar<T>(T);
+
+impl AsMut<i32> for Bar<&'static mut i32> {
+    fn as_mut(&mut self) -> &mut i32 {
+        self.0
+    }
+}
+
+impl Default for Bar<&'static mut i32> {
+    fn default() -> Self {
+        static mut STATIC: i32 = 0;
+        Self(unsafe { &mut STATIC })
+    }
+}
+
 mod single_field {
     use super::*;
 
@@ -357,6 +372,27 @@ mod single_field {
                 let mut item = FieldTypesInner(vec![1i32]);
 
                 assert!(ptr::eq(item.as_mut(), &mut item.0));
+            }
+
+            #[derive(AsMut)]
+            #[as_mut(i32)]
+            struct Lifetime<'a>(Bar<&'a mut i32>);
+
+            #[test]
+            fn lifetime() {
+                let mut item = Lifetime(Bar::default());
+
+                assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct FieldLifetime<'a>(#[as_mut(i32)] Bar<&'a mut i32>);
+
+            #[test]
+            fn field_lifetime() {
+                let mut item = FieldLifetime(Bar::default());
+
+                assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
         }
     }
@@ -757,6 +793,36 @@ mod single_field {
                 let mut item = FieldTypesInner { first: vec![1i32] };
 
                 assert!(ptr::eq(item.as_mut(), &mut item.first));
+            }
+
+            #[derive(AsMut)]
+            #[as_mut(i32)]
+            struct Lifetime<'a> {
+                first: Bar<&'a mut i32>,
+            }
+
+            #[test]
+            fn lifetime() {
+                let mut item = Lifetime {
+                    first: Bar::default(),
+                };
+
+                assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct FieldLifetime<'a> {
+                #[as_mut(i32)]
+                first: Bar<&'a mut i32>,
+            }
+
+            #[test]
+            fn field_lifetime() {
+                let mut item = FieldLifetime {
+                    first: Bar::default(),
+                };
+
+                assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
             }
         }
     }
