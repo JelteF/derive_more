@@ -42,7 +42,7 @@ impl<'a, T: ?Sized> ExtractRef for &Conv<&'a mut T, T> {
     }
 }
 
-impl<'a, Frm: ?Sized + AsMut<To>, To: ?Sized + 'a> ExtractRef
+impl<'a, Frm: ?Sized + AsMut<To>, To: 'a + ?Sized> ExtractRef
     for Conv<&'a mut Frm, To>
 {
     type Frm = &'a mut Frm;
