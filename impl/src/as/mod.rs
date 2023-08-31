@@ -205,26 +205,26 @@ impl<'a> ToTokens for Expansion<'a> {
         };
 
         for return_ty in return_tys {
-            let impl_version = 'ver: {
+            let impl_kind = 'ver: {
                 if is_blanket {
-                    break 'ver ImplVersion::Forwarded;
+                    break 'ver ImplKind::Forwarded;
                 }
 
                 if field_ty == return_ty.as_ref() {
-                    break 'ver ImplVersion::Direct;
+                    break 'ver ImplKind::Direct;
                 }
 
                 if field_contains_param || contains_any_of(&return_ty, &param_idents) {
-                    break 'ver ImplVersion::Forwarded;
+                    break 'ver ImplKind::Forwarded;
                 }
 
-                ImplVersion::Specialized
+                ImplKind::Specialized
             };
 
             let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
 
-            let generics = match &impl_version {
-                ImplVersion::Forwarded => {
+            let generics = match &impl_kind {
+                ImplKind::Forwarded => {
                     let mut generics = self.generics.clone();
 
                     generics
@@ -240,7 +240,7 @@ impl<'a> ToTokens for Expansion<'a> {
 
                     Cow::Owned(generics)
                 }
-                ImplVersion::Direct | ImplVersion::Specialized => {
+                ImplKind::Direct | ImplKind::Specialized => {
                     Cow::Borrowed(self.generics)
                 }
             };
@@ -248,12 +248,12 @@ impl<'a> ToTokens for Expansion<'a> {
             let (impl_gens, _, where_clause) = generics.split_for_impl();
             let (_, ty_gens, _) = self.generics.split_for_impl();
 
-            let body = match &impl_version {
-                ImplVersion::Direct => Cow::Borrowed(&field_ref),
-                ImplVersion::Forwarded => Cow::Owned(quote! {
+            let body = match &impl_kind {
+                ImplKind::Direct => Cow::Borrowed(&field_ref),
+                ImplKind::Forwarded => Cow::Owned(quote! {
                     <#field_ty as #trait_ty>::#method_ident(#field_ref)
                 }),
-                ImplVersion::Specialized => Cow::Owned(quote! {
+                ImplKind::Specialized => Cow::Owned(quote! {
                     use ::derive_more::__private::ExtractRef as _;
 
                     let conv =
@@ -277,10 +277,16 @@ impl<'a> ToTokens for Expansion<'a> {
     }
 }
 
-enum ImplVersion {
+/// The kind of impl generated, chosen based on attribute args.
+enum ImplKind {
+    /// Returns a reference to a field.
     Direct,
-    Specialized,
+    /// Calls `as_ref`/`as_mut` on a field
     Forwarded,
+    /// Uses autoderef-based specialization to determine whether
+    /// to use direct or forwarded based on whether the field
+    /// and return type match.
+    Specialized,
 }
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro struct container attribute.
