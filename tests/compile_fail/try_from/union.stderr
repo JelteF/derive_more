@@ -1,0 +1,5 @@
+error: `TryFrom` cannot be derived for unions
+ --> tests/compile_fail/try_from/union.rs:2:1
+  |
+2 | union Union {
+  | ^^^^^

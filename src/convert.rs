@@ -45,3 +45,35 @@ impl<T> fmt::Display for TryIntoError<T> {
 
 #[cfg(feature = "std")]
 impl<T: fmt::Debug> std::error::Error for TryIntoError<T> {}
+
+/// Error returned by the derived [`TryFrom`] implementation.
+///
+/// [`TryFrom`]: macro@crate::TryFrom
+#[derive(Clone, Copy, Debug)]
+pub struct TryFromError<T> {
+    /// Original input value which failed to convert via the derived
+    /// [`TryFrom`] implementation.
+    ///
+    /// [`TryFrom`]: macro@crate::TryFrom
+    pub input: T,
+}
+
+impl<T> TryFromError<T> {
+    #[doc(hidden)]
+    #[must_use]
+    #[inline]
+    pub const fn new(input: T) -> Self {
+        Self { input }
+    }
+}
+
+// `T` should only be an integer type and therefor display
+impl<T: fmt::Display> fmt::Display for TryFromError<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "`{}` does not respond to a unit variant", self.input)
+    }
+}
+
+#[cfg(feature = "std")]
+// `T` should only be an integer type and therefor display and debug
+impl<T: fmt::Debug + fmt::Display> std::error::Error for TryFromError<T> {}

@@ -245,8 +245,8 @@ pub fn seq<const N: usize>(
     move |c| {
         parsers
             .iter_mut()
-            .fold(Some((TokenStream::new(), c)), |out, parser| {
-                let (mut out, mut c) = out?;
+            .try_fold((TokenStream::new(), c), |out, parser| {
+                let (mut out, mut c) = out;
                 let (stream, cursor) = parser(c)?;
                 out.extend(stream);
                 c = cursor;
