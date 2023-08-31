@@ -256,8 +256,9 @@ impl<'a> ToTokens for Expansion<'a> {
                 ImplVersion::Specialized => Cow::Owned(quote! {
                     use ::derive_more::__private::ExtractRef as _;
 
-                    let conv: ::derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
-                        = Default::default();
+                    let conv =
+                        <::derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
+                         as ::core::default::Default>::default();
                     (&&conv).__extract_ref(#field_ref)
                 }),
             };
