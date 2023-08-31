@@ -46,17 +46,17 @@ let mut item = SingleFieldForward(vec![]);
 let _: &mut [i32] = (&mut item).as_mut();
 ```
 
-This generates:
+This generates code equivalent to:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<__AsT: ?::core::marker::Sized> ::core::convert::AsMut<__AsT> for SingleFieldForward
+impl<T: ?Sized> AsMut<T> for SingleFieldForward
 where
-    Vec<i32>: ::core::convert::AsMut<__AsT>,
+    Vec<i32>: AsMut<T>,
 {
     #[inline]
-    fn as_mut(&mut self) -> &mut __AsT {
-        <Vec<i32> as ::core::convert::AsMut<__AsT>>::as_mut(&mut self.0)
+    fn as_mut(&mut self) -> &mut T {
+        self.0.as_mut()
     }
 }
 ```
@@ -87,7 +87,7 @@ For example
 # use derive_more::AsMut;
 #
 #[derive(AsMut)]
-#[as_ref(i32)]
+#[as_mut(i32)]
 struct Generic<T>(T);
 ```
 
@@ -97,8 +97,42 @@ Generates a forwarded impl
 # struct Generic<T>(T);
 #
 impl<T: AsMut<i32>> AsMut<i32> for Generic<T> {
-    fn as_mut(&self) -> &i32 {
-        <T as ::core::convert::AsMut<i32>>::as_mut(&mut self.0)
+    fn as_mut(&mut self) -> &mut i32 {
+        self.0.as_mut()
+    }
+}
+```
+
+And
+
+```rust
+# use derive_more::AsMut;
+#
+#[derive(AsMut)]
+#[as_mut(T)]
+struct Generic<T>(T);
+```
+
+Generates
+
+```rust
+# struct Generic<T>(T);
+#
+impl<T> AsMut<T> for Generic<T> {
+    fn as_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
+```
+
+Generating code like this is not supported
+
+```rust
+# struct Generic<T>(T);
+#
+impl AsMut<i32> for Generic<i32> {
+    fn as_mut(&mut self) -> &mut i32 {
+        &mut self.0
     }
 }
 ```
@@ -133,7 +167,7 @@ Generates:
 # }
 impl AsMut<str> for MyWrapper {
     fn as_mut(&mut self) -> &mut String {
-        <String as ::core::convert::AsMut<str>>::as_mut(&mut self.name)
+        self.name.as_mut()
     }
 }
 
@@ -148,11 +182,10 @@ Only conversions that use a single field are possible with this derive.
 Something like this wouldn't work, due to the nature of the `AsMut` trait:
 
 ```rust,compile_fail
-# use derive_more::AsRef
+# use derive_more::AsMut
 #
-// Error! `#[as_ref(...)]` attribute can only be placed on structs with exactly one field
-#[derive(AsRef)]
-#[as_ref((str, [u8]))]
+#[derive(AsMut)]
+#[as_mut((str, [u8]))]
 struct MyWrapper(String, Vec<u8>)
 ```
 
@@ -230,7 +263,7 @@ struct ForwardWithOther {
 }
 ```
 
-Multiple forwarded impls with concrete types, however, can be used.
+Multiple forwarded impls with different concrete types, however, can be used.
 
 ```rust
 # use derive_more::AsMut;

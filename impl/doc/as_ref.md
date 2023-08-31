@@ -46,17 +46,17 @@ let item = SingleFieldForward(vec![]);
 let _: &[i32] = (&item).as_ref();
 ```
 
-This generates:
+This generates code equivalent to:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<__AsT: ?::core::marker::Sized> ::core::convert::AsRef<__AsT> for SingleFieldForward
+impl<T: ?Sized> AsRef<T> for SingleFieldForward
 where
-    Vec<i32>: ::core::convert::AsRef<__AsT>,
+    Vec<i32>: AsRef<T>,
 {
     #[inline]
-    fn as_ref(&self) -> &__AsT {
-        <Vec<i32> as ::core::convert::AsRef<__AsT>>::as_ref(&self.0)
+    fn as_ref(&self) -> &T {
+        self.0.as_ref()
     }
 }
 ```
@@ -98,11 +98,44 @@ Generates a forwarded impl
 #
 impl<T: AsRef<i32>> AsRef<i32> for Generic<T> {
     fn as_ref(&self) -> &i32 {
-        <T as ::core::convert::AsRef<i32>>::as_ref(&self.0)
+        self.0.as_ref()
     }
 }
 ```
 
+And
+
+```rust
+# use derive_more::AsRef;
+#
+#[derive(AsRef)]
+#[as_ref(T)]
+struct Generic<T>(T);
+```
+
+Generates
+
+```rust
+# struct Generic<T>(T);
+#
+impl<T> AsRef<T> for Generic<T> {
+    fn as_ref(&self) -> &T {
+        &self.0
+    }
+}
+```
+
+Generating code like this is not supported
+
+```rust
+# struct Generic<T>(T);
+#
+impl AsRef<i32> for Generic<i32> {
+    fn as_ref(&self) -> &i32 {
+        &self.0
+    }
+}
+```
 
 
 ## Structs with Multiple Fields
@@ -134,7 +167,7 @@ Generates:
 # }
 impl AsRef<str> for MyWrapper {
     fn as_ref(&self) -> &str {
-        <String as ::core::convert::AsRef<str>>::as_ref(&self.name)
+        self.name.as_ref()
     }
 }
 
@@ -151,7 +184,6 @@ Something like this wouldn't work, due to the nature of the `AsRef` trait:
 ```rust,compile_fail
 # use derive_more::AsRef
 #
-// Error! `#[as_ref(...)]` attribute can only be placed on structs with exactly one field
 #[derive(AsRef)]
 #[as_ref((str, [u8]))]
 struct MyWrapper(String, Vec<u8>)
@@ -232,7 +264,7 @@ struct ForwardWithOther {
 }
 ```
 
-Multiple forwarded impls with concrete types, however, can be used.
+Multiple forwarded impls with different concrete types, however, can be used.
 
 ```rust
 # use derive_more::AsRef;
