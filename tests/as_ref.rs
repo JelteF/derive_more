@@ -42,6 +42,12 @@ impl AsRef<i32> for Bar<&'static i32> {
     }
 }
 
+impl AsRef<[i32]> for Bar<[i32; 0]> {
+    fn as_ref(&self) -> &[i32] {
+        &self.0
+    }
+}
+
 mod single_field {
     use super::*;
 
@@ -384,6 +390,27 @@ mod single_field {
             #[test]
             fn field_lifetime() {
                 let item = FieldLifetime(Bar(&1));
+
+                assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref([i32])]
+            struct ConstParam<const N: usize>(Bar<[i32; N]>);
+
+            #[test]
+            fn const_param() {
+                let item = ConstParam(Bar([]));
+
+                assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldConstParam<const N: usize>(#[as_ref([i32])] Bar<[i32; N]>);
+
+            #[test]
+            fn field_const_param() {
+                let item = FieldConstParam(Bar([]));
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
@@ -810,6 +837,32 @@ mod single_field {
             #[test]
             fn field_lifetime() {
                 let item = FieldLifetime { first: Bar(&1) };
+
+                assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            #[as_ref([i32])]
+            struct ConstParam<const N: usize> {
+                first: Bar<[i32; N]>,
+            }
+
+            #[test]
+            fn const_param() {
+                let item = ConstParam { first: Bar([]) };
+
+                assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
+            }
+
+            #[derive(AsRef)]
+            struct FieldConstParam<const N: usize> {
+                #[as_ref([i32])]
+                first: Bar<[i32; N]>,
+            }
+
+            #[test]
+            fn field_const_param() {
+                let item = FieldConstParam { first: Bar([]) };
 
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }

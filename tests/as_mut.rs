@@ -42,6 +42,12 @@ impl AsMut<i32> for Bar<&'static mut i32> {
     }
 }
 
+impl AsMut<[i32]> for Bar<[i32; 0]> {
+    fn as_mut(&mut self) -> &mut [i32] {
+        &mut self.0
+    }
+}
+
 impl Default for Bar<&'static mut i32> {
     fn default() -> Self {
         static mut STATIC: i32 = 0;
@@ -391,6 +397,27 @@ mod single_field {
             #[test]
             fn field_lifetime() {
                 let mut item = FieldLifetime(Bar::default());
+
+                assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            #[as_mut([i32])]
+            struct ConstParam<const N: usize>(Bar<[i32; N]>);
+
+            #[test]
+            fn const_param() {
+                let mut item = ConstParam(Bar([]));
+
+                assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct FieldConstParam<const N: usize>(#[as_mut([i32])] Bar<[i32; N]>);
+
+            #[test]
+            fn field_const_param() {
+                let mut item = FieldConstParam(Bar([]));
 
                 assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
@@ -821,6 +848,32 @@ mod single_field {
                 let mut item = FieldLifetime {
                     first: Bar::default(),
                 };
+
+                assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            #[as_mut([i32])]
+            struct ConstParam<const N: usize> {
+                first: Bar<[i32; N]>,
+            }
+
+            #[test]
+            fn const_param() {
+                let mut item = ConstParam { first: Bar([]) };
+
+                assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
+            }
+
+            #[derive(AsMut)]
+            struct FieldConstParam<const N: usize> {
+                #[as_mut([i32])]
+                first: Bar<[i32; N]>,
+            }
+
+            #[test]
+            fn field_const_param() {
+                let mut item = FieldConstParam { first: Bar([]) };
 
                 assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
             }
