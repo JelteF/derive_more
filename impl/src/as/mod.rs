@@ -386,7 +386,8 @@ enum AsArgs {
     /// Blanket impl, fully forwarding to the field type.
     Forward(forward::Attribute),
 
-    /// Forward implementation, but only impl for specified types.
+    /// Impl for specified types, which can include both the type of the field,
+    /// and types for which the field type implements `AsRef`
     Types(Punctuated<syn::Type, Token![,]>),
 }
 
