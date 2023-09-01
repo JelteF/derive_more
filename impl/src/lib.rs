@@ -56,7 +56,6 @@ mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
 #[cfg(any(
-    feature = "as_ref",
     feature = "debug",
     feature = "display",
     feature = "from",
