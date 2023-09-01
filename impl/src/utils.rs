@@ -1708,10 +1708,10 @@ mod param_search {
                 return;
             }
 
-            self.found = tp
-                .path
-                .get_ident()
-                .map_or(false, |ident| self.search.param_tys.contains(ident));
+            self.found = tp.path.get_ident().map_or(false, |ident| {
+                self.search.param_tys.contains(ident)
+                    || self.search.param_consts.contains(ident)
+            });
 
             syn::visit::visit_type_path(self, tp)
         }
