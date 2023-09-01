@@ -32,7 +32,7 @@ pub(crate) use self::fields_ext::FieldsExt;
 pub(crate) use self::spanning::Spanning;
 
 #[cfg(feature = "as_ref")]
-pub(crate) use self::param_search::{contains_any_of, ParamSearch};
+pub(crate) use self::param_search::ParamSearch;
 
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
@@ -1697,6 +1697,17 @@ mod param_search {
         pub param_consts: HashSet<&'a syn::Ident>,
     }
 
+    impl<'a> ParamSearch<'a> {
+        pub(crate) fn any_in(&self, ty: &syn::Type) -> bool {
+            let mut visitor = TypeSearchVisitor {
+                search: self,
+                found: false,
+            };
+            visitor.visit_type(ty);
+            visitor.found
+        }
+    }
+
     struct TypeSearchVisitor<'a> {
         search: &'a ParamSearch<'a>,
         found: bool,
@@ -1738,15 +1749,5 @@ mod param_search {
 
             syn::visit::visit_expr_path(self, ep)
         }
-    }
-
-    pub(crate) fn contains_any_of(ty: &syn::Type, search: &ParamSearch<'_>) -> bool {
-        let mut visitor = TypeSearchVisitor {
-            search,
-            found: false,
-        };
-
-        visitor.visit_type(ty);
-        visitor.found
     }
 }

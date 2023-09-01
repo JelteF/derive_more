@@ -15,9 +15,7 @@ use syn::{
     Token,
 };
 
-use crate::utils::{
-    contains_any_of, forward, skip, Either, HashSet, ParamSearch, Spanning,
-};
+use crate::utils::{forward, skip, Either, HashSet, ParamSearch, Spanning};
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
@@ -212,7 +210,7 @@ impl<'a> ToTokens for Expansion<'a> {
             param_consts,
         };
 
-        let field_contains_param = contains_any_of(field_ty, &param_search);
+        let field_contains_param = param_search.any_in(field_ty);
 
         let is_blanket = matches!(&self.args, Some(AsArgs::Forward(_)));
 
@@ -248,7 +246,7 @@ impl<'a> ToTokens for Expansion<'a> {
                     break 'ver Direct;
                 }
 
-                if field_contains_param || contains_any_of(&return_ty, &param_search) {
+                if field_contains_param || param_search.any_in(&return_ty) {
                     break 'ver Forwarded;
                 }
 
