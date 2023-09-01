@@ -1715,11 +1715,7 @@ mod param_search {
 
     impl<'a, 'ast> Visit<'ast> for TypeSearchVisitor<'a> {
         fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
-            if self.found {
-                return;
-            }
-
-            self.found = tp.path.get_ident().map_or(false, |ident| {
+            self.found |= tp.path.get_ident().map_or(false, |ident| {
                 self.search.param_tys.contains(ident)
                     || self.search.param_consts.contains(ident)
             });
@@ -1728,21 +1724,13 @@ mod param_search {
         }
 
         fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
-            if self.found {
-                return;
-            }
-
-            self.found = self.search.param_lfs.contains(&lf.ident);
+            self.found |= self.search.param_lfs.contains(&lf.ident);
 
             syn::visit::visit_lifetime(self, lf)
         }
 
         fn visit_expr_path(&mut self, ep: &'ast syn::ExprPath) {
-            if self.found {
-                return;
-            }
-
-            self.found = ep
+            self.found |= ep
                 .path
                 .get_ident()
                 .map_or(false, |ident| self.search.param_consts.contains(ident));
