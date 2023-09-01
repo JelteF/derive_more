@@ -78,7 +78,7 @@ let _: &mut [u8] = item.as_mut();
 let _: &mut String = item.as_mut();_
 ```
 
-When either the field type or the type specified to convert into contain type parameters,
+When either the field type or the type specified to convert into contain generic parameters,
 they're compared for string equality, and when there's no match assumed to be different types.
 
 For example

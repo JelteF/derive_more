@@ -78,7 +78,7 @@ let _: &[u8] = item.as_ref();
 let _: &String = item.as_ref();
 ```
 
-When either the field type or the type specified to convert into contain type parameters,
+When either the field type or the type specified to convert into contain generic parameters,
 they're compared for string equality, and when there's no match assumed to be different types.
 
 For example
