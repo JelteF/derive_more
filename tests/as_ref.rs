@@ -14,37 +14,39 @@ use core::ptr;
 
 use derive_more::AsRef;
 
-struct Foo(i32, f64, bool);
+struct Helper(i32, f64, bool);
 
-impl AsRef<i32> for Foo {
+impl AsRef<i32> for Helper {
     fn as_ref(&self) -> &i32 {
         &self.0
     }
 }
 
-impl AsRef<f64> for Foo {
+impl AsRef<f64> for Helper {
     fn as_ref(&self) -> &f64 {
         &self.1
     }
 }
 
-impl AsRef<bool> for Foo {
+impl AsRef<bool> for Helper {
     fn as_ref(&self) -> &bool {
         &self.2
     }
 }
 
-struct Bar<T>(T);
+struct LifetimeHelper<'a>(&'a i32);
 
-impl AsRef<i32> for Bar<&'static i32> {
+impl AsRef<i32> for LifetimeHelper<'static> {
     fn as_ref(&self) -> &i32 {
         self.0
     }
 }
 
-impl AsRef<[i32]> for Bar<[i32; 0]> {
+struct ConstParamHelper<const N: usize>([i32; N]);
+
+impl AsRef<[i32]> for ConstParamHelper<0> {
     fn as_ref(&self) -> &[i32] {
-        &self.0
+        self.0.as_ref()
     }
 }
 
@@ -99,7 +101,7 @@ mod single_field {
 
         #[derive(AsRef)]
         #[as_ref(i32, f64)]
-        struct Types(Foo);
+        struct Types(Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
         // impl forwarding to the field type, by producing  a trait implementations
@@ -113,15 +115,15 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsRef` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsRef<Foo> for Types {
-            fn as_ref(&self) -> &Foo {
+        impl AsRef<Helper> for Types {
+            fn as_ref(&self) -> &Helper {
                 &self.0
             }
         }
 
         #[test]
         fn types() {
-            let item = Types(Foo(1, 2.0, false));
+            let item = Types(Helper(1, 2.0, false));
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
@@ -131,8 +133,8 @@ mod single_field {
         }
 
         #[derive(AsRef)]
-        #[as_ref(i32, Foo)]
-        struct TypesWithInner(Foo);
+        #[as_ref(i32, Helper)]
+        struct TypesWithInner(Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
         // impl forwarding to the field type, by producing a trait implementations
@@ -145,20 +147,20 @@ mod single_field {
 
         #[test]
         fn types_with_inner() {
-            let item = TypesWithInner(Foo(1, 2.0, false));
+            let item = TypesWithInner(Helper(1, 2.0, false));
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.0));
         }
 
-        type RenamedFoo = Foo;
+        type RenamedFoo = Helper;
 
         #[derive(AsRef)]
         #[as_ref(i32, RenamedFoo)]
-        struct TypesWithRenamedInner(Foo);
+        struct TypesWithRenamedInner(Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
         // impl forwarding to the field type, by producing a trait implementations
@@ -172,17 +174,17 @@ mod single_field {
 
         #[test]
         fn types_with_renamed_inner() {
-            let item = TypesWithRenamedInner(Foo(1, 2.0, false));
+            let item = TypesWithRenamedInner(Helper(1, 2.0, false));
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.0));
         }
 
         #[derive(AsRef)]
-        struct FieldTypes(#[as_ref(i32, f64)] Foo);
+        struct FieldTypes(#[as_ref(i32, f64)] Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
         // impl forwarding to the field type, by producing a trait implementations
@@ -196,15 +198,15 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsRef` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsRef<Foo> for FieldTypes {
-            fn as_ref(&self) -> &Foo {
+        impl AsRef<Helper> for FieldTypes {
+            fn as_ref(&self) -> &Helper {
                 &self.0
             }
         }
 
         #[test]
         fn field_types() {
-            let item = FieldTypes(Foo(1, 2.0, false));
+            let item = FieldTypes(Helper(1, 2.0, false));
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
@@ -214,7 +216,7 @@ mod single_field {
         }
 
         #[derive(AsRef)]
-        struct FieldTypesWithInner(#[as_ref(i32, Foo)] Foo);
+        struct FieldTypesWithInner(#[as_ref(i32, Helper)] Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
         // impl forwarding to the field type, by producing a trait implementations
@@ -227,17 +229,17 @@ mod single_field {
 
         #[test]
         fn field_types_with_inner() {
-            let item = FieldTypesWithInner(Foo(1, 2.0, false));
+            let item = FieldTypesWithInner(Helper(1, 2.0, false));
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.0));
         }
 
         #[derive(AsRef)]
-        struct FieldTypesWithRenamedInner(#[as_ref(i32, RenamedFoo)] Foo);
+        struct FieldTypesWithRenamedInner(#[as_ref(i32, RenamedFoo)] Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
         // impl forwarding to the field type, by producing a trait implementations
@@ -250,12 +252,12 @@ mod single_field {
 
         #[test]
         fn field_types_with_renamed_inner() {
-            let item = FieldTypesWithRenamedInner(Foo(1, 2.0, false));
+            let item = FieldTypesWithRenamedInner(Helper(1, 2.0, false));
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.0.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.0));
         }
 
@@ -320,7 +322,7 @@ mod single_field {
 
             #[test]
             fn types() {
-                let item = Types(Foo(1, 2.0, false));
+                let item = Types(Helper(1, 2.0, false));
 
                 let rf: &i32 = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
@@ -354,7 +356,7 @@ mod single_field {
 
             #[test]
             fn field_types() {
-                let item = FieldTypes(Foo(1, 2.0, false));
+                let item = FieldTypes(Helper(1, 2.0, false));
 
                 let rf: &i32 = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
@@ -375,42 +377,44 @@ mod single_field {
 
             #[derive(AsRef)]
             #[as_ref(i32)]
-            struct Lifetime<'a>(Bar<&'a i32>);
+            struct Lifetime<'a>(LifetimeHelper<'a>);
 
             #[test]
             fn lifetime() {
-                let item = Lifetime(Bar(&1));
+                let item = Lifetime(LifetimeHelper(&0));
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
 
             #[derive(AsRef)]
-            struct FieldLifetime<'a>(#[as_ref(i32)] Bar<&'a i32>);
+            struct FieldLifetime<'a>(#[as_ref(i32)] LifetimeHelper<'a>);
 
             #[test]
             fn field_lifetime() {
-                let item = FieldLifetime(Bar(&1));
+                let item = FieldLifetime(LifetimeHelper(&0));
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
 
             #[derive(AsRef)]
             #[as_ref([i32])]
-            struct ConstParam<const N: usize>(Bar<[i32; N]>);
+            struct ConstParam<const N: usize>(ConstParamHelper<N>);
 
             #[test]
             fn const_param() {
-                let item = ConstParam(Bar([]));
+                let item = ConstParam(ConstParamHelper([]));
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
 
             #[derive(AsRef)]
-            struct FieldConstParam<const N: usize>(#[as_ref([i32])] Bar<[i32; N]>);
+            struct FieldConstParam<const N: usize>(
+                #[as_ref([i32])] ConstParamHelper<N>,
+            );
 
             #[test]
             fn field_const_param() {
-                let item = FieldConstParam(Bar([]));
+                let item = FieldConstParam(ConstParamHelper([]));
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
@@ -484,7 +488,7 @@ mod single_field {
         #[derive(AsRef)]
         #[as_ref(i32, f64)]
         struct Types {
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
@@ -499,8 +503,8 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsRef` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsRef<Foo> for Types {
-            fn as_ref(&self) -> &Foo {
+        impl AsRef<Helper> for Types {
+            fn as_ref(&self) -> &Helper {
                 &self.first
             }
         }
@@ -508,7 +512,7 @@ mod single_field {
         #[test]
         fn types() {
             let item = Types {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &i32 = item.as_ref();
@@ -519,9 +523,9 @@ mod single_field {
         }
 
         #[derive(AsRef)]
-        #[as_ref(i32, Foo)]
+        #[as_ref(i32, Helper)]
         struct TypesWithInner {
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
@@ -536,22 +540,22 @@ mod single_field {
         #[test]
         fn types_with_inner() {
             let item = TypesWithInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.first.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.first));
         }
 
-        type RenamedFoo = Foo;
+        type RenamedFoo = Helper;
 
         #[derive(AsRef)]
         #[as_ref(i32, RenamedFoo)]
         struct TypesWithRenamedInner {
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
@@ -566,20 +570,20 @@ mod single_field {
         #[test]
         fn types_with_renamed_inner() {
             let item = TypesWithRenamedInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.first.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.first));
         }
 
         #[derive(AsRef)]
         struct FieldTypes {
             #[as_ref(i32, f64)]
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
@@ -594,8 +598,8 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsRef` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsRef<Foo> for FieldTypes {
-            fn as_ref(&self) -> &Foo {
+        impl AsRef<Helper> for FieldTypes {
+            fn as_ref(&self) -> &Helper {
                 &self.first
             }
         }
@@ -603,7 +607,7 @@ mod single_field {
         #[test]
         fn field_types() {
             let item = FieldTypes {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &i32 = item.as_ref();
@@ -615,8 +619,8 @@ mod single_field {
 
         #[derive(AsRef)]
         struct FieldTypesWithInner {
-            #[as_ref(i32, Foo)]
-            first: Foo,
+            #[as_ref(i32, Helper)]
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
@@ -631,20 +635,20 @@ mod single_field {
         #[test]
         fn field_types_with_inner() {
             let item = FieldTypesWithInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.first.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.first));
         }
 
         #[derive(AsRef)]
         struct FieldTypesWithRenamedInner {
             #[as_ref(i32, RenamedFoo)]
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsRef`
@@ -659,13 +663,13 @@ mod single_field {
         #[test]
         fn field_types_with_renamed_inner() {
             let item = FieldTypesWithRenamedInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &i32 = item.as_ref();
             assert!(ptr::eq(rf, item.first.as_ref()));
 
-            let rf: &Foo = item.as_ref();
+            let rf: &Helper = item.as_ref();
             assert!(ptr::eq(rf, &item.first));
         }
 
@@ -751,7 +755,7 @@ mod single_field {
             #[test]
             fn types() {
                 let item = Types {
-                    first: Foo(1, 2.0, false),
+                    first: Helper(1, 2.0, false),
                 };
 
                 let rf: &i32 = item.as_ref();
@@ -792,7 +796,7 @@ mod single_field {
             #[test]
             fn field_types() {
                 let item = FieldTypes {
-                    first: Foo(1, 2.0, false),
+                    first: Helper(1, 2.0, false),
                 };
 
                 let rf: &i32 = item.as_ref();
@@ -818,12 +822,14 @@ mod single_field {
             #[derive(AsRef)]
             #[as_ref(i32)]
             struct Lifetime<'a> {
-                first: Bar<&'a i32>,
+                first: LifetimeHelper<'a>,
             }
 
             #[test]
             fn lifetime() {
-                let item = Lifetime { first: Bar(&1) };
+                let item = Lifetime {
+                    first: LifetimeHelper(&0),
+                };
 
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }
@@ -831,12 +837,14 @@ mod single_field {
             #[derive(AsRef)]
             struct FieldLifetime<'a> {
                 #[as_ref(i32)]
-                first: Bar<&'a i32>,
+                first: LifetimeHelper<'a>,
             }
 
             #[test]
             fn field_lifetime() {
-                let item = FieldLifetime { first: Bar(&1) };
+                let item = FieldLifetime {
+                    first: LifetimeHelper(&0),
+                };
 
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }
@@ -844,12 +852,14 @@ mod single_field {
             #[derive(AsRef)]
             #[as_ref([i32])]
             struct ConstParam<const N: usize> {
-                first: Bar<[i32; N]>,
+                first: ConstParamHelper<N>,
             }
 
             #[test]
             fn const_param() {
-                let item = ConstParam { first: Bar([]) };
+                let item = ConstParam {
+                    first: ConstParamHelper([]),
+                };
 
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }
@@ -857,12 +867,14 @@ mod single_field {
             #[derive(AsRef)]
             struct FieldConstParam<const N: usize> {
                 #[as_ref([i32])]
-                first: Bar<[i32; N]>,
+                first: ConstParamHelper<N>,
             }
 
             #[test]
             fn field_const_param() {
-                let item = FieldConstParam { first: Bar([]) };
+                let item = FieldConstParam {
+                    first: ConstParamHelper([]),
+                };
 
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }

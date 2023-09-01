@@ -10,48 +10,49 @@ use alloc::{borrow::ToOwned, collections::VecDeque, string::String, vec, vec::Ve
 #[cfg(feature = "std")]
 use std::collections::VecDeque;
 
-use core::ptr;
+use core::{marker::PhantomData, ptr};
 
 use derive_more::AsMut;
 
-struct Foo(i32, f64, bool);
+struct Helper(i32, f64, bool);
 
-impl AsMut<i32> for Foo {
+impl AsMut<i32> for Helper {
     fn as_mut(&mut self) -> &mut i32 {
         &mut self.0
     }
 }
 
-impl AsMut<f64> for Foo {
+impl AsMut<f64> for Helper {
     fn as_mut(&mut self) -> &mut f64 {
         &mut self.1
     }
 }
 
-impl AsMut<bool> for Foo {
+impl AsMut<bool> for Helper {
     fn as_mut(&mut self) -> &mut bool {
         &mut self.2
     }
 }
 
-struct Bar<T>(T);
+struct LifetimeHelper<'a>(i32, PhantomData<&'a ()>);
 
-impl AsMut<i32> for Bar<&'static mut i32> {
-    fn as_mut(&mut self) -> &mut i32 {
-        self.0
+impl LifetimeHelper<'static> {
+    fn new(val: i32) -> Self {
+        Self(val, PhantomData)
     }
 }
 
-impl AsMut<[i32]> for Bar<[i32; 0]> {
-    fn as_mut(&mut self) -> &mut [i32] {
+impl AsMut<i32> for LifetimeHelper<'static> {
+    fn as_mut(&mut self) -> &mut i32 {
         &mut self.0
     }
 }
 
-impl Default for Bar<&'static mut i32> {
-    fn default() -> Self {
-        static mut STATIC: i32 = 0;
-        Self(unsafe { &mut STATIC })
+struct ConstParamHelper<const N: usize>([i32; N]);
+
+impl AsMut<[i32]> for ConstParamHelper<0> {
+    fn as_mut(&mut self) -> &mut [i32] {
+        self.0.as_mut()
     }
 }
 
@@ -106,7 +107,7 @@ mod single_field {
 
         #[derive(AsMut)]
         #[as_mut(i32, f64)]
-        struct Types(Foo);
+        struct Types(Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
         // impl forwarding to the field type, by producing a trait implementations
@@ -120,15 +121,15 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsMut` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsMut<Foo> for Types {
-            fn as_mut(&mut self) -> &mut Foo {
+        impl AsMut<Helper> for Types {
+            fn as_mut(&mut self) -> &mut Helper {
                 &mut self.0
             }
         }
 
         #[test]
         fn types() {
-            let mut item = Types(Foo(1, 2.0, false));
+            let mut item = Types(Helper(1, 2.0, false));
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
@@ -138,8 +139,8 @@ mod single_field {
         }
 
         #[derive(AsMut)]
-        #[as_mut(i32, Foo)]
-        struct TypesWithInner(Foo);
+        #[as_mut(i32, Helper)]
+        struct TypesWithInner(Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
         // impl forwarding to the field type, by producing a trait implementations
@@ -152,20 +153,20 @@ mod single_field {
 
         #[test]
         fn types_with_inner() {
-            let mut item = TypesWithInner(Foo(1, 2.0, false));
+            let mut item = TypesWithInner(Helper(1, 2.0, false));
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.0));
         }
 
-        type RenamedFoo = Foo;
+        type RenamedFoo = Helper;
 
         #[derive(AsMut)]
         #[as_mut(i32, RenamedFoo)]
-        struct TypesWithRenamedInner(Foo);
+        struct TypesWithRenamedInner(Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
         // impl forwarding to the field type, by producing a trait implementations
@@ -179,17 +180,17 @@ mod single_field {
 
         #[test]
         fn types_with_renamed_inner() {
-            let mut item = TypesWithRenamedInner(Foo(1, 2.0, false));
+            let mut item = TypesWithRenamedInner(Helper(1, 2.0, false));
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.0));
         }
 
         #[derive(AsMut)]
-        struct FieldTypes(#[as_mut(i32, f64)] Foo);
+        struct FieldTypes(#[as_mut(i32, f64)] Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
         // impl forwarding to the field type, by producing a trait implementations
@@ -203,15 +204,15 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsMut` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsMut<Foo> for FieldTypes {
-            fn as_mut(&mut self) -> &mut Foo {
+        impl AsMut<Helper> for FieldTypes {
+            fn as_mut(&mut self) -> &mut Helper {
                 &mut self.0
             }
         }
 
         #[test]
         fn field_types() {
-            let mut item = FieldTypes(Foo(1, 2.0, false));
+            let mut item = FieldTypes(Helper(1, 2.0, false));
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
@@ -221,7 +222,7 @@ mod single_field {
         }
 
         #[derive(AsMut)]
-        struct FieldTypesWithInner(#[as_mut(i32, Foo)] Foo);
+        struct FieldTypesWithInner(#[as_mut(i32, Helper)] Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
         // impl forwarding to the field type, by producing a trait implementations
@@ -234,17 +235,17 @@ mod single_field {
 
         #[test]
         fn field_types_with_inner() {
-            let mut item = FieldTypesWithInner(Foo(1, 2.0, false));
+            let mut item = FieldTypesWithInner(Helper(1, 2.0, false));
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.0));
         }
 
         #[derive(AsMut)]
-        struct FieldTypesWithRenamedInner(#[as_mut(i32, RenamedFoo)] Foo);
+        struct FieldTypesWithRenamedInner(#[as_mut(i32, RenamedFoo)] Helper);
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
         // impl forwarding to the field type, by producing a trait implementations
@@ -257,12 +258,12 @@ mod single_field {
 
         #[test]
         fn field_types_with_renamed_inner() {
-            let mut item = FieldTypesWithRenamedInner(Foo(1, 2.0, false));
+            let mut item = FieldTypesWithRenamedInner(Helper(1, 2.0, false));
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.0.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.0));
         }
 
@@ -327,7 +328,7 @@ mod single_field {
 
             #[test]
             fn types() {
-                let mut item = Types(Foo(1, 2.0, false));
+                let mut item = Types(Helper(1, 2.0, false));
 
                 let rf: &mut i32 = item.as_mut();
                 assert!(ptr::eq(rf, item.0.as_mut()));
@@ -361,7 +362,7 @@ mod single_field {
 
             #[test]
             fn field_types() {
-                let mut item = FieldTypes(Foo(1, 2.0, false));
+                let mut item = FieldTypes(Helper(1, 2.0, false));
 
                 let rf: &mut i32 = item.as_mut();
                 assert!(ptr::eq(rf, item.0.as_mut()));
@@ -382,42 +383,44 @@ mod single_field {
 
             #[derive(AsMut)]
             #[as_mut(i32)]
-            struct Lifetime<'a>(Bar<&'a mut i32>);
+            struct Lifetime<'a>(LifetimeHelper<'a>);
 
             #[test]
             fn lifetime() {
-                let mut item = Lifetime(Bar::default());
+                let mut item = Lifetime(LifetimeHelper::new(0));
 
                 assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
 
             #[derive(AsMut)]
-            struct FieldLifetime<'a>(#[as_mut(i32)] Bar<&'a mut i32>);
+            struct FieldLifetime<'a>(#[as_mut(i32)] LifetimeHelper<'a>);
 
             #[test]
             fn field_lifetime() {
-                let mut item = FieldLifetime(Bar::default());
+                let mut item = FieldLifetime(LifetimeHelper::new(0));
 
                 assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
 
             #[derive(AsMut)]
             #[as_mut([i32])]
-            struct ConstParam<const N: usize>(Bar<[i32; N]>);
+            struct ConstParam<const N: usize>(ConstParamHelper<N>);
 
             #[test]
             fn const_param() {
-                let mut item = ConstParam(Bar([]));
+                let mut item = ConstParam(ConstParamHelper([]));
 
                 assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
 
             #[derive(AsMut)]
-            struct FieldConstParam<const N: usize>(#[as_mut([i32])] Bar<[i32; N]>);
+            struct FieldConstParam<const N: usize>(
+                #[as_mut([i32])] ConstParamHelper<N>,
+            );
 
             #[test]
             fn field_const_param() {
-                let mut item = FieldConstParam(Bar([]));
+                let mut item = FieldConstParam(ConstParamHelper([]));
 
                 assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
@@ -491,7 +494,7 @@ mod single_field {
         #[derive(AsMut)]
         #[as_mut(i32, f64)]
         struct Types {
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
@@ -506,8 +509,8 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsMut` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsMut<Foo> for Types {
-            fn as_mut(&mut self) -> &mut Foo {
+        impl AsMut<Helper> for Types {
+            fn as_mut(&mut self) -> &mut Helper {
                 &mut self.first
             }
         }
@@ -515,7 +518,7 @@ mod single_field {
         #[test]
         fn types() {
             let mut item = Types {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &mut i32 = item.as_mut();
@@ -526,9 +529,9 @@ mod single_field {
         }
 
         #[derive(AsMut)]
-        #[as_mut(i32, Foo)]
+        #[as_mut(i32, Helper)]
         struct TypesWithInner {
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
@@ -543,22 +546,22 @@ mod single_field {
         #[test]
         fn types_with_inner() {
             let mut item = TypesWithInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.first.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.first));
         }
 
-        type RenamedFoo = Foo;
+        type RenamedFoo = Helper;
 
         #[derive(AsMut)]
         #[as_mut(i32, RenamedFoo)]
         struct TypesWithRenamedInner {
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
@@ -573,20 +576,20 @@ mod single_field {
         #[test]
         fn types_with_renamed_inner() {
             let mut item = TypesWithRenamedInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.first.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.first));
         }
 
         #[derive(AsMut)]
         struct FieldTypes {
             #[as_mut(i32, f64)]
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
@@ -601,8 +604,8 @@ mod single_field {
         // Asserts that the macro expansion doesn't generate an `AsMut` impl for
         // the field type, by producing a trait implementations conflict error
         // during compilation, if it does.
-        impl AsMut<Foo> for FieldTypes {
-            fn as_mut(&mut self) -> &mut Foo {
+        impl AsMut<Helper> for FieldTypes {
+            fn as_mut(&mut self) -> &mut Helper {
                 &mut self.first
             }
         }
@@ -610,7 +613,7 @@ mod single_field {
         #[test]
         fn field_types() {
             let mut item = FieldTypes {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &mut i32 = item.as_mut();
@@ -622,8 +625,8 @@ mod single_field {
 
         #[derive(AsMut)]
         struct FieldTypesWithInner {
-            #[as_mut(i32, Foo)]
-            first: Foo,
+            #[as_mut(i32, Helper)]
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
@@ -638,20 +641,20 @@ mod single_field {
         #[test]
         fn field_types_with_inner() {
             let mut item = FieldTypesWithInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.first.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.first));
         }
 
         #[derive(AsMut)]
         struct FieldTypesWithRenamedInner {
             #[as_mut(i32, RenamedFoo)]
-            first: Foo,
+            first: Helper,
         }
 
         // Asserts that the macro expansion doesn't generate a blanket `AsMut`
@@ -666,13 +669,13 @@ mod single_field {
         #[test]
         fn field_types_with_renamed_inner() {
             let mut item = FieldTypesWithRenamedInner {
-                first: Foo(1, 2.0, false),
+                first: Helper(1, 2.0, false),
             };
 
             let rf: &mut i32 = item.as_mut();
             assert!(ptr::eq(rf, item.first.as_mut()));
 
-            let rf: &mut Foo = item.as_mut();
+            let rf: &mut Helper = item.as_mut();
             assert!(ptr::eq(rf, &mut item.first));
         }
 
@@ -758,7 +761,7 @@ mod single_field {
             #[test]
             fn types() {
                 let mut item = Types {
-                    first: Foo(1, 2.0, false),
+                    first: Helper(1, 2.0, false),
                 };
 
                 let rf: &mut i32 = item.as_mut();
@@ -799,7 +802,7 @@ mod single_field {
             #[test]
             fn field_types() {
                 let mut item = FieldTypes {
-                    first: Foo(1, 2.0, false),
+                    first: Helper(1, 2.0, false),
                 };
 
                 let rf: &mut i32 = item.as_mut();
@@ -825,13 +828,13 @@ mod single_field {
             #[derive(AsMut)]
             #[as_mut(i32)]
             struct Lifetime<'a> {
-                first: Bar<&'a mut i32>,
+                first: LifetimeHelper<'a>,
             }
 
             #[test]
             fn lifetime() {
                 let mut item = Lifetime {
-                    first: Bar::default(),
+                    first: LifetimeHelper::new(0),
                 };
 
                 assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
@@ -840,13 +843,13 @@ mod single_field {
             #[derive(AsMut)]
             struct FieldLifetime<'a> {
                 #[as_mut(i32)]
-                first: Bar<&'a mut i32>,
+                first: LifetimeHelper<'a>,
             }
 
             #[test]
             fn field_lifetime() {
                 let mut item = FieldLifetime {
-                    first: Bar::default(),
+                    first: LifetimeHelper::new(0),
                 };
 
                 assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
@@ -855,12 +858,14 @@ mod single_field {
             #[derive(AsMut)]
             #[as_mut([i32])]
             struct ConstParam<const N: usize> {
-                first: Bar<[i32; N]>,
+                first: ConstParamHelper<N>,
             }
 
             #[test]
             fn const_param() {
-                let mut item = ConstParam { first: Bar([]) };
+                let mut item = ConstParam {
+                    first: ConstParamHelper([]),
+                };
 
                 assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
             }
@@ -868,12 +873,14 @@ mod single_field {
             #[derive(AsMut)]
             struct FieldConstParam<const N: usize> {
                 #[as_mut([i32])]
-                first: Bar<[i32; N]>,
+                first: ConstParamHelper<N>,
             }
 
             #[test]
             fn field_const_param() {
-                let mut item = FieldConstParam { first: Bar([]) };
+                let mut item = FieldConstParam {
+                    first: ConstParamHelper([]),
+                };
 
                 assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
             }
