@@ -31,7 +31,7 @@ impl AsRef<String> for MyWrapper {
 }
 ```
 
-The `#[as_ref(forward)]` attribute can be used to forward
+It's also possible to use the `#[as_ref(forward)]` attribute to forward
 to the `as_ref` implementation of the field. So here `SingleFieldForward`
 implements all `AsRef` for all types that `Vec<i32>` implements `AsRef` for.
 
@@ -61,9 +61,9 @@ where
 }
 ```
 
-It's also possible to specify concrete types to derive impls for with `#[as_ref(<types>)]`.
-
-These types can include both the type of the field, and types for which the field type implements `AsRef`.
+Specifying concrete types, to derive impls for, is also supported via
+`#[as_ref(<types>)]` attribute. These types can include both the type
+of the field itself, and types for which the field type implements `AsRef`.
 
 ```rust
 # use derive_more::AsRef;
@@ -78,64 +78,46 @@ let _: &[u8] = item.as_ref();
 let _: &String = item.as_ref();
 ```
 
-When either the field type or the type specified to convert into contain generic parameters,
-they're compared for string equality, and when there's no match assumed to be different types.
+> **WARNING**: When either the field type, or the specified conversion type,
+> contains generic parameters, they are considered as the same type only if
+> are named string-equally, otherwise are assumed as different types even
+> when represent the same type in fact (type aliases, for example).
+>
+> ```rust
+> # use derive_more::AsRef;
+> #
+> #[derive(AsRef)]
+> #[as_ref(i32)] // generates `impl<T: AsRef<i32>> AsRef<i32> for Generic<T>`
+> struct Generic<T>(T);
+>
+> #[derive(AsRef)]
+> #[as_ref(T)] // generates `impl<T> AsRef<T> for Transparent<T>`
+> struct Transparent<T>(T);
+>
+> #[derive(AsRef)]
+> // #[as_ref(RenamedVec<T>)] // not supported, as types are not named string-equally
+> struct Foo<T>(Vec<T>);
+> type RenamedVec<T> = Vec<T>;
+>
+> #[derive(AsRef)]
+> #[as_ref(RenamedString)] // generates `impl AsRef<RenamedString> for Bar`,
+> struct Bar(String);      // as generics are not involved
+> type RenamedString = String;
+> ```
 
-For example
+Generating code like this is not supported:
 
 ```rust
-# use derive_more::AsRef;
-#
-#[derive(AsRef)]
-#[as_ref(i32)]
 struct Generic<T>(T);
-```
 
-Generates a forwarded impl
-
-```rust
-# struct Generic<T>(T);
-#
-impl<T: AsRef<i32>> AsRef<i32> for Generic<T> {
-    fn as_ref(&self) -> &i32 {
-        self.0.as_ref()
-    }
-}
-```
-
-And
-
-```rust
-# use derive_more::AsRef;
-#
-#[derive(AsRef)]
-#[as_ref(T)]
-struct Generic<T>(T);
-```
-
-Generates
-
-```rust
-# struct Generic<T>(T);
-#
-impl<T> AsRef<T> for Generic<T> {
-    fn as_ref(&self) -> &T {
-        &self.0
-    }
-}
-```
-
-Generating code like this is not supported
-
-```rust
-# struct Generic<T>(T);
-#
 impl AsRef<i32> for Generic<i32> {
     fn as_ref(&self) -> &i32 {
         &self.0
     }
 }
 ```
+
+
 
 
 ## Structs with Multiple Fields
@@ -178,8 +160,12 @@ impl AsRef<i32> for MyWrapper {
 }
 ```
 
+
+### Tuples (not supported)
+
 Only conversions that use a single field are possible with this derive.
-Something like this wouldn't work, due to the nature of the `AsRef` trait:
+Something like this wouldn't work, due to the nature of the `AsRef` trait
+itself:
 
 ```rust,compile_fail
 # use derive_more::AsRef
@@ -189,7 +175,7 @@ Something like this wouldn't work, due to the nature of the `AsRef` trait:
 struct MyWrapper(String, Vec<u8>)
 ```
 
-If you need to convert into multiple references, consider using the
+If you need to convert into a tuple of references, consider using the
 [`Into`](crate::Into) derive with `#[into(ref)]`.
 
 
@@ -285,6 +271,7 @@ let item = Types {
 let _: &str = item.as_ref();
 let _: &[u8] = item.as_ref();
 ```
+
 
 
 

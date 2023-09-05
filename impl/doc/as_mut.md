@@ -31,7 +31,7 @@ impl AsMut<String> for MyWrapper {
 }
 ```
 
-The `#[as_mut(forward)]` attribute can be used to forward
+It's also possible to use the `#[as_mut(forward)]` attribute to forward
 to the `as_mut` implementation of the field. So here `SingleFieldForward`
 implements all `AsMut` for all types that `Vec<i32>` implements `AsMut` for.
 
@@ -61,9 +61,9 @@ where
 }
 ```
 
-It's also possible to specify concrete types to derive impls for with `#[as_mut(<types>)]`.
-
-These types can include both the type of the field, and types for which the field type implements `AsMut`.
+Specifying concrete types, to derive impls for, is also supported via
+`#[as_mut(<types>)]` attribute. These types can include both the type
+of the field itself, and types for which the field type implements `AsMut`.
 
 ```rust
 # use derive_more::AsMut;
@@ -78,64 +78,46 @@ let _: &mut [u8] = item.as_mut();
 let _: &mut String = item.as_mut();_
 ```
 
-When either the field type or the type specified to convert into contain generic parameters,
-they're compared for string equality, and when there's no match assumed to be different types.
+> **WARNING**: When either the field type, or the specified conversion type,
+> contains generic parameters, they are considered as the same type only if
+> are named string-equally, otherwise are assumed as different types even
+> when represent the same type in fact (type aliases, for example).
+>
+> ```rust
+> # use derive_more::AsMut;
+> #
+> #[derive(AsMut)]
+> #[as_mut(i32)] // generates `impl<T: AsMut<i32>> AsMut<i32> for Generic<T>`
+> struct Generic<T>(T);
+>
+> #[derive(AsMut)]
+> #[as_mut(T)] // generates `impl<T> AsMut<T> for Transparent<T>`
+> struct Transparent<T>(T);
+>
+> #[derive(AsMut)]
+> // #[as_mut(RenamedVec<T>)] // not supported, as types are not named string-equally
+> struct Foo<T>(Vec<T>);
+> type RenamedVec<T> = Vec<T>;
+>
+> #[derive(AsMut)]
+> #[as_mut(RenamedString)] // generates `impl AsMut<RenamedString> for Bar`,
+> struct Bar(String);      // as generics are not involved
+> type RenamedString = String;
+> ```
 
-For example
+Generating code like this is not supported:
 
 ```rust
-# use derive_more::AsMut;
-#
-#[derive(AsMut)]
-#[as_mut(i32)]
 struct Generic<T>(T);
-```
 
-Generates a forwarded impl
-
-```rust
-# struct Generic<T>(T);
-#
-impl<T: AsMut<i32>> AsMut<i32> for Generic<T> {
-    fn as_mut(&mut self) -> &mut i32 {
-        self.0.as_mut()
-    }
-}
-```
-
-And
-
-```rust
-# use derive_more::AsMut;
-#
-#[derive(AsMut)]
-#[as_mut(T)]
-struct Generic<T>(T);
-```
-
-Generates
-
-```rust
-# struct Generic<T>(T);
-#
-impl<T> AsMut<T> for Generic<T> {
-    fn as_mut(&mut self) -> &mut T {
-        &mut self.0
-    }
-}
-```
-
-Generating code like this is not supported
-
-```rust
-# struct Generic<T>(T);
-#
 impl AsMut<i32> for Generic<i32> {
     fn as_mut(&mut self) -> &mut i32 {
         &mut self.0
     }
 }
 ```
+
+
 
 
 ## Structs with Multiple Fields
@@ -178,8 +160,12 @@ impl AsMut<i32> for MyWrapper {
 }
 ```
 
+
+### Tuples (not supported)
+
 Only conversions that use a single field are possible with this derive.
-Something like this wouldn't work, due to the nature of the `AsMut` trait:
+Something like this wouldn't work, due to the nature of the `AsMut` trait
+itself:
 
 ```rust,compile_fail
 # use derive_more::AsMut
@@ -189,8 +175,9 @@ Something like this wouldn't work, due to the nature of the `AsMut` trait:
 struct MyWrapper(String, Vec<u8>)
 ```
 
-If you need to convert into multiple references, consider using the
+If you need to convert into a tuple of references, consider using the
 [`Into`](crate::Into) derive with `#[into(ref_mut)]`.
+
 
 ### Skipping
 
@@ -284,6 +271,7 @@ let mut item = Types {
 let _: &mut str = item.as_mut();
 let _: &mut [u8] = item.as_mut();
 ```
+
 
 
 
