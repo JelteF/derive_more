@@ -50,14 +50,14 @@
 // Not public, but exported API. For macro expansion internals only.
 #[doc(hidden)]
 pub mod __private {
+    #[cfg(feature = "as_ref")]
+    pub use crate::r#as::{Conv, ExtractRef};
+
     #[cfg(feature = "debug")]
     pub use crate::fmt::{debug_tuple, DebugTuple};
 
     #[cfg(feature = "error")]
     pub use crate::vendor::thiserror::aserror::AsDynError;
-
-    #[cfg(feature = "as_ref")]
-    pub use crate::r#as::{Conv, ExtractRef};
 }
 
 /// Module containing macro definitions only, without corresponding traits.

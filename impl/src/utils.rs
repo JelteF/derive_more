@@ -23,6 +23,8 @@ use syn::{
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
+#[cfg(feature = "as_ref")]
+pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
@@ -30,9 +32,6 @@ pub(crate) use self::fields_ext::FieldsExt;
     feature = "into",
 ))]
 pub(crate) use self::spanning::Spanning;
-
-#[cfg(feature = "as_ref")]
-pub(crate) use self::param_search::ParamSearch;
 
 #[derive(Clone, Copy, Default)]
 pub struct DeterministicState;
@@ -1686,20 +1685,28 @@ mod fields_ext {
 }
 
 #[cfg(feature = "as_ref")]
-mod param_search {
+mod generics_search {
     use syn::visit::Visit;
 
     use super::HashSet;
 
-    pub(crate) struct ParamSearch<'a> {
-        pub param_tys: HashSet<&'a syn::Ident>,
-        pub param_lfs: HashSet<&'a syn::Ident>,
-        pub param_consts: HashSet<&'a syn::Ident>,
+    /// Search of whether some generics (type parameters, lifetime parameters or const parameters)
+    /// are present in some [`syn::Type`].
+    pub(crate) struct GenericsSearch<'s> {
+        /// Type parameters to look for.
+        pub(crate) types: HashSet<&'s syn::Ident>,
+
+        /// Lifetime parameters to look for.
+        pub(crate) lifetimes: HashSet<&'s syn::Ident>,
+
+        /// Const parameters to look for.
+        pub(crate) consts: HashSet<&'s syn::Ident>,
     }
 
-    impl<'a> ParamSearch<'a> {
+    impl<'s> GenericsSearch<'s> {
+        /// Checks the provided [`syn::Type`] to contain anything from this [`GenericsSearch`].
         pub(crate) fn any_in(&self, ty: &syn::Type) -> bool {
-            let mut visitor = TypeSearchVisitor {
+            let mut visitor = Visitor {
                 search: self,
                 found: false,
             };
@@ -1708,23 +1715,26 @@ mod param_search {
         }
     }
 
-    struct TypeSearchVisitor<'a> {
-        search: &'a ParamSearch<'a>,
+    /// [`Visit`]or performing a [`GenericsSearch`].
+    struct Visitor<'s> {
+        /// [`GenericsSearch`] parameters.
+        search: &'s GenericsSearch<'s>,
+
+        /// Indication whether anything was found for the [`GenericsSearch`] parameters.
         found: bool,
     }
 
-    impl<'a, 'ast> Visit<'ast> for TypeSearchVisitor<'a> {
+    impl<'s, 'ast> Visit<'ast> for Visitor<'s> {
         fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
             self.found |= tp.path.get_ident().map_or(false, |ident| {
-                self.search.param_tys.contains(ident)
-                    || self.search.param_consts.contains(ident)
+                self.search.types.contains(ident) || self.search.consts.contains(ident)
             });
 
             syn::visit::visit_type_path(self, tp)
         }
 
         fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
-            self.found |= self.search.param_lfs.contains(&lf.ident);
+            self.found |= self.search.lifetimes.contains(&lf.ident);
 
             syn::visit::visit_lifetime(self, lf)
         }
@@ -1733,7 +1743,7 @@ mod param_search {
             self.found |= ep
                 .path
                 .get_ident()
-                .map_or(false, |ident| self.search.param_consts.contains(ident));
+                .map_or(false, |ident| self.search.consts.contains(ident));
 
             syn::visit::visit_expr_path(self, ep)
         }
