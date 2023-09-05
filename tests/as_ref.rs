@@ -103,18 +103,17 @@ mod single_field {
         #[as_ref(i32, f64)]
         struct Types(Helper);
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing  a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing  a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for Types {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
-        // the field type, by producing a trait implementations conflict error
-        // during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for the field type, by
+        // producing a trait implementations conflict error during compilation, if it does.
         impl AsRef<Helper> for Types {
             fn as_ref(&self) -> &Helper {
                 &self.0
@@ -136,9 +135,9 @@ mod single_field {
         #[as_ref(i32, Helper)]
         struct TypesWithInner(Helper);
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for TypesWithInner {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
@@ -162,10 +161,9 @@ mod single_field {
         #[as_ref(i32, RenamedFoo)]
         struct TypesWithRenamedInner(Helper);
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
-
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for TypesWithRenamedInner {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
@@ -186,18 +184,17 @@ mod single_field {
         #[derive(AsRef)]
         struct FieldTypes(#[as_ref(i32, f64)] Helper);
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for FieldTypes {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
-        // the field type, by producing a trait implementations conflict error
-        // during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for the field type, by
+        // producing a trait implementations conflict error during compilation, if it does.
         impl AsRef<Helper> for FieldTypes {
             fn as_ref(&self) -> &Helper {
                 &self.0
@@ -218,9 +215,9 @@ mod single_field {
         #[derive(AsRef)]
         struct FieldTypesWithInner(#[as_ref(i32, Helper)] Helper);
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for FieldTypesWithInner {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
@@ -241,9 +238,9 @@ mod single_field {
         #[derive(AsRef)]
         struct FieldTypesWithRenamedInner(#[as_ref(i32, RenamedFoo)] Helper);
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for FieldTypesWithRenamedInner {
             fn as_ref(&self) -> &bool {
                 self.0.as_ref()
@@ -311,9 +308,9 @@ mod single_field {
             #[as_ref(i32, f64)]
             struct Types<T>(T);
 
-            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-            // impl forwarding to the field type, by producing a trait implementations
-            // conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding
+            // to the field type, by producing a trait implementations conflict error during
+            // compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for Types<T> {
                 fn as_ref(&self) -> &bool {
                     self.0.as_ref()
@@ -345,9 +342,9 @@ mod single_field {
             #[derive(AsRef)]
             struct FieldTypes<T>(#[as_ref(i32, f64)] T);
 
-            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-            // impl forwarding to the field type, by producing a trait implementations
-            // conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding
+            // to the field type, by producing a trait implementations conflict error during
+            // compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for FieldTypes<T> {
                 fn as_ref(&self) -> &bool {
                     self.0.as_ref()
@@ -491,18 +488,17 @@ mod single_field {
             first: Helper,
         }
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for Types {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
-        // the field type, by producing a trait implementations conflict error
-        // during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for the field type, by
+        // producing a trait implementations conflict error during compilation, if it does.
         impl AsRef<Helper> for Types {
             fn as_ref(&self) -> &Helper {
                 &self.first
@@ -528,9 +524,9 @@ mod single_field {
             first: Helper,
         }
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for TypesWithInner {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
@@ -558,9 +554,9 @@ mod single_field {
             first: Helper,
         }
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for TypesWithRenamedInner {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
@@ -586,18 +582,17 @@ mod single_field {
             first: Helper,
         }
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for FieldTypes {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
             }
         }
 
-        // Asserts that the macro expansion doesn't generate an `AsRef` impl for
-        // the field type, by producing a trait implementations conflict error
-        // during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate an `AsRef` impl for the field type, by
+        // producing a trait implementations conflict error during compilation, if it does.
         impl AsRef<Helper> for FieldTypes {
             fn as_ref(&self) -> &Helper {
                 &self.first
@@ -623,9 +618,9 @@ mod single_field {
             first: Helper,
         }
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for FieldTypesWithInner {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
@@ -651,9 +646,9 @@ mod single_field {
             first: Helper,
         }
 
-        // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-        // impl forwarding to the field type, by producing a trait implementations
-        // conflict error during compilation, if it does.
+        // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding to
+        // the field type, by producing a trait implementations conflict error during compilation,
+        // if it does.
         impl AsRef<bool> for FieldTypesWithRenamedInner {
             fn as_ref(&self) -> &bool {
                 self.first.as_ref()
@@ -743,9 +738,9 @@ mod single_field {
                 first: T,
             }
 
-            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-            // impl forwarding to the field type, by producing a trait implementations
-            // conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding
+            // to the field type, by producing a trait implementations conflict error during
+            // compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for Types<T> {
                 fn as_ref(&self) -> &bool {
                     self.first.as_ref()
@@ -784,9 +779,9 @@ mod single_field {
                 first: T,
             }
 
-            // Asserts that the macro expansion doesn't generate a blanket `AsRef`
-            // impl forwarding to the field type, by producing a trait implementations
-            // conflict error during compilation, if it does.
+            // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl forwarding
+            // to the field type, by producing a trait implementations conflict error during
+            // compilation, if it does.
             impl<T: AsRef<bool>> AsRef<bool> for FieldTypes<T> {
                 fn as_ref(&self) -> &bool {
                     self.first.as_ref()
