@@ -2,7 +2,7 @@
 
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{format_ident, quote, ToTokens as _};
-use syn::{spanned::Spanned as _, Ident, Variant};
+use syn::spanned::Spanned as _;
 
 /// Expands a [`TryFrom`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -30,10 +30,10 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// ```rust,ignore
 /// #[repr(<type>)]
 /// ```
-struct ReprAttribute(Ident);
+struct ReprAttribute(syn::Ident);
 
 impl ReprAttribute {
-    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s.
+    /// Parses a [`ReprAttribute`] from the provided [`syn::Attribute`]s.
     fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Self> {
         attrs
             .as_ref()
@@ -57,7 +57,7 @@ impl ReprAttribute {
                 .map(|_| repr)
             })
             // Default discriminant is interpreted as `isize` (https://doc.rust-lang.org/reference/items/enumerations.html#discriminants)
-            .map(|repr| repr.unwrap_or_else(|| Ident::new("isize", Span::call_site())))
+            .map(|repr| repr.unwrap_or_else(|| syn::Ident::new("isize", Span::call_site())))
             .map(Self)
     }
 }
@@ -66,8 +66,9 @@ impl ReprAttribute {
 struct Expansion<'a> {
     /// Enum `#[repr(u/i*)]`
     repr: ReprAttribute,
+
     /// Enum [`Ident`].
-    ident: &'a Ident,
+    ident: &'a syn::Ident,
 
     /// Variant [`Ident`] in case of enum expansion.
     variants: Vec<&'a syn::Variant>,
@@ -87,13 +88,13 @@ impl<'a> Expansion<'a> {
         let mut last_discriminant = quote! {0};
         let mut inc = 0usize;
         let (consts, (discriminants, variants)): (
-            Vec<Ident>,
+            Vec<syn::Ident>,
             (Vec<TokenStream>, Vec<TokenStream>),
         ) = self
             .variants
             .iter()
             .filter_map(
-                |Variant {
+                |syn::Variant {
                      ident,
                      fields,
                      discriminant,
