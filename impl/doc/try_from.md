@@ -8,8 +8,6 @@ Only field-less variants can be constructed from their variant, therefor the `Tr
 ## Example usage
 
 ```rust
-# #[rustversion::since(1.66)]
-# mod discriminant_on_non_unit_enum {
 # use derive_more::TryFrom;
 #[derive(TryFrom, Debug, PartialEq)]
 #[try_from(repr)]
@@ -21,18 +19,10 @@ enum Enum {
     Empty{},
 }
 
-# #[rustversion::since(1.66)]
-# pub fn test(){
 assert_eq!(Enum::Implicit, Enum::try_from(0).unwrap());
 assert_eq!(Enum::Explicit, Enum::try_from(5).unwrap());
 assert_eq!(Enum::Empty{}, Enum::try_from(7).unwrap());
 
-// variants with fields are not supported
+// Variants with fields are not supported, as the value for their fields would be undefined.
 assert!(Enum::try_from(6).is_err());
-# }
-# }
-# // We need to use a `function` declaration, because we cannot put `rustversion` on a statement.
-# #[rustversion::since(1.66)] use discriminant_on_non_unit_enum::test;
-# #[rustversion::before(1.66)] fn test() {}
-# test();
 ```

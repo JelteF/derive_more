@@ -56,10 +56,8 @@ fn enum_with_complex_repr() {
     assert!(Enum::try_from(-1).is_err());
 }
 
-#[rustversion::since(1.66)]
-mod discriminants_on_enum_with_fields {
-    use super::*;
-
+#[test]
+fn test_discriminants_on_enum_with_fields() {
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]
     #[try_from(repr)]
     #[repr(i16)]
@@ -72,13 +70,10 @@ mod discriminants_on_enum_with_fields {
         EmptyTuple(),
     }
 
-    #[test]
-    fn test_discriminants_on_enum_with_fields() {
-        assert_eq!(Enum::A, Enum::try_from(0).unwrap());
-        assert_eq!(Enum::Discriminant, Enum::try_from(5).unwrap());
-        assert!(Enum::try_from(6).is_err());
-        assert_eq!(Enum::Empty {}, Enum::try_from(7).unwrap());
-        assert!(Enum::try_from(-14).is_err());
-        assert_eq!(Enum::EmptyTuple(), Enum::try_from(-13).unwrap());
-    }
+    assert_eq!(Enum::A, Enum::try_from(0).unwrap());
+    assert_eq!(Enum::Discriminant, Enum::try_from(5).unwrap());
+    assert!(Enum::try_from(6).is_err());
+    assert_eq!(Enum::Empty {}, Enum::try_from(7).unwrap());
+    assert!(Enum::try_from(-14).is_err());
+    assert_eq!(Enum::EmptyTuple(), Enum::try_from(-13).unwrap());
 }
