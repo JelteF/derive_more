@@ -1,7 +1,7 @@
 //! Implementation of a [`TryFrom`] derive macro.
 
 use proc_macro2::{Literal, Span, TokenStream};
-use quote::{format_ident, quote, ToTokens as _};
+use quote::{format_ident, quote, ToTokens};
 use syn::spanned::Spanned as _;
 
 /// Expands a [`TryFrom`] derive macro.
@@ -11,13 +11,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             data.struct_token.span(),
             "`TryFrom` cannot be derived for structs",
         )),
-        syn::Data::Enum(data) => Expansion {
+        syn::Data::Enum(data) => Ok(Expansion {
             repr: ReprAttribute::parse_attrs(&input.attrs)?,
-            ident: &input.ident,
-            variants: data.variants.iter().collect(),
-            generics: &input.generics,
+            attr: ItemAttribute::parse_attrs(&input.attrs)?,
+            ident: input.ident.clone(),
+            variants: data.variants.clone().into_iter().collect(),
+            generics: input.generics.clone(),
         }
-        .expand(),
+        .into_token_stream()),
         syn::Data::Union(data) => Err(syn::Error::new(
             data.union_token.span(),
             "`TryFrom` cannot be derived for unions",
@@ -25,7 +26,41 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     }
 }
 
+/// Representation of a [`TryFrom`] derive macro struct item attribute.
+///
+/// ```rust,ignore
+/// #[try_from(repr)]
+/// ```
+#[derive(Default)]
+struct ItemAttribute {
+    /// plain `repr`
+    repr: bool,
+}
+
+impl ItemAttribute {
+    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s.
+    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Self> {
+        attrs
+            .as_ref()
+            .iter()
+            .filter(|attr| attr.path().is_ident("try_from"))
+            .try_fold(ItemAttribute::default(), |mut attrs, attr| {
+                attr.parse_nested_meta(|meta| {
+                    if meta.path.is_ident("repr") {
+                        attrs.repr = true;
+                        Ok(())
+                    } else {
+                        Err(meta.error("only `repr` is allowed here"))
+                    }
+                })
+                .map(|_| attrs)
+            })
+    }
+}
+
 /// Representation of a [`Repr`] derive macro struct container attribute.
+///
+/// Note: This disregards any non integer representation reprs.
 ///
 /// ```rust,ignore
 /// #[repr(<type>)]
@@ -57,30 +92,34 @@ impl ReprAttribute {
                 .map(|_| repr)
             })
             // Default discriminant is interpreted as `isize` (https://doc.rust-lang.org/reference/items/enumerations.html#discriminants)
-            .map(|repr| repr.unwrap_or_else(|| syn::Ident::new("isize", Span::call_site())))
+            .map(|repr| {
+                repr.unwrap_or_else(|| syn::Ident::new("isize", Span::call_site()))
+            })
             .map(Self)
     }
 }
 
 /// Expansion of a macro for generating [`TryFrom`] implementation of an enum
-struct Expansion<'a> {
+struct Expansion {
     /// Enum `#[repr(u/i*)]`
     repr: ReprAttribute,
-
+    /// Attributes on item.
+    attr: ItemAttribute,
     /// Enum [`Ident`].
-    ident: &'a syn::Ident,
-
+    ident: syn::Ident,
     /// Variant [`Ident`] in case of enum expansion.
-    variants: Vec<&'a syn::Variant>,
-
+    variants: Vec<syn::Variant>,
     /// Struct or enum [`syn::Generics`].
-    generics: &'a syn::Generics,
+    generics: syn::Generics,
 }
 
-impl<'a> Expansion<'a> {
+impl ToTokens for Expansion {
     /// Expands [`TryFrom`] implementations for a struct.
-    fn expand(&self) -> syn::Result<TokenStream> {
-        let ident = self.ident;
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        if !self.attr.repr {
+            return;
+        }
+        let ident = &self.ident;
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
 
         let repr = &self.repr.0;
@@ -120,7 +159,7 @@ impl<'a> Expansion<'a> {
             )
             .unzip();
 
-        Ok(quote! {
+        quote! {
             #[automatically_derived]
             impl #impl_generics
                  ::core::convert::TryFrom<#repr #ty_generics> for #ident
@@ -137,6 +176,6 @@ impl<'a> Expansion<'a> {
                     }
                 }
             }
-        })
+        }.to_tokens(tokens);
     }
 }

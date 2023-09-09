@@ -7,6 +7,7 @@ use derive_more::TryFrom;
 fn test_with_repr() {
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]
     #[repr(i16)]
+    #[try_from(repr)]
     enum Enum {
         A,
         B = -21,
@@ -23,6 +24,7 @@ fn test_with_repr() {
 #[test]
 fn enum_without_repr() {
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]
+    #[try_from(repr)]
     enum Enum {
         A,
         B = -21,
@@ -39,6 +41,7 @@ fn enum_without_repr() {
 #[test]
 fn enum_with_complex_repr() {
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]
+    #[try_from(repr)]
     #[repr(align(16), i32)]
     enum Enum {
         A,
@@ -58,6 +61,7 @@ mod discriminants_on_enum_with_fields {
     use super::*;
 
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]
+    #[try_from(repr)]
     #[repr(i16)]
     enum Enum {
         A,

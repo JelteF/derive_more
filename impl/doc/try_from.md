@@ -12,6 +12,7 @@ Only field-less variants can be constructed from their variant, therefor the `Tr
 # mod discriminant_on_non_unit_enum {
 # use derive_more::TryFrom;
 #[derive(TryFrom, Debug, PartialEq)]
+#[try_from(repr)]
 #[repr(u32)]
 enum Enum {
     Implicit,
