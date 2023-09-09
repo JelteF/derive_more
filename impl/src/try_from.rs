@@ -165,14 +165,14 @@ impl ToTokens for Expansion {
                  ::core::convert::TryFrom<#repr #ty_generics> for #ident
                  #where_clause
             {
-                type Error = ::derive_more::TryFromError<#repr>;
+                type Error = ::derive_more::TryFromReprError<#repr>;
 
                 #[inline]
                 fn try_from(value: #repr) -> ::core::result::Result<Self, Self::Error> {
                     #(#[allow(non_upper_case_globals)] const #consts: #repr = #discriminants;)*
                     match value {
                         #(#consts => ::core::result::Result::Ok(#ident::#variants),)*
-                        _ => ::core::result::Result::Err(::derive_more::TryFromError::new(value)),
+                        _ => ::core::result::Result::Err(::derive_more::TryFromReprError::new(value)),
                     }
                 }
             }

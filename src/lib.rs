@@ -94,7 +94,7 @@ pub use crate::r#str::FromStrError;
 mod convert;
 #[cfg(feature = "try_from")]
 #[doc(inline)]
-pub use crate::convert::TryFromError;
+pub use crate::convert::TryFromReprError;
 #[cfg(feature = "try_into")]
 #[doc(inline)]
 pub use crate::convert::TryIntoError;
