@@ -48,7 +48,7 @@ default = []
 
 add = []
 add_assign = []
-as_ref = []
+as_ref = ["syn/extra-traits", "syn/visit"]
 constructor = []
 debug = ["syn/extra-traits", "dep:unicode-xid"]
 deref = []

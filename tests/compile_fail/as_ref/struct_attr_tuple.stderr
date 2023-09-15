@@ -1,0 +1,9 @@
+error: `#[as_ref(...)]` attribute can only be placed on structs with exactly one field
+ --> tests/compile_fail/as_ref/struct_attr_tuple.rs:3:12
+  |
+3 |   struct Foo {
+  |  ____________^
+4 | |     bar: i32,
+5 | |     baz: f32,
+6 | | }
+  | |_^
