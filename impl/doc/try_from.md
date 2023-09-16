@@ -13,15 +13,15 @@ Only field-less variants can be constructed from their variant, therefor the `Tr
 #[try_from(repr)]
 #[repr(u32)]
 enum Enum {
-    Implicit,
-    Explicit = 5,
-    Field(usize),
-    Empty{},
+    ImplicitZero,
+    ExplicitFive = 5,
+    FieldSix(usize),
+    EmptySeven{},
 }
 
-assert_eq!(Enum::Implicit, Enum::try_from(0).unwrap());
-assert_eq!(Enum::Explicit, Enum::try_from(5).unwrap());
-assert_eq!(Enum::Empty{}, Enum::try_from(7).unwrap());
+assert_eq!(Enum::ImplicitZero, Enum::try_from(0).unwrap());
+assert_eq!(Enum::ExplicitFive, Enum::try_from(5).unwrap());
+assert_eq!(Enum::EmptySeven{}, Enum::try_from(7).unwrap());
 
 // Variants with fields are not supported, as the value for their fields would be undefined.
 assert!(Enum::try_from(6).is_err());

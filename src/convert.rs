@@ -68,10 +68,10 @@ impl<T> TryFromReprError<T> {
     }
 }
 
-// `T` should only be an integer type and therefor be debug
+// `T` should only be an integer type and therefore be debug
 impl<T: fmt::Debug> fmt::Display for TryFromReprError<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "`{:?}` does not respond to a unit variant", self.input)
+        write!(f, "`{:?}` does not corespond to a unit variant", self.input)
     }
 }
 
