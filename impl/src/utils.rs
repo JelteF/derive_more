@@ -23,6 +23,8 @@ use syn::{
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
+#[cfg(feature = "as_ref")]
+pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
@@ -1328,8 +1330,6 @@ pub(crate) mod forward {
         spanned::Spanned as _,
     };
 
-    use super::Spanning;
-
     /// Representation of a `forward` attribute.
     ///
     /// ```rust,ignore
@@ -1343,34 +1343,6 @@ pub(crate) mod forward {
                 p if p.is_ident("forward") => Ok(Self),
                 p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
             }
-        }
-    }
-
-    impl Attribute {
-        /// Parses an [`Attribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-        ///
-        /// [`Span`]: proc_macro2::Span
-        pub(crate) fn parse_attrs(
-            attrs: impl AsRef<[syn::Attribute]>,
-            attr_ident: &syn::Ident,
-        ) -> syn::Result<Option<Spanning<Self>>> {
-            attrs
-                .as_ref()
-                .iter()
-                .filter(|attr| attr.path().is_ident(attr_ident))
-                .try_fold(None, |mut attrs, attr| {
-                    let parsed = Spanning::new(attr.parse_args::<Self>()?, attr.span());
-                    if attrs.replace(parsed).is_some() {
-                        Err(syn::Error::new(
-                            attr.span(),
-                            format!(
-                                "only single `#[{attr_ident}(forward)]` attribute is allowed here",
-                            ),
-                        ))
-                    } else {
-                        Ok(attrs)
-                    }
-                })
         }
     }
 }
@@ -1710,4 +1682,70 @@ mod fields_ext {
     }
 
     impl<T: Len + ?Sized> FieldsExt for T {}
+}
+
+#[cfg(feature = "as_ref")]
+mod generics_search {
+    use syn::visit::Visit;
+
+    use super::HashSet;
+
+    /// Search of whether some generics (type parameters, lifetime parameters or const parameters)
+    /// are present in some [`syn::Type`].
+    pub(crate) struct GenericsSearch<'s> {
+        /// Type parameters to look for.
+        pub(crate) types: HashSet<&'s syn::Ident>,
+
+        /// Lifetime parameters to look for.
+        pub(crate) lifetimes: HashSet<&'s syn::Ident>,
+
+        /// Const parameters to look for.
+        pub(crate) consts: HashSet<&'s syn::Ident>,
+    }
+
+    impl<'s> GenericsSearch<'s> {
+        /// Checks the provided [`syn::Type`] to contain anything from this [`GenericsSearch`].
+        pub(crate) fn any_in(&self, ty: &syn::Type) -> bool {
+            let mut visitor = Visitor {
+                search: self,
+                found: false,
+            };
+            visitor.visit_type(ty);
+            visitor.found
+        }
+    }
+
+    /// [`Visit`]or performing a [`GenericsSearch`].
+    struct Visitor<'s> {
+        /// [`GenericsSearch`] parameters.
+        search: &'s GenericsSearch<'s>,
+
+        /// Indication whether anything was found for the [`GenericsSearch`] parameters.
+        found: bool,
+    }
+
+    impl<'s, 'ast> Visit<'ast> for Visitor<'s> {
+        fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
+            self.found |= tp.path.get_ident().map_or(false, |ident| {
+                self.search.types.contains(ident) || self.search.consts.contains(ident)
+            });
+
+            syn::visit::visit_type_path(self, tp)
+        }
+
+        fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
+            self.found |= self.search.lifetimes.contains(&lf.ident);
+
+            syn::visit::visit_lifetime(self, lf)
+        }
+
+        fn visit_expr_path(&mut self, ep: &'ast syn::ExprPath) {
+            self.found |= ep
+                .path
+                .get_ident()
+                .map_or(false, |ident| self.search.consts.contains(ident));
+
+            syn::visit::visit_expr_path(self, ep)
+        }
+    }
 }

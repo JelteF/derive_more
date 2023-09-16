@@ -1,5 +1,16 @@
-error: only `forward` allowed here
+error[E0412]: cannot find type `baz` in this scope
  --> tests/compile_fail/as_mut/unknown_struct_attr_arg.rs:2:10
   |
 2 | #[as_mut(baz)]
-  |          ^^^
+  |          ^^^ not found in this scope
+  |
+help: you might be missing a type parameter
+  |
+1 | #[derive(derive_more::AsMut<baz>)]
+  |                            +++++
+
+error[E0412]: cannot find type `baz` in this scope
+ --> tests/compile_fail/as_mut/unknown_struct_attr_arg.rs:2:10
+  |
+2 | #[as_mut(baz)]
+  |          ^^^ not found in this scope

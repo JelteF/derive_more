@@ -1,0 +1,21 @@
+error[E0599]: the method `as_ref` exists for struct `Baz<i32>`, but its trait bounds were not satisfied
+  --> tests/compile_fail/as_ref/renamed_generic.rs:11:29
+   |
+1  | struct Foo<T>(T);
+   | ------------- doesn't satisfy `Foo<i32>: AsRef<Foo<i32>>`
+...
+7  | struct Baz<T>(Foo<T>);
+   | -------------
+   | |
+   | method `as_ref` not found for this struct
+   | doesn't satisfy `Baz<i32>: AsRef<Foo<i32>>`
+...
+11 |     let _: &Bar<i32> = item.as_ref();
+   |                             ^^^^^^ method cannot be called on `Baz<i32>` due to unsatisfied trait bounds
+   |
+   = note: trait bound `Foo<i32>: AsRef<Foo<i32>>` was not satisfied
+note: the trait `AsRef` must be implemented
+  --> $RUST/core/src/convert/mod.rs
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `as_ref`, perhaps you need to implement it:
+           candidate #1: `AsRef`
