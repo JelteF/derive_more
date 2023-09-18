@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{forward, polyfill, skip, Either},
+    utils::{attr, polyfill, Either},
 };
 
 /// Expands a [`From`] derive macro.
@@ -87,7 +87,7 @@ enum StructAttribute {
     Types(Punctuated<Type, token::Comma>),
 
     /// Forward [`From`] implementation.
-    Forward(forward::Attribute),
+    Forward(attr::Forward),
 }
 
 impl StructAttribute {
@@ -125,7 +125,7 @@ impl StructAttribute {
     /// Parses single [`StructAttribute`].
     fn parse(input: ParseStream<'_>, fields: &syn::Fields) -> syn::Result<Self> {
         let ahead = input.fork();
-        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+        if let Ok(attr) = ahead.parse::<attr::Forward>() {
             input.advance_to(&ahead);
             return Ok(Self::Forward(attr));
         }
@@ -156,10 +156,10 @@ enum VariantAttribute {
     Types(Punctuated<Type, token::Comma>),
 
     /// Forward [`From`] implementation.
-    Forward(forward::Attribute),
+    Forward(attr::Forward),
 
     /// Skip variant.
-    Skip(skip::Attribute),
+    Skip(attr::Skip),
 }
 
 impl VariantAttribute {
@@ -194,13 +194,13 @@ impl VariantAttribute {
 
         attr.parse_args_with(|input: ParseStream<'_>| {
             let ahead = input.fork();
-            if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+            if let Ok(attr) = ahead.parse::<attr::Forward>() {
                 input.advance_to(&ahead);
                 return Ok(Self::Forward(attr));
             }
 
             let ahead = input.fork();
-            if let Ok(attr) = ahead.parse::<skip::Attribute>() {
+            if let Ok(attr) = ahead.parse::<attr::Skip>() {
                 input.advance_to(&ahead);
                 return Ok(Self::Skip(attr));
             }

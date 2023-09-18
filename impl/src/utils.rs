@@ -1323,134 +1323,6 @@ pub fn is_type_parameter_used_in_type(
     }
 }
 
-#[cfg(any(feature = "as_ref", feature = "from"))]
-pub(crate) mod forward {
-    use syn::{
-        parse::{Parse, ParseStream},
-        spanned::Spanned as _,
-    };
-
-    use super::attr;
-
-    /// Representation of a `forward` attribute.
-    ///
-    /// ```rust,ignore
-    /// #[<attribute>(forward)]
-    /// ```
-    pub(crate) struct Attribute;
-
-    impl Parse for Attribute {
-        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-            match input.parse::<syn::Path>()? {
-                p if p.is_ident("forward") => Ok(Self),
-                p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
-            }
-        }
-    }
-
-    impl attr::ParseMultiple for Attribute {}
-}
-
-#[cfg(any(feature = "as_ref", feature = "from"))]
-pub(crate) mod types {
-    use syn::{
-        parse::{Parse, ParseStream},
-        punctuated::Punctuated,
-        Token,
-    };
-
-    use crate::parsing;
-
-    use super::{attr, Spanning};
-
-    /// Representation of an attribute, containing a list of types.
-    ///
-    /// ```rust,ignore
-    /// #[<attribute>(<types>)]
-    /// ```
-    pub(crate) struct Attribute(pub(crate) Punctuated<parsing::Type, Token![,]>);
-
-    impl Parse for Attribute {
-        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-            input
-                .parse_terminated(parsing::Type::parse, Token![,])
-                .map(Self)
-        }
-    }
-
-    impl attr::ParseMultiple for Attribute {
-        fn merge_attrs(
-            mut prev: Spanning<Self>,
-            new: Spanning<Self>,
-            _: &syn::Ident,
-        ) -> syn::Result<Spanning<Self>> {
-            prev.item.0.extend(new.item.0);
-            Ok(Spanning::new(
-                prev.item,
-                prev.span.join(new.span).unwrap_or(prev.span),
-            ))
-        }
-    }
-}
-
-#[cfg(any(
-    feature = "as_ref",
-    feature = "debug",
-    feature = "from",
-    feature = "into",
-))]
-pub(crate) mod skip {
-    use syn::{
-        parse::{Parse, ParseStream},
-        spanned::Spanned as _,
-    };
-
-    use super::{attr, Spanning};
-
-    /// Representation of a `skip`/`ignore` attribute.
-    ///
-    /// ```rust,ignore
-    /// #[<attribute>(skip)]
-    /// #[<attribute>(ignore)]
-    /// ```
-    pub(crate) struct Attribute(&'static str);
-
-    impl Parse for Attribute {
-        fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
-            match content.parse::<syn::Path>()? {
-                p if p.is_ident("skip") => Ok(Self("skip")),
-                p if p.is_ident("ignore") => Ok(Self("ignore")),
-                p => Err(syn::Error::new(
-                    p.span(),
-                    "only `skip`/`ignore` allowed here",
-                )),
-            }
-        }
-    }
-
-    impl Attribute {
-        /// Returns the concrete name of this attribute (`skip` or `ignore`).
-        pub(crate) const fn name(&self) -> &'static str {
-            self.0
-        }
-    }
-
-    impl attr::ParseMultiple for Attribute {
-        fn merge_attrs(
-            _: Spanning<Self>,
-            new: Spanning<Self>,
-            name: &syn::Ident,
-        ) -> syn::Result<Spanning<Self>> {
-            Err(syn::Error::new(
-                new.span,
-                format!(
-                    "only single `#[{name}(skip)]`/`#[{name}(ignore)]` attribute is allowed here",
-                ),
-            ))
-        }
-    }
-}
-
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
@@ -1612,9 +1484,13 @@ pub(crate) mod attr {
 
     use super::{Either, Spanning};
 
+    pub(crate) use self::skip::Skip;
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    pub(crate) use self::{forward::Forward, types::Types};
+
     /// Parsing of a typed attribute from multiple [`syn::Attribute`]s.
     pub(crate) trait ParseMultiple: Parse + Sized {
-        /// Parses this attribute for the provided single [`syn::Attribute`].
+        /// Parses this attribute from the provided single [`syn::Attribute`].
         ///
         /// Required, because with [`Parse`] we only able to parse inner attribute tokens, which
         /// doesn't work for attributes with empty arguments, like `#[attr]`.
@@ -1687,6 +1563,127 @@ pub(crate) mod attr {
                     format!("only single kind of `#[{name}(...)]` attribute is allowed here"),
                 ))
             })
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod forward {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+        };
+
+        use super::ParseMultiple;
+
+        /// Representation of a `forward` attribute.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(forward)]
+        /// ```
+        pub(crate) struct Forward;
+
+        impl Parse for Forward {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                match input.parse::<syn::Path>()? {
+                    p if p.is_ident("forward") => Ok(Self),
+                    p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
+                }
+            }
+        }
+
+        impl ParseMultiple for Forward {}
+    }
+
+    mod skip {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+        };
+
+        use super::{ParseMultiple, Spanning};
+
+        /// Representation of a `skip`/`ignore` attribute.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(skip)]
+        /// #[<attribute>(ignore)]
+        /// ```
+        pub(crate) struct Skip(&'static str);
+
+        impl Parse for Skip {
+            fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
+                match content.parse::<syn::Path>()? {
+                    p if p.is_ident("skip") => Ok(Self("skip")),
+                    p if p.is_ident("ignore") => Ok(Self("ignore")),
+                    p => Err(syn::Error::new(
+                        p.span(),
+                        "only `skip`/`ignore` allowed here",
+                    )),
+                }
+            }
+        }
+
+        impl Skip {
+            /// Returns the concrete name of this attribute (`skip` or `ignore`).
+            pub(crate) const fn name(&self) -> &'static str {
+                self.0
+            }
+        }
+
+        impl ParseMultiple for Skip {
+            fn merge_attrs(
+                _: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Err(syn::Error::new(
+                    new.span,
+                    format!(
+                        "only single `#[{name}(skip)]`/`#[{name}(ignore)]` attribute is allowed \
+                         here",
+                    ),
+                ))
+            }
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod types {
+        use syn::{
+            parse::{Parse, ParseStream},
+            punctuated::Punctuated,
+            Token,
+        };
+
+        use super::{ParseMultiple, Spanning};
+
+        /// Representation of an attribute, containing a comma-separated list of types.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(<types>)]
+        /// ```
+        pub(crate) struct Types(pub(crate) Punctuated<syn::Type, Token![,]>);
+
+        impl Parse for Types {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                input
+                    .parse_terminated(syn::Type::parse, Token![,])
+                    .map(Self)
+            }
+        }
+
+        impl ParseMultiple for Types {
+            fn merge_attrs(
+                mut prev: Spanning<Self>,
+                new: Spanning<Self>,
+                _: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                prev.item.0.extend(new.item.0);
+                Ok(Spanning::new(
+                    prev.item,
+                    prev.span.join(new.span).unwrap_or(prev.span),
+                ))
+            }
         }
     }
 }

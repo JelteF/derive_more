@@ -11,7 +11,7 @@ use syn::{
     Ident,
 };
 
-use crate::utils::skip;
+use crate::utils::attr;
 
 use super::{ContainerAttributes, FmtAttribute};
 
@@ -177,7 +177,7 @@ enum FieldAttribute {
     Fmt(FmtAttribute),
 
     /// Attribute for skipping field.
-    Skip(skip::Attribute),
+    Skip(attr::Skip),
 }
 
 impl FieldAttribute {
@@ -209,7 +209,7 @@ impl Parse for FieldAttribute {
         if input.peek(syn::LitStr) {
             input.parse().map(Self::Fmt)
         } else {
-            input.parse::<skip::Attribute>().map(Self::Skip)
+            input.parse::<attr::Skip>().map(Self::Skip)
         }
     }
 }

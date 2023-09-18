@@ -10,14 +10,13 @@ use quote::{quote, ToTokens};
 use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream},
     parse_quote,
-    punctuated::Punctuated,
     spanned::Spanned,
     Token,
 };
 
-use crate::{
-    parsing::Type,
-    utils::{forward, skip, Either, Spanning, types},
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    Either, GenericsSearch, Spanning,
 };
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
@@ -126,14 +125,14 @@ pub fn expand(
                 .enumerate()
                 .zip(attrs)
                 .filter_map(|((i, field), attr)| match attr.map(Spanning::into_inner) {
-                    Some(attr @ (FieldAttribute::Empty | FieldAttribute::Args(_))) => {
+                    Some(attr @ (FieldAttribute::Empty | FieldAttribute::Forward(_) | FieldAttribute::Types(_))) => {
                         Some(Expansion {
                             trait_info,
                             ident: &input.ident,
                             generics: &input.generics,
                             field,
                             field_index: i,
-                            conversions: attr.into_conversion_attribute(),
+                            conversions: attr.into_conversion_attr(),
                         })
                     }
                     Some(FieldAttribute::Skip(_)) => unreachable!(),
@@ -201,14 +200,14 @@ impl<'a> ToTokens for Expansion<'a> {
         let field_contains_generics = generics_search.any_in(field_ty);
 
         let is_blanket =
-            matches!(&self.conversions, Some(ConversionAttribute::Forward(_)));
+            matches!(&self.conversions, Some(ConversionAttribute::Left(_)));
 
         let return_tys = match &self.conversions {
-            Some(ConversionAttribute::Forward(_)) => {
+            Some(ConversionAttribute::Left(_)) => {
                 Either::Left(iter::once(Cow::Owned(parse_quote! { __AsT })))
             }
-            Some(ConversionAttribute::Types(tys)) => {
-                Either::Right(tys.iter().map(Cow::Borrowed))
+            Some(ConversionAttribute::Right(tys)) => {
+                Either::Right(tys.0.iter().map(Cow::Borrowed))
             }
             None => Either::Left(iter::once(Cow::Borrowed(field_ty))),
         };
@@ -291,6 +290,14 @@ impl<'a> ToTokens for Expansion<'a> {
     }
 }
 
+/// Representation of an attribute, specifying which conversions should be generated.
+///
+/// ```rust,ignore
+/// #[as_ref(forward)]
+/// #[as_ref(<types>)]
+/// ```
+type ConversionAttribute = Either<attr::Forward, attr::Types>;
+
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro struct container attribute.
 ///
 /// ```rust,ignore
@@ -298,35 +305,6 @@ impl<'a> ToTokens for Expansion<'a> {
 /// #[as_ref(<types>)]
 /// ```
 type StructAttribute = ConversionAttribute;
-
-impl StructAttribute {
-    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-    ///
-    /// [`Span`]: proc_macro2::Span
-    fn parse_attrs(
-        attrs: &[syn::Attribute],
-        attr_ident: &syn::Ident,
-    ) -> syn::Result<Option<Spanning<Self>>> {
-        attrs.iter().filter(|attr| attr.path().is_ident(attr_ident))
-            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
-                let parsed: Spanning<Self> = Spanning::new(attr.parse_args()?, attr.span());
-
-                if let Some(prev) = attrs {
-                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    if let Some(new) = prev.item.merge(parsed.item) {
-                        Ok(Some(Spanning::new(new, span)))
-                    } else {
-                        Err(syn::Error::new(
-                            parsed.span,
-                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
-                        ))
-                    }
-                } else {
-                    Ok(Some(parsed))
-                }
-            })
-    }
-}
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro field attribute.
 ///
@@ -338,8 +316,9 @@ impl StructAttribute {
 /// ```
 enum FieldAttribute {
     Empty,
-    Args(ConversionAttribute),
-    Skip(skip::Attribute),
+    Forward(attr::Forward),
+    Types(attr::Types),
+    Skip(attr::Skip),
 }
 
 impl Parse for FieldAttribute {
@@ -349,116 +328,61 @@ impl Parse for FieldAttribute {
         }
 
         let ahead = input.fork();
-        if let Ok(attr) = ahead.parse::<skip::Attribute>() {
+        if let Ok(attr) = ahead.parse::<attr::Skip>() {
             input.advance_to(&ahead);
             return Ok(Self::Skip(attr));
         }
 
-        input.parse::<ConversionAttribute>().map(Self::Args)
-    }
-}
-
-impl FieldAttribute {
-    /// Parses a [`FieldAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-    ///
-    /// [`Span`]: proc_macro2::Span
-    fn parse_attrs(
-        attrs: &[syn::Attribute],
-        attr_ident: &syn::Ident,
-    ) -> syn::Result<Option<Spanning<Self>>> {
-        attrs
-            .iter()
-            .filter(|attr| attr.path().is_ident(attr_ident))
-            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
-                let parsed = Spanning::new(
-                    if matches!(attr.meta, syn::Meta::Path(_)) {
-                        Self::Empty
-                    } else {
-                        attr.parse_args()?
-                    },
-                    attr.span(),
-                );
-
-                if let Some(prev) = attrs {
-                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    if let Some(new) = prev.item.merge(parsed.item) {
-                        Ok(Some(Spanning::new(new, span)))
-                    } else {
-                        Err(syn::Error::new(
-                            parsed.span,
-                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here")
-                        ))
-                    }
-                } else {
-                    Ok(Some(parsed))
-                }
-            })
-    }
-
-    /// Extracts a [`ConversionAttribute`], if possible.
-    fn into_conversion_attribute(self) -> Option<ConversionAttribute> {
-        match self {
-            Self::Args(args) => Some(args),
-            Self::Empty | Self::Skip(_) => None,
-        }
-    }
-
-    /// Merges two [`FieldAttribute`]s, if possible
-    fn merge(self, other: Self) -> Option<Self> {
-        if let (Self::Args(args), Self::Args(more)) = (self, other) {
-            args.merge(more).map(Self::Args)
-        } else {
-            None
-        }
-    }
-}
-
-/// Representation of an attribute, specifying which conversions should be generated.
-///
-/// ```rust,ignore
-/// #[as_ref(forward)]
-/// #[as_ref(<types>)]
-/// ```
-enum ConversionAttribute {
-    /// Blanket impl, fully forwarding implementation to the one of the field type.
-    Forward(forward::Attribute),
-
-    /// Concrete specified types, which can include both the type of the field itself, and types for
-    /// which the field type implements [`AsRef`].
-    Types(Punctuated<syn::Type, Token![,]>),
-}
-
-impl Parse for ConversionAttribute {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
         let ahead = input.fork();
-        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+        if let Ok(attr) = ahead.parse::<attr::Forward>() {
             input.advance_to(&ahead);
             return Ok(Self::Forward(attr));
         }
 
-        input
-            .parse_terminated(syn::Type::parse, Token![,])
-            .map(Self::Types)
+        input.parse::<attr::Types>().map(Self::Types)
     }
 }
 
-impl ConversionAttribute {
-    /// Merges two [`ConversionAttribute`]s, if possible.
-    fn merge(self, other: Self) -> Option<Self> {
-        if let (Self::Types(mut tys), Self::Types(more)) = (self, other) {
-            tys.extend(more);
-            Some(Self::Types(tys))
+impl attr::ParseMultiple for FieldAttribute {
+    fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
+        if matches!(attr.meta, syn::Meta::Path(_)) {
+            Ok(Self::Empty)
         } else {
-            None
+            attr.parse_args()
         }
     }
 
-    /// Extracts conversion arguments on the attribute, if any
-    fn into_args(self) -> Option<AsArgs> {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        Ok(match (prev.item, new.item) {
+            (Self::Types(p), Self::Types(n)) => attr::Types::merge_attrs(
+                Spanning::new(p, prev.span),
+                Spanning::new(n, new.span),
+                name,
+            )?
+            .map(Self::Types),
+            _ => {
+                return Err(syn::Error::new(
+                    new.span,
+                    format!(
+                    "only single kind of `#[{name}(...)]` attribute is allowed here",
+                ),
+                ))
+            }
+        })
+    }
+}
+
+impl FieldAttribute {
+    /// Extracts a [`StructAttribute`], if possible.
+    fn into_conversion_attr(self) -> Option<ConversionAttribute> {
         match self {
-            Self::Args(args) => Some(args),
+            Self::Forward(f) => Some(Either::Left(f)),
+            Self::Types(t) => Some(Either::Right(t)),
             Self::Empty | Self::Skip(_) => None,
         }
     }
 }
-

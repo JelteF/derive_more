@@ -14,7 +14,7 @@ use syn::{
 
 use crate::{
     parsing::Type,
-    utils::{attr::ParseMultiple as _, polyfill, skip, Either, FieldsExt as _},
+    utils::{attr::{self, ParseMultiple as _}, polyfill, Either, FieldsExt as _},
 };
 
 /// Expands an [`Into`] derive macro.
@@ -256,7 +256,7 @@ impl StructAttribute {
 }
 
 /// `#[into(skip)]`/`#[into(ignore)]` field attribute.
-type SkipFieldAttribute = skip::Attribute;
+type SkipFieldAttribute = attr::Skip;
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
 fn check_legacy_syntax(
