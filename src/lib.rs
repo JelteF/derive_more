@@ -3,6 +3,7 @@
 //! [`From`]: macro@crate::From
 //! [`Into`]: macro@crate::Into
 //! [`FromStr`]: macro@crate::FromStr
+//! [`TryFrom`]: macro@crate::TryFrom
 //! [`TryInto`]: macro@crate::TryInto
 //! [`IntoIterator`]: macro@crate::IntoIterator
 //! [`AsRef`]: macro@crate::AsRef
@@ -95,8 +96,11 @@ mod r#str;
 #[doc(inline)]
 pub use crate::r#str::FromStrError;
 
-#[cfg(feature = "try_into")]
+#[cfg(any(feature = "try_into", feature = "try_from"))]
 mod convert;
+#[cfg(feature = "try_from")]
+#[doc(inline)]
+pub use crate::convert::TryFromReprError;
 #[cfg(feature = "try_into")]
 #[doc(inline)]
 pub use crate::convert::TryIntoError;
@@ -209,6 +213,8 @@ re_export_traits!("not", not_traits, core::ops, Neg, Not);
 
 re_export_traits!("sum", sum_traits, core::iter, Product, Sum);
 
+re_export_traits!("try_from", try_from_traits, core::convert, TryFrom);
+
 re_export_traits!("try_into", try_into_traits, core::convert, TryInto);
 
 // Now re-export our own derives by their exact name to overwrite any derives that the trait
@@ -277,6 +283,9 @@ pub use derive_more_impl::{Neg, Not};
 #[cfg(feature = "sum")]
 pub use derive_more_impl::{Product, Sum};
 
+#[cfg(feature = "try_from")]
+pub use derive_more_impl::TryFrom;
+
 #[cfg(feature = "try_into")]
 pub use derive_more_impl::TryInto;
 
@@ -309,6 +318,7 @@ pub use derive_more_impl::Unwrap;
     feature = "mul_assign",
     feature = "not",
     feature = "sum",
+    feature = "try_from",
     feature = "try_into",
     feature = "try_unwrap",
     feature = "unwrap",

@@ -2,7 +2,7 @@
 name = "derive_more-impl"
 version = "1.0.0-beta.3"
 edition = "2021"
-rust-version = "1.65.0"
+rust-version = "1.72.0"
 description = "Internal implementation of `derive_more` crate"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
@@ -66,6 +66,7 @@ mul = ["syn/extra-traits"]
 mul_assign = ["syn/extra-traits"]
 not = ["syn/extra-traits"]
 sum = []
+try_from = []
 try_into = ["syn/extra-traits"]
 try_unwrap = ["dep:convert_case"]
 unwrap = ["dep:convert_case"]
@@ -91,6 +92,7 @@ full = [
     "mul_assign",
     "not",
     "sum",
+    "try_from",
     "try_into",
     "try_unwrap",
     "unwrap",

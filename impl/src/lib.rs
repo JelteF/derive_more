@@ -64,6 +64,8 @@ mod not_like;
 pub(crate) mod parsing;
 #[cfg(feature = "sum")]
 mod sum_like;
+#[cfg(feature = "try_from")]
+mod try_from;
 #[cfg(feature = "try_into")]
 mod try_into;
 #[cfg(feature = "try_unwrap")]
@@ -264,6 +266,8 @@ create_derive!("not", not_like, Neg, neg_derive);
 
 create_derive!("sum", sum_like, Sum, sum_derive);
 create_derive!("sum", sum_like, Product, product_derive);
+
+create_derive!("try_from", try_from, TryFrom, try_from_derive, try_from);
 
 create_derive!("try_into", try_into, TryInto, try_into_derive, try_into);
 
