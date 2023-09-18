@@ -1,11 +1,15 @@
 # What `#[derive(TryFrom)]` generates
 
-This derive allows you to convert enum discriminants into their corresponding variants.
-By default a `TryFrom<isize>` is generated, matching the [type of the discriminant](https://doc.rust-lang.org/reference/items/enumerations.html#discriminants).
+Derive `TryFrom` allows you to convert enum discriminants into their corresponding variants.
+
+
+
+
+## Enums
+
+By default, a `TryFrom<isize>` is generated, matching the [type of the discriminant](https://doc.rust-lang.org/reference/items/enumerations.html#discriminants).
 The type can be changed with a `#[repr(u/i*)]` attribute, e.g., `#[repr(u8)]` or `#[repr(i32)]`.
 Only field-less variants can be constructed from their variant, therefor the `TryFrom` implementation will return an error for a discriminant representing a variant with fields.
-
-## Example usage
 
 ```rust
 # use derive_more::TryFrom;

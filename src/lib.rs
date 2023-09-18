@@ -3,7 +3,7 @@
 //! [`From`]: macro@crate::From
 //! [`Into`]: macro@crate::Into
 //! [`FromStr`]: macro@crate::FromStr
-//! [`TryFrom`]: macro@crate::TryInto
+//! [`TryFrom`]: macro@crate::TryFrom
 //! [`TryInto`]: macro@crate::TryInto
 //! [`IntoIterator`]: macro@crate::IntoIterator
 //! [`AsRef`]: macro@crate::AsRef

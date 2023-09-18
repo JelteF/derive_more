@@ -10,6 +10,7 @@ repository = "https://github.com/JelteF/derive_more"
 documentation = "https://docs.rs/derive_more"
 
 # explicitly no keywords or categories so it cannot be found easily
+
 include = [
     "src/**/*.rs",
     "doc/**/*.md",
