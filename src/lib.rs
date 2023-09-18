@@ -50,6 +50,9 @@
 // Not public, but exported API. For macro expansion internals only.
 #[doc(hidden)]
 pub mod __private {
+    #[cfg(feature = "as_ref")]
+    pub use crate::r#as::{Conv, ExtractRef};
+
     #[cfg(feature = "debug")]
     pub use crate::fmt::{debug_tuple, DebugTuple};
 
@@ -76,6 +79,9 @@ pub use crate::add::{BinaryError, WrongVariantError};
 mod ops;
 #[cfg(any(feature = "add", feature = "not"))]
 pub use crate::ops::UnitError;
+
+#[cfg(feature = "as_ref")]
+mod r#as;
 
 #[cfg(feature = "debug")]
 mod fmt;

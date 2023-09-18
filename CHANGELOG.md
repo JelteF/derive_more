@@ -59,6 +59,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#279](https://github.com/JelteF/derive_more/pull/279))
 - `derive_more::derive` module exporting only macros, without traits.
   ([#290](https://github.com/JelteF/derive_more/pull/290))
+- Add support for specifying concrete types to `AsRef`/`AsMut` derives.
+  ([#298](https://github.com/JelteF/derive_more/pull/298))
 
 ### Changed
 
