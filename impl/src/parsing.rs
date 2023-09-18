@@ -243,15 +243,15 @@ pub fn seq<const N: usize>(
     mut parsers: [&mut dyn FnMut(Cursor<'_>) -> ParsingResult<'_>; N],
 ) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> + '_ {
     move |c| {
-        parsers
-            .iter_mut()
-            .fold(Some((TokenStream::new(), c)), |out, parser| {
-                let (mut out, mut c) = out?;
+        parsers.iter_mut().try_fold(
+            (TokenStream::new(), c),
+            |(mut out, mut c), parser| {
                 let (stream, cursor) = parser(c)?;
                 out.extend(stream);
                 c = cursor;
                 Some((out, c))
-            })
+            },
+        )
     }
 }
 

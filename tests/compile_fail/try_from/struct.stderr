@@ -1,0 +1,5 @@
+error: `TryFrom` cannot be derived for structs
+ --> tests/compile_fail/try_from/struct.rs:2:1
+  |
+2 | struct Struct;
+  | ^^^^^^

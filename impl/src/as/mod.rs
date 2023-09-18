@@ -3,7 +3,7 @@
 pub(crate) mod r#mut;
 pub(crate) mod r#ref;
 
-use std::borrow::Cow;
+use std::{borrow::Cow, iter};
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -70,7 +70,7 @@ pub fn expand(
             generics: &input.generics,
             field,
             field_index: 0,
-            args: Some(attr.into_inner()),
+            conversions: Some(attr.into_inner()),
         }]
     } else {
         let attrs = data
@@ -116,7 +116,7 @@ pub fn expand(
                         generics: &input.generics,
                         field,
                         field_index: i,
-                        args: None,
+                        conversions: None,
                     })
                 })
                 .collect()
@@ -133,7 +133,7 @@ pub fn expand(
                             generics: &input.generics,
                             field,
                             field_index: i,
-                            args: attr.into_args(),
+                            conversions: attr.into_conversion_attribute(),
                         })
                     }
                     Some(FieldAttribute::Skip(_)) => unreachable!(),
@@ -172,8 +172,8 @@ struct Expansion<'a> {
     /// Index of the [`syn::Field`].
     field_index: usize,
 
-    /// Arguments specifying which conversions should be generated
-    args: Option<AsArgs>,
+    /// Attribute specifying which conversions should be generated.
+    conversions: Option<ConversionAttribute>,
 }
 
 impl<'a> ToTokens for Expansion<'a> {
@@ -185,68 +185,109 @@ impl<'a> ToTokens for Expansion<'a> {
         );
 
         let (trait_ident, method_ident, mut_) = &self.trait_info;
-
         let ty_ident = &self.ident;
 
-        let (blanket, forward_impl, return_tys) = match &self.args {
-            Some(AsArgs::Forward(_)) => {
-                (true, true, Either::Left(std::iter::once(quote! { __AsT })))
+        let field_ref = quote! { & #mut_ self.#field_ident };
+
+        let generics_search = GenericsSearch {
+            types: self.generics.type_params().map(|p| &p.ident).collect(),
+            lifetimes: self
+                .generics
+                .lifetimes()
+                .map(|p| &p.lifetime.ident)
+                .collect(),
+            consts: self.generics.const_params().map(|p| &p.ident).collect(),
+        };
+        let field_contains_generics = generics_search.any_in(field_ty);
+
+        let is_blanket =
+            matches!(&self.conversions, Some(ConversionAttribute::Forward(_)));
+
+        let return_tys = match &self.conversions {
+            Some(ConversionAttribute::Forward(_)) => {
+                Either::Left(iter::once(Cow::Owned(parse_quote! { __AsT })))
             }
-            Some(AsArgs::Types(tys)) => (
-                false,
-                true,
-                Either::Right(tys.iter().map(ToTokens::into_token_stream)),
-            ),
-            None => (
-                false,
-                false,
-                Either::Left(std::iter::once(quote! { #field_ty })),
-            ),
+            Some(ConversionAttribute::Types(tys)) => {
+                Either::Right(tys.iter().map(Cow::Borrowed))
+            }
+            None => Either::Left(iter::once(Cow::Borrowed(field_ty))),
         };
 
-        return_tys
-            .map(|return_ty| {
-                let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
+        for return_ty in return_tys {
+            /// Kind of a generated implementation, chosen based on attribute arguments.
+            enum ImplKind {
+                /// Returns a reference to a field.
+                Direct,
 
-                let generics = if forward_impl {
+                /// Forwards `as_ref`/`as_mut` call on a field.
+                Forwarded,
+
+                /// Uses autoref-based specialization to determine whether to use direct or
+                /// forwarded implementation, based on whether the field and the return type match.
+                ///
+                /// Doesn't work when generics are involved.
+                Specialized,
+            }
+
+            let impl_kind = if is_blanket {
+                ImplKind::Forwarded
+            } else if field_ty == return_ty.as_ref() {
+                ImplKind::Direct
+            } else if field_contains_generics || generics_search.any_in(&return_ty) {
+                ImplKind::Forwarded
+            } else {
+                ImplKind::Specialized
+            };
+
+            let trait_ty = quote! { ::core::convert::#trait_ident <#return_ty> };
+
+            let generics = match &impl_kind {
+                ImplKind::Forwarded => {
                     let mut generics = self.generics.clone();
-                    if blanket {
-                        generics.params.push(parse_quote! { #return_ty });
-                        generics
-                            .make_where_clause()
-                            .predicates
-                            .push(parse_quote! { #return_ty: ?::core::marker::Sized });
-                    }
                     generics
                         .make_where_clause()
                         .predicates
                         .push(parse_quote! { #field_ty: #trait_ty });
-
+                    if is_blanket {
+                        generics
+                            .params
+                            .push(parse_quote! { #return_ty: ?::core::marker::Sized });
+                    }
                     Cow::Owned(generics)
-                } else {
-                    Cow::Borrowed(self.generics)
-                };
-
-                let (impl_gens, _, where_clause) = generics.split_for_impl();
-                let (_, ty_gens, _) = self.generics.split_for_impl();
-
-                let mut body = quote! { & #mut_ self.#field_ident };
-                if forward_impl {
-                    body = quote! { <#field_ty as #trait_ty>::#method_ident(#body) };
                 }
+                ImplKind::Direct | ImplKind::Specialized => {
+                    Cow::Borrowed(self.generics)
+                }
+            };
+            let (impl_gens, _, where_clause) = generics.split_for_impl();
+            let (_, ty_gens, _) = self.generics.split_for_impl();
 
-                quote! {
-                    #[automatically_derived]
-                    impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
-                        #[inline]
-                        fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
-                            #body
-                        }
+            let body = match &impl_kind {
+                ImplKind::Direct => Cow::Borrowed(&field_ref),
+                ImplKind::Forwarded => Cow::Owned(quote! {
+                    <#field_ty as #trait_ty>::#method_ident(#field_ref)
+                }),
+                ImplKind::Specialized => Cow::Owned(quote! {
+                    use ::derive_more::__private::ExtractRef as _;
+
+                    let conv =
+                        <::derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
+                         as ::core::default::Default>::default();
+                    (&&conv).__extract_ref(#field_ref)
+                }),
+            };
+
+            quote! {
+                #[automatically_derived]
+                impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
+                    #[inline]
+                    fn #method_ident(& #mut_ self) -> & #mut_ #return_ty {
+                        #body
                     }
                 }
-            })
-            .collect::<TokenStream>()
+            }
             .to_tokens(tokens);
+        }
     }
 }
 
@@ -256,10 +297,36 @@ impl<'a> ToTokens for Expansion<'a> {
 /// #[as_ref(forward)]
 /// #[as_ref(<types>)]
 /// ```
-type StructAttribute = Either<forward::Attribute, types::Attribute>;
+type StructAttribute = ConversionAttribute;
 
-// TODO: temp
-type AsArgs = StructAttribute;
+impl StructAttribute {
+    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
+    ///
+    /// [`Span`]: proc_macro2::Span
+    fn parse_attrs(
+        attrs: &[syn::Attribute],
+        attr_ident: &syn::Ident,
+    ) -> syn::Result<Option<Spanning<Self>>> {
+        attrs.iter().filter(|attr| attr.path().is_ident(attr_ident))
+            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
+                let parsed: Spanning<Self> = Spanning::new(attr.parse_args()?, attr.span());
+
+                if let Some(prev) = attrs {
+                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
+                    if let Some(new) = prev.item.merge(parsed.item) {
+                        Ok(Some(Spanning::new(new, span)))
+                    } else {
+                        Err(syn::Error::new(
+                            parsed.span,
+                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
+                        ))
+                    }
+                } else {
+                    Ok(Some(parsed))
+                }
+            })
+    }
+}
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro field attribute.
 ///
@@ -271,7 +338,7 @@ type AsArgs = StructAttribute;
 /// ```
 enum FieldAttribute {
     Empty,
-    Args(AsArgs),
+    Args(ConversionAttribute),
     Skip(skip::Attribute),
 }
 
@@ -287,7 +354,7 @@ impl Parse for FieldAttribute {
             return Ok(Self::Skip(attr));
         }
 
-        input.parse::<AsArgs>().map(Self::Args)
+        input.parse::<ConversionAttribute>().map(Self::Args)
     }
 }
 
@@ -312,15 +379,12 @@ impl FieldAttribute {
                     attr.span(),
                 );
 
-
                 if let Some(prev) = attrs {
                     let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    match (prev.item, parsed.item) {
-                        (Self::Args(AsArgs::Types(mut tys)), Self::Args(AsArgs::Types(more))) => {
-                            tys.extend(more);
-                            Ok(Some(Spanning::new(Self::Args(AsArgs::Types(tys)), span)))
-                        }
-                        _ => Err(syn::Error::new(
+                    if let Some(new) = prev.item.merge(parsed.item) {
+                        Ok(Some(Spanning::new(new, span)))
+                    } else {
+                        Err(syn::Error::new(
                             parsed.span,
                             format!("only single `#[{attr_ident}(...)]` attribute is allowed here")
                         ))
@@ -329,6 +393,64 @@ impl FieldAttribute {
                     Ok(Some(parsed))
                 }
             })
+    }
+
+    /// Extracts a [`ConversionAttribute`], if possible.
+    fn into_conversion_attribute(self) -> Option<ConversionAttribute> {
+        match self {
+            Self::Args(args) => Some(args),
+            Self::Empty | Self::Skip(_) => None,
+        }
+    }
+
+    /// Merges two [`FieldAttribute`]s, if possible
+    fn merge(self, other: Self) -> Option<Self> {
+        if let (Self::Args(args), Self::Args(more)) = (self, other) {
+            args.merge(more).map(Self::Args)
+        } else {
+            None
+        }
+    }
+}
+
+/// Representation of an attribute, specifying which conversions should be generated.
+///
+/// ```rust,ignore
+/// #[as_ref(forward)]
+/// #[as_ref(<types>)]
+/// ```
+enum ConversionAttribute {
+    /// Blanket impl, fully forwarding implementation to the one of the field type.
+    Forward(forward::Attribute),
+
+    /// Concrete specified types, which can include both the type of the field itself, and types for
+    /// which the field type implements [`AsRef`].
+    Types(Punctuated<syn::Type, Token![,]>),
+}
+
+impl Parse for ConversionAttribute {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let ahead = input.fork();
+        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
+            input.advance_to(&ahead);
+            return Ok(Self::Forward(attr));
+        }
+
+        input
+            .parse_terminated(syn::Type::parse, Token![,])
+            .map(Self::Types)
+    }
+}
+
+impl ConversionAttribute {
+    /// Merges two [`ConversionAttribute`]s, if possible.
+    fn merge(self, other: Self) -> Option<Self> {
+        if let (Self::Types(mut tys), Self::Types(more)) = (self, other) {
+            tys.extend(more);
+            Some(Self::Types(tys))
+        } else {
+            None
+        }
     }
 
     /// Extracts conversion arguments on the attribute, if any

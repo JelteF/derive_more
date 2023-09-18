@@ -31,7 +31,7 @@ impl AsRef<String> for MyWrapper {
 }
 ```
 
-The `#[as_ref(forward)]` attribute can be used to forward
+It's also possible to use the `#[as_ref(forward)]` attribute to forward
 to the `as_ref` implementation of the field. So here `SingleFieldForward`
 implements all `AsRef` for all types that `Vec<i32>` implements `AsRef` for.
 
@@ -46,52 +46,77 @@ let item = SingleFieldForward(vec![]);
 let _: &[i32] = (&item).as_ref();
 ```
 
-This generates:
+This generates code equivalent to:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<__AsT: ?::core::marker::Sized> ::core::convert::AsRef<__AsT> for SingleFieldForward
+impl<T: ?Sized> AsRef<T> for SingleFieldForward
 where
-    Vec<i32>: ::core::convert::AsRef<__AsT>,
+    Vec<i32>: AsRef<T>,
 {
     #[inline]
-    fn as_ref(&self) -> &__AsT {
-        <Vec<i32> as ::core::convert::AsRef<__AsT>>::as_ref(&self.0)
+    fn as_ref(&self) -> &T {
+        self.0.as_ref()
     }
 }
 ```
 
-It's also possible to specify concrete types to derive forwarded
-impls for with `#[as_ref(<types>)]`.
+Specifying concrete types, to derive impls for, is also supported via
+`#[as_ref(<types>)]` attribute. These types can include both the type
+of the field itself, and types for which the field type implements `AsRef`.
 
 ```rust
 # use derive_more::AsRef;
 #
 #[derive(AsRef)]
-#[as_ref(str, [u8])]
+#[as_ref(str, [u8], String)]
 struct Types(String);
 
 let item = Types("test".to_owned());
 let _: &str = item.as_ref();
 let _: &[u8] = item.as_ref();
+let _: &String = item.as_ref();
 ```
 
-Generates:
+> **WARNING**: When either the field type, or the specified conversion type,
+> contains generic parameters, they are considered as the same type only if
+> are named string-equally, otherwise are assumed as different types even
+> when represent the same type in fact (type aliases, for example).
+>
+> ```rust
+> # use derive_more::AsRef;
+> #
+> #[derive(AsRef)]
+> #[as_ref(i32)] // generates `impl<T: AsRef<i32>> AsRef<i32> for Generic<T>`
+> struct Generic<T>(T);
+>
+> #[derive(AsRef)]
+> #[as_ref(T)] // generates `impl<T> AsRef<T> for Transparent<T>`
+> struct Transparent<T>(T);
+>
+> #[derive(AsRef)]
+> // #[as_ref(RenamedVec<T>)] // not supported, as types are not named string-equally
+> struct Foo<T>(Vec<T>);
+> type RenamedVec<T> = Vec<T>;
+>
+> #[derive(AsRef)]
+> #[as_ref(RenamedString)] // generates `impl AsRef<RenamedString> for Bar`,
+> struct Bar(String);      // as generics are not involved
+> type RenamedString = String;
+> ```
+
+Generating code like this is not supported:
 
 ```rust
-# struct Types(String);
-impl AsRef<str> for Types {
-    fn as_ref(&self) -> &str {
-        <String as ::core::convert::AsRef<str>>::as_ref(&self.0)
-    }
-}
+struct Generic<T>(T);
 
-impl AsRef<[u8]> for Types {
-    fn as_ref(&self) -> &[u8] {
-        <String as ::core::convert::AsRef<[u8]>>::as_ref(&self.0)
+impl AsRef<i32> for Generic<i32> {
+    fn as_ref(&self) -> &i32 {
+        &self.0
     }
 }
 ```
+
 
 
 
@@ -106,7 +131,7 @@ An implementation will be generated for each indicated field.
 #
 #[derive(AsRef)]
 struct MyWrapper {
-    #[as_ref]
+    #[as_ref(str)]
     name: String,
     #[as_ref]
     num: i32,
@@ -122,9 +147,9 @@ Generates:
 #     num: i32,
 #     valid: bool,
 # }
-impl AsRef<String> for MyWrapper {
-    fn as_ref(&self) -> &String {
-        &self.name
+impl AsRef<str> for MyWrapper {
+    fn as_ref(&self) -> &str {
+        self.name.as_ref()
     }
 }
 
@@ -134,6 +159,24 @@ impl AsRef<i32> for MyWrapper {
     }
 }
 ```
+
+
+### Tuples (not supported)
+
+Only conversions that use a single field are possible with this derive.
+Something like this wouldn't work, due to the nature of the `AsRef` trait
+itself:
+
+```rust,compile_fail
+# use derive_more::AsRef
+#
+#[derive(AsRef)]
+#[as_ref((str, [u8]))]
+struct MyWrapper(String, Vec<u8>)
+```
+
+If you need to convert into a tuple of references, consider using the
+[`Into`](crate::Into) derive with `#[into(ref)]`.
 
 
 ### Skipping
@@ -207,7 +250,7 @@ struct ForwardWithOther {
 }
 ```
 
-Multiple forwarded impls with concrete types, however, can be used.
+Multiple forwarded impls with different concrete types, however, can be used.
 
 ```rust
 # use derive_more::AsRef;
@@ -228,6 +271,7 @@ let item = Types {
 let _: &str = item.as_ref();
 let _: &[u8] = item.as_ref();
 ```
+
 
 
 
