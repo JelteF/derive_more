@@ -23,7 +23,7 @@ use crate::utils::{
 
 /// Expands an [`Into`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
-    let trait_ident = format_ident!("into");
+    let attr_name = format_ident!("into");
 
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
@@ -39,7 +39,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 
     let attr = StructAttribute::parse_attrs_with(
         &input.attrs,
-        &trait_ident,
+        &attr_name,
         &ConsiderLegacySyntax {
             fields: &data.fields,
         },
@@ -56,7 +56,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         .iter()
         .enumerate()
         .filter_map(
-            |(i, f)| match attr::Skip::parse_attrs(&f.attrs, &trait_ident) {
+            |(i, f)| match attr::Skip::parse_attrs(&f.attrs, &attr_name) {
                 Ok(None) => Some(Ok((
                     &f.ty,
                     f.ident.as_ref().map_or_else(

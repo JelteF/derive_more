@@ -19,7 +19,7 @@ pub fn expand(
     input: &syn::DeriveInput,
     trait_info: ExpansionCtx<'_>,
 ) -> syn::Result<TokenStream> {
-    let (trait_ident, attr_ident, _) = trait_info;
+    let (trait_ident, attr_name, _) = trait_info;
 
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
@@ -34,7 +34,7 @@ pub fn expand(
     }?;
 
     let expansions = if let Some(attr) =
-        StructAttribute::parse_attrs(&input.attrs, attr_ident)?
+        StructAttribute::parse_attrs(&input.attrs, attr_name)?
     {
         if data.fields.len() != 1 {
             return Err(syn::Error::new(
@@ -44,17 +44,17 @@ pub fn expand(
                     data.fields.span()
                 },
                 format!(
-                    "`#[{attr_ident}(...)]` attribute can only be placed on structs with exactly \
+                    "`#[{attr_name}(...)]` attribute can only be placed on structs with exactly \
                      one field",
                 ),
             ));
         }
 
         let field = data.fields.iter().next().unwrap();
-        if FieldAttribute::parse_attrs(&field.attrs, attr_ident)?.is_some() {
+        if FieldAttribute::parse_attrs(&field.attrs, attr_name)?.is_some() {
             return Err(syn::Error::new(
                 field.span(),
-                format!("`#[{attr_ident}(...)]` cannot be placed on both struct and its field"),
+                format!("`#[{attr_name}(...)]` cannot be placed on both struct and its field"),
             ));
         }
 
@@ -70,7 +70,7 @@ pub fn expand(
         let attrs = data
             .fields
             .iter()
-            .map(|field| FieldAttribute::parse_attrs(&field.attrs, attr_ident))
+            .map(|field| FieldAttribute::parse_attrs(&field.attrs, attr_name))
             .collect::<syn::Result<Vec<_>>>()?;
 
         let present_attrs = attrs.iter().filter_map(Option::as_ref).collect::<Vec<_>>();
@@ -90,8 +90,8 @@ pub fn expand(
                 return Err(syn::Error::new(
                     skip_attr.span(),
                     format!(
-                        "`#[{attr_ident}({})]` cannot be used in the same struct with other \
-                         `#[{attr_ident}(...)]` attributes",
+                        "`#[{attr_name}({})]` cannot be used in the same struct with other \
+                         `#[{attr_name}(...)]` attributes",
                         skip_attr.name(),
                     ),
                 ));

@@ -21,13 +21,13 @@ use crate::utils::{
 
 /// Expands a [`From`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
-    let trait_ident = format_ident!("from");
+    let attr_name = format_ident!("from");
 
     match &input.data {
         syn::Data::Struct(data) => Expansion {
             attrs: StructAttribute::parse_attrs_with(
                 &input.attrs,
-                &trait_ident,
+                &attr_name,
                 &ConsiderLegacySyntax {
                     fields: &data.fields,
                 },
@@ -49,7 +49,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 .map(|variant| {
                     let attr = VariantAttribute::parse_attrs_with(
                         &variant.attrs,
-                        &trait_ident,
+                        &attr_name,
                         &ConsiderLegacySyntax {
                             fields: &variant.fields,
                         },
