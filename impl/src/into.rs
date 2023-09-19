@@ -16,7 +16,6 @@ use syn::{
     token,
 };
 
-use crate::parsing::Type;
 use crate::utils::{
     attr::{self, ParseMultiple as _},
     polyfill, Either, FieldsExt as _, Spanning,
@@ -93,14 +92,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 
         Either::Right(
             if tys.is_empty() {
-                Either::Left(iter::once(Type::tuple(fields_tys.clone())))
+                Either::Left(iter::once(syn::Type::Tuple(syn::TypeTuple {
+                    paren_token: token::Paren::default(),
+                    elems: fields_tys.iter().cloned().cloned().collect(),
+                })))
             } else {
                 Either::Right(tys.into_iter())
             }
             .map(move |ty| {
-                use syn::parse_quote;
-                let ty = parse_quote! { #ty };
-
                 let tys = fields_tys.validate_type(&ty)?.collect::<Vec<_>>();
                 let (impl_gens, _, where_clause) = gens.split_for_impl();
                 let (_, ty_gens, _) = input.generics.split_for_impl();
@@ -143,13 +142,13 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 #[derive(Debug, Default)]
 struct StructAttribute {
     /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
-    owned: Option<Punctuated<Type, token::Comma>>,
+    owned: Option<Punctuated<syn::Type, token::Comma>>,
 
     /// [`Type`]s wrapped into `ref(...)`.
-    r#ref: Option<Punctuated<Type, token::Comma>>,
+    r#ref: Option<Punctuated<syn::Type, token::Comma>>,
 
     /// [`Type`]s wrapped into `ref_mut(...)`.
-    ref_mut: Option<Punctuated<Type, token::Comma>>,
+    ref_mut: Option<Punctuated<syn::Type, token::Comma>>,
 }
 
 impl Parse for StructAttribute {
@@ -166,7 +165,7 @@ impl Parse for StructAttribute {
 
                 types.extend(
                     inner
-                        .parse_terminated(Type::parse, token::Comma)?
+                        .parse_terminated(syn::Type::parse, token::Comma)?
                         .into_pairs(),
                 );
             }
@@ -204,7 +203,7 @@ impl Parse for StructAttribute {
                     parse_inner(ahead, &mut out.ref_mut)?;
                 }
                 _ => {
-                    let ty = input.parse::<Type>()?;
+                    let ty = input.parse::<syn::Type>()?;
                     let _ = top_level_type.get_or_insert_with(|| ty.clone());
                     out.owned.get_or_insert_with(Punctuated::new).push_value(ty);
 
