@@ -1,6 +1,10 @@
 //! Implementation of an [`Into`] derive macro.
 
-use std::{borrow::Cow, iter};
+use std::{
+    any::{Any, TypeId},
+    borrow::Cow,
+    iter,
+};
 
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, ToTokens as _};
@@ -9,16 +13,19 @@ use syn::{
     parse::{discouraged::Speculative as _, Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Ident,
+    token,
 };
 
-use crate::{
-    parsing::Type,
-    utils::{attr::{self, ParseMultiple as _}, polyfill, Either, FieldsExt as _},
+use crate::parsing::Type;
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    polyfill, Either, FieldsExt as _, Spanning,
 };
 
 /// Expands an [`Into`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
+    let trait_ident = format_ident!("into");
+
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
         syn::Data::Enum(e) => Err(syn::Error::new(
@@ -31,19 +38,26 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         )),
     }?;
 
-    let attr = StructAttribute::parse_attrs(&input.attrs, &data.fields)?
-        .unwrap_or_else(|| StructAttribute {
-            owned: Some(Punctuated::new()),
-            r#ref: None,
-            ref_mut: None,
-        });
+    let attr = StructAttribute::parse_attrs_with(
+        &input.attrs,
+        &trait_ident,
+        &ConsiderLegacySyntax {
+            fields: &data.fields,
+        },
+    )?
+    .map(Spanning::into_inner)
+    .unwrap_or_else(|| StructAttribute {
+        owned: Some(Punctuated::new()),
+        r#ref: None,
+        ref_mut: None,
+    });
     let ident = &input.ident;
     let fields = data
         .fields
         .iter()
         .enumerate()
-        .filter_map(|(i, f)| {
-            match SkipFieldAttribute::parse_attrs(&f.attrs, &format_ident!("into")) {
+        .filter_map(
+            |(i, f)| match attr::Skip::parse_attrs(&f.attrs, &trait_ident) {
                 Ok(None) => Some(Ok((
                     &f.ty,
                     f.ident.as_ref().map_or_else(
@@ -53,8 +67,8 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 ))),
                 Ok(Some(_)) => None,
                 Err(e) => Some(Err(e)),
-            }
-        })
+            },
+        )
         .collect::<syn::Result<Vec<_>>>()?;
     let (fields_tys, fields_idents): (Vec<_>, Vec<_>) = fields.into_iter().unzip();
     let (fields_tys, fields_idents) = (&fields_tys, &fields_idents);
@@ -84,6 +98,9 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 Either::Right(tys.into_iter())
             }
             .map(move |ty| {
+                use syn::parse_quote;
+                let ty = parse_quote! { #ty };
+
                 let tys = fields_tys.validate_type(&ty)?.collect::<Vec<_>>();
                 let (impl_gens, _, where_clause) = gens.split_for_impl();
                 let (_, ty_gens, _) = input.generics.split_for_impl();
@@ -135,56 +152,17 @@ struct StructAttribute {
     ref_mut: Option<Punctuated<Type, token::Comma>>,
 }
 
-impl StructAttribute {
-    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(
-        attrs: impl AsRef<[syn::Attribute]>,
-        fields: &syn::Fields,
-    ) -> syn::Result<Option<Self>> {
-        fn infer<T>(v: T) -> T
-        where
-            T: for<'a> FnOnce(ParseStream<'a>) -> syn::Result<StructAttribute>,
-        {
-            v
-        }
-
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("into"))
-            .try_fold(None, |mut attrs, attr| {
-                let merge = |out: &mut Option<_>, tys| match (out.as_mut(), tys) {
-                    (None, Some(tys)) => {
-                        *out = Some::<Punctuated<_, _>>(tys);
-                    }
-                    (Some(out), Some(tys)) => out.extend(tys),
-                    (Some(_), None) | (None, None) => {}
-                };
-
-                let field_attr =
-                    attr.parse_args_with(infer(|stream| Self::parse(stream, fields)))?;
-                let out = attrs.get_or_insert_with(Self::default);
-                merge(&mut out.owned, field_attr.owned);
-                merge(&mut out.r#ref, field_attr.r#ref);
-                merge(&mut out.ref_mut, field_attr.ref_mut);
-
-                Ok(attrs)
-            })
-    }
-
-    /// Parses a single [`StructAttribute`].
-    fn parse(content: ParseStream<'_>, fields: &syn::Fields) -> syn::Result<Self> {
-        check_legacy_syntax(content, fields)?;
-
+impl Parse for StructAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let mut out = Self::default();
 
         let parse_inner = |ahead, types: &mut Option<_>| {
-            content.advance_to(&ahead);
+            input.advance_to(&ahead);
 
             let types = types.get_or_insert_with(Punctuated::new);
-            if content.peek(token::Paren) {
+            if input.peek(token::Paren) {
                 let inner;
-                syn::parenthesized!(inner in content);
+                syn::parenthesized!(inner in input);
 
                 types.extend(
                     inner
@@ -192,8 +170,8 @@ impl StructAttribute {
                         .into_pairs(),
                 );
             }
-            if content.peek(token::Comma) {
-                let comma = content.parse::<token::Comma>()?;
+            if input.peek(token::Comma) {
+                let comma = input.parse::<token::Comma>()?;
                 if !types.empty_or_trailing() {
                     types.push_punct(comma);
                 }
@@ -205,10 +183,10 @@ impl StructAttribute {
         let mut has_wrapped_type = false;
         let mut top_level_type = None;
 
-        while !content.is_empty() {
-            let ahead = content.fork();
-            let res = if ahead.peek(Ident::peek_any) {
-                ahead.call(Ident::parse_any).map(Into::into)
+        while !input.is_empty() {
+            let ahead = input.fork();
+            let res = if ahead.peek(syn::Ident::peek_any) {
+                ahead.call(syn::Ident::parse_any).map(Into::into)
             } else {
                 ahead.parse::<syn::Path>()
             };
@@ -226,14 +204,14 @@ impl StructAttribute {
                     parse_inner(ahead, &mut out.ref_mut)?;
                 }
                 _ => {
-                    let ty = content.parse::<Type>()?;
+                    let ty = input.parse::<Type>()?;
                     let _ = top_level_type.get_or_insert_with(|| ty.clone());
                     out.owned.get_or_insert_with(Punctuated::new).push_value(ty);
 
-                    if content.peek(token::Comma) {
+                    if input.peek(token::Comma) {
                         out.owned
                             .get_or_insert_with(Punctuated::new)
-                            .push_punct(content.parse::<token::Comma>()?)
+                            .push_punct(input.parse::<token::Comma>()?)
                     }
                 }
             }
@@ -243,9 +221,8 @@ impl StructAttribute {
             Err(syn::Error::new(
                 ty.span(),
                 format!(
-                    "mixing regular types with wrapped into \
-                     `owned`/`ref`/`ref_mut` is not allowed, try wrapping \
-                     this type into `owned({ty}), ref({ty}), ref_mut({ty})`",
+                    "mixing regular types with wrapped into `owned`/`ref`/`ref_mut` is not \
+                     allowed, try wrapping this type into `owned({ty}), ref({ty}), ref_mut({ty})`",
                     ty = ty.into_token_stream(),
                 ),
             ))
@@ -255,8 +232,55 @@ impl StructAttribute {
     }
 }
 
-/// `#[into(skip)]`/`#[into(ignore)]` field attribute.
-type SkipFieldAttribute = attr::Skip;
+impl attr::ParseMultiple for StructAttribute {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        _: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let merge = |out: &mut Option<_>, tys| match (out.as_mut(), tys) {
+            (None, Some(tys)) => {
+                *out = Some::<Punctuated<_, _>>(tys);
+            }
+            (Some(out), Some(tys)) => out.extend(tys),
+            (Some(_), None) | (None, None) => {}
+        };
+
+        let Spanning {
+            span: prev_span,
+            item: mut prev,
+        } = prev;
+        let Spanning {
+            span: new_span,
+            item: new,
+        } = new;
+
+        merge(&mut prev.owned, new.owned);
+        merge(&mut prev.r#ref, new.r#ref);
+        merge(&mut prev.ref_mut, new.ref_mut);
+
+        Ok(Spanning::new(
+            prev,
+            prev_span.join(new_span).unwrap_or(prev_span),
+        ))
+    }
+}
+
+/// [`attr::Parser`] considering legacy syntax and performing [`check_legacy_syntax()`] for a
+/// [`StructAttribute`].
+struct ConsiderLegacySyntax<'a> {
+    /// [`syn::Fields`] of a struct, the [`StructAttribute`] is parsed for.
+    fields: &'a syn::Fields,
+}
+
+impl attr::Parser for ConsiderLegacySyntax<'_> {
+    fn parse<T: Parse + Any>(&self, input: ParseStream<'_>) -> syn::Result<T> {
+        if TypeId::of::<T>() == TypeId::of::<StructAttribute>() {
+            check_legacy_syntax(input, self.fields)?;
+        }
+        T::parse(input)
+    }
+}
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
 fn check_legacy_syntax(

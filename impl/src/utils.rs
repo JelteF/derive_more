@@ -1480,24 +1480,48 @@ mod spanning {
     feature = "into",
 ))]
 pub(crate) mod attr {
-    use syn::{parse::Parse, spanned::Spanned as _};
+    use std::any::Any;
+
+    use syn::{
+        parse::{Parse, ParseStream},
+        spanned::Spanned as _,
+    };
 
     use super::{Either, Spanning};
 
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from"))]
-    pub(crate) use self::{forward::Forward, types::Types};
+    pub(crate) use self::{
+        conversion::Conversion, empty::Empty, field_conversion::FieldConversion,
+        forward::Forward, types::Types,
+    };
+
+    /// [`Parse`]ing with additional state or metadata.
+    pub(crate) trait Parser {
+        /// [`Parse`]s an item, using additional state or metadata.
+        ///
+        /// Default implementation just calls [`Parse::parse()`] directly.
+        fn parse<T: Parse + Any>(&self, input: ParseStream<'_>) -> syn::Result<T> {
+            T::parse(input)
+        }
+    }
+
+    impl Parser for () {}
 
     /// Parsing of a typed attribute from multiple [`syn::Attribute`]s.
-    pub(crate) trait ParseMultiple: Parse + Sized {
-        /// Parses this attribute from the provided single [`syn::Attribute`].
+    pub(crate) trait ParseMultiple: Parse + Sized + 'static {
+        /// Parses this attribute from the provided single [`syn::Attribute`] with the provided
+        /// [`Parser`].
         ///
         /// Required, because with [`Parse`] we only able to parse inner attribute tokens, which
         /// doesn't work for attributes with empty arguments, like `#[attr]`.
         ///
-        /// Override this method if the default [`syn::Attribute::parse_args()`] is not enough.
-        fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
-            attr.parse_args()
+        /// Override this method if the default [`syn::Attribute::parse_args_with()`] is not enough.
+        fn parse_attr_with<P: Parser>(
+            attr: &syn::Attribute,
+            parser: &P,
+        ) -> syn::Result<Self> {
+            attr.parse_args_with(|ps: ParseStream<'_>| parser.parse(ps))
         }
 
         /// Merges multiple values of this attribute into a single one.
@@ -1514,20 +1538,24 @@ pub(crate) mod attr {
             ))
         }
 
-        /// Parses this attribute from the provided multiple [`syn::Attribute`]s, merging them, and
-        /// preserving their [`Span`].
+        /// Parses this attribute from the provided multiple [`syn::Attribute`]s with the provided
+        /// [`Parser`], merging them, and preserving their [`Span`].
         ///
         /// [`Span`]: proc_macro2::Span
-        fn parse_attrs(
+        fn parse_attrs_with<P: Parser>(
             attrs: impl AsRef<[syn::Attribute]>,
             name: &syn::Ident,
+            parser: &P,
         ) -> syn::Result<Option<Spanning<Self>>> {
             attrs
                 .as_ref()
                 .iter()
                 .filter(|attr| attr.path().is_ident(name))
                 .try_fold(None, |merged, attr| {
-                    let parsed = Spanning::new(Self::parse_attr(attr)?, attr.span());
+                    let parsed = Spanning::new(
+                        Self::parse_attr_with(attr, parser)?,
+                        attr.span(),
+                    );
                     if let Some(prev) = merged {
                         Self::merge_attrs(prev, parsed, name).map(Some)
                     } else {
@@ -1535,13 +1563,27 @@ pub(crate) mod attr {
                     }
                 })
         }
+
+        /// Parses this attribute from the provided multiple [`syn::Attribute`]s with the default
+        /// [`Parse`], merging them, and preserving their [`Span`].
+        ///
+        /// [`Span`]: proc_macro2::Span
+        fn parse_attrs(
+            attrs: impl AsRef<[syn::Attribute]>,
+            name: &syn::Ident,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            Self::parse_attrs_with(attrs, name, &())
+        }
     }
 
     impl<L: ParseMultiple, R: ParseMultiple> ParseMultiple for Either<L, R> {
-        fn parse_attr(attr: &syn::Attribute) -> syn::Result<Self> {
-            L::parse_attr(attr)
+        fn parse_attr_with<P: Parser>(
+            attr: &syn::Attribute,
+            parser: &P,
+        ) -> syn::Result<Self> {
+            L::parse_attr_with(attr, parser)
                 .map(Self::Left)
-                .or_else(|_| R::parse_attr(attr).map(Self::Right))
+                .or_else(|_| R::parse_attr_with(attr, parser).map(Self::Right))
         }
 
         fn merge_attrs(
@@ -1563,6 +1605,63 @@ pub(crate) mod attr {
                     format!("only single kind of `#[{name}(...)]` attribute is allowed here"),
                 ))
             })
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod empty {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+        };
+
+        use super::{ParseMultiple, Parser, Spanning};
+
+        /// Representation of an empty attribute, containing no arguments.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>]
+        /// ```
+        pub(crate) struct Empty;
+
+        impl Parse for Empty {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                if input.is_empty() {
+                    Ok(Self)
+                } else {
+                    Err(syn::Error::new(
+                        input.span(),
+                        "no attribute arguments allowed here",
+                    ))
+                }
+            }
+        }
+
+        impl ParseMultiple for Empty {
+            fn parse_attr_with<P: Parser>(
+                attr: &syn::Attribute,
+                _: &P,
+            ) -> syn::Result<Self> {
+                if matches!(attr.meta, syn::Meta::Path(_)) {
+                    Ok(Self)
+                } else {
+                    Err(syn::Error::new(
+                        attr.span(),
+                        "no attribute arguments allowed here",
+                    ))
+                }
+            }
+
+            fn merge_attrs(
+                _prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Err(syn::Error::new(
+                    new.span,
+                    format!("only single `#[{name}]` attribute is allowed here"),
+                ))
+            }
         }
     }
 
@@ -1686,16 +1785,181 @@ pub(crate) mod attr {
             }
         }
     }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod conversion {
+        use syn::parse::{Parse, ParseStream};
+
+        use crate::utils::attr;
+
+        use super::{Either, ParseMultiple, Spanning};
+
+        /// Untyped analogue of a [`Conversion`], recreating its type structure via [`Either`].
+        ///
+        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impl to [`Either`].
+        type Untyped = Either<attr::Forward, attr::Types>;
+
+        /// Representation of an attribute, specifying which conversions should be generated:
+        /// either forwarded via a blanket impl, or direct for concrete specified types.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(forward)]
+        /// #[<attribute>(<types>)]
+        /// ```
+        pub(crate) enum Conversion {
+            Forward(attr::Forward),
+            Types(attr::Types),
+        }
+
+        impl From<Untyped> for Conversion {
+            fn from(v: Untyped) -> Self {
+                match v {
+                    Untyped::Left(f) => Self::Forward(f),
+                    Untyped::Right(t) => Self::Types(t),
+                }
+            }
+        }
+        impl From<Conversion> for Untyped {
+            fn from(v: Conversion) -> Self {
+                match v {
+                    Conversion::Forward(f) => Self::Left(f),
+                    Conversion::Types(t) => Self::Right(t),
+                }
+            }
+        }
+
+        impl Parse for Conversion {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                Untyped::parse(input).map(Self::from)
+            }
+        }
+
+        impl ParseMultiple for Conversion {
+            fn parse_attr_with<P: attr::Parser>(
+                attr: &syn::Attribute,
+                parser: &P,
+            ) -> syn::Result<Self> {
+                Untyped::parse_attr_with(attr, parser).map(Self::from)
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Untyped::merge_attrs(prev.map(Into::into), new.map(Into::into), name)
+                    .map(|v| v.map(Self::from))
+            }
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod field_conversion {
+        use syn::parse::{Parse, ParseStream};
+
+        use crate::utils::attr;
+
+        use super::{Either, ParseMultiple, Spanning};
+
+        /// Untyped analogue of a [`FieldConversion`], recreating its type structure via [`Either`].
+        ///
+        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impl to [`Either`].
+        type Untyped =
+            Either<attr::Empty, Either<attr::Skip, Either<attr::Forward, attr::Types>>>;
+
+        /// Representation of an attribute, specifying which conversions should be generated:
+        /// either forwarded via a blanket impl, or direct for concrete specified types.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>]
+        /// #[<attribute>(skip)] #[<attribute>(ignore)]
+        /// #[<attribute>(forward)]
+        /// #[<attribute>(<types>)]
+        /// ```
+        pub(crate) enum FieldConversion {
+            Empty(attr::Empty),
+            Skip(attr::Skip),
+            Forward(attr::Forward),
+            Types(attr::Types),
+        }
+
+        impl From<Untyped> for FieldConversion {
+            fn from(v: Untyped) -> Self {
+                match v {
+                    Untyped::Left(e) => Self::Empty(e),
+                    Untyped::Right(Either::Left(s)) => Self::Skip(s),
+                    Untyped::Right(Either::Right(Either::Left(f))) => Self::Forward(f),
+                    Untyped::Right(Either::Right(Either::Right(t))) => Self::Types(t),
+                }
+            }
+        }
+
+        impl From<FieldConversion> for Untyped {
+            fn from(v: FieldConversion) -> Self {
+                match v {
+                    FieldConversion::Empty(e) => Self::Left(e),
+                    FieldConversion::Skip(s) => Self::Right(Either::Left(s)),
+                    FieldConversion::Forward(f) => {
+                        Self::Right(Either::Right(Either::Left(f)))
+                    }
+                    FieldConversion::Types(t) => {
+                        Self::Right(Either::Right(Either::Right(t)))
+                    }
+                }
+            }
+        }
+
+        impl From<attr::Conversion> for FieldConversion {
+            fn from(v: attr::Conversion) -> Self {
+                match v {
+                    attr::Conversion::Forward(f) => Self::Forward(f),
+                    attr::Conversion::Types(t) => Self::Types(t),
+                }
+            }
+        }
+
+        impl From<FieldConversion> for Option<attr::Conversion> {
+            fn from(v: FieldConversion) -> Self {
+                match v {
+                    FieldConversion::Forward(f) => Some(attr::Conversion::Forward(f)),
+                    FieldConversion::Types(t) => Some(attr::Conversion::Types(t)),
+                    FieldConversion::Empty(_) | FieldConversion::Skip(_) => None,
+                }
+            }
+        }
+
+        impl Parse for FieldConversion {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                Untyped::parse(input).map(Self::from)
+            }
+        }
+
+        impl ParseMultiple for FieldConversion {
+            fn parse_attr_with<P: attr::Parser>(
+                attr: &syn::Attribute,
+                parser: &P,
+            ) -> syn::Result<Self> {
+                Untyped::parse_attr_with(attr, parser).map(Self::from)
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Untyped::merge_attrs(prev.map(Into::into), new.map(Into::into), name)
+                    .map(|v| v.map(Self::from))
+            }
+        }
+    }
 }
 
 #[cfg(any(feature = "from", feature = "into"))]
 mod fields_ext {
     use std::{cmp, iter};
 
-    use proc_macro2::TokenStream;
+    use quote::ToTokens as _;
     use syn::{punctuated, spanned::Spanned as _};
-
-    use crate::parsing;
 
     use super::Either;
 
@@ -1722,13 +1986,13 @@ mod fields_ext {
         /// Validates the provided [`parsing::Type`] against these [`syn::Fields`].
         fn validate_type<'t>(
             &self,
-            ty: &'t parsing::Type,
+            ty: &'t syn::Type,
         ) -> syn::Result<
-            Either<punctuated::Iter<'t, TokenStream>, iter::Once<&'t TokenStream>>,
+            Either<punctuated::Iter<'t, syn::Type>, iter::Once<&'t syn::Type>>,
         > {
             match ty {
-                parsing::Type::Tuple { items, .. } if self.len() > 1 => {
-                    match self.len().cmp(&items.len()) {
+                syn::Type::Tuple(syn::TypeTuple { elems, .. }) if self.len() > 1 => {
+                    match self.len().cmp(&elems.len()) {
                         cmp::Ordering::Greater => {
                             return Err(syn::Error::new(
                                 ty.span(),
@@ -1736,18 +2000,18 @@ mod fields_ext {
                                     "wrong tuple length: expected {}, found {}. \
                                      Consider adding {} more type{}: `({})`",
                                     self.len(),
-                                    items.len(),
-                                    self.len() - items.len(),
-                                    if self.len() - items.len() > 1 {
+                                    elems.len(),
+                                    self.len() - elems.len(),
+                                    if self.len() - elems.len() > 1 {
                                         "s"
                                     } else {
                                         ""
                                     },
-                                    items
+                                    elems
                                         .iter()
-                                        .map(|item| item.to_string())
+                                        .map(|ty| ty.into_token_stream().to_string())
                                         .chain(
-                                            (0..(self.len() - items.len()))
+                                            (0..(self.len() - elems.len()))
                                                 .map(|_| "_".to_string())
                                         )
                                         .collect::<Vec<_>>()
@@ -1762,17 +2026,17 @@ mod fields_ext {
                                     "wrong tuple length: expected {}, found {}. \
                                      Consider removing last {} type{}: `({})`",
                                     self.len(),
-                                    items.len(),
-                                    items.len() - self.len(),
-                                    if items.len() - self.len() > 1 {
+                                    elems.len(),
+                                    elems.len() - self.len(),
+                                    if elems.len() - self.len() > 1 {
                                         "s"
                                     } else {
                                         ""
                                     },
-                                    items
+                                    elems
                                         .iter()
                                         .take(self.len())
-                                        .map(ToString::to_string)
+                                        .map(|ty| ty.into_token_stream().to_string())
                                         .collect::<Vec<_>>()
                                         .join(", "),
                                 ),
@@ -1781,25 +2045,26 @@ mod fields_ext {
                         cmp::Ordering::Equal => {}
                     }
                 }
-                parsing::Type::Other(other) if self.len() > 1 => {
-                    if self.len() > 1 {
-                        return Err(syn::Error::new(
-                            other.span(),
-                            format!(
-                                "expected tuple: `({other}, {})`",
-                                (0..(self.len() - 1))
-                                    .map(|_| "_")
-                                    .collect::<Vec<_>>()
-                                    .join(", "),
-                            ),
-                        ));
-                    }
+                other if self.len() > 1 => {
+                    return Err(syn::Error::new(
+                        other.span(),
+                        format!(
+                            "expected tuple: `({}, {})`",
+                            other.into_token_stream(),
+                            (0..(self.len() - 1))
+                                .map(|_| "_")
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                        ),
+                    ));
                 }
-                parsing::Type::Tuple { .. } | parsing::Type::Other(_) => {}
+                _ => {}
             }
             Ok(match ty {
-                parsing::Type::Tuple { items, .. } => Either::Left(items.iter()),
-                parsing::Type::Other(other) => Either::Right(iter::once(other)),
+                syn::Type::Tuple(syn::TypeTuple { elems, .. }) => {
+                    Either::Left(elems.iter())
+                }
+                other => Either::Right(iter::once(other)),
             })
         }
     }
