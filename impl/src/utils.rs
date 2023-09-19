@@ -28,6 +28,7 @@ pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
+    feature = "display",
     feature = "from",
     feature = "into",
 ))]
@@ -1396,6 +1397,7 @@ mod either {
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
+    feature = "display",
     feature = "from",
     feature = "into",
 ))]
@@ -1476,6 +1478,7 @@ mod spanning {
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
+    feature = "display",
     feature = "from",
     feature = "into",
 ))]
