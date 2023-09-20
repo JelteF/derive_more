@@ -1332,6 +1332,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 mod either {
     use proc_macro2::TokenStream;
@@ -1402,6 +1403,7 @@ mod either {
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
