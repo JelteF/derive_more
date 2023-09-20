@@ -1,4 +1,4 @@
-error: unknown attribute, expected `bound(...)`
+error: unknown attribute argument, expected `bound(...)`
  --> tests/compile_fail/debug/unknown_attribute.rs:2:9
   |
 2 | #[debug(unknown = "unknown")]

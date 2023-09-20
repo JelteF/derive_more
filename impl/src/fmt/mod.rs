@@ -45,7 +45,10 @@ impl Parse for BoundsAttribute {
             {
                 Ok(p)
             } else {
-                Err(syn::Error::new(p.span(), "only `bound(...)` allowed here"))
+                Err(syn::Error::new(
+                    p.span(),
+                    "unknown attribute argument, expected `bound(...)`",
+                ))
             }
         })?;
 
@@ -360,12 +363,15 @@ struct ContainerAttributes {
 
 impl Parse for ContainerAttributes {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        <Either<BoundsAttribute, FmtAttribute>>::parse(input).map(|v| match v {
-            Either::Left(bounds) => Self { bounds, fmt: None },
-            Either::Right(fmt) => Self {
+        // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `Either` will swallow
+        // any error of the `Either::Left` if the `Either::Right` succeeds.
+        FmtAttribute::check_legacy_fmt(input)?;
+        <Either<FmtAttribute, BoundsAttribute>>::parse(input).map(|v| match v {
+            Either::Left(fmt) => Self {
                 bounds: BoundsAttribute::default(),
                 fmt: Some(fmt),
             },
+            Either::Right(bounds) => Self { bounds, fmt: None },
         })
     }
 }
