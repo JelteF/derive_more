@@ -19,6 +19,7 @@ use syn::{
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
@@ -31,6 +32,7 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 pub(crate) use self::spanning::Spanning;
 
@@ -1481,6 +1483,7 @@ mod spanning {
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 pub(crate) mod attr {
     use std::any::Any;
@@ -1492,12 +1495,22 @@ pub(crate) mod attr {
 
     use super::{Either, Spanning};
 
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "debug",
+        feature = "display",
+        feature = "from",
+        feature = "into",
+    ))]
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from"))]
     pub(crate) use self::{
-        conversion::Conversion, empty::Empty, field_conversion::FieldConversion,
-        forward::Forward, types::Types,
+        conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
     };
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    pub(crate) use self::{empty::Empty, types::Types};
+    #[cfg(feature = "try_from")]
+    pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
 
     /// [`Parse`]ing with additional state or metadata.
     pub(crate) trait Parser {
@@ -1611,7 +1624,7 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(any(feature = "as_ref", feature = "from"))]
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     mod empty {
         use syn::{
             parse::{Parse, ParseStream},
@@ -1696,6 +1709,106 @@ pub(crate) mod attr {
         impl ParseMultiple for Forward {}
     }
 
+    #[cfg(feature = "try_from")]
+    mod repr_int {
+        use proc_macro2::Span;
+        use syn::parse::{Parse, ParseStream};
+
+        use super::{ParseMultiple, Parser, Spanning};
+
+        /// Representation of a [`#[repr(u/i*)]` Rust attribute][0].
+        ///
+        /// **NOTE**: Disregards any non-integer representation `#[repr]`s.
+        ///
+        /// ```rust,ignore
+        /// #[repr(<type>)]
+        /// ```
+        ///
+        /// [0]: https://doc.rust-lang.org/reference/type-layout.html#primitive-representations
+        #[derive(Default)]
+        pub(crate) struct ReprInt(Option<syn::Ident>);
+
+        impl ReprInt {
+            /// Returns [`syn::Ident`] of the primitive integer type behind this [`ReprInt`]
+            /// attribute.
+            ///
+            /// If there is no explicitly specified  primitive integer type, then returns a
+            /// [default `isize` discriminant][0].
+            ///
+            /// [0]: https://doc.rust-lang.org/reference/items/enumerations.html#discriminants
+            pub(crate) fn ty(&self) -> syn::Ident {
+                self.0
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_else(|| syn::Ident::new("isize", Span::call_site()))
+            }
+        }
+
+        impl Parse for ReprInt {
+            fn parse(_: ParseStream<'_>) -> syn::Result<Self> {
+                unreachable!("call `attr::ParseMultiple::parse_attr_with()` instead")
+            }
+        }
+
+        impl ParseMultiple for ReprInt {
+            fn parse_attr_with<P: Parser>(
+                attr: &syn::Attribute,
+                _: &P,
+            ) -> syn::Result<Self> {
+                let mut repr = None;
+                attr.parse_nested_meta(|meta| {
+                    if let Some(ident) = meta.path.get_ident() {
+                        if matches!(
+                            ident.to_string().as_str(),
+                            "u8" | "u16"
+                                | "u32"
+                                | "u64"
+                                | "u128"
+                                | "usize"
+                                | "i8"
+                                | "i16"
+                                | "i32"
+                                | "i64"
+                                | "i128"
+                                | "isize"
+                        ) {
+                            repr = Some(ident.clone());
+                            return Ok(());
+                        }
+                    }
+                    // Ignore all other attributes that could have a body, e.g. `align`.
+                    _ = meta.input.parse::<proc_macro2::Group>();
+                    Ok(())
+                })?;
+                Ok(Self(repr))
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                match (&prev.item.0, &new.item.0) {
+                    (Some(_), None) | (None, None) => Ok(prev),
+                    (None, Some(_)) => Ok(new),
+                    (Some(_), Some(_)) => Err(syn::Error::new(
+                        new.span,
+                        format!(
+                            "only single `#[{name}(u/i*)]` attribute is expected here",
+                        ),
+                    )),
+                }
+            }
+        }
+    }
+
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "debug",
+        feature = "display",
+        feature = "from",
+        feature = "into",
+    ))]
     mod skip {
         use syn::{
             parse::{Parse, ParseStream},
@@ -1749,7 +1862,7 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(any(feature = "as_ref", feature = "from"))]
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     mod types {
         use syn::{
             parse::{Parse, ParseStream},
@@ -1799,7 +1912,7 @@ pub(crate) mod attr {
 
         /// Untyped analogue of a [`Conversion`], recreating its type structure via [`Either`].
         ///
-        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impl to [`Either`].
+        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impls to [`Either`].
         type Untyped = Either<attr::Forward, attr::Types>;
 
         /// Representation of an attribute, specifying which conversions should be generated:
@@ -1866,7 +1979,7 @@ pub(crate) mod attr {
 
         /// Untyped analogue of a [`FieldConversion`], recreating its type structure via [`Either`].
         ///
-        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impl to [`Either`].
+        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impls to [`Either`].
         type Untyped =
             Either<attr::Empty, Either<attr::Skip, Either<attr::Forward, attr::Types>>>;
 
@@ -1952,6 +2065,77 @@ pub(crate) mod attr {
             ) -> syn::Result<Spanning<Self>> {
                 Untyped::merge_attrs(prev.map(Into::into), new.map(Into::into), name)
                     .map(|v| v.map(Self::from))
+            }
+        }
+    }
+
+    #[cfg(feature = "try_from")]
+    mod repr_conversion {
+        use syn::parse::{Parse, ParseStream};
+
+        use crate::utils::attr;
+
+        use super::{ParseMultiple, Spanning};
+
+        /// Representation of an attribute, specifying which `repr`-conversions should be generated:
+        /// either direct into a discriminant, or for concrete specified types forwarding from a
+        /// discriminant.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(repr)]
+        /// #[<attribute>(repr(<types>))]
+        /// ```
+        pub(crate) enum ReprConversion {
+            Discriminant(attr::Empty),
+            Types(attr::Types),
+        }
+
+        impl Parse for ReprConversion {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let prefix = syn::Ident::parse(input)?;
+                if prefix != "repr" {
+                    return Err(syn::Error::new(
+                        prefix.span(),
+                        "expected `repr` argument here",
+                    ));
+                }
+                if input.is_empty() {
+                    Ok(Self::Discriminant(attr::Empty))
+                } else {
+                    let inner;
+                    syn::parenthesized!(inner in input);
+                    Ok(Self::Types(attr::Types::parse(&inner)?))
+                }
+            }
+        }
+
+        impl ParseMultiple for ReprConversion {
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Ok(match (prev.item, new.item) {
+                    (Self::Discriminant(_), Self::Discriminant(_)) => {
+                        return Err(syn::Error::new(
+                            new.span,
+                            format!("only single `#[{name}(repr)]` attribute is allowed here"),
+                        ))
+                    },
+                    (Self::Types(p), Self::Types(n)) => {
+                        attr::Types::merge_attrs(
+                            Spanning::new(p, prev.span),
+                            Spanning::new(n, new.span),
+                            name,
+                        )?.map(Self::Types)
+                    },
+                    _ => return Err(syn::Error::new(
+                        new.span,
+                        format!(
+                            "only single kind of `#[{name}(repr(...))]` attribute is allowed here",
+                        ),
+                    ))
+                })
             }
         }
     }
