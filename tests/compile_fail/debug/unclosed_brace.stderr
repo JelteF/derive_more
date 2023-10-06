@@ -2,7 +2,7 @@ error: invalid format string: expected `'}'`, found `')'`
  --> tests/compile_fail/debug/unclosed_brace.rs:3:21
   |
 3 |     #[debug("Stuff({)", bar)]
-  |                    -^ expected `}` in format string
+  |                    -^ expected `'}'` in format string
   |                    |
   |                    because of this opening brace
   |
