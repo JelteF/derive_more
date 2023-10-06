@@ -8,6 +8,8 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
+use std::mem;
+
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
@@ -17,11 +19,47 @@ use syn::{
     token, Ident,
 };
 
-use crate::{parsing::Expr, utils::Either};
+use crate::{
+    parsing::Expr,
+    utils::{attr, Either, Spanning},
+};
 
-/// Representation of a macro attribute expressing additional trait bounds.
+/// Representation of a `bound` macro attribute, expressing additional trait bounds.
+///
+/// ```rust,ignore
+/// #[<attribute>(bound(<where-predicates>))]
+/// #[<attribute>(bounds(<where-predicates>))]
+/// #[<attribute>(where(<where-predicates>))]
+/// ```
 #[derive(Debug, Default)]
-struct BoundsAttribute(Punctuated<syn::WherePredicate, syn::token::Comma>);
+struct BoundsAttribute(Punctuated<syn::WherePredicate, token::Comma>);
+
+impl Parse for BoundsAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        Self::check_legacy_fmt(input)?;
+
+        let _ = input.parse::<syn::Path>().and_then(|p| {
+            if ["bound", "bounds", "where"]
+                .into_iter()
+                .any(|i| p.is_ident(i))
+            {
+                Ok(p)
+            } else {
+                Err(syn::Error::new(
+                    p.span(),
+                    "unknown attribute argument, expected `bound(...)`",
+                ))
+            }
+        })?;
+
+        let content;
+        syn::parenthesized!(content in input);
+
+        content
+            .parse_terminated(syn::WherePredicate::parse, token::Comma)
+            .map(Self)
+    }
+}
 
 impl BoundsAttribute {
     /// Errors in case legacy syntax is encountered: `bound = "..."`.
@@ -30,7 +68,7 @@ impl BoundsAttribute {
 
         let path = fork
             .parse::<syn::Path>()
-            .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
+            .and_then(|path| fork.parse::<token::Eq>().map(|_| path));
         match path {
             Ok(path) if path.is_ident("bound") => fork
                 .parse::<syn::Lit>()
@@ -50,32 +88,11 @@ impl BoundsAttribute {
     }
 }
 
-impl Parse for BoundsAttribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        let _ = input.parse::<syn::Path>().and_then(|p| {
-            if ["bound", "bounds", "where"]
-                .into_iter()
-                .any(|i| p.is_ident(i))
-            {
-                Ok(p)
-            } else {
-                Err(syn::Error::new(
-                    p.span(),
-                    "unknown attribute, expected `bound(...)`",
-                ))
-            }
-        })?;
-
-        let content;
-        syn::parenthesized!(content in input);
-
-        content
-            .parse_terminated(syn::WherePredicate::parse, token::Comma)
-            .map(Self)
-    }
-}
-
 /// Representation of a [`fmt`]-like attribute.
+///
+/// ```rust,ignore
+/// #[<attribute>("<fmt-literal>", <fmt-args>)]
+/// ```
 ///
 /// [`fmt`]: std::fmt
 #[derive(Debug)]
@@ -90,6 +107,31 @@ struct FmtAttribute {
 
     /// Interpolation arguments.
     args: Punctuated<FmtArgument, token::Comma>,
+}
+
+impl Parse for FmtAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        Self::check_legacy_fmt(input)?;
+
+        Ok(Self {
+            lit: input.parse()?,
+            comma: input
+                .peek(token::Comma)
+                .then(|| input.parse())
+                .transpose()?,
+            args: input.parse_terminated(FmtArgument::parse, token::Comma)?,
+        })
+    }
+}
+
+impl attr::ParseMultiple for FmtAttribute {}
+
+impl ToTokens for FmtAttribute {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.lit.to_tokens(tokens);
+        self.comma.to_tokens(tokens);
+        self.args.to_tokens(tokens);
+    }
 }
 
 impl FmtAttribute {
@@ -137,7 +179,7 @@ impl FmtAttribute {
 
         let path = fork
             .parse::<syn::Path>()
-            .and_then(|path| fork.parse::<syn::token::Eq>().map(|_| path));
+            .and_then(|path| fork.parse::<token::Eq>().map(|_| path));
         match path {
             Ok(path) if path.is_ident("fmt") => (|| {
                 let args = fork
@@ -171,27 +213,6 @@ impl FmtAttribute {
             }),
             Ok(_) | Err(_) => Ok(()),
         }
-    }
-}
-
-impl Parse for FmtAttribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        Ok(Self {
-            lit: input.parse()?,
-            comma: input
-                .peek(syn::token::Comma)
-                .then(|| input.parse())
-                .transpose()?,
-            args: input.parse_terminated(FmtArgument::parse, token::Comma)?,
-        })
-    }
-}
-
-impl ToTokens for FmtAttribute {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.lit.to_tokens(tokens);
-        self.comma.to_tokens(tokens);
-        self.args.to_tokens(tokens);
     }
 }
 
@@ -325,12 +346,12 @@ impl Placeholder {
 /// or enum variant).
 ///
 /// ```rust,ignore
-/// #[<fmt_trait>("<fmt_literal>", <fmt_args>)]
-/// #[bound(<bounds>)]
+/// #[<attribute>("<fmt-literal>", <fmt-args>)]
+/// #[<attribute>(bound(<where-predicates>))]
 /// ```
 ///
-/// `#[<fmt_trait>(...)]` can be specified only once, while multiple
-/// `#[<fmt_trait>(bound(...))]` are allowed.
+/// `#[<attribute>(...)]` can be specified only once, while multiple `#[<attribute>(bound(...))]`
+/// are allowed.
 #[derive(Debug, Default)]
 struct ContainerAttributes {
     /// Interpolation [`FmtAttribute`].
@@ -340,56 +361,48 @@ struct ContainerAttributes {
     bounds: BoundsAttribute,
 }
 
-impl ContainerAttributes {
-    /// Parses [`ContainerAttributes`] from the provided [`syn::Attribute`]s.
-    pub(super) fn parse_attrs(
-        attrs: impl AsRef<[syn::Attribute]>,
-        trait_name: &str,
-    ) -> syn::Result<Self> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident(trait_name_to_attribute_name(trait_name)))
-            .try_fold(Self::default(), |mut attrs, attr| {
-                match attr.parse_args::<ContainerAttribute>()? {
-                    ContainerAttribute::Bounds(more) => {
-                        attrs.bounds.0.extend(more.0);
-                    }
-                    ContainerAttribute::Fmt(fmt) => {
-                        attrs.fmt.replace(fmt).map_or(Ok(()), |dup| Err(syn::Error::new(
-                            dup.span(),
-                            format!(
-                                "multiple `#[{}(\"...\", ...)]` attributes aren't allowed",
-                                trait_name_to_attribute_name(trait_name),
-                            ))))?;
-                    }
-                };
-                Ok(attrs)
-            })
+impl Parse for ContainerAttributes {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `Either` will swallow
+        // any error of the `Either::Left` if the `Either::Right` succeeds.
+        FmtAttribute::check_legacy_fmt(input)?;
+        <Either<FmtAttribute, BoundsAttribute>>::parse(input).map(|v| match v {
+            Either::Left(fmt) => Self {
+                bounds: BoundsAttribute::default(),
+                fmt: Some(fmt),
+            },
+            Either::Right(bounds) => Self { bounds, fmt: None },
+        })
     }
 }
 
-/// Representation of a single [`fmt::Display`]-like derive macro attribute, placed on a container
-/// (struct or enum variant).
-#[derive(Debug)]
-enum ContainerAttribute {
-    /// [`fmt`] attribute.
-    Fmt(FmtAttribute),
+impl attr::ParseMultiple for ContainerAttributes {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let Spanning {
+            span: prev_span,
+            item: mut prev,
+        } = prev;
+        let Spanning {
+            span: new_span,
+            item: new,
+        } = new;
 
-    /// Addition trait bounds.
-    Bounds(BoundsAttribute),
-}
-
-impl Parse for ContainerAttribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        BoundsAttribute::check_legacy_fmt(input)?;
-        FmtAttribute::check_legacy_fmt(input)?;
-
-        if input.peek(syn::LitStr) {
-            input.parse().map(Self::Fmt)
-        } else {
-            input.parse().map(Self::Bounds)
+        if mem::replace(&mut prev.fmt, new.fmt).is_some() {
+            return Err(syn::Error::new(
+                new_span,
+                format!("multiple `#[{name}(\"...\", ...)]` attributes aren't allowed"),
+            ));
         }
+        prev.bounds.0.extend(new.bounds.0);
+
+        Ok(Spanning::new(
+            prev,
+            prev_span.join(new_span).unwrap_or(prev_span),
+        ))
     }
 }
 

@@ -1,10 +1,13 @@
 //! Implementation of a [`TryFrom`] derive macro.
 
-use std::mem;
-
-use proc_macro2::{Literal, Span, TokenStream};
+use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use syn::spanned::Spanned as _;
+
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    Spanning,
+};
 
 /// Expands a [`TryFrom`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -14,8 +17,21 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             "`TryFrom` cannot be derived for structs",
         )),
         syn::Data::Enum(data) => Ok(Expansion {
-            repr: ReprAttribute::parse_attrs(&input.attrs)?,
-            attr: ItemAttribute::parse_attrs(&input.attrs)?,
+            repr: attr::ReprInt::parse_attrs(&input.attrs, &format_ident!("repr"))?
+                .map(Spanning::into_inner)
+                .unwrap_or_default(),
+            attr: ItemAttribute::parse_attrs(&input.attrs, &format_ident!("try_from"))?
+                .map(|attr| {
+                    if matches!(attr.item, ItemAttribute::Types(_)) {
+                        Err(syn::Error::new(
+                            attr.span,
+                            "`#[try_from(repr(...))]` attribute is not supported yet",
+                        ))
+                    } else {
+                        Ok(attr.item)
+                    }
+                })
+                .transpose()?,
             ident: input.ident.clone(),
             generics: input.generics.clone(),
             variants: data.variants.clone().into_iter().collect(),
@@ -32,100 +48,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 ///
 /// ```rust,ignore
 /// #[try_from(repr)]
+/// #[try_from(repr(<types>))]
 /// ```
-struct ItemAttribute;
-
-impl ItemAttribute {
-    /// Parses am [`ItemAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Option<Self>> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("try_from"))
-            .try_fold(None, |mut attrs, attr| {
-                let mut parsed = None;
-                attr.parse_nested_meta(|meta| {
-                    if meta.path.is_ident("repr") {
-                        parsed = Some(ItemAttribute);
-                        Ok(())
-                    } else {
-                        Err(meta.error("only `repr` is allowed here"))
-                    }
-                })?;
-                if mem::replace(&mut attrs, parsed).is_some() {
-                    Err(syn::Error::new(
-                        attr.span(),
-                        "only single `#[try_from(repr)]` attribute is allowed here",
-                    ))
-                } else {
-                    Ok(attrs)
-                }
-            })
-    }
-}
-
-/// Representation of a [`#[repr(u/i*)]` Rust attribute][0].
-///
-/// **NOTE**: Disregards any non-integer representation `#[repr]`s.
-///
-/// ```rust,ignore
-/// #[repr(<type>)]
-/// ```
-///
-/// [0]: https://doc.rust-lang.org/reference/type-layout.html#primitive-representations
-struct ReprAttribute(syn::Ident);
-
-impl ReprAttribute {
-    /// Parses a [`ReprAttribute`] from the provided [`syn::Attribute`]s.
-    ///
-    /// If there is no [`ReprAttribute`], then parses a [default `isize` discriminant][0].
-    ///
-    /// [0]: https://doc.rust-lang.org/reference/items/enumerations.html#discriminants
-    fn parse_attrs(attrs: impl AsRef<[syn::Attribute]>) -> syn::Result<Self> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("repr"))
-            .try_fold(None, |mut repr, attr| {
-                attr.parse_nested_meta(|meta| {
-                    if let Some(ident) = meta.path.get_ident() {
-                        if matches!(
-                            ident.to_string().as_str(),
-                            "u8" | "u16"
-                                | "u32"
-                                | "u64"
-                                | "u128"
-                                | "usize"
-                                | "i8"
-                                | "i16"
-                                | "i32"
-                                | "i64"
-                                | "i128"
-                                | "isize"
-                        ) {
-                            repr = Some(ident.clone());
-                            return Ok(());
-                        }
-                    }
-                    // Ignore all other attributes that could have a body, e.g. `align`.
-                    _ = meta.input.parse::<proc_macro2::Group>();
-                    Ok(())
-                })
-                .map(|_| repr)
-            })
-            .map(|repr| {
-                // Default discriminant is interpreted as `isize`:
-                // https://doc.rust-lang.org/reference/items/enumerations.html#discriminants
-                repr.unwrap_or_else(|| syn::Ident::new("isize", Span::call_site()))
-            })
-            .map(Self)
-    }
-}
+type ItemAttribute = attr::ReprConversion;
 
 /// Expansion of a macro for generating [`TryFrom`] implementation of an enum.
 struct Expansion {
     /// `#[repr(u/i*)]` of the enum.
-    repr: ReprAttribute,
+    repr: attr::ReprInt,
 
     /// [`ItemAttribute`] of the enum.
     attr: Option<ItemAttribute>,
@@ -146,12 +76,13 @@ impl ToTokens for Expansion {
         if self.attr.is_none() {
             return;
         }
+
         let ident = &self.ident;
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
 
-        let repr = &self.repr.0;
+        let repr_ty = &self.repr.ty();
 
-        let mut last_discriminant = quote! {0};
+        let mut last_discriminant = quote! { 0 };
         let mut inc = 0usize;
         let (consts, (discriminants, variants)): (
             Vec<syn::Ident>,
@@ -188,15 +119,15 @@ impl ToTokens for Expansion {
 
         quote! {
             #[automatically_derived]
-            impl #impl_generics ::core::convert::TryFrom<#repr #ty_generics> for #ident
+            impl #impl_generics ::core::convert::TryFrom<#repr_ty #ty_generics> for #ident
                  #where_clause
             {
-                type Error = ::derive_more::TryFromReprError<#repr>;
+                type Error = ::derive_more::TryFromReprError<#repr_ty>;
 
                 #[allow(non_upper_case_globals)]
                 #[inline]
-                fn try_from(val: #repr) -> ::core::result::Result<Self, Self::Error> {
-                    #( const #consts: #repr = #discriminants; )*
+                fn try_from(val: #repr_ty) -> ::core::result::Result<Self, Self::Error> {
+                    #( const #consts: #repr_ty = #discriminants; )*
                     match val {
                         #(#consts => ::core::result::Result::Ok(#ident::#variants),)*
                         _ => ::core::result::Result::Err(::derive_more::TryFromReprError::new(val)),

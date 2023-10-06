@@ -55,12 +55,7 @@ mod mul_helpers;
 mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
-#[cfg(any(
-    feature = "debug",
-    feature = "display",
-    feature = "from",
-    feature = "into",
-))]
+#[cfg(any(feature = "debug", feature = "display"))]
 pub(crate) mod parsing;
 #[cfg(feature = "sum")]
 mod sum_like;

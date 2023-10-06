@@ -3,9 +3,11 @@
 #[cfg(doc)]
 use std::fmt;
 
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{parse_quote, spanned::Spanned as _};
+
+use crate::utils::{attr::ParseMultiple as _, Spanning};
 
 use super::{trait_name_to_attribute_name, ContainerAttributes};
 
@@ -22,12 +24,15 @@ use super::{trait_name_to_attribute_name, ContainerAttributes};
 /// - [`UpperHex`](fmt::UpperHex)
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenStream> {
     let trait_name = normalize_trait_name(trait_name);
+    let attr_name = format_ident!("{}", trait_name_to_attribute_name(trait_name));
 
-    let attrs = ContainerAttributes::parse_attrs(&input.attrs, trait_name)?;
+    let attrs = ContainerAttributes::parse_attrs(&input.attrs, &attr_name)?
+        .map(Spanning::into_inner)
+        .unwrap_or_default();
     let trait_ident = format_ident!("{trait_name}");
     let ident = &input.ident;
 
-    let ctx = (&attrs, ident, &trait_ident, trait_name);
+    let ctx = (&attrs, ident, &trait_ident, &attr_name);
     let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => expand_struct(s, ctx),
         syn::Data::Enum(e) => expand_enum(e, ctx),
@@ -59,10 +64,15 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 
 /// Type alias for an expansion context:
 /// - [`ContainerAttributes`].
-/// - Struct/enum/union [`Ident`].
-/// - Derived trait [`Ident`].
-/// - Derived trait `&`[`str`].
-type ExpansionCtx<'a> = (&'a ContainerAttributes, &'a Ident, &'a Ident, &'a str);
+/// - Struct/enum/union [`syn::Ident`].
+/// - Derived trait [`syn::Ident`].
+/// - Attribute name [`syn::Ident`].
+type ExpansionCtx<'a> = (
+    &'a ContainerAttributes,
+    &'a syn::Ident,
+    &'a syn::Ident,
+    &'a syn::Ident,
+);
 
 /// Expands a [`fmt::Display`]-like derive macro for the provided struct.
 fn expand_struct(
@@ -100,7 +110,7 @@ fn expand_struct(
 /// Expands a [`fmt`]-like derive macro for the provided enum.
 fn expand_enum(
     e: &syn::DataEnum,
-    (attrs, _, trait_ident, trait_name): ExpansionCtx<'_>,
+    (attrs, _, trait_ident, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     if attrs.fmt.is_some() {
         todo!("https://github.com/JelteF/derive_more/issues/142");
@@ -109,20 +119,20 @@ fn expand_enum(
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
-            let attrs = ContainerAttributes::parse_attrs(&variant.attrs, trait_name)?;
+            let attrs = ContainerAttributes::parse_attrs(&variant.attrs, attr_name)?
+                .map(Spanning::into_inner)
+                .unwrap_or_default();
             let ident = &variant.ident;
 
             if attrs.fmt.is_none()
                 && variant.fields.is_empty()
-                && trait_name != "Display"
+                && attr_name != "display"
             {
                 return Err(syn::Error::new(
                     e.variants.span(),
                     format!(
-                        "implicit formatting of unit enum variant is supported \
-                         only for `Display` macro, use `#[{}(\"...\")]` to \
-                         explicitly specify the formatting",
-                        trait_name_to_attribute_name(trait_name),
+                        "implicit formatting of unit enum variant is supported only for `Display` \
+                         macro, use `#[{attr_name}(\"...\")]` to explicitly specify the formatting",
                     ),
                 ));
             }
@@ -167,15 +177,12 @@ fn expand_enum(
 /// Expands a [`fmt::Display`]-like derive macro for the provided union.
 fn expand_union(
     u: &syn::DataUnion,
-    (attrs, _, _, trait_name): ExpansionCtx<'_>,
+    (attrs, _, _, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let fmt = &attrs.fmt.as_ref().ok_or_else(|| {
         syn::Error::new(
             u.fields.span(),
-            format!(
-                "unions must have `#[{}(\"...\", ...)]` attribute",
-                trait_name_to_attribute_name(trait_name),
-            ),
+            format!("unions must have `#[{attr_name}(\"...\", ...)]` attribute"),
         )
     })?;
 
@@ -194,14 +201,14 @@ struct Expansion<'a> {
     /// Derive macro [`ContainerAttributes`].
     attrs: &'a ContainerAttributes,
 
-    /// Struct or enum [`Ident`].
-    ident: &'a Ident,
+    /// Struct or enum [`syn::Ident`].
+    ident: &'a syn::Ident,
 
     /// Struct or enum [`syn::Fields`].
     fields: &'a syn::Fields,
 
-    /// [`fmt`] trait [`Ident`].
-    trait_ident: &'a Ident,
+    /// [`fmt`] trait [`syn::Ident`].
+    trait_ident: &'a syn::Ident,
 }
 
 impl<'a> Expansion<'a> {

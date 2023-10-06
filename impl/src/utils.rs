@@ -19,6 +19,7 @@ use syn::{
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
@@ -28,8 +29,10 @@ pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
+    feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 pub(crate) use self::spanning::Spanning;
 
@@ -1323,111 +1326,18 @@ pub fn is_type_parameter_used_in_type(
     }
 }
 
-#[cfg(any(feature = "as_ref", feature = "from"))]
-pub(crate) mod forward {
-    use syn::{
-        parse::{Parse, ParseStream},
-        spanned::Spanned as _,
-    };
-
-    /// Representation of a `forward` attribute.
-    ///
-    /// ```rust,ignore
-    /// #[<attribute>(forward)]
-    /// ```
-    pub(crate) struct Attribute;
-
-    impl Parse for Attribute {
-        fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
-            match content.parse::<syn::Path>()? {
-                p if p.is_ident("forward") => Ok(Self),
-                p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
-            }
-        }
-    }
-}
-
-#[cfg(any(
-    feature = "as_ref",
-    feature = "debug",
-    feature = "from",
-    feature = "into",
-))]
-pub(crate) mod skip {
-    use syn::{
-        parse::{Parse, ParseStream},
-        spanned::Spanned as _,
-    };
-
-    use super::Spanning;
-
-    /// Representation of a `skip`/`ignore` attribute.
-    ///
-    /// ```rust,ignore
-    /// #[<attribute>(skip)]
-    /// #[<attribute>(ignore)]
-    /// ```
-    pub(crate) struct Attribute(&'static str);
-
-    impl Parse for Attribute {
-        fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
-            match content.parse::<syn::Path>()? {
-                p if p.is_ident("skip") => Ok(Self("skip")),
-                p if p.is_ident("ignore") => Ok(Self("ignore")),
-                p => Err(syn::Error::new(
-                    p.span(),
-                    "only `skip`/`ignore` allowed here",
-                )),
-            }
-        }
-    }
-
-    impl Attribute {
-        /// Returns the concrete name of this attribute (`skip` or `ignore`).
-        pub(crate) const fn name(&self) -> &'static str {
-            self.0
-        }
-
-        /// Parses an [`Attribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-        ///
-        /// [`Span`]: proc_macro2::Span
-        pub(crate) fn parse_attrs(
-            attrs: impl AsRef<[syn::Attribute]>,
-            attr_ident: &syn::Ident,
-        ) -> syn::Result<Option<Spanning<Self>>> {
-            attrs
-                .as_ref()
-                .iter()
-                .filter(|attr| attr.path().is_ident(attr_ident))
-                .try_fold(None, |mut attrs, attr| {
-                    let parsed = Spanning::new(attr.parse_args()?, attr.span());
-                    if attrs.replace(parsed).is_some() {
-                        Err(syn::Error::new(
-                            attr.span(),
-                            format!(
-                                "only single `#[{attr_ident}(skip)]`/`#[{attr_ident}(ignore)]` \
-                                 attribute is allowed here",
-                            ),
-                        ))
-                    } else {
-                        Ok(attrs)
-                    }
-                })
-        }
-    }
-}
-
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 mod either {
     use proc_macro2::TokenStream;
     use quote::ToTokens;
-    use syn::parse::{Parse, ParseStream};
+    use syn::parse::{discouraged::Speculative as _, Parse, ParseStream};
 
     /// Either [`Left`] or [`Right`].
     ///
@@ -1448,10 +1358,12 @@ mod either {
         R: Parse,
     {
         fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-            if L::parse(&input.fork()).is_ok() {
-                L::parse(input).map(Self::Left)
+            let ahead = input.fork();
+            if let Ok(left) = ahead.parse::<L>() {
+                input.advance_to(&ahead);
+                Ok(Self::Left(left))
             } else {
-                R::parse(input).map(Self::Right)
+                input.parse::<R>().map(Self::Right)
             }
         }
     }
@@ -1465,8 +1377,8 @@ mod either {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                Either::Left(left) => left.next(),
-                Either::Right(right) => right.next(),
+                Self::Left(left) => left.next(),
+                Self::Right(right) => right.next(),
             }
         }
     }
@@ -1478,8 +1390,8 @@ mod either {
     {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             match self {
-                Either::Left(l) => l.to_tokens(tokens),
-                Either::Right(r) => r.to_tokens(tokens),
+                Self::Left(l) => l.to_tokens(tokens),
+                Self::Right(r) => r.to_tokens(tokens),
             }
         }
     }
@@ -1488,8 +1400,10 @@ mod either {
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
+    feature = "display",
     feature = "from",
     feature = "into",
+    feature = "try_from",
 ))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
@@ -1565,14 +1479,676 @@ mod spanning {
     }
 }
 
+#[cfg(any(
+    feature = "as_ref",
+    feature = "debug",
+    feature = "display",
+    feature = "from",
+    feature = "into",
+    feature = "try_from",
+))]
+pub(crate) mod attr {
+    use std::any::Any;
+
+    use syn::{
+        parse::{Parse, ParseStream},
+        spanned::Spanned as _,
+    };
+
+    use super::{Either, Spanning};
+
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "debug",
+        feature = "display",
+        feature = "from",
+        feature = "into",
+    ))]
+    pub(crate) use self::skip::Skip;
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    pub(crate) use self::{
+        conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
+    };
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    pub(crate) use self::{empty::Empty, types::Types};
+    #[cfg(feature = "try_from")]
+    pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
+
+    /// [`Parse`]ing with additional state or metadata.
+    pub(crate) trait Parser {
+        /// [`Parse`]s an item, using additional state or metadata.
+        ///
+        /// Default implementation just calls [`Parse::parse()`] directly.
+        fn parse<T: Parse + Any>(&self, input: ParseStream<'_>) -> syn::Result<T> {
+            T::parse(input)
+        }
+    }
+
+    impl Parser for () {}
+
+    /// Parsing of a typed attribute from multiple [`syn::Attribute`]s.
+    pub(crate) trait ParseMultiple: Parse + Sized + 'static {
+        /// Parses this attribute from the provided single [`syn::Attribute`] with the provided
+        /// [`Parser`].
+        ///
+        /// Required, because with [`Parse`] we only able to parse inner attribute tokens, which
+        /// doesn't work for attributes with empty arguments, like `#[attr]`.
+        ///
+        /// Override this method if the default [`syn::Attribute::parse_args_with()`] is not enough.
+        fn parse_attr_with<P: Parser>(
+            attr: &syn::Attribute,
+            parser: &P,
+        ) -> syn::Result<Self> {
+            attr.parse_args_with(|ps: ParseStream<'_>| parser.parse(ps))
+        }
+
+        /// Merges multiple values of this attribute into a single one.
+        ///
+        /// Default implementation only errors, disallowing multiple values of the same attribute.
+        fn merge_attrs(
+            _prev: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Err(syn::Error::new(
+                new.span,
+                format!("only single `#[{name}(...)]` attribute is allowed here"),
+            ))
+        }
+
+        /// Parses this attribute from the provided multiple [`syn::Attribute`]s with the provided
+        /// [`Parser`], merging them, and preserving their [`Span`].
+        ///
+        /// [`Span`]: proc_macro2::Span
+        fn parse_attrs_with<P: Parser>(
+            attrs: impl AsRef<[syn::Attribute]>,
+            name: &syn::Ident,
+            parser: &P,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            attrs
+                .as_ref()
+                .iter()
+                .filter(|attr| attr.path().is_ident(name))
+                .try_fold(None, |merged, attr| {
+                    let parsed = Spanning::new(
+                        Self::parse_attr_with(attr, parser)?,
+                        attr.span(),
+                    );
+                    if let Some(prev) = merged {
+                        Self::merge_attrs(prev, parsed, name).map(Some)
+                    } else {
+                        Ok(Some(parsed))
+                    }
+                })
+        }
+
+        /// Parses this attribute from the provided multiple [`syn::Attribute`]s with the default
+        /// [`Parse`], merging them, and preserving their [`Span`].
+        ///
+        /// [`Span`]: proc_macro2::Span
+        fn parse_attrs(
+            attrs: impl AsRef<[syn::Attribute]>,
+            name: &syn::Ident,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            Self::parse_attrs_with(attrs, name, &())
+        }
+    }
+
+    impl<L: ParseMultiple, R: ParseMultiple> ParseMultiple for Either<L, R> {
+        fn parse_attr_with<P: Parser>(
+            attr: &syn::Attribute,
+            parser: &P,
+        ) -> syn::Result<Self> {
+            L::parse_attr_with(attr, parser)
+                .map(Self::Left)
+                .or_else(|_| R::parse_attr_with(attr, parser).map(Self::Right))
+        }
+
+        fn merge_attrs(
+            prev: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Ok(match (prev.item, new.item) {
+                (Self::Left(p), Self::Left(n)) => {
+                    L::merge_attrs(Spanning::new(p, prev.span), Spanning::new(n, new.span), name)?
+                        .map(Self::Left)
+                },
+                (Self::Right(p), Self::Right(n)) => {
+                    R::merge_attrs(Spanning::new(p, prev.span), Spanning::new(n, new.span), name)?
+                        .map(Self::Right)
+                },
+                _ => return Err(syn::Error::new(
+                    new.span,
+                    format!("only single kind of `#[{name}(...)]` attribute is allowed here"),
+                ))
+            })
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    mod empty {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+        };
+
+        use super::{ParseMultiple, Parser, Spanning};
+
+        /// Representation of an empty attribute, containing no arguments.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>]
+        /// ```
+        pub(crate) struct Empty;
+
+        impl Parse for Empty {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                if input.is_empty() {
+                    Ok(Self)
+                } else {
+                    Err(syn::Error::new(
+                        input.span(),
+                        "no attribute arguments allowed here",
+                    ))
+                }
+            }
+        }
+
+        impl ParseMultiple for Empty {
+            fn parse_attr_with<P: Parser>(
+                attr: &syn::Attribute,
+                _: &P,
+            ) -> syn::Result<Self> {
+                if matches!(attr.meta, syn::Meta::Path(_)) {
+                    Ok(Self)
+                } else {
+                    Err(syn::Error::new(
+                        attr.span(),
+                        "no attribute arguments allowed here",
+                    ))
+                }
+            }
+
+            fn merge_attrs(
+                _prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Err(syn::Error::new(
+                    new.span,
+                    format!("only single `#[{name}]` attribute is allowed here"),
+                ))
+            }
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod forward {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+        };
+
+        use super::ParseMultiple;
+
+        /// Representation of a `forward` attribute.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(forward)]
+        /// ```
+        pub(crate) struct Forward;
+
+        impl Parse for Forward {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                match input.parse::<syn::Path>()? {
+                    p if p.is_ident("forward") => Ok(Self),
+                    p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
+                }
+            }
+        }
+
+        impl ParseMultiple for Forward {}
+    }
+
+    #[cfg(feature = "try_from")]
+    mod repr_int {
+        use proc_macro2::Span;
+        use syn::parse::{Parse, ParseStream};
+
+        use super::{ParseMultiple, Parser, Spanning};
+
+        /// Representation of a [`#[repr(u/i*)]` Rust attribute][0].
+        ///
+        /// **NOTE**: Disregards any non-integer representation `#[repr]`s.
+        ///
+        /// ```rust,ignore
+        /// #[repr(<type>)]
+        /// ```
+        ///
+        /// [0]: https://doc.rust-lang.org/reference/type-layout.html#primitive-representations
+        #[derive(Default)]
+        pub(crate) struct ReprInt(Option<syn::Ident>);
+
+        impl ReprInt {
+            /// Returns [`syn::Ident`] of the primitive integer type behind this [`ReprInt`]
+            /// attribute.
+            ///
+            /// If there is no explicitly specified  primitive integer type, then returns a
+            /// [default `isize` discriminant][0].
+            ///
+            /// [0]: https://doc.rust-lang.org/reference/items/enumerations.html#discriminants
+            pub(crate) fn ty(&self) -> syn::Ident {
+                self.0
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_else(|| syn::Ident::new("isize", Span::call_site()))
+            }
+        }
+
+        impl Parse for ReprInt {
+            fn parse(_: ParseStream<'_>) -> syn::Result<Self> {
+                unreachable!("call `attr::ParseMultiple::parse_attr_with()` instead")
+            }
+        }
+
+        impl ParseMultiple for ReprInt {
+            fn parse_attr_with<P: Parser>(
+                attr: &syn::Attribute,
+                _: &P,
+            ) -> syn::Result<Self> {
+                let mut repr = None;
+                attr.parse_nested_meta(|meta| {
+                    if let Some(ident) = meta.path.get_ident() {
+                        if matches!(
+                            ident.to_string().as_str(),
+                            "u8" | "u16"
+                                | "u32"
+                                | "u64"
+                                | "u128"
+                                | "usize"
+                                | "i8"
+                                | "i16"
+                                | "i32"
+                                | "i64"
+                                | "i128"
+                                | "isize"
+                        ) {
+                            repr = Some(ident.clone());
+                            return Ok(());
+                        }
+                    }
+                    // Ignore all other attributes that could have a body, e.g. `align`.
+                    _ = meta.input.parse::<proc_macro2::Group>();
+                    Ok(())
+                })?;
+                Ok(Self(repr))
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                match (&prev.item.0, &new.item.0) {
+                    (Some(_), None) | (None, None) => Ok(prev),
+                    (None, Some(_)) => Ok(new),
+                    (Some(_), Some(_)) => Err(syn::Error::new(
+                        new.span,
+                        format!(
+                            "only single `#[{name}(u/i*)]` attribute is expected here",
+                        ),
+                    )),
+                }
+            }
+        }
+    }
+
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "debug",
+        feature = "display",
+        feature = "from",
+        feature = "into",
+    ))]
+    mod skip {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+        };
+
+        use super::{ParseMultiple, Spanning};
+
+        /// Representation of a `skip`/`ignore` attribute.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(skip)]
+        /// #[<attribute>(ignore)]
+        /// ```
+        pub(crate) struct Skip(&'static str);
+
+        impl Parse for Skip {
+            fn parse(content: ParseStream<'_>) -> syn::Result<Self> {
+                match content.parse::<syn::Path>()? {
+                    p if p.is_ident("skip") => Ok(Self("skip")),
+                    p if p.is_ident("ignore") => Ok(Self("ignore")),
+                    p => Err(syn::Error::new(
+                        p.span(),
+                        "only `skip`/`ignore` allowed here",
+                    )),
+                }
+            }
+        }
+
+        impl Skip {
+            /// Returns the concrete name of this attribute (`skip` or `ignore`).
+            pub(crate) const fn name(&self) -> &'static str {
+                self.0
+            }
+        }
+
+        impl ParseMultiple for Skip {
+            fn merge_attrs(
+                _: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Err(syn::Error::new(
+                    new.span,
+                    format!(
+                        "only single `#[{name}(skip)]`/`#[{name}(ignore)]` attribute is allowed \
+                         here",
+                    ),
+                ))
+            }
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    mod types {
+        use syn::{
+            parse::{Parse, ParseStream},
+            punctuated::Punctuated,
+            Token,
+        };
+
+        use super::{ParseMultiple, Spanning};
+
+        /// Representation of an attribute, containing a comma-separated list of types.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(<types>)]
+        /// ```
+        pub(crate) struct Types(pub(crate) Punctuated<syn::Type, Token![,]>);
+
+        impl Parse for Types {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                input
+                    .parse_terminated(syn::Type::parse, Token![,])
+                    .map(Self)
+            }
+        }
+
+        impl ParseMultiple for Types {
+            fn merge_attrs(
+                mut prev: Spanning<Self>,
+                new: Spanning<Self>,
+                _: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                prev.item.0.extend(new.item.0);
+                Ok(Spanning::new(
+                    prev.item,
+                    prev.span.join(new.span).unwrap_or(prev.span),
+                ))
+            }
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod conversion {
+        use syn::parse::{Parse, ParseStream};
+
+        use crate::utils::attr;
+
+        use super::{Either, ParseMultiple, Spanning};
+
+        /// Untyped analogue of a [`Conversion`], recreating its type structure via [`Either`].
+        ///
+        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impls to [`Either`].
+        type Untyped = Either<attr::Forward, attr::Types>;
+
+        /// Representation of an attribute, specifying which conversions should be generated:
+        /// either forwarded via a blanket impl, or direct for concrete specified types.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(forward)]
+        /// #[<attribute>(<types>)]
+        /// ```
+        pub(crate) enum Conversion {
+            Forward(attr::Forward),
+            Types(attr::Types),
+        }
+
+        impl From<Untyped> for Conversion {
+            fn from(v: Untyped) -> Self {
+                match v {
+                    Untyped::Left(f) => Self::Forward(f),
+                    Untyped::Right(t) => Self::Types(t),
+                }
+            }
+        }
+        impl From<Conversion> for Untyped {
+            fn from(v: Conversion) -> Self {
+                match v {
+                    Conversion::Forward(f) => Self::Left(f),
+                    Conversion::Types(t) => Self::Right(t),
+                }
+            }
+        }
+
+        impl Parse for Conversion {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                Untyped::parse(input).map(Self::from)
+            }
+        }
+
+        impl ParseMultiple for Conversion {
+            fn parse_attr_with<P: attr::Parser>(
+                attr: &syn::Attribute,
+                parser: &P,
+            ) -> syn::Result<Self> {
+                Untyped::parse_attr_with(attr, parser).map(Self::from)
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Untyped::merge_attrs(prev.map(Into::into), new.map(Into::into), name)
+                    .map(|v| v.map(Self::from))
+            }
+        }
+    }
+
+    #[cfg(any(feature = "as_ref", feature = "from"))]
+    mod field_conversion {
+        use syn::parse::{Parse, ParseStream};
+
+        use crate::utils::attr;
+
+        use super::{Either, ParseMultiple, Spanning};
+
+        /// Untyped analogue of a [`FieldConversion`], recreating its type structure via [`Either`].
+        ///
+        /// Used to piggyback [`Parse`] and [`ParseMultiple`] impls to [`Either`].
+        type Untyped =
+            Either<attr::Empty, Either<attr::Skip, Either<attr::Forward, attr::Types>>>;
+
+        /// Representation of an attribute, specifying which conversions should be generated:
+        /// either forwarded via a blanket impl, or direct for concrete specified types.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>]
+        /// #[<attribute>(skip)] #[<attribute>(ignore)]
+        /// #[<attribute>(forward)]
+        /// #[<attribute>(<types>)]
+        /// ```
+        pub(crate) enum FieldConversion {
+            Empty(attr::Empty),
+            Skip(attr::Skip),
+            Forward(attr::Forward),
+            Types(attr::Types),
+        }
+
+        impl From<Untyped> for FieldConversion {
+            fn from(v: Untyped) -> Self {
+                match v {
+                    Untyped::Left(e) => Self::Empty(e),
+                    Untyped::Right(Either::Left(s)) => Self::Skip(s),
+                    Untyped::Right(Either::Right(Either::Left(f))) => Self::Forward(f),
+                    Untyped::Right(Either::Right(Either::Right(t))) => Self::Types(t),
+                }
+            }
+        }
+
+        impl From<FieldConversion> for Untyped {
+            fn from(v: FieldConversion) -> Self {
+                match v {
+                    FieldConversion::Empty(e) => Self::Left(e),
+                    FieldConversion::Skip(s) => Self::Right(Either::Left(s)),
+                    FieldConversion::Forward(f) => {
+                        Self::Right(Either::Right(Either::Left(f)))
+                    }
+                    FieldConversion::Types(t) => {
+                        Self::Right(Either::Right(Either::Right(t)))
+                    }
+                }
+            }
+        }
+
+        impl From<attr::Conversion> for FieldConversion {
+            fn from(v: attr::Conversion) -> Self {
+                match v {
+                    attr::Conversion::Forward(f) => Self::Forward(f),
+                    attr::Conversion::Types(t) => Self::Types(t),
+                }
+            }
+        }
+
+        impl From<FieldConversion> for Option<attr::Conversion> {
+            fn from(v: FieldConversion) -> Self {
+                match v {
+                    FieldConversion::Forward(f) => Some(attr::Conversion::Forward(f)),
+                    FieldConversion::Types(t) => Some(attr::Conversion::Types(t)),
+                    FieldConversion::Empty(_) | FieldConversion::Skip(_) => None,
+                }
+            }
+        }
+
+        impl Parse for FieldConversion {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                Untyped::parse(input).map(Self::from)
+            }
+        }
+
+        impl ParseMultiple for FieldConversion {
+            fn parse_attr_with<P: attr::Parser>(
+                attr: &syn::Attribute,
+                parser: &P,
+            ) -> syn::Result<Self> {
+                Untyped::parse_attr_with(attr, parser).map(Self::from)
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Untyped::merge_attrs(prev.map(Into::into), new.map(Into::into), name)
+                    .map(|v| v.map(Self::from))
+            }
+        }
+    }
+
+    #[cfg(feature = "try_from")]
+    mod repr_conversion {
+        use syn::parse::{Parse, ParseStream};
+
+        use crate::utils::attr;
+
+        use super::{ParseMultiple, Spanning};
+
+        /// Representation of an attribute, specifying which `repr`-conversions should be generated:
+        /// either direct into a discriminant, or for concrete specified types forwarding from a
+        /// discriminant.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(repr)]
+        /// #[<attribute>(repr(<types>))]
+        /// ```
+        pub(crate) enum ReprConversion {
+            Discriminant(attr::Empty),
+            Types(attr::Types),
+        }
+
+        impl Parse for ReprConversion {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let prefix = syn::Ident::parse(input)?;
+                if prefix != "repr" {
+                    return Err(syn::Error::new(
+                        prefix.span(),
+                        "expected `repr` argument here",
+                    ));
+                }
+                if input.is_empty() {
+                    Ok(Self::Discriminant(attr::Empty))
+                } else {
+                    let inner;
+                    syn::parenthesized!(inner in input);
+                    Ok(Self::Types(attr::Types::parse(&inner)?))
+                }
+            }
+        }
+
+        impl ParseMultiple for ReprConversion {
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Ok(match (prev.item, new.item) {
+                    (Self::Discriminant(_), Self::Discriminant(_)) => {
+                        return Err(syn::Error::new(
+                            new.span,
+                            format!("only single `#[{name}(repr)]` attribute is allowed here"),
+                        ))
+                    },
+                    (Self::Types(p), Self::Types(n)) => {
+                        attr::Types::merge_attrs(
+                            Spanning::new(p, prev.span),
+                            Spanning::new(n, new.span),
+                            name,
+                        )?.map(Self::Types)
+                    },
+                    _ => return Err(syn::Error::new(
+                        new.span,
+                        format!(
+                            "only single kind of `#[{name}(repr(...))]` attribute is allowed here",
+                        ),
+                    ))
+                })
+            }
+        }
+    }
+}
+
 #[cfg(any(feature = "from", feature = "into"))]
 mod fields_ext {
     use std::{cmp, iter};
 
-    use proc_macro2::TokenStream;
+    use quote::ToTokens as _;
     use syn::{punctuated, spanned::Spanned as _};
-
-    use crate::parsing;
 
     use super::Either;
 
@@ -1599,13 +2175,13 @@ mod fields_ext {
         /// Validates the provided [`parsing::Type`] against these [`syn::Fields`].
         fn validate_type<'t>(
             &self,
-            ty: &'t parsing::Type,
+            ty: &'t syn::Type,
         ) -> syn::Result<
-            Either<punctuated::Iter<'t, TokenStream>, iter::Once<&'t TokenStream>>,
+            Either<punctuated::Iter<'t, syn::Type>, iter::Once<&'t syn::Type>>,
         > {
             match ty {
-                parsing::Type::Tuple { items, .. } if self.len() > 1 => {
-                    match self.len().cmp(&items.len()) {
+                syn::Type::Tuple(syn::TypeTuple { elems, .. }) if self.len() > 1 => {
+                    match self.len().cmp(&elems.len()) {
                         cmp::Ordering::Greater => {
                             return Err(syn::Error::new(
                                 ty.span(),
@@ -1613,18 +2189,18 @@ mod fields_ext {
                                     "wrong tuple length: expected {}, found {}. \
                                      Consider adding {} more type{}: `({})`",
                                     self.len(),
-                                    items.len(),
-                                    self.len() - items.len(),
-                                    if self.len() - items.len() > 1 {
+                                    elems.len(),
+                                    self.len() - elems.len(),
+                                    if self.len() - elems.len() > 1 {
                                         "s"
                                     } else {
                                         ""
                                     },
-                                    items
+                                    elems
                                         .iter()
-                                        .map(|item| item.to_string())
+                                        .map(|ty| ty.into_token_stream().to_string())
                                         .chain(
-                                            (0..(self.len() - items.len()))
+                                            (0..(self.len() - elems.len()))
                                                 .map(|_| "_".to_string())
                                         )
                                         .collect::<Vec<_>>()
@@ -1639,17 +2215,17 @@ mod fields_ext {
                                     "wrong tuple length: expected {}, found {}. \
                                      Consider removing last {} type{}: `({})`",
                                     self.len(),
-                                    items.len(),
-                                    items.len() - self.len(),
-                                    if items.len() - self.len() > 1 {
+                                    elems.len(),
+                                    elems.len() - self.len(),
+                                    if elems.len() - self.len() > 1 {
                                         "s"
                                     } else {
                                         ""
                                     },
-                                    items
+                                    elems
                                         .iter()
                                         .take(self.len())
-                                        .map(ToString::to_string)
+                                        .map(|ty| ty.into_token_stream().to_string())
                                         .collect::<Vec<_>>()
                                         .join(", "),
                                 ),
@@ -1658,25 +2234,26 @@ mod fields_ext {
                         cmp::Ordering::Equal => {}
                     }
                 }
-                parsing::Type::Other(other) if self.len() > 1 => {
-                    if self.len() > 1 {
-                        return Err(syn::Error::new(
-                            other.span(),
-                            format!(
-                                "expected tuple: `({other}, {})`",
-                                (0..(self.len() - 1))
-                                    .map(|_| "_")
-                                    .collect::<Vec<_>>()
-                                    .join(", "),
-                            ),
-                        ));
-                    }
+                other if self.len() > 1 => {
+                    return Err(syn::Error::new(
+                        other.span(),
+                        format!(
+                            "expected tuple: `({}, {})`",
+                            other.into_token_stream(),
+                            (0..(self.len() - 1))
+                                .map(|_| "_")
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                        ),
+                    ));
                 }
-                parsing::Type::Tuple { .. } | parsing::Type::Other(_) => {}
+                _ => {}
             }
             Ok(match ty {
-                parsing::Type::Tuple { items, .. } => Either::Left(items.iter()),
-                parsing::Type::Other(other) => Either::Right(iter::once(other)),
+                syn::Type::Tuple(syn::TypeTuple { elems, .. }) => {
+                    Either::Left(elems.iter())
+                }
+                other => Either::Right(iter::once(other)),
             })
         }
     }

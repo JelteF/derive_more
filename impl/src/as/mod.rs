@@ -7,22 +7,19 @@ use std::{borrow::Cow, iter};
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{
-    parse::{discouraged::Speculative as _, Parse, ParseStream},
-    parse_quote,
-    punctuated::Punctuated,
-    spanned::Spanned,
-    Token,
-};
+use syn::{parse_quote, spanned::Spanned, Token};
 
-use crate::utils::{forward, skip, Either, GenericsSearch, Spanning};
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    Either, GenericsSearch, Spanning,
+};
 
 /// Expands an [`AsRef`]/[`AsMut`] derive macro.
 pub fn expand(
     input: &syn::DeriveInput,
     trait_info: ExpansionCtx<'_>,
 ) -> syn::Result<TokenStream> {
-    let (trait_ident, attr_ident, _) = trait_info;
+    let (trait_ident, attr_name, _) = trait_info;
 
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
@@ -37,7 +34,7 @@ pub fn expand(
     }?;
 
     let expansions = if let Some(attr) =
-        StructAttribute::parse_attrs(&input.attrs, attr_ident)?
+        StructAttribute::parse_attrs(&input.attrs, attr_name)?
     {
         if data.fields.len() != 1 {
             return Err(syn::Error::new(
@@ -47,17 +44,17 @@ pub fn expand(
                     data.fields.span()
                 },
                 format!(
-                    "`#[{attr_ident}(...)]` attribute can only be placed on structs with exactly \
+                    "`#[{attr_name}(...)]` attribute can only be placed on structs with exactly \
                      one field",
                 ),
             ));
         }
 
         let field = data.fields.iter().next().unwrap();
-        if FieldAttribute::parse_attrs(&field.attrs, attr_ident)?.is_some() {
+        if FieldAttribute::parse_attrs(&field.attrs, attr_name)?.is_some() {
             return Err(syn::Error::new(
                 field.span(),
-                format!("`#[{attr_ident}(...)]` cannot be placed on both struct and its field"),
+                format!("`#[{attr_name}(...)]` cannot be placed on both struct and its field"),
             ));
         }
 
@@ -73,7 +70,7 @@ pub fn expand(
         let attrs = data
             .fields
             .iter()
-            .map(|field| FieldAttribute::parse_attrs(&field.attrs, attr_ident))
+            .map(|field| FieldAttribute::parse_attrs(&field.attrs, attr_name))
             .collect::<syn::Result<Vec<_>>>()?;
 
         let present_attrs = attrs.iter().filter_map(Option::as_ref).collect::<Vec<_>>();
@@ -93,8 +90,8 @@ pub fn expand(
                 return Err(syn::Error::new(
                     skip_attr.span(),
                     format!(
-                        "`#[{attr_ident}({})]` cannot be used in the same struct with other \
-                         `#[{attr_ident}(...)]` attributes",
+                        "`#[{attr_name}({})]` cannot be used in the same struct with other \
+                         `#[{attr_name}(...)]` attributes",
                         skip_attr.name(),
                     ),
                 ));
@@ -123,16 +120,18 @@ pub fn expand(
                 .enumerate()
                 .zip(attrs)
                 .filter_map(|((i, field), attr)| match attr.map(Spanning::into_inner) {
-                    Some(attr @ (FieldAttribute::Empty | FieldAttribute::Args(_))) => {
-                        Some(Expansion {
-                            trait_info,
-                            ident: &input.ident,
-                            generics: &input.generics,
-                            field,
-                            field_index: i,
-                            conversions: attr.into_conversion_attribute(),
-                        })
-                    }
+                    Some(
+                        attr @ (FieldAttribute::Empty(_)
+                        | FieldAttribute::Forward(_)
+                        | FieldAttribute::Types(_)),
+                    ) => Some(Expansion {
+                        trait_info,
+                        ident: &input.ident,
+                        generics: &input.generics,
+                        field,
+                        field_index: i,
+                        conversions: attr.into(),
+                    }),
                     Some(FieldAttribute::Skip(_)) => unreachable!(),
                     None => None,
                 })
@@ -170,7 +169,7 @@ struct Expansion<'a> {
     field_index: usize,
 
     /// Attribute specifying which conversions should be generated.
-    conversions: Option<ConversionAttribute>,
+    conversions: Option<attr::Conversion>,
 }
 
 impl<'a> ToTokens for Expansion<'a> {
@@ -198,14 +197,14 @@ impl<'a> ToTokens for Expansion<'a> {
         let field_contains_generics = generics_search.any_in(field_ty);
 
         let is_blanket =
-            matches!(&self.conversions, Some(ConversionAttribute::Forward(_)));
+            matches!(&self.conversions, Some(attr::Conversion::Forward(_)));
 
         let return_tys = match &self.conversions {
-            Some(ConversionAttribute::Forward(_)) => {
+            Some(attr::Conversion::Forward(_)) => {
                 Either::Left(iter::once(Cow::Owned(parse_quote! { __AsT })))
             }
-            Some(ConversionAttribute::Types(tys)) => {
-                Either::Right(tys.iter().map(Cow::Borrowed))
+            Some(attr::Conversion::Types(tys)) => {
+                Either::Right(tys.0.iter().map(Cow::Borrowed))
             }
             None => Either::Left(iter::once(Cow::Borrowed(field_ty))),
         };
@@ -294,159 +293,14 @@ impl<'a> ToTokens for Expansion<'a> {
 /// #[as_ref(forward)]
 /// #[as_ref(<types>)]
 /// ```
-type StructAttribute = ConversionAttribute;
-
-impl StructAttribute {
-    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-    ///
-    /// [`Span`]: proc_macro2::Span
-    fn parse_attrs(
-        attrs: &[syn::Attribute],
-        attr_ident: &syn::Ident,
-    ) -> syn::Result<Option<Spanning<Self>>> {
-        attrs.iter().filter(|attr| attr.path().is_ident(attr_ident))
-            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
-                let parsed: Spanning<Self> = Spanning::new(attr.parse_args()?, attr.span());
-
-                if let Some(prev) = attrs {
-                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    if let Some(new) = prev.item.merge(parsed.item) {
-                        Ok(Some(Spanning::new(new, span)))
-                    } else {
-                        Err(syn::Error::new(
-                            parsed.span,
-                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here"),
-                        ))
-                    }
-                } else {
-                    Ok(Some(parsed))
-                }
-            })
-    }
-}
+type StructAttribute = attr::Conversion;
 
 /// Representation of an [`AsRef`]/[`AsMut`] derive macro field attribute.
 ///
 /// ```rust,ignore
 /// #[as_ref]
-/// #[as_ref(forward)]
-/// #[as_ref(<types>)]
 /// #[as_ref(skip)] #[as_ref(ignore)]
-/// ```
-enum FieldAttribute {
-    Empty,
-    Args(ConversionAttribute),
-    Skip(skip::Attribute),
-}
-
-impl Parse for FieldAttribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        if input.is_empty() {
-            return Ok(Self::Empty);
-        }
-
-        let ahead = input.fork();
-        if let Ok(attr) = ahead.parse::<skip::Attribute>() {
-            input.advance_to(&ahead);
-            return Ok(Self::Skip(attr));
-        }
-
-        input.parse::<ConversionAttribute>().map(Self::Args)
-    }
-}
-
-impl FieldAttribute {
-    /// Parses a [`FieldAttribute`] from the provided [`syn::Attribute`]s, preserving its [`Span`].
-    ///
-    /// [`Span`]: proc_macro2::Span
-    fn parse_attrs(
-        attrs: &[syn::Attribute],
-        attr_ident: &syn::Ident,
-    ) -> syn::Result<Option<Spanning<Self>>> {
-        attrs
-            .iter()
-            .filter(|attr| attr.path().is_ident(attr_ident))
-            .try_fold(None, |attrs: Option<Spanning<Self>>, attr| {
-                let parsed = Spanning::new(
-                    if matches!(attr.meta, syn::Meta::Path(_)) {
-                        Self::Empty
-                    } else {
-                        attr.parse_args()?
-                    },
-                    attr.span(),
-                );
-
-                if let Some(prev) = attrs {
-                    let span = prev.span.join(parsed.span).unwrap_or(prev.span);
-                    if let Some(new) = prev.item.merge(parsed.item) {
-                        Ok(Some(Spanning::new(new, span)))
-                    } else {
-                        Err(syn::Error::new(
-                            parsed.span,
-                            format!("only single `#[{attr_ident}(...)]` attribute is allowed here")
-                        ))
-                    }
-                } else {
-                    Ok(Some(parsed))
-                }
-            })
-    }
-
-    /// Extracts a [`ConversionAttribute`], if possible.
-    fn into_conversion_attribute(self) -> Option<ConversionAttribute> {
-        match self {
-            Self::Args(args) => Some(args),
-            Self::Empty | Self::Skip(_) => None,
-        }
-    }
-
-    /// Merges two [`FieldAttribute`]s, if possible
-    fn merge(self, other: Self) -> Option<Self> {
-        if let (Self::Args(args), Self::Args(more)) = (self, other) {
-            args.merge(more).map(Self::Args)
-        } else {
-            None
-        }
-    }
-}
-
-/// Representation of an attribute, specifying which conversions should be generated.
-///
-/// ```rust,ignore
 /// #[as_ref(forward)]
 /// #[as_ref(<types>)]
 /// ```
-enum ConversionAttribute {
-    /// Blanket impl, fully forwarding implementation to the one of the field type.
-    Forward(forward::Attribute),
-
-    /// Concrete specified types, which can include both the type of the field itself, and types for
-    /// which the field type implements [`AsRef`].
-    Types(Punctuated<syn::Type, Token![,]>),
-}
-
-impl Parse for ConversionAttribute {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let ahead = input.fork();
-        if let Ok(attr) = ahead.parse::<forward::Attribute>() {
-            input.advance_to(&ahead);
-            return Ok(Self::Forward(attr));
-        }
-
-        input
-            .parse_terminated(syn::Type::parse, Token![,])
-            .map(Self::Types)
-    }
-}
-
-impl ConversionAttribute {
-    /// Merges two [`ConversionAttribute`]s, if possible.
-    fn merge(self, other: Self) -> Option<Self> {
-        if let (Self::Types(mut tys), Self::Types(more)) = (self, other) {
-            tys.extend(more);
-            Some(Self::Types(tys))
-        } else {
-            None
-        }
-    }
-}
+type FieldAttribute = attr::FieldConversion;
