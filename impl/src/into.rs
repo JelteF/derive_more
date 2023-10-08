@@ -21,6 +21,8 @@ use crate::utils::{
     polyfill, Either, FieldsExt, Spanning,
 };
 
+use self::{field_attr::FieldAttribute, struct_attr::StructAttribute};
+
 /// Expands an [`Into`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     let attr_name = format_ident!("into");
@@ -109,146 +111,156 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     expansions.into_iter().map(Expansion::expand).collect()
 }
 
-/// Representation of an [`Into`] derive macro struct container attribute.
-///
-/// ```rust,ignore
-/// #[into]
-/// #[into(<types>)]
-/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
-/// ```
-#[derive(Debug, Default)]
-struct StructAttribute {
-    args: IntoArgs,
-}
+mod struct_attr {
+    use super::IntoArgs;
+    use crate::utils::{attr, Either, Spanning};
+    use syn::parse::{Parse, ParseStream};
 
-impl StructAttribute {
-    fn new(args: IntoArgs) -> Self {
-        Self { args }
+    /// Representation of an [`Into`] derive macro struct container attribute.
+    ///
+    /// ```rust,ignore
+    /// #[into]
+    /// #[into(<types>)]
+    /// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
+    /// ```
+    #[derive(Debug, Default)]
+    pub(super) struct StructAttribute {
+        pub(super) args: IntoArgs,
     }
 
-    fn into_inner(self) -> IntoArgs {
-        self.args
-    }
-}
+    impl StructAttribute {
+        pub(super) fn new(args: IntoArgs) -> Self {
+            Self { args }
+        }
 
-impl From<Either<attr::Empty, IntoArgs>> for StructAttribute {
-    fn from(value: Either<attr::Empty, IntoArgs>) -> Self {
-        Self::new(match value {
-            Either::Left(_) => IntoArgs::all_owned(),
-            Either::Right(args) => args,
-        })
-    }
-}
-
-impl Parse for StructAttribute {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        input
-            .parse::<Either<attr::Empty, IntoArgs>>()
-            .map(Self::from)
-    }
-}
-
-impl attr::ParseMultiple for StructAttribute {
-    fn parse_attr_with<P: attr::Parser>(
-        attr: &syn::Attribute,
-        parser: &P,
-    ) -> syn::Result<Self> {
-        <Either<attr::Empty, IntoArgs>>::parse_attr_with(attr, parser).map(Self::from)
+        fn into_inner(self) -> IntoArgs {
+            self.args
+        }
     }
 
-    fn merge_attrs(
-        prev: Spanning<Self>,
-        new: Spanning<Self>,
-        name: &syn::Ident,
-    ) -> syn::Result<Spanning<Self>> {
-        Ok(IntoArgs::merge_attrs(
-            prev.map(Self::into_inner),
-            new.map(Self::into_inner),
-            name,
-        )?
-        .map(Self::new))
+    type UntypedParse = Either<attr::Empty, IntoArgs>;
+
+    impl From<UntypedParse> for StructAttribute {
+        fn from(value: Either<attr::Empty, IntoArgs>) -> Self {
+            Self::new(match value {
+                Either::Left(_) => IntoArgs::all_owned(),
+                Either::Right(args) => args,
+            })
+        }
     }
-}
 
-/// Representation of an [`Into`] derive macro field attribute.
-///
-/// ```rust,ignore
-/// #[into]
-/// #[into(skip)] #[into(ignore)]
-/// #[into(<types>)]
-/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
-/// ```
-#[derive(Default)]
-struct FieldAttribute {
-    skip: Option<attr::Skip>,
-    args: Option<IntoArgs>,
-}
+    impl Parse for StructAttribute {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            input.parse::<UntypedParse>().map(Self::from)
+        }
+    }
 
-impl From<Either<attr::Skip, Either<attr::Empty, IntoArgs>>> for FieldAttribute {
-    fn from(value: Either<attr::Skip, Either<attr::Empty, IntoArgs>>) -> Self {
-        match value {
-            Either::Left(skip) => Self {
-                skip: Some(skip),
-                args: None,
-            },
-            Either::Right(args) => Self {
-                skip: None,
-                args: Some(match args {
-                    Either::Left(_) => IntoArgs::all_owned(),
-                    Either::Right(args) => args,
-                }),
-            },
+    impl attr::ParseMultiple for StructAttribute {
+        fn parse_attr_with<P: attr::Parser>(
+            attr: &syn::Attribute,
+            parser: &P,
+        ) -> syn::Result<Self> {
+            <Either<attr::Empty, IntoArgs>>::parse_attr_with(attr, parser)
+                .map(Self::from)
+        }
+
+        fn merge_attrs(
+            prev: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Ok(IntoArgs::merge_attrs(
+                prev.map(Self::into_inner),
+                new.map(Self::into_inner),
+                name,
+            )?
+            .map(Self::new))
         }
     }
 }
 
-impl Parse for FieldAttribute {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        input
-            .parse::<Either<attr::Skip, Either<attr::Empty, IntoArgs>>>()
-            .map(Self::from)
-    }
-}
+mod field_attr {
+    use super::IntoArgs;
+    use crate::utils::{attr, Either, Spanning};
+    use syn::parse::{Parse, ParseStream};
 
-impl From<FieldAttribute> for attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>> {
-    fn from(value: FieldAttribute) -> Self {
-        attr::Pair::new(attr::Alt::new(value.skip), attr::Alt::new(value.args))
+    /// Representation of an [`Into`] derive macro field attribute.
+    ///
+    /// ```rust,ignore
+    /// #[into]
+    /// #[into(skip)] #[into(ignore)]
+    /// #[into(<types>)]
+    /// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
+    /// ```
+    #[derive(Default)]
+    pub(super) struct FieldAttribute {
+        pub(super) skip: Option<attr::Skip>,
+        pub(super) args: Option<IntoArgs>,
     }
-}
 
-impl From<attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>> for FieldAttribute {
-    fn from(value: attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>) -> Self {
-        Self {
-            skip: value.left.into_inner(),
-            args: value.right.into_inner(),
+    type UntypedParse = Either<attr::Skip, Either<attr::Empty, IntoArgs>>;
+
+    impl From<UntypedParse> for FieldAttribute {
+        fn from(value: UntypedParse) -> Self {
+            match value {
+                Either::Left(skip) => Self {
+                    skip: Some(skip),
+                    args: None,
+                },
+                Either::Right(args) => Self {
+                    skip: None,
+                    args: Some(match args {
+                        Either::Left(_) => IntoArgs::all_owned(),
+                        Either::Right(args) => args,
+                    }),
+                },
+            }
         }
     }
-}
 
-impl attr::ParseMultiple for FieldAttribute {
-    fn parse_attr_with<P: attr::Parser>(
-        attr: &syn::Attribute,
-        parser: &P,
-    ) -> syn::Result<Self> {
-        <Either<attr::Skip, Either<attr::Empty, IntoArgs>>>::parse_attr_with(
-            attr, parser,
-        )
-        .map(Self::from)
+    impl Parse for FieldAttribute {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            input.parse::<UntypedParse>().map(Self::from)
+        }
     }
 
-    fn merge_attrs(
-        prev: Spanning<Self>,
-        new: Spanning<Self>,
-        name: &syn::Ident,
-    ) -> syn::Result<Spanning<Self>> {
-        Ok(
-            <attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>>::merge_attrs(
+    type UntypedMerge = attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>;
+
+    impl From<FieldAttribute> for UntypedMerge {
+        fn from(value: FieldAttribute) -> Self {
+            attr::Pair::new(attr::Alt::new(value.skip), attr::Alt::new(value.args))
+        }
+    }
+
+    impl From<UntypedMerge> for FieldAttribute {
+        fn from(value: UntypedMerge) -> Self {
+            Self {
+                skip: value.left.into_inner(),
+                args: value.right.into_inner(),
+            }
+        }
+    }
+
+    impl attr::ParseMultiple for FieldAttribute {
+        fn parse_attr_with<P: attr::Parser>(
+            attr: &syn::Attribute,
+            parser: &P,
+        ) -> syn::Result<Self> {
+            UntypedParse::parse_attr_with(attr, parser).map(Self::from)
+        }
+
+        fn merge_attrs(
+            prev: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Ok(UntypedMerge::merge_attrs(
                 prev.map(Self::into),
                 new.map(Self::into),
                 name,
             )?
-            .map(Self::from),
-        )
+            .map(Self::from))
+        }
     }
 }
 
