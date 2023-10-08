@@ -127,9 +127,20 @@ impl StructAttribute {
     }
 }
 
+impl From<Either<attr::Empty, IntoArgs>> for StructAttribute {
+    fn from(value: Either<attr::Empty, IntoArgs>) -> Self {
+        Self::new(match value {
+            Either::Left(_) => IntoArgs::all_owned(),
+            Either::Right(args) => args,
+        })
+    }
+}
+
 impl Parse for StructAttribute {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        todo!()
+        input
+            .parse::<Either<attr::Empty, IntoArgs>>()
+            .map(Self::from)
     }
 }
 
@@ -149,13 +160,63 @@ struct FieldAttribute {
     args: Option<IntoArgs>,
 }
 
-impl Parse for FieldAttribute {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        todo!()
+impl From<Either<attr::Skip, Either<attr::Empty, IntoArgs>>> for FieldAttribute {
+    fn from(value: Either<attr::Skip, Either<attr::Empty, IntoArgs>>) -> Self {
+        match value {
+            Either::Left(skip) => Self {
+                skip: Some(skip),
+                args: None,
+            },
+            Either::Right(args) => Self {
+                skip: None,
+                args: Some(match args {
+                    Either::Left(_) => IntoArgs::all_owned(),
+                    Either::Right(args) => args,
+                }),
+            },
+        }
     }
 }
 
-impl attr::ParseMultiple for FieldAttribute {}
+impl Parse for FieldAttribute {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        input
+            .parse::<Either<attr::Skip, Either<attr::Empty, IntoArgs>>>()
+            .map(Self::from)
+    }
+}
+
+impl From<FieldAttribute> for attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>> {
+    fn from(value: FieldAttribute) -> Self {
+        attr::Pair::new(attr::Alt::new(value.skip), attr::Alt::new(value.args))
+    }
+}
+
+impl From<attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>> for FieldAttribute {
+    fn from(value: attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>) -> Self {
+        Self {
+            skip: value.left.into_inner(),
+            args: value.right.into_inner(),
+        }
+    }
+}
+
+impl attr::ParseMultiple for FieldAttribute {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        Ok(
+            <attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>>::merge_attrs(
+                prev.map(Self::into),
+                new.map(Self::into),
+                name,
+            )?
+            .map(Self::from),
+        )
+    }
+}
 
 /// A set of type arguments for a set of fields
 ///
