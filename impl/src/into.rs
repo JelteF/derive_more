@@ -138,6 +138,9 @@ mod struct_attr {
         }
     }
 
+    /// Untyped analogue of a [`StructAttribute`], recreating its type structure via [`Either`].
+    ///
+    /// Used to piggyback [`Parse::parse`] and [`ParseMultiple::parse_attr_with`] impls to [`Either`].
     type UntypedParse = Either<attr::Empty, IntoArgs>;
 
     impl From<UntypedParse> for StructAttribute {
@@ -198,6 +201,9 @@ mod field_attr {
         pub(super) args: Option<IntoArgs>,
     }
 
+    /// Untyped analogue of a [`StructAttribute`], recreating its type structure via [`Either`].
+    ///
+    /// Used to piggyback [`Parse::parse`] and [`ParseMultiple::parse_attr_with`] impls to [`Either`].
     type UntypedParse = Either<attr::Skip, Either<attr::Empty, IntoArgs>>;
 
     impl From<UntypedParse> for FieldAttribute {
@@ -224,6 +230,9 @@ mod field_attr {
         }
     }
 
+    /// Untyped analogue of a [`FieldAttribute`], recreating its type structure via [`attr::Pair`] and [`attr::Alt`]
+    ///
+    /// Used to piggyback  [`ParseMultiple::merge_attrs`] impl to [`attr::Pair`] and [`attr::Alt`]
     type UntypedMerge = attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>;
 
     impl From<FieldAttribute> for UntypedMerge {

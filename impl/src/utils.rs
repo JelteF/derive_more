@@ -1514,6 +1514,8 @@ pub(crate) mod attr {
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     pub(crate) use self::types::Types;
+    #[cfg(feature = "into")]
+    pub(crate) use self::{alt::Alt, pair::Pair};
     #[cfg(any(feature = "as_ref", feature = "from"))]
     pub(crate) use self::{
         conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
@@ -1633,105 +1635,143 @@ pub(crate) mod attr {
         }
     }
 
-    pub(crate) struct Alt<T>(Option<T>);
+    #[cfg(feature = "into")]
+    mod alt {
+        use super::{ParseMultiple, Parser, Spanning};
+        use syn::parse::{Parse, ParseStream};
 
-    impl<T> Alt<T> {
-        pub(crate) fn new(value: Option<T>) -> Self {
-            Self(value)
+        /// Newtype for parsing and merging optional values
+        pub(crate) struct Alt<T>(Option<T>);
+
+        impl<T> Alt<T> {
+            pub(crate) fn new(value: Option<T>) -> Self {
+                Self(value)
+            }
+
+            pub(crate) fn into_inner(self) -> Option<T> {
+                self.0
+            }
         }
 
-        pub(crate) fn into_inner(self) -> Option<T> {
-            self.0
+        impl<T> Default for Alt<T> {
+            fn default() -> Self {
+                Self(None)
+            }
+        }
+
+        impl<T: Parse> Parse for Alt<T> {
+            fn parse(input: ParseStream) -> syn::Result<Self> {
+                Ok(Alt(input.parse().ok()))
+            }
+        }
+
+        impl<T: ParseMultiple> ParseMultiple for Alt<T> {
+            fn parse_attr_with<P: Parser>(
+                attr: &syn::Attribute,
+                parser: &P,
+            ) -> syn::Result<Self> {
+                Ok(Alt(T::parse_attr_with(attr, parser).ok()))
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                Ok(match (prev.item.0, new.item.0) {
+                    (Some(p), Some(n)) => T::merge_attrs(
+                        Spanning::new(p, prev.span),
+                        Spanning::new(n, new.span),
+                        name,
+                    )?
+                    .map(|value| Alt(Some(value))),
+                    (Some(p), None) => Spanning::new(Alt(Some(p)), prev.span),
+                    (None, Some(n)) => Spanning::new(Alt(Some(n)), new.span),
+                    (None, None) => Spanning::new(
+                        Alt(None),
+                        prev.span.join(new.span).unwrap_or(prev.span),
+                    ),
+                })
+            }
         }
     }
 
-    impl<T> Default for Alt<T> {
-        fn default() -> Self {
-            Self(None)
-        }
-    }
+    #[cfg(feature = "into")]
+    mod pair {
+        use super::{ParseMultiple, Parser, Spanning};
+        use syn::parse::{Parse, ParseStream};
 
-    impl<T: Parse> Parse for Alt<T> {
-        fn parse(input: ParseStream) -> syn::Result<Self> {
-            Ok(Alt(input.parse().ok()))
+        /// Used to encode product types in a generic way
+        pub(crate) struct Pair<L, R> {
+            pub(crate) left: L,
+            pub(crate) right: R,
         }
-    }
 
-    impl<T: ParseMultiple> ParseMultiple for Alt<T> {
-        fn merge_attrs(
-            prev: Spanning<Self>,
-            new: Spanning<Self>,
-            name: &syn::Ident,
-        ) -> syn::Result<Spanning<Self>> {
-            Ok(match (prev.item.0, new.item.0) {
-                (Some(p), Some(n)) => T::merge_attrs(
-                    Spanning::new(p, prev.span),
-                    Spanning::new(n, new.span),
+        impl<L, R> Pair<L, R> {
+            pub(crate) fn new(left: L, right: R) -> Self {
+                Pair { left, right }
+            }
+        }
+
+        impl<L: Default + Parse, R: Default + Parse> Parse for Pair<L, R> {
+            fn parse(input: ParseStream) -> syn::Result<Self> {
+                Ok(if let Ok(left) = input.parse() {
+                    Pair {
+                        left,
+                        right: R::default(),
+                    }
+                } else {
+                    Pair {
+                        left: L::default(),
+                        right: input.parse()?,
+                    }
+                })
+            }
+        }
+
+        impl<L: Default + ParseMultiple, R: Default + ParseMultiple> ParseMultiple
+            for Pair<L, R>
+        {
+            fn parse_attr_with<P: Parser>(
+                attr: &syn::Attribute,
+                parser: &P,
+            ) -> syn::Result<Self> {
+                Ok(if let Ok(left) = L::parse_attr_with(attr, parser) {
+                    Pair {
+                        left,
+                        right: R::default(),
+                    }
+                } else {
+                    Pair {
+                        left: L::default(),
+                        right: R::parse_attr_with(attr, parser)?,
+                    }
+                })
+            }
+
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                let left = L::merge_attrs(
+                    Spanning::new(prev.item.left, prev.span),
+                    Spanning::new(new.item.left, new.span),
                     name,
                 )?
-                .map(|value| Alt(Some(value))),
-                (Some(p), None) => Spanning::new(Alt(Some(p)), prev.span),
-                (None, Some(n)) => Spanning::new(Alt(Some(n)), new.span),
-                (None, None) => Spanning::new(
-                    Alt(None),
-                    prev.span.join(new.span).unwrap_or(prev.span),
-                ),
-            })
-        }
-    }
+                .into_inner();
 
-    pub(crate) struct Pair<L, R> {
-        pub(crate) left: L,
-        pub(crate) right: R,
-    }
+                let right = R::merge_attrs(
+                    Spanning::new(prev.item.right, prev.span),
+                    Spanning::new(new.item.right, new.span),
+                    name,
+                )?
+                .into_inner();
 
-    impl<L, R> Pair<L, R> {
-        pub(crate) fn new(left: L, right: R) -> Self {
-            Pair { left, right }
-        }
-    }
+                let span = prev.span.join(new.span).unwrap_or(prev.span);
 
-    impl<L: Default + Parse, R: Default + Parse> Parse for Pair<L, R> {
-        fn parse(input: ParseStream) -> syn::Result<Self> {
-            Ok(if let Ok(left) = input.parse() {
-                Pair {
-                    left,
-                    right: R::default(),
-                }
-            } else {
-                Pair {
-                    left: L::default(),
-                    right: input.parse()?,
-                }
-            })
-        }
-    }
-
-    impl<L: Default + ParseMultiple, R: Default + ParseMultiple> ParseMultiple
-        for Pair<L, R>
-    {
-        fn merge_attrs(
-            prev: Spanning<Self>,
-            new: Spanning<Self>,
-            name: &syn::Ident,
-        ) -> syn::Result<Spanning<Self>> {
-            let left = L::merge_attrs(
-                Spanning::new(prev.item.left, prev.span),
-                Spanning::new(new.item.left, new.span),
-                name,
-            )?
-            .into_inner();
-
-            let right = R::merge_attrs(
-                Spanning::new(prev.item.right, prev.span),
-                Spanning::new(new.item.right, new.span),
-                name,
-            )?
-            .into_inner();
-
-            let span = prev.span.join(new.span).unwrap_or(prev.span);
-
-            Ok(Spanning::new(Pair { left, right }, span))
+                Ok(Spanning::new(Pair { left, right }, span))
+            }
         }
     }
 
