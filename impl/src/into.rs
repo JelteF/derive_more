@@ -125,6 +125,10 @@ impl StructAttribute {
     fn new(args: IntoArgs) -> Self {
         Self { args }
     }
+
+    fn into_inner(self) -> IntoArgs {
+        self.args
+    }
 }
 
 impl From<Either<attr::Empty, IntoArgs>> for StructAttribute {
@@ -145,14 +149,21 @@ impl Parse for StructAttribute {
 }
 
 impl attr::ParseMultiple for StructAttribute {
+    fn parse_attr_with<P: attr::Parser>(
+        attr: &syn::Attribute,
+        parser: &P,
+    ) -> syn::Result<Self> {
+        <Either<attr::Empty, IntoArgs>>::parse_attr_with(attr, parser).map(Self::from)
+    }
+
     fn merge_attrs(
         prev: Spanning<Self>,
         new: Spanning<Self>,
         name: &syn::Ident,
     ) -> syn::Result<Spanning<Self>> {
         Ok(IntoArgs::merge_attrs(
-            prev.map(|attr| attr.args),
-            new.map(|attr| attr.args),
+            prev.map(Self::into_inner),
+            new.map(Self::into_inner),
             name,
         )?
         .map(Self::new))
@@ -215,6 +226,16 @@ impl From<attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>> for FieldAttri
 }
 
 impl attr::ParseMultiple for FieldAttribute {
+    fn parse_attr_with<P: attr::Parser>(
+        attr: &syn::Attribute,
+        parser: &P,
+    ) -> syn::Result<Self> {
+        <Either<attr::Skip, Either<attr::Empty, IntoArgs>>>::parse_attr_with(
+            attr, parser,
+        )
+        .map(Self::from)
+    }
+
     fn merge_attrs(
         prev: Spanning<Self>,
         new: Spanning<Self>,
