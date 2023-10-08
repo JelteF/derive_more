@@ -2,7 +2,7 @@
 name = "derive_more"
 version = "1.0.0-beta.3"
 edition = "2021"
-rust-version = "1.65.0"
+rust-version = "1.72.0"
 description = "Adds #[derive(x)] macros for more traits"
 authors = ["Jelte Fennema <github-tech@jeltef.nl>"]
 license = "MIT"
@@ -65,6 +65,7 @@ mul_assign = ["derive_more-impl/mul_assign"]
 mul = ["derive_more-impl/mul"]
 not = ["derive_more-impl/not"]
 sum = ["derive_more-impl/sum"]
+try_from = ["derive_more-impl/try_from"]
 try_into = ["derive_more-impl/try_into"]
 is_variant = ["derive_more-impl/is_variant"]
 unwrap = ["derive_more-impl/unwrap"]
@@ -92,6 +93,7 @@ full = [
     "mul_assign",
     "not",
     "sum",
+    "try_from",
     "try_into",
     "try_unwrap",
     "unwrap",
@@ -203,6 +205,11 @@ required-features = ["not"]
 name = "sum"
 path = "tests/sum.rs"
 required-features = ["sum"]
+
+[[test]]
+name = "try_from"
+path = "tests/try_from.rs"
+required-features = ["try_from"]
 
 [[test]]
 name = "try_into"

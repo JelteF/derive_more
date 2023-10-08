@@ -1,0 +1,11 @@
+error: expected `,`
+ --> tests/compile_fail/try_from/invalid_repr.rs:2:10
+  |
+2 | #[repr(a + b)]
+  |          ^
+
+error: expected one of `(`, `,`, `::`, or `=`, found `+`
+ --> tests/compile_fail/try_from/invalid_repr.rs:2:10
+  |
+2 | #[repr(a + b)]
+  |          ^ expected one of `(`, `,`, `::`, or `=`

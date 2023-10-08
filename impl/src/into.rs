@@ -1,9 +1,13 @@
 //! Implementation of an [`Into`] derive macro.
 
-use std::{borrow::Cow, iter};
+use std::{
+    any::{Any, TypeId},
+    borrow::Cow,
+    iter,
+};
 
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens as _};
+use quote::{format_ident, quote, ToTokens as _};
 use syn::{
     ext::IdentExt as _,
     parse::{discouraged::Speculative as _, Parse, ParseStream},
@@ -12,13 +16,15 @@ use syn::{
     token,
 };
 
-use crate::{
-    parsing::Type,
-    utils::{polyfill, skip, Either, FieldsExt},
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    polyfill, Either, FieldsExt, Spanning,
 };
 
 /// Expands an [`Into`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
+    let attr_name = format_ident!("into");
+
     let data = match &input.data {
         syn::Data::Struct(data) => Ok(data),
         syn::Data::Enum(e) => Err(syn::Error::new(
@@ -31,14 +37,28 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         )),
     }?;
 
-    let struct_attr = StructAttribute::parse_attrs(&input.attrs, &data.fields)?;
+    let struct_attr = StructAttribute::parse_attrs_with(
+        &input.attrs,
+        &attr_name,
+        &ConsiderLegacySyntax {
+            fields: &data.fields,
+        },
+    )?
+    .map(Spanning::into_inner);
 
     let fields_data = data
         .fields
         .iter()
         .enumerate()
         .map(|(i, f)| {
-            let field_attr = FieldAttribute::parse_attrs(&f.attrs, f)?;
+            let field_attr = FieldAttribute::parse_attrs_with(
+                &f.attrs,
+                &attr_name,
+                &ConsiderLegacySyntax {
+                    fields: &data.fields,
+                },
+            )?
+            .map(Spanning::into_inner);
 
             let skip = field_attr
                 .as_ref()
@@ -101,6 +121,42 @@ struct StructAttribute {
     args: IntoArgs,
 }
 
+impl StructAttribute {
+    fn new(args: IntoArgs) -> Self {
+        Self { args }
+    }
+}
+
+impl Parse for StructAttribute {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        todo!()
+    }
+}
+
+impl attr::ParseMultiple for StructAttribute {}
+
+/// Representation of an [`Into`] derive macro field attribute.
+///
+/// ```rust,ignore
+/// #[into]
+/// #[into(skip)] #[into(ignore)]
+/// #[into(<types>)]
+/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
+/// ```
+#[derive(Default)]
+struct FieldAttribute {
+    skip: Option<attr::Skip>,
+    args: Option<IntoArgs>,
+}
+
+impl Parse for FieldAttribute {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        todo!()
+    }
+}
+
+impl attr::ParseMultiple for FieldAttribute {}
+
 /// A set of type arguments for a set of fields
 ///
 /// [`None`] represents no conversions of the given type
@@ -108,79 +164,45 @@ struct StructAttribute {
 #[derive(Debug, Default)]
 struct IntoArgs {
     /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
-    owned: Option<Punctuated<Type, token::Comma>>,
+    owned: Option<Punctuated<syn::Type, token::Comma>>,
 
     /// [`Type`]s wrapped into `ref(...)`.
-    r#ref: Option<Punctuated<Type, token::Comma>>,
+    r#ref: Option<Punctuated<syn::Type, token::Comma>>,
 
     /// [`Type`]s wrapped into `ref_mut(...)`.
-    ref_mut: Option<Punctuated<Type, token::Comma>>,
+    ref_mut: Option<Punctuated<syn::Type, token::Comma>>,
 }
 
-impl StructAttribute {
-    fn new(args: IntoArgs) -> Self {
-        Self { args }
-    }
-
-    /// Parses a [`StructAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(
-        attrs: impl AsRef<[syn::Attribute]>,
-        fields: &syn::Fields,
-    ) -> syn::Result<Option<Self>> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("into"))
-            .try_fold(None, |mut attrs, attr| {
-                let attr = Self::parse_attr(attr, fields)?;
-                let out = attrs.get_or_insert_with(Self::default);
-                merge_tys(&mut out.args.owned, attr.args.owned);
-                merge_tys(&mut out.args.r#ref, attr.args.r#ref);
-                merge_tys(&mut out.args.ref_mut, attr.args.ref_mut);
-
-                Ok(attrs)
-            })
-    }
-
-    /// Parses a single [`StructAttribute`]
-    fn parse_attr(attr: &syn::Attribute, fields: &syn::Fields) -> syn::Result<Self> {
-        if matches!(attr.meta, syn::Meta::Path(_)) {
-            Ok(Self::new(IntoArgs::all_owned()))
-        } else {
-            attr.parse_args_with(|content: ParseStream<'_>| {
-                IntoArgs::parse(content, fields).map(Self::new)
-            })
+impl IntoArgs {
+    fn all_owned() -> Self {
+        Self {
+            owned: Some(Punctuated::new()),
+            r#ref: None,
+            ref_mut: None,
         }
     }
 }
 
-impl IntoArgs {
-    /// Parses a set of [`IntoArgs`]
-    fn parse<'a, F>(content: ParseStream<'_>, fields: &'a F) -> syn::Result<Self>
-    where
-        F: FieldsExt + ?Sized,
-        &'a F: IntoIterator<Item = &'a syn::Field>,
-    {
-        check_legacy_syntax(content, fields)?;
-
+impl Parse for IntoArgs {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let mut out = Self::default();
 
         let parse_inner = |ahead, types: &mut Option<_>| {
-            content.advance_to(&ahead);
+            input.advance_to(&ahead);
 
             let types = types.get_or_insert_with(Punctuated::new);
-            if content.peek(token::Paren) {
+            if input.peek(token::Paren) {
                 let inner;
-                syn::parenthesized!(inner in content);
+                syn::parenthesized!(inner in input);
 
                 types.extend(
                     inner
-                        .parse_terminated(Type::parse, token::Comma)?
+                        .parse_terminated(syn::Type::parse, token::Comma)?
                         .into_pairs(),
                 );
             }
-            if content.peek(token::Comma) {
-                let comma = content.parse::<token::Comma>()?;
+            if input.peek(token::Comma) {
+                let comma = input.parse::<token::Comma>()?;
                 if !types.empty_or_trailing() {
                     types.push_punct(comma);
                 }
@@ -192,8 +214,8 @@ impl IntoArgs {
         let mut has_wrapped_type = false;
         let mut top_level_type = None;
 
-        while !content.is_empty() {
-            let ahead = content.fork();
+        while !input.is_empty() {
+            let ahead = input.fork();
             let res = if ahead.peek(syn::Ident::peek_any) {
                 ahead.call(syn::Ident::parse_any).map(Into::into)
             } else {
@@ -213,14 +235,14 @@ impl IntoArgs {
                     parse_inner(ahead, &mut out.ref_mut)?;
                 }
                 _ => {
-                    let ty = content.parse::<Type>()?;
+                    let ty = input.parse::<syn::Type>()?;
                     let _ = top_level_type.get_or_insert_with(|| ty.clone());
                     out.owned.get_or_insert_with(Punctuated::new).push_value(ty);
 
-                    if content.peek(token::Comma) {
+                    if input.peek(token::Comma) {
                         out.owned
                             .get_or_insert_with(Punctuated::new)
-                            .push_punct(content.parse::<token::Comma>()?)
+                            .push_punct(input.parse::<token::Comma>()?)
                     }
                 }
             }
@@ -230,9 +252,8 @@ impl IntoArgs {
             Err(syn::Error::new(
                 ty.span(),
                 format!(
-                    "mixing regular types with wrapped into \
-                     `owned`/`ref`/`ref_mut` is not allowed, try wrapping \
-                     this type into `owned({ty}), ref({ty}), ref_mut({ty})`",
+                    "mixing regular types with wrapped into `owned`/`ref`/`ref_mut` is not \
+                     allowed, try wrapping this type into `owned({ty}), ref({ty}), ref_mut({ty})`",
                     ty = ty.into_token_stream(),
                 ),
             ))
@@ -240,111 +261,6 @@ impl IntoArgs {
             Ok(out)
         }
     }
-
-    fn all_owned() -> Self {
-        Self {
-            owned: Some(Punctuated::new()),
-            r#ref: None,
-            ref_mut: None,
-        }
-    }
-}
-
-/// Representation of an [`Into`] derive macro field attribute.
-///
-/// ```rust,ignore
-/// #[into]
-/// #[into(skip)] #[into(ignore)]
-/// #[into(<types>)]
-/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
-/// ```
-#[derive(Debug, Default)]
-struct FieldAttribute {
-    skip: Option<skip::Attribute>,
-    args: Option<IntoArgs>,
-}
-
-impl FieldAttribute {
-    /// Parses a [`FieldAttribute`] from the provided [`syn::Attribute`]s.
-    fn parse_attrs(
-        attrs: impl AsRef<[syn::Attribute]>,
-        field: &syn::Field,
-    ) -> syn::Result<Option<Self>> {
-        attrs
-            .as_ref()
-            .iter()
-            .filter(|attr| attr.path().is_ident("into"))
-            .try_fold(None, |mut attrs, attr| {
-                let field_attr = Self::parse_attr(attr, field)?;
-                let prev_attrs: &mut FieldAttribute =
-                    attrs.get_or_insert_with(Default::default);
-
-                match (prev_attrs.args.as_mut(), field_attr.args) {
-                    (Some(args), Some(more)) => {
-                        merge_tys(&mut args.owned, more.owned);
-                        merge_tys(&mut args.r#ref, more.r#ref);
-                        merge_tys(&mut args.ref_mut, more.ref_mut);
-                    }
-                    (None, Some(args)) => prev_attrs.args = Some(args),
-                    (_, None) => {}
-                };
-
-                if let Some(skip) = field_attr.skip {
-                    if prev_attrs.skip.replace(skip).is_some() {
-                        return Err(syn::Error::new(
-                            attr.path().span(),
-                            "only a single `#[into(skip)]`/`#[into(ignore)]` attribute is allowed`",
-                        ));
-                    }
-                }
-
-                Ok(attrs)
-            })
-    }
-
-    /// Parses a single [`FieldAttribute`]
-    fn parse_attr(attr: &syn::Attribute, field: &syn::Field) -> syn::Result<Self> {
-        if matches!(attr.meta, syn::Meta::Path(_)) {
-            Ok(Self {
-                skip: None,
-                args: Some(IntoArgs::all_owned()),
-            })
-        } else {
-            attr.parse_args_with(|content: ParseStream| Self::parse(content, field))
-        }
-    }
-
-    /// Parses a single [`FieldAttribute`]'s args
-    fn parse(content: ParseStream, field: &syn::Field) -> syn::Result<Self> {
-        let ahead = content.fork();
-        if let Ok(attr) = ahead.parse::<skip::Attribute>() {
-            content.advance_to(&ahead);
-            return Ok(Self {
-                skip: Some(attr),
-                args: None,
-            });
-        }
-
-        let fields = std::slice::from_ref(field);
-        let args = IntoArgs::parse(content, fields)?;
-        Ok(Self {
-            skip: None,
-            args: Some(args),
-        })
-    }
-}
-
-fn merge_tys(
-    out: &mut Option<Punctuated<Type, token::Comma>>,
-    tys: Option<Punctuated<Type, token::Comma>>,
-) {
-    match (out.as_mut(), tys) {
-        (None, Some(tys)) => {
-            *out = Some::<Punctuated<_, _>>(tys);
-        }
-        (Some(out), Some(tys)) => out.extend(tys),
-        (Some(_), None) | (None, None) => {}
-    };
 }
 
 /// Expansion of a macro for generating [`From`] implementations
@@ -377,7 +293,10 @@ impl<'a> Expansion<'a> {
             })
             .collect();
         let fields_tys: Vec<_> = fields.iter().map(|(_, f)| &f.ty).collect();
-        let fields_tuple = Type::tuple(fields_tys.clone());
+        let fields_tuple = syn::Type::Tuple(syn::TypeTuple {
+            paren_token: Default::default(),
+            elems: fields_tys.iter().cloned().cloned().collect(),
+        });
 
         [
             (&args.owned, false, false),
@@ -431,6 +350,56 @@ impl<'a> Expansion<'a> {
             })
         })
         .collect()
+    }
+}
+
+impl attr::ParseMultiple for IntoArgs {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        _: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let merge = |out: &mut Option<_>, tys| match (out.as_mut(), tys) {
+            (None, Some(tys)) => {
+                *out = Some::<Punctuated<_, _>>(tys);
+            }
+            (Some(out), Some(tys)) => out.extend(tys),
+            (Some(_), None) | (None, None) => {}
+        };
+
+        let Spanning {
+            span: prev_span,
+            item: mut prev,
+        } = prev;
+        let Spanning {
+            span: new_span,
+            item: new,
+        } = new;
+
+        merge(&mut prev.owned, new.owned);
+        merge(&mut prev.r#ref, new.r#ref);
+        merge(&mut prev.ref_mut, new.ref_mut);
+
+        Ok(Spanning::new(
+            prev,
+            prev_span.join(new_span).unwrap_or(prev_span),
+        ))
+    }
+}
+
+/// [`attr::Parser`] considering legacy syntax and performing [`check_legacy_syntax()`] for a
+/// [`StructAttribute`].
+struct ConsiderLegacySyntax<'a> {
+    /// [`syn::Fields`] of a struct, the [`StructAttribute`] is parsed for.
+    fields: &'a syn::Fields,
+}
+
+impl attr::Parser for ConsiderLegacySyntax<'_> {
+    fn parse<T: Parse + Any>(&self, input: ParseStream<'_>) -> syn::Result<T> {
+        if TypeId::of::<T>() == TypeId::of::<StructAttribute>() {
+            check_legacy_syntax(input, self.fields)?;
+        }
+        T::parse(input)
     }
 }
 
