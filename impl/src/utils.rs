@@ -1626,6 +1626,64 @@ pub(crate) mod attr {
         }
     }
 
+    pub(crate) struct Alt<T>(pub(crate) Option<T>);
+
+    impl<T: Parse> Parse for Alt<T> {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            Ok(Alt(input.parse().ok()))
+        }
+    }
+
+    impl<T: ParseMultiple> ParseMultiple for Alt<T> {
+        fn merge_attrs(
+            prev: Spanning<Self>,
+            new: Spanning<Self>,
+            name: &syn::Ident,
+        ) -> syn::Result<Spanning<Self>> {
+            Ok(match (prev.item.0, new.item.0) {
+                (Some(p), Some(n)) => T::merge_attrs(
+                    Spanning::new(p, prev.span),
+                    Spanning::new(n, new.span),
+                    name,
+                )?
+                .map(|value| Alt(Some(value))),
+                (Some(p), None) => Spanning::new(Alt(Some(p)), prev.span),
+                (None, Some(n)) => Spanning::new(Alt(Some(n)), new.span),
+                (None, None) => Spanning::new(
+                    Alt(None),
+                    prev.span.join(new.span).unwrap_or(prev.span),
+                ),
+            })
+        }
+    }
+
+    pub(crate) struct Pair<L, R> {
+        pub(crate) left: L,
+        pub(crate) right: R,
+    }
+
+    impl<L, R> Pair<L, R> {
+        pub(crate) fn new(left: L, right: R) -> Self {
+            Pair { left, right }
+        }
+    }
+
+    impl<L: Default + Parse, R: Default + Parse> Parse for Pair<L, R> {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            Ok(if let Ok(left) = input.parse() {
+                Pair {
+                    left,
+                    right: R::default(),
+                }
+            } else {
+                Pair {
+                    left: L::default(),
+                    right: input.parse()?,
+                }
+            })
+        }
+    }
+
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     mod empty {
         use syn::{
