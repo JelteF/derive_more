@@ -1499,18 +1499,25 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "as_ref",
+        feature = "into",
+        feature = "from",
+        feature = "try_from"
+    ))]
+    pub(crate) use self::empty::Empty;
+    #[cfg(any(
+        feature = "as_ref",
         feature = "debug",
         feature = "display",
         feature = "from",
         feature = "into",
     ))]
     pub(crate) use self::skip::Skip;
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    pub(crate) use self::types::Types;
     #[cfg(any(feature = "as_ref", feature = "from"))]
     pub(crate) use self::{
         conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
     };
-    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
-    pub(crate) use self::{empty::Empty, types::Types};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
 
@@ -1728,7 +1735,12 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "into",
+        feature = "from",
+        feature = "try_from"
+    ))]
     mod empty {
         use syn::{
             parse::{Parse, ParseStream},
