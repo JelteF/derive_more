@@ -144,7 +144,20 @@ impl Parse for StructAttribute {
     }
 }
 
-impl attr::ParseMultiple for StructAttribute {}
+impl attr::ParseMultiple for StructAttribute {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        Ok(IntoArgs::merge_attrs(
+            prev.map(|attr| attr.args),
+            new.map(|attr| attr.args),
+            name,
+        )?
+        .map(Self::new))
+    }
+}
 
 /// Representation of an [`Into`] derive macro field attribute.
 ///
