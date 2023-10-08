@@ -57,7 +57,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 &f.attrs,
                 &attr_name,
                 &ConsiderLegacySyntax {
-                    fields: &data.fields,
+                    fields: std::slice::from_ref(f),
                 },
             )?
             .map(Spanning::into_inner);
@@ -505,14 +505,18 @@ impl attr::ParseMultiple for IntoArgs {
 
 /// [`attr::Parser`] considering legacy syntax and performing [`check_legacy_syntax()`] for a
 /// [`StructAttribute`].
-struct ConsiderLegacySyntax<'a> {
-    /// [`syn::Fields`] of a struct, the [`StructAttribute`] is parsed for.
-    fields: &'a syn::Fields,
+struct ConsiderLegacySyntax<F> {
+    /// [`syn::Field`]s the [`StructAttribute`] or [`FieldAttribute`] is parsed for.
+    fields: F,
 }
 
-impl attr::Parser for ConsiderLegacySyntax<'_> {
+impl<'a, F> attr::Parser for ConsiderLegacySyntax<&'a F>
+where
+    F: FieldsExt + ?Sized,
+    &'a F: IntoIterator<Item = &'a syn::Field>,
+{
     fn parse<T: Parse + Any>(&self, input: ParseStream<'_>) -> syn::Result<T> {
-        if TypeId::of::<T>() == TypeId::of::<StructAttribute>() {
+        if TypeId::of::<T>() == TypeId::of::<IntoArgs>() {
             check_legacy_syntax(input, self.fields)?;
         }
         T::parse(input)
