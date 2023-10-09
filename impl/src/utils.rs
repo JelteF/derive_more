@@ -1702,6 +1702,10 @@ pub(crate) mod attr {
         use syn::parse::{Parse, ParseStream};
 
         /// Used to encode product types in a generic way
+        ///
+        /// Either `left` or `right` can be parsed from a single attribute
+        /// The other is filled using [`Default`]
+        /// Both get merged
         pub(crate) struct Pair<L, R> {
             pub(crate) left: L,
             pub(crate) right: R,

@@ -276,6 +276,7 @@ mod field_attr {
 
 /// A set of type arguments for a set of fields
 ///
+/// For each field:
 /// [`None`] represents no conversions of the given type
 /// An empty [`Punctuated`] represents a conversion into the field types
 #[derive(Debug, Default)]
