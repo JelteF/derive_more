@@ -1050,10 +1050,12 @@ mod field_attr {
     mod fields_only {
         use super::*;
 
-        // The manual impls are there to test that no extra ones were generated
-
         #[derive(Debug, Into, Clone, Copy)]
         struct Tuple(#[into] i32, f64, #[into] f64);
+
+        // Asserts that macro expansion doesn't generate impls not specified,
+        // by producing a trait implementations conflict error during compilation,
+        // if it does.
 
         impl From<Tuple> for (i32, f64, f64) {
             fn from(value: Tuple) -> Self {
@@ -1083,6 +1085,10 @@ mod field_attr {
             #[into]
             c: f64,
         }
+
+        // Asserts that macro expansion doesn't generate impls not specified,
+        // by producing a trait implementations conflict error during compilation,
+        // if it does.
 
         impl From<Struct> for (i32, f64, f64) {
             fn from(value: Struct) -> Self {
@@ -1118,6 +1124,10 @@ mod field_attr {
                 #[into(f32, f64)] f32,
             );
 
+            // Asserts that macro expansion doesn't generate impls not specified,
+            // by producing a trait implementations conflict error during compilation,
+            // if it does.
+
             impl From<Tuple> for String {
                 fn from(value: Tuple) -> Self {
                     value.0
@@ -1148,6 +1158,10 @@ mod field_attr {
                 #[into(f32, f64)]
                 c: f32,
             }
+
+            // Asserts that macro expansion doesn't generate impls not specified,
+            // by producing a trait implementations conflict error during compilation,
+            // if it does.
 
             impl From<Struct> for String {
                 fn from(value: Struct) -> Self {
@@ -1187,6 +1201,10 @@ mod field_attr {
                 #[derive(Debug, Into)]
                 struct Tuple(#[into(ref)] String, f64, #[into(ref)] f64);
 
+                // Asserts that macro expansion doesn't generate impls not specified,
+                // by producing a trait implementations conflict error during compilation,
+                // if it does.
+
                 impl<'a> From<&'a Tuple> for (&'a String, &'a f64, &'a f64) {
                     fn from(value: &'a Tuple) -> Self {
                         (&value.0, &value.1, &value.2)
@@ -1209,6 +1227,10 @@ mod field_attr {
                     #[into(ref)]
                     c: f64,
                 }
+
+                // Asserts that macro expansion doesn't generate impls not specified,
+                // by producing a trait implementations conflict error during compilation,
+                // if it does.
 
                 impl<'a> From<&'a Struct> for (&'a String, &'a f64, &'a f64) {
                     fn from(value: &'a Struct) -> Self {
