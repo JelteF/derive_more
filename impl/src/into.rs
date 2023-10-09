@@ -67,31 +67,32 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 .map(|attr| attr.skip.is_some())
                 .unwrap_or(false);
 
-            let args = field_attr.and_then(|attr| attr.args);
+            let convs = field_attr.and_then(|attr| attr.convs);
 
-            Ok(((i, f, skip), args))
+            Ok(((i, f, skip), convs))
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
-    let (fields, fields_args) = fields_data.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
+    let (fields, fields_convs) =
+        fields_data.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
 
     let struct_attr = struct_attr.or_else(|| {
-        fields_args
+        fields_convs
             .iter()
             .all(Option::is_none)
-            .then(IntoArgs::all_owned)
+            .then(IntoConversions::all_owned)
             .map(StructAttribute::new)
     });
 
     let mut expansions: Vec<_> = fields
         .iter()
-        .zip(fields_args)
-        .filter_map(|(&(i, field, _), args)| {
-            args.map(|args| Expansion {
+        .zip(fields_convs)
+        .filter_map(|(&(i, field, _), convs)| {
+            convs.map(|convs| Expansion {
                 input_ident: &input.ident,
                 input_generics: &input.generics,
                 fields: vec![(i, field)],
-                args,
+                convs,
             })
         })
         .collect();
@@ -104,7 +105,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 .into_iter()
                 .filter_map(|(i, f, skip)| (!skip).then_some((i, f)))
                 .collect(),
-            args: attr.args,
+            convs: attr.convs,
         });
     }
 
@@ -112,7 +113,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 }
 
 mod struct_attr {
-    use super::IntoArgs;
+    use super::IntoConversions;
     use crate::utils::{attr, Either, Spanning};
     use syn::parse::{Parse, ParseStream};
 
@@ -125,29 +126,29 @@ mod struct_attr {
     /// ```
     #[derive(Debug, Default)]
     pub(super) struct StructAttribute {
-        pub(super) args: IntoArgs,
+        pub(super) convs: IntoConversions,
     }
 
     impl StructAttribute {
-        pub(super) fn new(args: IntoArgs) -> Self {
-            Self { args }
+        pub(super) fn new(convs: IntoConversions) -> Self {
+            Self { convs }
         }
 
-        fn into_inner(self) -> IntoArgs {
-            self.args
+        fn into_inner(self) -> IntoConversions {
+            self.convs
         }
     }
 
     /// Untyped analogue of a [`StructAttribute`], recreating its type structure via [`Either`].
     ///
     /// Used to piggyback [`Parse::parse`] and [`ParseMultiple::parse_attr_with`] impls to [`Either`].
-    type UntypedParse = Either<attr::Empty, IntoArgs>;
+    type UntypedParse = Either<attr::Empty, IntoConversions>;
 
     impl From<UntypedParse> for StructAttribute {
-        fn from(value: Either<attr::Empty, IntoArgs>) -> Self {
+        fn from(value: Either<attr::Empty, IntoConversions>) -> Self {
             Self::new(match value {
-                Either::Left(_) => IntoArgs::all_owned(),
-                Either::Right(args) => args,
+                Either::Left(_) => IntoConversions::all_owned(),
+                Either::Right(convs) => convs,
             })
         }
     }
@@ -163,7 +164,7 @@ mod struct_attr {
             attr: &syn::Attribute,
             parser: &P,
         ) -> syn::Result<Self> {
-            <Either<attr::Empty, IntoArgs>>::parse_attr_with(attr, parser)
+            <Either<attr::Empty, IntoConversions>>::parse_attr_with(attr, parser)
                 .map(Self::from)
         }
 
@@ -172,7 +173,7 @@ mod struct_attr {
             new: Spanning<Self>,
             name: &syn::Ident,
         ) -> syn::Result<Spanning<Self>> {
-            Ok(IntoArgs::merge_attrs(
+            Ok(IntoConversions::merge_attrs(
                 prev.map(Self::into_inner),
                 new.map(Self::into_inner),
                 name,
@@ -183,7 +184,7 @@ mod struct_attr {
 }
 
 mod field_attr {
-    use super::IntoArgs;
+    use super::IntoConversions;
     use crate::utils::{attr, Either, Spanning};
     use syn::parse::{Parse, ParseStream};
 
@@ -198,26 +199,26 @@ mod field_attr {
     #[derive(Default)]
     pub(super) struct FieldAttribute {
         pub(super) skip: Option<attr::Skip>,
-        pub(super) args: Option<IntoArgs>,
+        pub(super) convs: Option<IntoConversions>,
     }
 
     /// Untyped analogue of a [`StructAttribute`], recreating its type structure via [`Either`].
     ///
     /// Used to piggyback [`Parse::parse`] and [`ParseMultiple::parse_attr_with`] impls to [`Either`].
-    type UntypedParse = Either<attr::Skip, Either<attr::Empty, IntoArgs>>;
+    type UntypedParse = Either<attr::Skip, Either<attr::Empty, IntoConversions>>;
 
     impl From<UntypedParse> for FieldAttribute {
         fn from(value: UntypedParse) -> Self {
             match value {
                 Either::Left(skip) => Self {
                     skip: Some(skip),
-                    args: None,
+                    convs: None,
                 },
-                Either::Right(args) => Self {
+                Either::Right(convs) => Self {
                     skip: None,
-                    args: Some(match args {
-                        Either::Left(_) => IntoArgs::all_owned(),
-                        Either::Right(args) => args,
+                    convs: Some(match convs {
+                        Either::Left(_) => IntoConversions::all_owned(),
+                        Either::Right(convs) => convs,
                     }),
                 },
             }
@@ -233,11 +234,11 @@ mod field_attr {
     /// Untyped analogue of a [`FieldAttribute`], recreating its type structure via [`attr::Pair`] and [`attr::Alt`]
     ///
     /// Used to piggyback  [`ParseMultiple::merge_attrs`] impl to [`attr::Pair`] and [`attr::Alt`]
-    type UntypedMerge = attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoArgs>>;
+    type UntypedMerge = attr::Pair<attr::Alt<attr::Skip>, attr::Alt<IntoConversions>>;
 
     impl From<FieldAttribute> for UntypedMerge {
         fn from(value: FieldAttribute) -> Self {
-            attr::Pair::new(attr::Alt::new(value.skip), attr::Alt::new(value.args))
+            attr::Pair::new(attr::Alt::new(value.skip), attr::Alt::new(value.convs))
         }
     }
 
@@ -245,7 +246,7 @@ mod field_attr {
         fn from(value: UntypedMerge) -> Self {
             Self {
                 skip: value.left.into_inner(),
-                args: value.right.into_inner(),
+                convs: value.right.into_inner(),
             }
         }
     }
@@ -278,7 +279,7 @@ mod field_attr {
 /// [`None`] represents no conversions of the given type
 /// An empty [`Punctuated`] represents a conversion into the field types
 #[derive(Debug, Default)]
-struct IntoArgs {
+struct IntoConversions {
     /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
     owned: Option<Punctuated<syn::Type, token::Comma>>,
 
@@ -289,7 +290,7 @@ struct IntoArgs {
     ref_mut: Option<Punctuated<syn::Type, token::Comma>>,
 }
 
-impl IntoArgs {
+impl IntoConversions {
     fn all_owned() -> Self {
         Self {
             owned: Some(Punctuated::new()),
@@ -299,7 +300,7 @@ impl IntoArgs {
     }
 }
 
-impl Parse for IntoArgs {
+impl Parse for IntoConversions {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let mut out = Self::default();
 
@@ -388,7 +389,7 @@ struct Expansion<'a> {
     /// Fields to convert from, with their indices
     fields: Vec<(usize, &'a syn::Field)>,
     /// Arguments specifying conversions
-    args: IntoArgs,
+    convs: IntoConversions,
 }
 
 impl<'a> Expansion<'a> {
@@ -397,7 +398,7 @@ impl<'a> Expansion<'a> {
             input_ident,
             input_generics,
             fields,
-            args,
+            convs,
         } = self;
 
         let fields_idents: Vec<_> = fields
@@ -415,9 +416,9 @@ impl<'a> Expansion<'a> {
         });
 
         [
-            (&args.owned, false, false),
-            (&args.r#ref, true, false),
-            (&args.ref_mut, true, true),
+            (&convs.owned, false, false),
+            (&convs.r#ref, true, false),
+            (&convs.ref_mut, true, true),
         ]
         .into_iter()
         .filter_map(|(out_tys, r, m)| {
@@ -469,7 +470,7 @@ impl<'a> Expansion<'a> {
     }
 }
 
-impl attr::ParseMultiple for IntoArgs {
+impl attr::ParseMultiple for IntoConversions {
     fn merge_attrs(
         prev: Spanning<Self>,
         new: Spanning<Self>,
@@ -516,7 +517,7 @@ where
     &'a F: IntoIterator<Item = &'a syn::Field>,
 {
     fn parse<T: Parse + Any>(&self, input: ParseStream<'_>) -> syn::Result<T> {
-        if TypeId::of::<T>() == TypeId::of::<IntoArgs>() {
+        if TypeId::of::<T>() == TypeId::of::<IntoConversions>() {
             check_legacy_syntax(input, self.fields)?;
         }
         T::parse(input)
