@@ -108,11 +108,14 @@ assert_eq!(5_i128, Mass::<Gram>::new(5).into());
 # }
 ```
 
-The `#[into(...)]` attribute can also be applied to specific fields
+
+### Fields
+
+The `#[into]` attribute can also be applied to specific fields of a struct.
 
 ```rust
 # use derive_more::Into;
-
+#
 #[derive(Into)]
 struct Data {
     id: i32,
@@ -123,12 +126,12 @@ struct Data {
 assert_eq!(42.0, Data { id: 1, raw: 42.0 }.into());
 ```
 
-In this case no conversion into a tuple of all fields is generated unless
-an explicit struct attribute is present
+In such cases, no conversion into a tuple of all fields is generated, unless
+an explicit struct attribute is present.
 
 ```rust
 # use derive_more::Into;
-
+#
 #[derive(Into)]
 #[into]
 struct Data {
@@ -141,13 +144,13 @@ assert_eq!(42.0, Data { id: 1, raw: 42.0 }.into());
 assert_eq!((1, 42.0), Data { id: 1, raw: 42.0 }.into());
 ```
 
-The same `#[into(<types>)]` syntax can be used in field attributes as well
+The `#[into(<types>)]` syntax can be used on fields as well.
 
 ```rust
 # use std::marker::PhantomData;
 # use derive_more::Into;
 # struct Whatever;
-
+#
 #[derive(Into, Clone)]
 #[into(owned, ref((u8, str)), ref_mut)]
 struct Foo {
@@ -167,7 +170,8 @@ assert_eq!(1_u64, foo.clone().into());
 assert_eq!(&1_u8, <&u8>::from(&foo));
 ```
 
-Fields that have specific conversions into them can also be skipped
+Fields, having specific conversions into them, can also be skipped for top-level
+tuple conversions.
 
 ```rust
 # use derive_more::Into;
