@@ -1044,25 +1044,25 @@ mod multi_field {
     }
 }
 
-mod field_attr {
+mod with_fields {
     use super::*;
 
-    mod fields_only {
+    mod only {
         use super::*;
 
-        #[derive(Debug, Into, Clone, Copy)]
+        #[derive(Clone, Copy, Debug, Into)]
         struct Tuple(#[into] i32, f64, #[into] f64);
 
-        // Asserts that macro expansion doesn't generate impls not specified,
-        // by producing a trait implementations conflict error during compilation,
-        // if it does.
-
+        // Asserts that macro expansion doesn't generate this impl, by producing a trait
+        // implementations conflict error during compilation, if it does.
         impl From<Tuple> for (i32, f64, f64) {
             fn from(value: Tuple) -> Self {
                 (value.0, value.1, value.2)
             }
         }
 
+        // Asserts that macro expansion doesn't generate this impl, by producing a trait
+        // implementations conflict error during compilation, if it does.
         impl From<Tuple> for (i32, f64) {
             fn from(value: Tuple) -> Self {
                 (value.0, value.2)
@@ -1077,7 +1077,7 @@ mod field_attr {
             assert_eq!(3.0, foo.into());
         }
 
-        #[derive(Debug, Into, Clone, Copy)]
+        #[derive(Clone, Copy, Debug, Into)]
         struct Struct {
             #[into]
             a: i32,
@@ -1086,16 +1086,16 @@ mod field_attr {
             c: f64,
         }
 
-        // Asserts that macro expansion doesn't generate impls not specified,
-        // by producing a trait implementations conflict error during compilation,
-        // if it does.
-
+        // Asserts that macro expansion doesn't generate this impl, by producing a trait
+        // implementations conflict error during compilation, if it does.
         impl From<Struct> for (i32, f64, f64) {
             fn from(value: Struct) -> Self {
                 (value.a, value.b, value.c)
             }
         }
 
+        // Asserts that macro expansion doesn't generate this impl, by producing a trait
+        // implementations conflict error during compilation, if it does.
         impl From<Struct> for (i32, f64) {
             fn from(value: Struct) -> Self {
                 (value.a, value.c)
@@ -1117,23 +1117,23 @@ mod field_attr {
         mod types {
             use super::*;
 
-            #[derive(Debug, Into, Clone)]
+            #[derive(Clone, Debug, Into)]
             struct Tuple(
                 #[into(Box<str>, Cow<'_, str>)] String,
                 f64,
                 #[into(f32, f64)] f32,
             );
 
-            // Asserts that macro expansion doesn't generate impls not specified,
-            // by producing a trait implementations conflict error during compilation,
-            // if it does.
-
+            // Asserts that macro expansion doesn't generate this impl, by producing a trait
+            // implementations conflict error during compilation, if it does.
             impl From<Tuple> for String {
                 fn from(value: Tuple) -> Self {
                     value.0
                 }
             }
 
+            // Asserts that macro expansion doesn't generate this impl, by producing a trait
+            // implementations conflict error during compilation, if it does.
             impl From<Tuple> for (String, f64, f32) {
                 fn from(value: Tuple) -> Self {
                     (value.0, value.1, value.2)
@@ -1150,7 +1150,7 @@ mod field_attr {
                 assert_eq!(3.0f64, foo.into());
             }
 
-            #[derive(Debug, Into, Clone)]
+            #[derive(Clone, Debug, Into)]
             struct Struct {
                 #[into(Box<str>, Cow<'_, str>)]
                 a: String,
@@ -1159,22 +1159,24 @@ mod field_attr {
                 c: f32,
             }
 
-            // Asserts that macro expansion doesn't generate impls not specified,
-            // by producing a trait implementations conflict error during compilation,
-            // if it does.
-
+            // Asserts that macro expansion doesn't generate this impl, by producing a trait
+            // implementations conflict error during compilation, if it does.
             impl From<Struct> for String {
                 fn from(value: Struct) -> Self {
                     value.a
                 }
             }
 
+            // Asserts that macro expansion doesn't generate this impl, by producing a trait
+            // implementations conflict error during compilation, if it does.
             impl From<Struct> for (String, f64, f32) {
                 fn from(value: Struct) -> Self {
                     (value.a, value.b, value.c)
                 }
             }
 
+            // Asserts that macro expansion doesn't generate this impl, by producing a trait
+            // implementations conflict error during compilation, if it does.
             impl From<Struct> for (Box<str>, f32) {
                 fn from(value: Struct) -> Self {
                     (value.a.into(), value.c)
@@ -1195,16 +1197,14 @@ mod field_attr {
                 assert_eq!(3.0f64, foo.into());
             }
 
-            mod ref_ {
+            mod r#ref {
                 use super::*;
 
                 #[derive(Debug, Into)]
                 struct Tuple(#[into(ref)] String, f64, #[into(ref)] f64);
 
-                // Asserts that macro expansion doesn't generate impls not specified,
-                // by producing a trait implementations conflict error during compilation,
-                // if it does.
-
+                // Asserts that macro expansion doesn't generate this impl, by producing a trait
+                // implementations conflict error during compilation, if it does.
                 impl<'a> From<&'a Tuple> for (&'a String, &'a f64, &'a f64) {
                     fn from(value: &'a Tuple) -> Self {
                         (&value.0, &value.1, &value.2)
@@ -1228,16 +1228,16 @@ mod field_attr {
                     c: f64,
                 }
 
-                // Asserts that macro expansion doesn't generate impls not specified,
-                // by producing a trait implementations conflict error during compilation,
-                // if it does.
-
+                // Asserts that macro expansion doesn't generate this impl, by producing a trait
+                // implementations conflict error during compilation, if it does.
                 impl<'a> From<&'a Struct> for (&'a String, &'a f64, &'a f64) {
                     fn from(value: &'a Struct) -> Self {
                         (&value.a, &value.b, &value.c)
                     }
                 }
 
+                // Asserts that macro expansion doesn't generate this impl, by producing a trait
+                // implementations conflict error during compilation, if it does.
                 impl<'a> From<&'a Struct> for (&'a String, &'a f64) {
                     fn from(value: &'a Struct) -> Self {
                         (&value.a, &value.c)
@@ -1343,11 +1343,11 @@ mod field_attr {
 
                             assert_eq!(
                                 &mut Transmuted(1),
-                                <&mut Transmuted<i32>>::from(&mut foo)
+                                <&mut Transmuted<i32>>::from(&mut foo),
                             );
                             assert_eq!(
                                 &mut Wrapped(2),
-                                <&mut Wrapped<i64>>::from(&mut foo)
+                                <&mut Wrapped<i64>>::from(&mut foo),
                             );
                         }
 
@@ -1368,11 +1368,11 @@ mod field_attr {
 
                             assert_eq!(
                                 &mut Transmuted(1),
-                                <&mut Transmuted<i32>>::from(&mut foo)
+                                <&mut Transmuted<i32>>::from(&mut foo),
                             );
                             assert_eq!(
                                 &mut Wrapped(2),
-                                <&mut Wrapped<i64>>::from(&mut foo)
+                                <&mut Wrapped<i64>>::from(&mut foo),
                             );
                         }
                     }
@@ -1381,7 +1381,7 @@ mod field_attr {
         }
     }
 
-    mod both {
+    mod mixed {
         use super::*;
 
         #[derive(Debug, Into)]
