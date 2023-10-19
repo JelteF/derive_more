@@ -147,7 +147,7 @@ in `Cargo.toml`:
 
 ```toml
 [dependencies]
-derive_more = "=1.0.0-beta.3"
+derive_more = "=1.0.0-beta.4"
 # You can specify the types of derives that you need for less time spent
 # compiling. For the full list of features see this crate its `Cargo.toml`.
 features = ["from", "add", "iterator"]
