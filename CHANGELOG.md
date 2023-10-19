@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   and ignores field type itself.
 - The `Into` derive now uses `#[into(<types>)]` instead of `#[into(types(<types>))]`
   and ignores field type itself.
+- The `Into` derive now generates separate impls for each field whenever the `#[into(...)]`
+  attribute is applied to it. ([#291](https://github.com/JelteF/derive_more/pull/291))
 - Importing a derive macro now also import its corresponding trait.
 - The `Error` derive is updated with changes to the `error_generic_member_access`
   unstable feature for nightly users. ([#200](https://github.com/JelteF/derive_more/pull/200),

@@ -1,0 +1,5 @@
+error[E0412]: cannot find type `skip` in this scope
+ --> tests/compile_fail/into/mixed_field_skip_types.rs:3:12
+  |
+3 |     #[into(skip, i32)]
+  |            ^^^^ not found in this scope

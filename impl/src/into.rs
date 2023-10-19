@@ -3,7 +3,7 @@
 use std::{
     any::{Any, TypeId},
     borrow::Cow,
-    iter,
+    iter, slice,
 };
 
 use proc_macro2::{Span, TokenStream};
@@ -18,7 +18,7 @@ use syn::{
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
-    polyfill, Either, FieldsExt as _, Spanning,
+    polyfill, Either, FieldsExt, Spanning,
 };
 
 /// Expands an [`Into`] derive macro.
@@ -37,110 +37,270 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         )),
     }?;
 
-    let attr = StructAttribute::parse_attrs_with(
+    let struct_attr = StructAttribute::parse_attrs_with(
         &input.attrs,
         &attr_name,
         &ConsiderLegacySyntax {
             fields: &data.fields,
         },
     )?
-    .map(Spanning::into_inner)
-    .unwrap_or_else(|| StructAttribute {
-        owned: Some(Punctuated::new()),
-        r#ref: None,
-        ref_mut: None,
-    });
-    let ident = &input.ident;
-    let fields = data
+    .map(Spanning::into_inner);
+
+    let fields_data = data
         .fields
         .iter()
         .enumerate()
-        .filter_map(
-            |(i, f)| match attr::Skip::parse_attrs(&f.attrs, &attr_name) {
-                Ok(None) => Some(Ok((
-                    &f.ty,
-                    f.ident.as_ref().map_or_else(
-                        || Either::Right(syn::Index::from(i)),
-                        Either::Left,
-                    ),
-                ))),
-                Ok(Some(_)) => None,
-                Err(e) => Some(Err(e)),
-            },
-        )
+        .map(|(i, f)| {
+            let field_attr = FieldAttribute::parse_attrs_with(
+                &f.attrs,
+                &attr_name,
+                &ConsiderLegacySyntax {
+                    fields: slice::from_ref(f),
+                },
+            )?
+            .map(Spanning::into_inner);
+
+            let skip = field_attr
+                .as_ref()
+                .map(|attr| attr.skip.is_some())
+                .unwrap_or(false);
+
+            let convs = field_attr.and_then(|attr| attr.convs);
+
+            Ok(((i, f, skip), convs))
+        })
         .collect::<syn::Result<Vec<_>>>()?;
-    let (fields_tys, fields_idents): (Vec<_>, Vec<_>) = fields.into_iter().unzip();
-    let (fields_tys, fields_idents) = (&fields_tys, &fields_idents);
+    let (fields, fields_convs): (Vec<_>, Vec<_>) = fields_data.into_iter().unzip();
 
-    let expand = |tys: Option<Punctuated<_, _>>, r: bool, m: bool| {
-        let Some(tys) = tys else {
-            return Either::Left(iter::empty());
-        };
+    let struct_attr = struct_attr.or_else(|| {
+        fields_convs
+            .iter()
+            .all(Option::is_none)
+            .then(ConversionsAttribute::default)
+            .map(Either::Right)
+    });
 
-        let lf =
-            r.then(|| syn::Lifetime::new("'__derive_more_into", Span::call_site()));
-        let r = r.then(token::And::default);
-        let m = m.then(token::Mut::default);
+    let mut expansions: Vec<_> = fields
+        .iter()
+        .zip(fields_convs)
+        .filter_map(|(&(i, field, _), convs)| {
+            convs.map(|convs| Expansion {
+                input_ident: &input.ident,
+                input_generics: &input.generics,
+                fields: vec![(i, field)],
+                convs,
+            })
+        })
+        .collect();
+    if let Some(attr) = struct_attr {
+        expansions.push(Expansion {
+            input_ident: &input.ident,
+            input_generics: &input.generics,
+            fields: fields
+                .into_iter()
+                .filter_map(|(i, f, skip)| (!skip).then_some((i, f)))
+                .collect(),
+            convs: attr.into(),
+        });
+    }
+    expansions.into_iter().map(Expansion::expand).collect()
+}
 
-        let gens = if let Some(lf) = lf.clone() {
-            let mut gens = input.generics.clone();
-            gens.params.push(syn::LifetimeParam::new(lf).into());
-            Cow::Owned(gens)
-        } else {
-            Cow::Borrowed(&input.generics)
-        };
+/// Expansion of an [`Into`] derive macro, generating [`From`] implementations for a struct.
+struct Expansion<'a> {
+    /// [`syn::Ident`] of the struct.
+    input_ident: &'a syn::Ident,
 
-        Either::Right(
-            if tys.is_empty() {
-                Either::Left(iter::once(syn::Type::Tuple(syn::TypeTuple {
-                    paren_token: token::Paren::default(),
-                    elems: fields_tys.iter().cloned().cloned().collect(),
-                })))
-            } else {
-                Either::Right(tys.into_iter())
-            }
-            .map(move |ty| {
-                let tys = fields_tys.validate_type(&ty)?.collect::<Vec<_>>();
+    /// [`syn::Generics`] of the struct.
+    input_generics: &'a syn::Generics,
+
+    /// Fields to convert from, along with their indices.
+    fields: Vec<(usize, &'a syn::Field)>,
+
+    /// Conversions to be generated.
+    convs: ConversionsAttribute,
+}
+
+impl<'a> Expansion<'a> {
+    fn expand(self) -> syn::Result<TokenStream> {
+        let Self {
+            input_ident,
+            input_generics,
+            fields,
+            convs,
+        } = self;
+
+        let fields_idents: Vec<_> = fields
+            .iter()
+            .map(|(i, f)| {
+                f.ident
+                    .as_ref()
+                    .map_or_else(|| Either::Left(syn::Index::from(*i)), Either::Right)
+            })
+            .collect();
+        let fields_tys: Vec<_> = fields.iter().map(|(_, f)| &f.ty).collect();
+        let fields_tuple = syn::Type::Tuple(syn::TypeTuple {
+            paren_token: token::Paren::default(),
+            elems: fields_tys.iter().cloned().cloned().collect(),
+        });
+
+        [
+            (&convs.owned, false, false),
+            (&convs.r#ref, true, false),
+            (&convs.ref_mut, true, true),
+        ]
+        .into_iter()
+        .filter_map(|(out_tys, ref_, mut_)| {
+            out_tys.as_ref().map(|out_tys| {
+                let lf = ref_.then(|| {
+                    syn::Lifetime::new("'__derive_more_into", Span::call_site())
+                });
+                let r = ref_.then(token::And::default);
+                let m = mut_.then(token::Mut::default);
+
+                let gens = if let Some(lf) = lf.clone() {
+                    let mut gens = input_generics.clone();
+                    gens.params.push(syn::LifetimeParam::new(lf).into());
+                    Cow::Owned(gens)
+                } else {
+                    Cow::Borrowed(input_generics)
+                };
                 let (impl_gens, _, where_clause) = gens.split_for_impl();
-                let (_, ty_gens, _) = input.generics.split_for_impl();
+                let (_, ty_gens, _) = input_generics.split_for_impl();
 
-                Ok(quote! {
-                    #[automatically_derived]
-                    impl #impl_gens ::core::convert::From<#r #lf #m #ident #ty_gens>
-                     for ( #( #r #lf #m #tys ),* ) #where_clause
-                    {
-                        #[inline]
-                        fn from(value: #r #lf #m #ident #ty_gens) -> Self {
-                            (#(
-                                <#r #m #tys as ::core::convert::From<_>>::from(
-                                    #r #m value. #fields_idents
-                                )
-                            ),*)
+                if out_tys.is_empty() {
+                    Either::Left(iter::once(&fields_tuple))
+                } else {
+                    Either::Right(out_tys.iter())
+                }.map(|out_ty| {
+                    let tys: Vec<_> = fields_tys.validate_type(out_ty)?.collect();
+
+                    Ok(quote! {
+                        #[automatically_derived]
+                        impl #impl_gens ::core::convert::From<#r #lf #m #input_ident #ty_gens>
+                         for ( #( #r #lf #m #tys ),* ) #where_clause
+                        {
+                            #[inline]
+                            fn from(value: #r #lf #m #input_ident #ty_gens) -> Self {
+                                (#(
+                                    <#r #m #tys as ::core::convert::From<_>>::from(
+                                        #r #m value. #fields_idents
+                                    )
+                                ),*)
+                            }
                         }
-                    }
+                    })
                 })
-            }),
-        )
-    };
-
-    [
-        expand(attr.owned, false, false),
-        expand(attr.r#ref, true, false),
-        expand(attr.ref_mut, true, true),
-    ]
-    .into_iter()
-    .flatten()
-    .collect()
+                .collect::<syn::Result<TokenStream>>()
+            })
+        })
+        .collect()
+    }
 }
 
 /// Representation of an [`Into`] derive macro struct container attribute.
 ///
 /// ```rust,ignore
+/// #[into]
 /// #[into(<types>)]
 /// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
 /// ```
-#[derive(Debug, Default)]
-struct StructAttribute {
+type StructAttribute = Either<attr::Empty, ConversionsAttribute>;
+
+impl From<StructAttribute> for ConversionsAttribute {
+    fn from(v: StructAttribute) -> Self {
+        match v {
+            Either::Left(_) => ConversionsAttribute::default(),
+            Either::Right(c) => c,
+        }
+    }
+}
+
+/// Representation of an [`Into`] derive macro field attribute.
+///
+/// ```rust,ignore
+/// #[into]
+/// #[into(<types>)]
+/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
+/// #[into(skip)] #[into(ignore)]
+/// ```
+#[derive(Clone, Debug)]
+struct FieldAttribute {
+    skip: Option<attr::Skip>,
+    convs: Option<ConversionsAttribute>,
+}
+
+impl Parse for FieldAttribute {
+    fn parse(_: ParseStream<'_>) -> syn::Result<Self> {
+        unreachable!("call `attr::ParseMultiple::parse_attr_with()` instead")
+    }
+}
+
+impl attr::ParseMultiple for FieldAttribute {
+    fn parse_attr_with<P: attr::Parser>(
+        attr: &syn::Attribute,
+        parser: &P,
+    ) -> syn::Result<Self> {
+        type Untyped = Either<attr::Skip, Either<attr::Empty, ConversionsAttribute>>;
+        impl From<Untyped> for FieldAttribute {
+            fn from(v: Untyped) -> Self {
+                match v {
+                    Untyped::Left(skip) => Self {
+                        skip: Some(skip),
+                        convs: None,
+                    },
+                    Untyped::Right(c) => Self {
+                        skip: None,
+                        convs: Some(match c {
+                            Either::Left(_empty) => ConversionsAttribute::default(),
+                            Either::Right(convs) => convs,
+                        }),
+                    },
+                }
+            }
+        }
+
+        Untyped::parse_attr_with(attr, parser).map(Self::from)
+    }
+
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let skip = attr::Skip::merge_opt_attrs(
+            prev.clone().map(|v| v.skip).transpose(),
+            new.clone().map(|v| v.skip).transpose(),
+            name,
+        )?
+        .map(Spanning::into_inner);
+
+        let convs = ConversionsAttribute::merge_opt_attrs(
+            prev.clone().map(|v| v.convs).transpose(),
+            new.clone().map(|v| v.convs).transpose(),
+            name,
+        )?
+        .map(Spanning::into_inner);
+
+        Ok(Spanning::new(
+            Self { skip, convs },
+            prev.span.join(new.span).unwrap_or(prev.span),
+        ))
+    }
+}
+
+/// Representation of an [`Into`] derive macro attribute describing specified [`Into`] conversions.
+///
+/// ```rust,ignore
+/// #[into(<types>)]
+/// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
+/// ```
+///
+/// For each field:
+/// - [`None`] represents no conversions.
+/// - Empty [`Punctuated`] represents a conversion into the field type.
+#[derive(Clone, Debug)]
+struct ConversionsAttribute {
     /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
     owned: Option<Punctuated<syn::Type, token::Comma>>,
 
@@ -151,9 +311,23 @@ struct StructAttribute {
     ref_mut: Option<Punctuated<syn::Type, token::Comma>>,
 }
 
-impl Parse for StructAttribute {
+impl Default for ConversionsAttribute {
+    fn default() -> Self {
+        Self {
+            owned: Some(Punctuated::new()),
+            r#ref: None,
+            ref_mut: None,
+        }
+    }
+}
+
+impl Parse for ConversionsAttribute {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        let mut out = Self::default();
+        let mut out = Self {
+            owned: None,
+            r#ref: None,
+            ref_mut: None,
+        };
 
         let parse_inner = |ahead, types: &mut Option<_>| {
             input.advance_to(&ahead);
@@ -231,7 +405,7 @@ impl Parse for StructAttribute {
     }
 }
 
-impl attr::ParseMultiple for StructAttribute {
+impl attr::ParseMultiple for ConversionsAttribute {
     fn merge_attrs(
         prev: Spanning<Self>,
         new: Spanning<Self>,
@@ -266,15 +440,19 @@ impl attr::ParseMultiple for StructAttribute {
 }
 
 /// [`attr::Parser`] considering legacy syntax and performing [`check_legacy_syntax()`] for a
-/// [`StructAttribute`].
-struct ConsiderLegacySyntax<'a> {
-    /// [`syn::Fields`] of a struct, the [`StructAttribute`] is parsed for.
-    fields: &'a syn::Fields,
+/// [`StructAttribute`] or a [`FieldAttribute`].
+struct ConsiderLegacySyntax<F> {
+    /// [`syn::Field`]s the [`StructAttribute`] or [`FieldAttribute`] is parsed for.
+    fields: F,
 }
 
-impl attr::Parser for ConsiderLegacySyntax<'_> {
+impl<'a, F> attr::Parser for ConsiderLegacySyntax<&'a F>
+where
+    F: FieldsExt + ?Sized,
+    &'a F: IntoIterator<Item = &'a syn::Field>,
+{
     fn parse<T: Parse + Any>(&self, input: ParseStream<'_>) -> syn::Result<T> {
-        if TypeId::of::<T>() == TypeId::of::<StructAttribute>() {
+        if TypeId::of::<T>() == TypeId::of::<ConversionsAttribute>() {
             check_legacy_syntax(input, self.fields)?;
         }
         T::parse(input)
@@ -282,10 +460,11 @@ impl attr::Parser for ConsiderLegacySyntax<'_> {
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
-fn check_legacy_syntax(
-    tokens: ParseStream<'_>,
-    fields: &syn::Fields,
-) -> syn::Result<()> {
+fn check_legacy_syntax<'a, F>(tokens: ParseStream<'_>, fields: &'a F) -> syn::Result<()>
+where
+    F: FieldsExt + ?Sized,
+    &'a F: IntoIterator<Item = &'a syn::Field>,
+{
     let span = tokens.span();
     let tokens = tokens.fork();
 
@@ -306,7 +485,7 @@ fn check_legacy_syntax(
         0 => None,
         1 => Some(
             fields
-                .iter()
+                .into_iter()
                 .next()
                 .unwrap_or_else(|| unreachable!("fields.len() == 1"))
                 .ty
@@ -316,7 +495,7 @@ fn check_legacy_syntax(
         _ => Some(format!(
             "({})",
             fields
-                .iter()
+                .into_iter()
                 .map(|f| f.ty.to_token_stream().to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
