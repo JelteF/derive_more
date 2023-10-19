@@ -1464,6 +1464,19 @@ mod spanning {
         }
     }
 
+    #[cfg(feature = "into")]
+    impl<T> Spanning<Option<T>> {
+        pub(crate) fn transpose(self) -> Option<Spanning<T>> {
+            match self.item {
+                Some(item) => Some(Spanning {
+                    item,
+                    span: self.span,
+                }),
+                None => None,
+            }
+        }
+    }
+
     impl<T: ?Sized> Deref for Spanning<T> {
         type Target = T;
 
@@ -1499,18 +1512,25 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "as_ref",
+        feature = "from",
+        feature = "into",
+        feature = "try_from"
+    ))]
+    pub(crate) use self::empty::Empty;
+    #[cfg(any(
+        feature = "as_ref",
         feature = "debug",
         feature = "display",
         feature = "from",
         feature = "into",
     ))]
     pub(crate) use self::skip::Skip;
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    pub(crate) use self::types::Types;
     #[cfg(any(feature = "as_ref", feature = "from"))]
     pub(crate) use self::{
         conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
     };
-    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
-    pub(crate) use self::{empty::Empty, types::Types};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
 
@@ -1554,6 +1574,23 @@ pub(crate) mod attr {
                 new.span,
                 format!("only single `#[{name}(...)]` attribute is allowed here"),
             ))
+        }
+
+        /// Merges multiple [`Option`]al values of this attribute into a single one.
+        ///
+        /// Default implementation uses [`ParseMultiple::merge_attrs()`] when both `prev` and `new`
+        /// are [`Some`].
+        fn merge_opt_attrs(
+            prev: Option<Spanning<Self>>,
+            new: Option<Spanning<Self>>,
+            name: &syn::Ident,
+        ) -> syn::Result<Option<Spanning<Self>>> {
+            Ok(match (prev, new) {
+                (Some(p), Some(n)) => Some(Self::merge_attrs(p, n, name)?),
+                (Some(p), None) => Some(p),
+                (None, Some(n)) => Some(n),
+                (None, None) => None,
+            })
         }
 
         /// Parses this attribute from the provided multiple [`syn::Attribute`]s with the provided
@@ -1626,7 +1663,12 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "from",
+        feature = "into",
+        feature = "try_from"
+    ))]
     mod empty {
         use syn::{
             parse::{Parse, ParseStream},
@@ -1640,6 +1682,7 @@ pub(crate) mod attr {
         /// ```rust,ignore
         /// #[<attribute>]
         /// ```
+        #[derive(Clone, Copy, Debug)]
         pub(crate) struct Empty;
 
         impl Parse for Empty {
@@ -1697,6 +1740,7 @@ pub(crate) mod attr {
         /// ```rust,ignore
         /// #[<attribute>(forward)]
         /// ```
+        #[derive(Clone, Copy, Debug)]
         pub(crate) struct Forward;
 
         impl Parse for Forward {
@@ -1825,6 +1869,7 @@ pub(crate) mod attr {
         /// #[<attribute>(skip)]
         /// #[<attribute>(ignore)]
         /// ```
+        #[derive(Clone, Copy, Debug)]
         pub(crate) struct Skip(&'static str);
 
         impl Parse for Skip {
@@ -2164,7 +2209,7 @@ mod fields_ext {
         }
     }
 
-    impl<T> Len for Vec<T> {
+    impl<T> Len for [T] {
         fn len(&self) -> usize {
             self.len()
         }
