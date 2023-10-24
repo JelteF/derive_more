@@ -434,8 +434,6 @@ impl attr::ParseMultiple for ConversionsAttribute {
         prev.r#ref.consider_fields_ty |= new.r#ref.consider_fields_ty;
         prev.ref_mut.tys.extend(new.ref_mut.tys);
         prev.ref_mut.consider_fields_ty |= new.ref_mut.consider_fields_ty;
-        //let wtt = &prev.owned;
-        //panic!("--> {}", quote! { #wtt });
 
         Ok(Spanning::new(
             prev,
