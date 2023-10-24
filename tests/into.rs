@@ -1443,7 +1443,13 @@ mod with_fields {
             #[into((Wrapped<i32>, Transmuted<f32>))]
             #[into(ref_mut((Wrapped<i32>, Transmuted<f32>)))]
             struct Tuple(
+                #[into(ref)]
+                #[into(ref(Transmuted<i32>))]
+                #[into]
                 Wrapped<i32>,
+                #[into(ref_mut)]
+                #[into(ref_mut(Transmuted<f32>))]
+                #[into(owned)]
                 Wrapped<f32>,
             );
 
@@ -1455,6 +1461,15 @@ mod with_fields {
                 assert_eq!((Wrapped(1), Wrapped(2.0)), foo.into());
                 assert_eq!((Wrapped(1), Transmuted(2.0)), foo.into());
                 assert_eq!((&mut Wrapped(1), &mut Transmuted(2.0)), (&mut foo).into());
+                assert_eq!(&Wrapped(1), <&Wrapped<i32>>::from(&foo));
+                assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
+                assert_eq!(Wrapped(1), <Wrapped<i32>>::from(foo));
+                assert_eq!(&mut Wrapped(2.0), <&mut Wrapped<f32>>::from(&mut foo));
+                assert_eq!(
+                    &mut Transmuted(2.0),
+                    <&mut Transmuted<f32>>::from(&mut foo),
+                );
+                assert_eq!(Wrapped(2.0), <Wrapped<f32>>::from(foo));
             }
         }
     }
