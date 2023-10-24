@@ -28,11 +28,11 @@ unsafe fn transmute<From, To>(from: From) -> To {
     to
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]
 struct Wrapped<T>(T);
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]
 struct Transmuted<T>(T);
 
@@ -1432,6 +1432,30 @@ mod with_fields {
             assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&foo).into());
             assert_eq!(&Wrapped(2.0), <&Wrapped<f32>>::from(&foo));
             assert_eq!(Wrapped(1), foo.into());
+        }
+
+        mod separate {
+            use super::*;
+
+            #[derive(Clone, Copy, Debug, Into)]
+            #[into(ref)]
+            #[into(owned)]
+            #[into((Wrapped<i32>, Transmuted<f32>))]
+            #[into(ref_mut((Wrapped<i32>, Transmuted<f32>)))]
+            struct Tuple(
+                Wrapped<i32>,
+                Wrapped<f32>,
+            );
+
+            #[test]
+            fn tuple() {
+                let mut foo = Tuple(Wrapped(1), Wrapped(2.0));
+
+                assert_eq!((&Wrapped(1), &Wrapped(2.0)), (&foo).into());
+                assert_eq!((Wrapped(1), Wrapped(2.0)), foo.into());
+                assert_eq!((Wrapped(1), Transmuted(2.0)), foo.into());
+                assert_eq!((&mut Wrapped(1), &mut Transmuted(2.0)), (&mut foo).into());
+            }
         }
     }
 }
