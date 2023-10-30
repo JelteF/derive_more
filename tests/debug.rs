@@ -1010,7 +1010,7 @@ mod generic {
     }
 
     #[derive(Debug)]
-    enum InterpolatedGenericEnumIngored<A, B> {
+    enum InterpolatedGenericEnumIgnored<A, B> {
         #[debug("A {field}")]
         A { field: A },
         #[debug("B")]
@@ -1021,12 +1021,12 @@ mod generic {
         assert_eq!(
             format!(
                 "{:?}",
-                InterpolatedGenericEnumIngored::A::<_, u8> { field: NotDebug },
+                InterpolatedGenericEnumIgnored::A::<_, u8> { field: NotDebug },
             ),
             "A NotDebug",
         );
         assert_eq!(
-            format!("{:?}", InterpolatedGenericEnumIngored::B::<u8, _>(NotDebug)),
+            format!("{:?}", InterpolatedGenericEnumIgnored::B::<u8, _>(NotDebug)),
             "B",
         );
     }
