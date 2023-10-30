@@ -18,7 +18,7 @@ impl<Frm: ?Sized, To: ?Sized> Default for Conv<Frm, To> {
 
 /// Trait performing the specialization.
 pub trait ExtractRef {
-    /// Inout reference type.
+    /// Input reference type.
     type Frm;
     /// Output reference type.
     type To;
