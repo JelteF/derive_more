@@ -150,49 +150,48 @@ impl<'a> Expansion<'a> {
             (&convs.ref_mut, true, true),
         ]
         .into_iter()
-        .filter_map(|(out_tys, ref_, mut_)| {
-            out_tys.as_ref().map(|out_tys| {
-                let lf = ref_.then(|| {
-                    syn::Lifetime::new("'__derive_more_into", Span::call_site())
-                });
-                let r = ref_.then(token::And::default);
-                let m = mut_.then(token::Mut::default);
+        .filter(|(conv, _, _)| conv.consider_fields_ty || !conv.tys.is_empty())
+        .map(|(conv, ref_, mut_)| {
+            let lf = ref_.then(|| syn::Lifetime::new("'__derive_more_into", Span::call_site()));
+            let r = ref_.then(token::And::default);
+            let m = mut_.then(token::Mut::default);
 
-                let gens = if let Some(lf) = lf.clone() {
-                    let mut gens = input_generics.clone();
-                    gens.params.push(syn::LifetimeParam::new(lf).into());
-                    Cow::Owned(gens)
-                } else {
-                    Cow::Borrowed(input_generics)
-                };
-                let (impl_gens, _, where_clause) = gens.split_for_impl();
-                let (_, ty_gens, _) = input_generics.split_for_impl();
+            let gens = if let Some(lf) = lf.clone() {
+                let mut gens = input_generics.clone();
+                gens.params.push(syn::LifetimeParam::new(lf).into());
+                Cow::Owned(gens)
+            } else {
+                Cow::Borrowed(input_generics)
+            };
+            let (impl_gens, _, where_clause) = gens.split_for_impl();
+            let (_, ty_gens, _) = input_generics.split_for_impl();
 
-                if out_tys.is_empty() {
-                    Either::Left(iter::once(&fields_tuple))
-                } else {
-                    Either::Right(out_tys.iter())
-                }.map(|out_ty| {
-                    let tys: Vec<_> = fields_tys.validate_type(out_ty)?.collect();
+            if conv.consider_fields_ty {
+                Either::Left(iter::once(&fields_tuple))
+            } else {
+                Either::Right(iter::empty())
+            }
+            .chain(&conv.tys)
+            .map(|out_ty| {
+                let tys: Vec<_> = fields_tys.validate_type(out_ty)?.collect();
 
-                    Ok(quote! {
-                        #[automatically_derived]
-                        impl #impl_gens ::core::convert::From<#r #lf #m #input_ident #ty_gens>
-                         for ( #( #r #lf #m #tys ),* ) #where_clause
-                        {
-                            #[inline]
-                            fn from(value: #r #lf #m #input_ident #ty_gens) -> Self {
-                                (#(
-                                    <#r #m #tys as ::core::convert::From<_>>::from(
-                                        #r #m value. #fields_idents
-                                    )
-                                ),*)
-                            }
+                Ok(quote! {
+                    #[automatically_derived]
+                    impl #impl_gens ::core::convert::From<#r #lf #m #input_ident #ty_gens>
+                     for ( #( #r #lf #m #tys ),* ) #where_clause
+                    {
+                        #[inline]
+                        fn from(value: #r #lf #m #input_ident #ty_gens) -> Self {
+                            (#(
+                                <#r #m #tys as ::core::convert::From<_>>::from(
+                                    #r #m value. #fields_idents
+                                )
+                            ),*)
                         }
-                    })
+                    }
                 })
-                .collect::<syn::Result<TokenStream>>()
             })
+            .collect::<syn::Result<TokenStream>>()
         })
         .collect()
     }
@@ -289,34 +288,43 @@ impl attr::ParseMultiple for FieldAttribute {
     }
 }
 
+/// [`Into`] conversions specified by a [`ConversionsAttribute`].
+#[derive(Clone, Debug, Default)]
+struct Conversions {
+    /// Indicator whether these [`Conversions`] should contain a conversion into fields type.
+    consider_fields_ty: bool,
+
+    /// [`syn::Type`]s explicitly specified in a [`ConversionsAttribute`].
+    tys: Punctuated<syn::Type, token::Comma>,
+}
+
 /// Representation of an [`Into`] derive macro attribute describing specified [`Into`] conversions.
 ///
 /// ```rust,ignore
 /// #[into(<types>)]
 /// #[into(owned(<types>), ref(<types>), ref_mut(<types>))]
 /// ```
-///
-/// For each field:
-/// - [`None`] represents no conversions.
-/// - Empty [`Punctuated`] represents a conversion into the field type.
 #[derive(Clone, Debug)]
 struct ConversionsAttribute {
     /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
-    owned: Option<Punctuated<syn::Type, token::Comma>>,
+    owned: Conversions,
 
     /// [`Type`]s wrapped into `ref(...)`.
-    r#ref: Option<Punctuated<syn::Type, token::Comma>>,
+    r#ref: Conversions,
 
     /// [`Type`]s wrapped into `ref_mut(...)`.
-    ref_mut: Option<Punctuated<syn::Type, token::Comma>>,
+    ref_mut: Conversions,
 }
 
 impl Default for ConversionsAttribute {
     fn default() -> Self {
         Self {
-            owned: Some(Punctuated::new()),
-            r#ref: None,
-            ref_mut: None,
+            owned: Conversions {
+                consider_fields_ty: true,
+                tys: Punctuated::new(),
+            },
+            r#ref: Conversions::default(),
+            ref_mut: Conversions::default(),
         }
     }
 }
@@ -324,29 +332,31 @@ impl Default for ConversionsAttribute {
 impl Parse for ConversionsAttribute {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let mut out = Self {
-            owned: None,
-            r#ref: None,
-            ref_mut: None,
+            owned: Conversions::default(),
+            r#ref: Conversions::default(),
+            ref_mut: Conversions::default(),
         };
 
-        let parse_inner = |ahead, types: &mut Option<_>| {
+        let parse_inner = |ahead, convs: &mut Conversions| {
             input.advance_to(&ahead);
 
-            let types = types.get_or_insert_with(Punctuated::new);
             if input.peek(token::Paren) {
                 let inner;
                 syn::parenthesized!(inner in input);
 
-                types.extend(
+                convs.tys.extend(
                     inner
                         .parse_terminated(syn::Type::parse, token::Comma)?
                         .into_pairs(),
                 );
+            } else {
+                convs.consider_fields_ty = true;
             }
+
             if input.peek(token::Comma) {
                 let comma = input.parse::<token::Comma>()?;
-                if !types.empty_or_trailing() {
-                    types.push_punct(comma);
+                if !convs.tys.empty_or_trailing() {
+                    convs.tys.push_punct(comma);
                 }
             }
 
@@ -379,12 +389,10 @@ impl Parse for ConversionsAttribute {
                 _ => {
                     let ty = input.parse::<syn::Type>()?;
                     let _ = top_level_type.get_or_insert_with(|| ty.clone());
-                    out.owned.get_or_insert_with(Punctuated::new).push_value(ty);
+                    out.owned.tys.push_value(ty);
 
                     if input.peek(token::Comma) {
-                        out.owned
-                            .get_or_insert_with(Punctuated::new)
-                            .push_punct(input.parse::<token::Comma>()?)
+                        out.owned.tys.push_punct(input.parse::<token::Comma>()?)
                     }
                 }
             }
@@ -411,14 +419,6 @@ impl attr::ParseMultiple for ConversionsAttribute {
         new: Spanning<Self>,
         _: &syn::Ident,
     ) -> syn::Result<Spanning<Self>> {
-        let merge = |out: &mut Option<_>, tys| match (out.as_mut(), tys) {
-            (None, Some(tys)) => {
-                *out = Some::<Punctuated<_, _>>(tys);
-            }
-            (Some(out), Some(tys)) => out.extend(tys),
-            (Some(_), None) | (None, None) => {}
-        };
-
         let Spanning {
             span: prev_span,
             item: mut prev,
@@ -428,9 +428,12 @@ impl attr::ParseMultiple for ConversionsAttribute {
             item: new,
         } = new;
 
-        merge(&mut prev.owned, new.owned);
-        merge(&mut prev.r#ref, new.r#ref);
-        merge(&mut prev.ref_mut, new.ref_mut);
+        prev.owned.tys.extend(new.owned.tys);
+        prev.owned.consider_fields_ty |= new.owned.consider_fields_ty;
+        prev.r#ref.tys.extend(new.r#ref.tys);
+        prev.r#ref.consider_fields_ty |= new.r#ref.consider_fields_ty;
+        prev.ref_mut.tys.extend(new.ref_mut.tys);
+        prev.ref_mut.consider_fields_ty |= new.ref_mut.consider_fields_ty;
 
         Ok(Spanning::new(
             prev,
