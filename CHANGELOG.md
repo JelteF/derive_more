@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking changes
 
-- The minimum supported Rust version (MSRV) is now Rust 1.72.
+- The minimum supported Rust version (MSRV) is now Rust 1.65.
 - Add the `std` feature which should be disabled in `no_std` environments.
 - All Cargo features, except `std`, are now disabled by default. The `full`
   feature can be used to get the old behavior of supporting all possible

@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        msrv: ["1.72.0"]
+        msrv: ["1.65.0"]
         os:
           - ubuntu
           - macOS
@@ -72,8 +72,7 @@ jobs:
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
 
-      - run: cargo test --workspace --features full,testing-helpers
-                        -- --skip compile_fail
+      - run: cargo build --workspace --features full
 
   no_std:
     runs-on: ubuntu-latest
