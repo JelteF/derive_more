@@ -72,7 +72,7 @@ jobs:
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
 
-      - run: cargo build --workspace --features full
+      - run: cargo check --workspace --features full
 
   no_std:
     runs-on: ubuntu-latest
