@@ -137,6 +137,16 @@ These don't derive traits, but derive static methods instead.
 4. [`TryUnwrap`], for each variant `foo` of an enum type, derives an `try_unwrap_foo` method.
 
 
+### Re-exports
+
+This crate also re-exports all the standard library traits that it adds derives
+for. So, both the `Display` derive and the `Display` trait will be in scope when
+you add the following code:
+```rust
+use derive_more::Display;
+```
+
+
 
 
 ## Installation
@@ -176,14 +186,8 @@ extern crate derive_more;
 # fn main() {} // omit wrapping statements above into `main()` in tests
 ```
 
-## Re-exports
 
-This crate also re-exports all of the standard library traits that it adds
-derives for. So both the `Display` derive and the `Display` trait will be in
-scope when you add the following code:
-```rust
-use derive_more::Display;
-```
+
 
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`derive-new`]: https://github.com/nrc/derive-new
