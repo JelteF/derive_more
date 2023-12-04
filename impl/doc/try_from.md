@@ -12,6 +12,7 @@ The type can be changed with a `#[repr(u/i*)]` attribute, e.g., `#[repr(u8)]` or
 Only field-less variants can be constructed from their variant, therefor the `TryFrom` implementation will return an error for a discriminant representing a variant with fields.
 
 ```rust
+# #![cfg(not(msrv))] // TODO: Remove once MSRV bumps 1.66 or higher.
 # use derive_more::TryFrom;
 #[derive(TryFrom, Debug, PartialEq)]
 #[try_from(repr)]

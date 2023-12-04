@@ -76,6 +76,7 @@ jobs:
                         -- --skip compile_fail
         env:
           RUSTFLAGS: --cfg msrv
+          RUSTDOCFLAGS: --cfg msrv
 
   no_std:
     runs-on: ubuntu-latest
