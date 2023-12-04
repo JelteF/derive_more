@@ -56,6 +56,7 @@ fn enum_with_complex_repr() {
     assert!(Enum::try_from(-1).is_err());
 }
 
+#[cfg(not(msrv))] // TODO: Remove once MSRV bumps 1.66 or higher.
 #[test]
 fn test_discriminants_on_enum_with_fields() {
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]

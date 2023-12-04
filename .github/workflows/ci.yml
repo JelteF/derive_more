@@ -72,7 +72,10 @@ jobs:
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
 
-      - run: cargo check --workspace --features full
+      - run: cargo test --workspace --features full,testing-helpers
+                        -- --skip compile_fail
+        env:
+          RUSTFLAGS: --cfg msrv
 
   no_std:
     runs-on: ubuntu-latest
