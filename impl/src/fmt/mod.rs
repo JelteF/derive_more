@@ -8,8 +8,6 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
-use std::mem;
-
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
