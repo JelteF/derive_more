@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
 [![Rust Documentation](https://docs.rs/derive_more/badge.svg)](https://docs.rs/derive_more)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
-[![Rust 1.72+](https://img.shields.io/badge/rustc-1.72+-lightgray.svg)](https://blog.rust-lang.org/2023/08/24/Rust-1.72.0.html)
+[![Rust 1.65+](https://img.shields.io/badge/rustc-1.65+-lightgray.svg)](https://blog.rust-lang.org/2022/11/03/Rust-1.65.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
 Rust has lots of builtin traits that are implemented for its basic types, such
@@ -137,13 +137,22 @@ These don't derive traits, but derive static methods instead.
 4. [`TryUnwrap`], for each variant `foo` of an enum type, derives an `try_unwrap_foo` method.
 
 
+### Re-exports
+
+This crate also re-exports all the standard library traits that it adds derives
+for. So, both the `Display` derive and the `Display` trait will be in scope when
+you add the following code:
+```rust
+use derive_more::Display;
+```
+
+
 
 
 ## Installation
 
-This library requires Rust 1.72 or higher. To avoid redundant compilation times, by
-default no derives are supported. You have to enable each type of derive as a feature
-in `Cargo.toml`:
+To avoid redundant compilation times, by default no derives are supported.
+You have to enable each type of derive as a feature in `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -176,14 +185,25 @@ extern crate derive_more;
 # fn main() {} // omit wrapping statements above into `main()` in tests
 ```
 
-## Re-exports
 
-This crate also re-exports all of the standard library traits that it adds
-derives for. So both the `Display` derive and the `Display` trait will be in
-scope when you add the following code:
-```rust
-use derive_more::Display;
-```
+## [MSRV] policy
+
+This library requires Rust 1.65 or higher.
+
+Changing [MSRV] (minimum supported Rust version) of this crate is treated as a **minor version change** in terms of [Semantic Versioning].
+- So, if [MSRV] changes are **NOT concerning** for your project, just use the default [caret requirement]:
+  ```toml
+  [dependencies]
+  derive_more = "1" # or "1.0", or "^1.0"
+  ```
+- However, if [MSRV] changes are concerning for your project, then use the [tilde requirement] to **omit breaking code**:
+  ```toml
+  [dependencies]
+  derive_more = "~1.0" # or "~1.0.0"
+  ```
+
+
+
 
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`derive-new`]: https://github.com/nrc/derive-new
@@ -216,3 +236,8 @@ use derive_more::Display;
 [`IsVariant`]: https://jeltef.github.io/derive_more/derive_more/is_variant.html
 [`Unwrap`]: https://jeltef.github.io/derive_more/derive_more/unwrap.html
 [`TryUnwrap`]: https://jeltef.github.io/derive_more/derive_more/try_unwrap.html
+
+[caret requirement]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
+[tilde requirement]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#tilde-requirements
+[MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
+[Semantic Versioning]: http://semver.org
