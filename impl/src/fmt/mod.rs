@@ -8,8 +8,6 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
-use std::mem;
-
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
@@ -391,7 +389,7 @@ impl attr::ParseMultiple for ContainerAttributes {
             item: new,
         } = new;
 
-        if mem::replace(&mut prev.fmt, new.fmt).is_some() {
+        if new.fmt.and_then(|n| prev.fmt.replace(n)).is_some() {
             return Err(syn::Error::new(
                 new_span,
                 format!("multiple `#[{name}(\"...\", ...)]` attributes aren't allowed"),

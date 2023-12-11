@@ -786,8 +786,8 @@ mod generic {
             }
 
             #[derive(Display)]
-            #[display(bound(T1: Trait1 + Trait2, T2: Trait1))]
             #[display("{} {} {} {} {:?}", _0.function1(), _0, _0.function2(), _1.function1(), _1)]
+            #[display(bound(T1: Trait1 + Trait2, T2: Trait1))]
             struct Struct<T1, T2>(T1, T2);
 
             let s = Struct(10, DebugOnly);
@@ -849,8 +849,8 @@ mod generic {
             }
 
             #[derive(Display)]
-            #[display(bound(T: Trait))]
             #[display("{}", _0.function())]
+            #[display(bound(T: Trait))]
             struct Struct<T>(T);
 
             let s = Struct(NoDisplay);
