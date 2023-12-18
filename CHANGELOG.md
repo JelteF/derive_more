@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   `#[display(fmt = "...", ("<expr>"),*)]`, and `#[display(bound(<bound>))]`
   instead of `#[display(bound = "<bound>")]`. So without the double quotes
   around the expressions and bounds.
+- The `Display` derive (and other `fmt`-like ones) now delegates to the inner type
+  when `#[display("...", (<expr>),*)]` attribute is trivially substitutable with such
+  call. ([#322](https://github.com/JelteF/derive_more/pull/322))
 - The `DebugCustom` derive is renamed to just `Debug` (gated now under a separate
   `debug` feature), and its semantics were changed to be a superset of `std` variant
   of `Debug`.
