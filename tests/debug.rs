@@ -155,6 +155,85 @@ mod structs {
                 assert_eq!(format!("{:#?}", Struct { field: 0 }), "Struct { .. }");
             }
         }
+
+        mod delegation {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[debug("{_0:?}")]
+            struct TupleDebug(i32);
+
+            #[derive(Debug)]
+            #[debug("{}", field)]
+            struct StructDisplay {
+                field: i32,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03?}", TupleDebug(7)), "007");
+                assert_eq!(format!("{:03?}", StructDisplay { field: 7 }), "007");
+            }
+
+            mod suppressed {
+                #[cfg(not(feature = "std"))]
+                use alloc::format;
+
+                use derive_more::Debug;
+
+                #[derive(Debug)]
+                #[debug("{}", format_args!("{_0:?}"))]
+                struct TupleDebug(i32);
+
+                #[derive(Debug)]
+                #[debug("{}", format_args!("{}", field))]
+                struct StructDisplay {
+                    field: i32,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03?}", TupleDebug(7)), "7");
+                    assert_eq!(format!("{:03?}", StructDisplay { field: 7 }), "7");
+                }
+            }
+
+            mod untriggered {
+                mod on_modifiers {
+                    #[cfg(not(feature = "std"))]
+                    use alloc::format;
+
+                    use derive_more::Debug;
+
+                    #[derive(Debug)]
+                    #[debug("{_0:x?}")]
+                    struct LowerDebug(i32);
+
+                    #[derive(Debug)]
+                    #[debug("{_0:X?}")]
+                    struct UpperDebug(i32);
+
+                    #[derive(Debug)]
+                    #[debug("{:07}", _0)]
+                    struct Width(i32);
+
+                    #[derive(Debug)]
+                    #[debug("{:.5}", _0)]
+                    struct Precision(f64);
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03?}", LowerDebug(7)), "7");
+                        assert_eq!(format!("{:03?}", UpperDebug(8)), "8");
+                        assert_eq!(format!("{:03?}", Width(5)), "0000005");
+                        assert_eq!(format!("{:.3?}", Precision(1.23456789)), "1.23457");
+                    }
+                }
+            }
+        }
     }
 
     mod multi_field {
@@ -356,6 +435,33 @@ mod structs {
                 );
             }
         }
+
+        mod delegation {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[debug("{0:o}", _0)]
+            struct TupleOctal(i32, i64);
+
+            #[derive(Debug)]
+            #[debug("{named:e}", named = b)]
+            struct StructLowerExp {
+                a: i32,
+                b: f64,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03?}", TupleOctal(9, 4)), "011");
+                assert_eq!(
+                    format!("{:.1?}", StructLowerExp { a: 7, b: 3.14 }),
+                    "3.1e0",
+                );
+            }
+        }
     }
 }
 
@@ -480,6 +586,80 @@ mod enums {
                 format!("{:#?}", Enum::SkippedNamed { field: 1 }),
                 "SkippedNamed { .. }",
             );
+        }
+
+        mod delegation {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            enum Enum {
+                #[debug("{_0:?}")]
+                Debug(i32),
+                #[debug("{}", field)]
+                Display { field: i32 },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03?}", Enum::Debug(7)), "007");
+                assert_eq!(format!("{:03?}", Enum::Display { field: 7 }), "007");
+            }
+
+            mod suppressed {
+                #[cfg(not(feature = "std"))]
+                use alloc::format;
+
+                use derive_more::Debug;
+
+                #[derive(Debug)]
+                enum Enum {
+                    #[debug("{}", format_args!("{_0:?}"))]
+                    Debug(i32),
+                    #[debug("{}", format_args!("{}", field))]
+                    Display { field: i32 },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03?}", Enum::Debug(7)), "7");
+                    assert_eq!(format!("{:03?}", Enum::Display { field: 7 }), "7");
+                }
+            }
+
+            mod untriggered {
+                mod on_modifiers {
+                    #[cfg(not(feature = "std"))]
+                    use alloc::format;
+
+                    use derive_more::Debug;
+
+                    #[derive(Debug)]
+                    enum Enum {
+                        #[debug("{_0:x?}")]
+                        LowerDebug(i32),
+                        #[debug("{_0:X?}")]
+                        UpperDebug(i32),
+                        #[debug("{:07}", _0)]
+                        Width(i32),
+                        #[debug("{:.5}", _0)]
+                        Precision(f64),
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03?}", Enum::LowerDebug(7)), "7");
+                        assert_eq!(format!("{:03?}", Enum::UpperDebug(8)), "8");
+                        assert_eq!(format!("{:03?}", Enum::Width(5)), "0000005");
+                        assert_eq!(
+                            format!("{:.3?}", Enum::Precision(1.23456789)),
+                            "1.23457"
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -629,6 +809,30 @@ mod enums {
                 assert_eq!(
                     format!("{:?}", Enum::Fields { a: 1, b: 2 }),
                     "Format 1 String 2",
+                );
+            }
+        }
+
+        mod delegation {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            enum Enum {
+                #[debug("{0:o}", _0)]
+                TupleOctal(i32, i64),
+                #[debug("{named:e}", named = b)]
+                StructLowerExp { a: i32, b: f64 },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03?}", Enum::TupleOctal(9, 4)), "011");
+                assert_eq!(
+                    format!("{:.1?}", Enum::StructLowerExp { a: 7, b: 3.14 }),
+                    "3.1e0",
                 );
             }
         }
@@ -1367,6 +1571,84 @@ mod generic {
                 format!("{s:#?}"),
                 "Struct(\n    WHAT_10_EVER_20,\n    20,\n)",
             );
+        }
+    }
+
+    mod delegation {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
+        use derive_more::Debug;
+
+        #[derive(Debug)]
+        #[debug("{0:o}", _0)]
+        struct Tuple<T>(T);
+
+        #[derive(Debug)]
+        #[debug("{named:e}", named = b)]
+        struct Struct<A, B> {
+            a: A,
+            b: B,
+        }
+
+        #[derive(Debug)]
+        enum Enum<A, B, C> {
+            #[debug("{_0:?}")]
+            Debug(A),
+            #[debug("{}", c)]
+            Display { b: B, c: C },
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(format!("{:03?}", Tuple(9)), "011");
+            assert_eq!(format!("{:.1?}", Struct { a: 9, b: 3.14 }), "3.1e0");
+            assert_eq!(format!("{:03?}", Enum::<_, u8, u8>::Debug(7)), "007");
+            assert_eq!(
+                format!("{:03?}", Enum::<u8, _, _>::Display { b: 7, c: 8 }),
+                "008",
+            );
+        }
+
+        mod untriggered {
+            mod on_modifiers {
+                #[cfg(not(feature = "std"))]
+                use alloc::format;
+
+                use derive_more::Debug;
+
+                #[derive(Debug)]
+                enum Enum<A, B, C, D> {
+                    #[debug("{_0:x?}")]
+                    LowerDebug(A),
+                    #[debug("{_0:X?}")]
+                    UpperDebug(B),
+                    #[debug("{:07}", _0)]
+                    Width(C),
+                    #[debug("{:.5}", _0)]
+                    Precision(D),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(
+                        format!("{:03?}", Enum::<_, u8, u8, f64>::LowerDebug(7)),
+                        "7",
+                    );
+                    assert_eq!(
+                        format!("{:03?}", Enum::<u8, _, u8, f64>::UpperDebug(8)),
+                        "8",
+                    );
+                    assert_eq!(
+                        format!("{:03?}", Enum::<u8, u8, _, f64>::Width(5)),
+                        "0000005",
+                    );
+                    assert_eq!(
+                        format!("{:.3?}", Enum::<u8, u8, u8, _>::Precision(1.23456789)),
+                        "1.23457",
+                    );
+                }
+            }
         }
     }
 }
