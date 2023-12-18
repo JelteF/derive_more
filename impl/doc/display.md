@@ -11,7 +11,7 @@ the supplied format, or an automatically inferred one.
 You specify the format on each variant by writing e.g. `#[display("my val: {}", some_val * 2)]`.
 For enums, you can either specify it on each variant, or on the enum as a whole.
 
-For variants that don't have a format specified, it will simply defer to the format of the
+For variants that don't have a format specified, it will simply delegate to the format of the
 inner variable. If there is no such variable, or there is more than 1, an error is generated.
 
 
@@ -97,6 +97,52 @@ struct MyStruct<T, U, V> {
 ```
 
 
+### Delegation
+
+If the `#[display("...", args...)]` attribute is omitted, the implementation simply delegates to the format
+of the inner type, so all the additional [formatting parameters][1] do work as expected:
+```rust
+# use derive_more::Display;
+#
+#[derive(Display)]
+struct MyInt(i32);
+
+assert_eq!(format!("{:03}", MyInt(7)), "007");
+```
+
+If the `#[display("...", args...)]` attribute is specified and can be trivially substituted with a delegation
+call to the inner type, then delegation will work too:
+```rust
+# use derive_more::Display;
+#
+#[derive(Display)]
+#[display("{_0:o}")] // the same as calling `Octal::fmt()`
+struct MyOctalInt(i32);
+
+// so, additional formatting parameters do work transparently
+assert_eq!(format!("{:03}", MyInt(9)), "011");
+
+#[derive(Display)]
+#[display("{_0:02b}")] // cannot be trivially substituted with `Binary::fmt()`
+struct MyBinaryInt(i32);
+
+// so, additional formatting parameters have no effect
+assert_eq!(format!("{:07}", MyBinaryInt(2)), "10");
+```
+
+If, for some reason, delegation in trivial cases is not desired, it may be suppressed explicitly:
+```rust
+# use derive_more::Display;
+#
+#[derive(Display)]
+#[display("{}", format_args!("{_0:o}"))] // `format_args!()` opaques the inner type
+struct MyOctalInt(i32);
+
+// so, additional formatting parameters have no effect
+assert_eq!(format!("{:07}", MyInt(9)), "11");
+```
+
+
 
 
 ## Example usage
@@ -176,3 +222,8 @@ assert_eq!(UnitStruct {}.to_string(), "UnitStruct");
 assert_eq!(PositiveOrNegative { x: 1 }.to_string(), "Positive");
 assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
 ```
+
+
+
+
+[1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-parameters
