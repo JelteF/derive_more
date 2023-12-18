@@ -116,7 +116,7 @@ If, for some reason, delegation in trivial cases is not desired, it may be suppr
 struct MyOctalInt(i32);
 
 // so, additional formatting parameters have no effect
-assert_eq!(format!("{:07}", MyOctalInt(9)), "11");
+assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ```
 
 
