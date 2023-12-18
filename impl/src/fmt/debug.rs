@@ -227,8 +227,30 @@ impl<'a> Expansion<'a> {
     ///
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
-        if let Some(fmt_attr) = &self.attr.fmt {
-            return Ok(quote! { ::core::write!(__derive_more_f, #fmt_attr) });
+        if let Some(fmt) = &self.attr.fmt {
+            return Ok(fmt
+                .delegatable()
+                .then(|| {
+                    let mut bindings = fmt.bindings(self.fields);
+                    let binding = bindings.next()?;
+                    bindings.next().is_none().then_some(binding)
+                })
+                .flatten()
+                .map_or_else(
+                    || {
+                        quote! {
+                            ::core::write!(__derive_more_f, #fmt)
+                        }
+                    },
+                    |b| {
+                        let ident = &b.ident;
+                        let trait_ident = format_ident!("{}", b.trait_name);
+
+                        quote! {
+                            ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+                        }
+                    },
+                ));
         };
 
         match self.fields {
