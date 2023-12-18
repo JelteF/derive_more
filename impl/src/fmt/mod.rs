@@ -9,12 +9,12 @@ pub(crate) mod display;
 mod parsing;
 
 use proc_macro2::TokenStream;
-use quote::ToTokens;
+use quote::{format_ident, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Ident,
+    token,
 };
 
 use crate::{
@@ -133,28 +133,68 @@ impl ToTokens for FmtAttribute {
 }
 
 impl FmtAttribute {
-    /// Returns an [`Iterator`] over bounded [`syn::Type`]s and trait names.
-    fn bounded_types<'a>(
+    /// Checks whether this [`FmtAttribute`] can be replaced with a trivial delegation (calling a formatting trait
+    /// directly instead of interpolation syntax).
+    ///
+    /// Returns [`syn::Ident`] of the delegated trait, if delegation is possible.
+    fn delegatable(&self) -> bool {
+        // `FmtAttribute` is delegatable when:
+        parsing::format(&self.lit.value())
+            .and_then(|(more, p)| {
+                // (1) There is exactly one formatting parameter.
+                more.is_empty().then_some(p)
+            })
+            .filter(|p| {
+                // (2) And the formatting parameter doesn't contain any modifiers.
+                p.spec
+                    .map(|s| {
+                        s.width.is_none() && s.precision.is_none() && s.ty.is_trivial()
+                    })
+                    .unwrap_or(true)
+            })
+            .filter(|p| match p.arg {
+                // (3) And either exactly one positional argument is specified.
+                Some(parsing::Argument::Integer(_)) | None => self.args.len() == 1,
+                // (4) Or the formatting parameter's name refers to some outer binding.
+                Some(parsing::Argument::Identifier(_)) if self.args.is_empty() => true,
+                // (5) Or exactly one named argument is specified for the formatting parameter's name.
+                Some(parsing::Argument::Identifier(name)) => {
+                    self.args.len() == 1
+                        && self
+                            .args
+                            .first()
+                            .and_then(|a| a.alias.as_ref().map(|a| a.0 == name))
+                            .unwrap_or_default()
+                }
+            })
+            .is_some()
+    }
+
+    /// Returns an [`Iterator`] over [`FmtBinding`]s of this [`FmtAttribute`].
+    fn bindings<'a>(
         &'a self,
         fields: &'a syn::Fields,
-    ) -> impl Iterator<Item = (&'a syn::Type, &'static str)> {
+    ) -> impl Iterator<Item = FmtBinding<'a>> {
         let placeholders = Placeholder::parse_fmt_string(&self.lit.value());
 
         // We ignore unknown fields, as compiler will produce better error messages.
         placeholders.into_iter().filter_map(move |placeholder| {
-            let name = match placeholder.arg {
+            let ident = match placeholder.arg {
                 Parameter::Named(name) => self
                     .args
                     .iter()
                     .find_map(|a| (a.alias()? == &name).then_some(&a.expr))
-                    .map_or(Some(name), |expr| expr.ident().map(ToString::to_string))?,
+                    .map_or(Some(format_ident!("{name}")), |expr| {
+                        expr.ident().cloned()
+                    })?,
                 Parameter::Positional(i) => self
                     .args
                     .iter()
                     .nth(i)
                     .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))?
-                    .to_string(),
+                    .clone(),
             };
+            let name = ident.to_string();
 
             let unnamed = name.strip_prefix('_').and_then(|s| s.parse().ok());
             let ty = match (&fields, unnamed) {
@@ -167,7 +207,11 @@ impl FmtAttribute {
                 _ => None,
             }?;
 
-            Some((ty, placeholder.trait_name))
+            Some(FmtBinding {
+                ident,
+                ty,
+                trait_name: placeholder.trait_name,
+            })
         })
     }
 
@@ -214,6 +258,19 @@ impl FmtAttribute {
     }
 }
 
+/// Representation of a Rust binding used in a [`FmtAttribute`].
+#[derive(Debug)]
+struct FmtBinding<'a> {
+    /// [`syn::Ident`] of this [`FmtBinding`].
+    ident: syn::Ident,
+
+    /// [`syn::Type`] of this [`FmtBinding`].
+    ty: &'a syn::Type,
+
+    /// Name of the trait, this [`FmtBinding`] is formatted with.
+    trait_name: &'static str,
+}
+
 /// Representation of a [named parameter][1] (`identifier '=' expression`) in
 /// in a [`FmtAttribute`].
 ///
@@ -221,7 +278,9 @@ impl FmtAttribute {
 #[derive(Debug)]
 struct FmtArgument {
     /// `identifier =` [`Ident`].
-    alias: Option<(Ident, token::Eq)>,
+    ///
+    /// [`Ident`]: syn::Ident
+    alias: Option<(syn::Ident, token::Eq)>,
 
     /// `expression` [`Expr`].
     expr: Expr,
@@ -231,7 +290,7 @@ impl FmtArgument {
     /// Returns an `identifier` of the [named parameter][1].
     ///
     /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
-    fn alias(&self) -> Option<&Ident> {
+    fn alias(&self) -> Option<&syn::Ident> {
         self.alias.as_ref().map(|(ident, _)| ident)
     }
 }
@@ -239,7 +298,7 @@ impl FmtArgument {
 impl Parse for FmtArgument {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
-            alias: (input.peek(Ident) && input.peek2(token::Eq))
+            alias: (input.peek(syn::Ident) && input.peek2(token::Eq))
                 .then(|| Ok::<_, syn::Error>((input.parse()?, input.parse()?)))
                 .transpose()?,
             expr: input.parse()?,
@@ -283,7 +342,7 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
 }
 
 /// Representation of a formatting placeholder.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Eq, PartialEq)]
 struct Placeholder {
     /// Formatting argument (either named or positional) to be used by this placeholder.
     arg: Parameter,
@@ -378,7 +437,7 @@ impl attr::ParseMultiple for ContainerAttributes {
     fn merge_attrs(
         prev: Spanning<Self>,
         new: Spanning<Self>,
-        name: &Ident,
+        name: &syn::Ident,
     ) -> syn::Result<Spanning<Self>> {
         let Spanning {
             span: prev_span,

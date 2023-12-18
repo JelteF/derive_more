@@ -222,10 +222,35 @@ impl<'a> Expansion<'a> {
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
-            Some(fmt) => Ok(quote! { ::core::write!(__derive_more_f, #fmt) }),
+            Some(fmt) => Ok(fmt
+                .delegatable()
+                .then(|| {
+                    let mut bindings = fmt.bindings(self.fields);
+                    let binding = bindings.next()?;
+                    bindings.next().is_none().then_some(binding)
+                })
+                .flatten()
+                .map_or_else(
+                    || {
+                        quote! {
+                            ::core::write!(__derive_more_f, #fmt)
+                        }
+                    },
+                    |b| {
+                        let ident = &b.ident;
+                        let trait_ident = format_ident!("{}", b.trait_name);
+
+                        quote! {
+                            ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+                        }
+                    },
+                )),
             None if self.fields.is_empty() => {
                 let ident_str = self.ident.to_string();
-                Ok(quote! { ::core::write!(__derive_more_f, #ident_str) })
+
+                Ok(quote! {
+                    ::core::write!(__derive_more_f, #ident_str)
+                })
             }
             None if self.fields.len() == 1 => {
                 let field = self
@@ -235,6 +260,7 @@ impl<'a> Expansion<'a> {
                     .unwrap_or_else(|| unreachable!("count() == 1"));
                 let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
                 let trait_ident = self.trait_ident;
+
                 Ok(quote! {
                     ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
                 })
@@ -265,10 +291,12 @@ impl<'a> Expansion<'a> {
                 .unwrap_or_default();
         };
 
-        fmt.bounded_types(self.fields)
-            .map(|(ty, trait_name)| {
-                let tr = format_ident!("{}", trait_name);
-                parse_quote! { #ty: ::core::fmt::#tr }
+        fmt.bindings(self.fields)
+            .map(|b| {
+                let ty = b.ty;
+                let trait_ident = format_ident!("{}", b.trait_name);
+
+                parse_quote! { #ty: ::core::fmt::#trait_ident }
             })
             .chain(self.attrs.bounds.0.clone())
             .collect()

@@ -1520,7 +1520,6 @@ pub(crate) mod attr {
     #[cfg(any(
         feature = "as_ref",
         feature = "debug",
-        feature = "display",
         feature = "from",
         feature = "into",
     ))]

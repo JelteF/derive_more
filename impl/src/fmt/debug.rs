@@ -330,9 +330,11 @@ impl<'a> Expansion<'a> {
         let mut out = self.attr.bounds.0.clone().into_iter().collect::<Vec<_>>();
 
         if let Some(fmt) = self.attr.fmt.as_ref() {
-            out.extend(fmt.bounded_types(self.fields).map(|(ty, trait_name)| {
-                let trait_name = format_ident!("{trait_name}");
-                parse_quote! { #ty: ::core::fmt::#trait_name }
+            out.extend(fmt.bindings(self.fields).map(|b| {
+                let ty = b.ty;
+                let trait_ident = format_ident!("{}", b.trait_name);
+
+                parse_quote! { #ty: ::core::fmt::#trait_ident }
             }));
             Ok(out)
         } else {
@@ -342,12 +344,12 @@ impl<'a> Expansion<'a> {
                     .map(Spanning::into_inner)
                 {
                     Some(FieldAttribute::Right(fmt_attr)) => {
-                        out.extend(fmt_attr.bounded_types(self.fields).map(
-                            |(ty, trait_name)| {
-                                let trait_name = format_ident!("{trait_name}");
-                                parse_quote! { #ty: ::core::fmt::#trait_name }
-                            },
-                        ));
+                        out.extend(fmt_attr.bindings(self.fields).map(|b| {
+                            let ty = b.ty;
+                            let trait_ident = format_ident!("{}", b.trait_name);
+
+                            parse_quote! { #ty: ::core::fmt::#trait_ident }
+                        }));
                     }
                     Some(FieldAttribute::Left(_skip)) => {}
                     None => out.extend([parse_quote! { #ty: ::core::fmt::Debug }]),

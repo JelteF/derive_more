@@ -7,7 +7,7 @@ use std::{convert::identity, iter};
 use unicode_xid::UnicodeXID as XID;
 
 /// Output of the [`format_string`] parser.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct FormatString<'a> {
     pub(crate) formats: Vec<Format<'a>>,
 }
@@ -22,7 +22,7 @@ pub(crate) struct Format<'a> {
 }
 
 /// Output of the [`format_spec`] parser.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct FormatSpec<'a> {
     pub(crate) width: Option<Width<'a>>,
     pub(crate) precision: Option<Precision<'a>>,
@@ -30,21 +30,21 @@ pub(crate) struct FormatSpec<'a> {
 }
 
 /// Output of the [`argument`] parser.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Argument<'a> {
     Integer(usize),
     Identifier(&'a str),
 }
 
 /// Output of the [`precision`] parser.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Precision<'a> {
     Count(Count<'a>),
     Star,
 }
 
 /// Output of the [`count`] parser.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Count<'a> {
     Integer(usize),
     Parameter(Parameter<'a>),
@@ -53,7 +53,7 @@ pub(crate) enum Count<'a> {
 /// Output of the [`type_`] parser. See [formatting traits][1] for more info.
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-traits
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Type {
     Display,
     Debug,
@@ -72,15 +72,31 @@ impl Type {
     /// Returns trait name of this [`Type`].
     pub(crate) fn trait_name(&self) -> &'static str {
         match self {
-            Type::Display => "Display",
-            Type::Debug | Type::LowerDebug | Type::UpperDebug => "Debug",
-            Type::Octal => "Octal",
-            Type::LowerHex => "LowerHex",
-            Type::UpperHex => "UpperHex",
-            Type::Pointer => "Pointer",
-            Type::Binary => "Binary",
-            Type::LowerExp => "LowerExp",
-            Type::UpperExp => "UpperExp",
+            Self::Display => "Display",
+            Self::Debug | Self::LowerDebug | Self::UpperDebug => "Debug",
+            Self::Octal => "Octal",
+            Self::LowerHex => "LowerHex",
+            Self::UpperHex => "UpperHex",
+            Self::Pointer => "Pointer",
+            Self::Binary => "Binary",
+            Self::LowerExp => "LowerExp",
+            Self::UpperExp => "UpperExp",
+        }
+    }
+
+    /// Indicates whether this [`Type`] represents a trivial trait call without any modifications.
+    pub(crate) fn is_trivial(&self) -> bool {
+        match self {
+            Self::Display
+            | Self::Debug
+            | Self::Octal
+            | Self::LowerHex
+            | Self::UpperHex
+            | Self::Pointer
+            | Self::Binary
+            | Self::LowerExp
+            | Self::UpperExp => true,
+            Self::LowerDebug | Self::UpperDebug => false,
         }
     }
 }
@@ -188,7 +204,7 @@ fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
 ///
 /// [`format`]: fn@format
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
-fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
+pub(crate) fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
     let input = char('{')(input)?;
 
     let (input, arg) = optional_result(argument)(input);
