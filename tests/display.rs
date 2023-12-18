@@ -222,6 +222,10 @@ mod structs {
                 struct TupleDisplay(i32);
 
                 #[derive(Display)]
+                #[display("{_0:?}")]
+                struct TupleDebug(i32);
+
+                #[derive(Display)]
                 #[display("{_0:b}")]
                 struct TupleBinary(i32);
 
@@ -262,6 +266,7 @@ mod structs {
                 #[test]
                 fn assert() {
                     assert_eq!(format!("{:03}", TupleDisplay(7)), "007");
+                    assert_eq!(format!("{:03}", TupleDebug(8)), "008");
                     assert_eq!(format!("{:07}", TupleBinary(7)), "0000111");
                     assert_eq!(format!("{:03}", TupleOctal(9)), "011");
                     assert_eq!(format!("{:03}", StructLowerHex { field: 42 }), "02a");
@@ -359,6 +364,10 @@ mod structs {
                 struct TupleDisplay(i32, u64);
 
                 #[derive(Display)]
+                #[display("{_1:?}")]
+                struct TupleDebug(i32, u64);
+
+                #[derive(Display)]
                 #[display("{_1:b}")]
                 struct TupleBinary(i32, u64);
 
@@ -404,6 +413,7 @@ mod structs {
                 #[test]
                 fn assert() {
                     assert_eq!(format!("{:03}", TupleDisplay(7, 8)), "007");
+                    assert_eq!(format!("{:03}", TupleDebug(7, 8)), "008");
                     assert_eq!(format!("{:07}", TupleBinary(6, 7)), "0000111");
                     assert_eq!(format!("{:03}", TupleOctal(9, 10)), "011");
                     assert_eq!(
@@ -598,6 +608,14 @@ mod enums {
                 }
 
                 #[derive(Display)]
+                enum Debug {
+                    #[display("{_0:?}")]
+                    A(i32),
+                    #[display("{:?}", field)]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
                 enum Binary {
                     #[display("{_0:b}")]
                     A(i32),
@@ -657,6 +675,8 @@ mod enums {
                 fn assert() {
                     assert_eq!(format!("{:03}", Display::A(7)), "007");
                     assert_eq!(format!("{:03}", Display::B { field: 8 }), "008");
+                    assert_eq!(format!("{:03}", Debug::A(8)), "008");
+                    assert_eq!(format!("{:03}", Debug::B { field: 9 }), "009");
                     assert_eq!(format!("{:07}", Binary::A(7)), "0000111");
                     assert_eq!(format!("{:07}", Binary::B { field: 8 }), "0001000");
                     assert_eq!(format!("{:03}", Octal::A(9)), "011");
@@ -740,6 +760,14 @@ mod enums {
                 }
 
                 #[derive(Display)]
+                enum Debug {
+                    #[display("{_1:?}")]
+                    A(i32, i64),
+                    #[display("{:?}", a)]
+                    B { a: u8, b: i32 },
+                }
+
+                #[derive(Display)]
                 enum Binary {
                     #[display("{_0:b}")]
                     A(i32, i64),
@@ -799,6 +827,8 @@ mod enums {
                 fn assert() {
                     assert_eq!(format!("{:03}", Display::A(7, 8)), "007");
                     assert_eq!(format!("{:03}", Display::B { a: 7, b: 8 }), "008");
+                    assert_eq!(format!("{:03}", Debug::A(7, 8)), "008");
+                    assert_eq!(format!("{:03}", Debug::B { a: 7, b: 8 }), "007");
                     assert_eq!(format!("{:07}", Binary::A(7, 8)), "0000111");
                     assert_eq!(format!("{:07}", Binary::B { a: 7, b: 8 }), "0001000");
                     assert_eq!(format!("{:03}", Octal::A(9, 10)), "011");
@@ -1429,6 +1459,10 @@ mod generic {
             struct TupleDisplay<T>(T);
 
             #[derive(Display)]
+            #[display("{_0:?}")]
+            struct TupleDebug<T>(T);
+
+            #[derive(Display)]
             #[display("{_0:b}")]
             struct TupleBinary<T, Y>(T, Y);
 
@@ -1573,6 +1607,7 @@ mod generic {
             #[test]
             fn assert() {
                 assert_eq!(format!("{:03}", TupleDisplay(7)), "007");
+                assert_eq!(format!("{:03}", TupleDebug(8)), "008");
                 assert_eq!(format!("{:03}", StructDisplay { field: 7 }), "007");
                 assert_eq!(format!("{:03}", EnumDisplay::<_, i8>::A(7)), "007");
                 assert_eq!(
