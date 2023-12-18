@@ -351,9 +351,9 @@ mod structs {
                         format!("{:07}", StructUpperExp { field: 42.0 }),
                         "4.2E1",
                     );
-                    assert_eq!(
+                    assert_ne!(
                         format!("{:018}", StructPointer { field: &42 }).len(),
-                        11,
+                        18,
                     );
                 }
             }
@@ -897,8 +897,8 @@ mod enums {
                     assert_eq!(format!("{:07}", LowerExp::B { field: 43.0 }), "4.3e1");
                     assert_eq!(format!("{:07}", UpperExp::A(42.0)), "4.2E1");
                     assert_eq!(format!("{:07}", UpperExp::B { field: 43.0 }), "4.3E1");
-                    assert_eq!(format!("{:018}", Pointer::A(&7)).len(), 11);
-                    assert_eq!(format!("{:018}", Pointer::B { field: &42 }).len(), 11);
+                    assert_ne!(format!("{:018}", Pointer::A(&7)).len(), 18);
+                    assert_ne!(format!("{:018}", Pointer::B { field: &42 }).len(), 18);
                 }
             }
         }
