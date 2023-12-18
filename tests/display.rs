@@ -226,11 +226,11 @@ mod structs {
                 struct TupleDebug(i32);
 
                 #[derive(Display)]
-                #[display("{_0:b}")]
+                #[display("{:b}", _0)]
                 struct TupleBinary(i32);
 
                 #[derive(Display)]
-                #[display("{:o}", _0)]
+                #[display("{0:o}", _0)]
                 struct TupleOctal(i32);
 
                 #[derive(Display)]
@@ -252,7 +252,7 @@ mod structs {
                 }
 
                 #[derive(Display)]
-                #[display("{:E}", field)]
+                #[display("{named:E}", named = field)]
                 struct StructUpperExp {
                     field: f64,
                 }
@@ -357,6 +357,38 @@ mod structs {
                     );
                 }
             }
+
+            mod untriggered {
+                use super::*;
+
+                mod on_modifiers {
+                    use super::*;
+
+                    #[derive(Display)]
+                    #[display("{_0:x?}")]
+                    struct LowerDebug(i32);
+
+                    #[derive(Display)]
+                    #[display("{_0:X?}")]
+                    struct UpperDebug(i32);
+
+                    #[derive(Display)]
+                    #[display("{:07}", _0)]
+                    struct Width(i32);
+
+                    #[derive(Display)]
+                    #[display("{:.5}", _0)]
+                    struct Precision(f64);
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03}", LowerDebug(7)), "7");
+                        assert_eq!(format!("{:03}", UpperDebug(8)), "8");
+                        assert_eq!(format!("{:03}", Width(5)), "0000005");
+                        assert_eq!(format!("{:.3}", Precision(1.23456789)), "1.23457");
+                    }
+                }
+            }
         }
     }
 
@@ -436,15 +468,15 @@ mod structs {
                 struct TupleDisplay(i32, u64);
 
                 #[derive(Display)]
-                #[display("{_1:?}")]
+                #[display("{:?}", _1)]
                 struct TupleDebug(i32, u64);
 
                 #[derive(Display)]
-                #[display("{_1:b}")]
+                #[display("{0:b}", _1)]
                 struct TupleBinary(i32, u64);
 
                 #[derive(Display)]
-                #[display("{:o}", _0)]
+                #[display("{named:o}", named = _0)]
                 struct TupleOctal(i32, u64);
 
                 #[derive(Display)]
@@ -681,9 +713,9 @@ mod enums {
 
                 #[derive(Display)]
                 enum Debug {
-                    #[display("{_0:?}")]
+                    #[display("{0:?}", _0)]
                     A(i32),
-                    #[display("{:?}", field)]
+                    #[display("{named:?}", named = field)]
                     B { field: u8 },
                 }
 
@@ -931,9 +963,9 @@ mod enums {
 
                 #[derive(Display)]
                 enum Debug {
-                    #[display("{_1:?}")]
+                    #[display("{0:?}", _1)]
                     A(i32, i64),
-                    #[display("{:?}", a)]
+                    #[display("{named:?}", named = a)]
                     B { a: u8, b: i32 },
                 }
 
@@ -1629,7 +1661,7 @@ mod generic {
             struct TupleDisplay<T>(T);
 
             #[derive(Display)]
-            #[display("{_0:?}")]
+            #[display("{0:?}", _0)]
             struct TupleDebug<T>(T);
 
             #[derive(Display)]
@@ -1641,7 +1673,7 @@ mod generic {
             struct TupleOctal<Y, T>(Y, T);
 
             #[derive(Display)]
-            #[display("{_0:x}")]
+            #[display("{0:x}", _0)]
             struct TupleLowerHex<T>(T);
 
             #[derive(Display)]
@@ -1674,7 +1706,7 @@ mod generic {
             }
 
             #[derive(Display)]
-            #[display("{b:o}")]
+            #[display("{named:o}", named = b)]
             struct StructOctal<Y, T> {
                 a: Y,
                 b: T,
