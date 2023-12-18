@@ -97,7 +97,7 @@ and can be trivially substituted with a delegation call to the inner type, then 
 struct MyOctalInt(i32);
 
 // so, additional formatting parameters do work transparently
-assert_eq!(format!("{:03?}", MyInt(9)), "011");
+assert_eq!(format!("{:03?}", MyOctalInt(9)), "011");
 
 #[derive(Debug)]
 #[debug("{_0:02b}")] // cannot be trivially substituted with `Binary::fmt()`
@@ -116,7 +116,7 @@ If, for some reason, delegation in trivial cases is not desired, it may be suppr
 struct MyOctalInt(i32);
 
 // so, additional formatting parameters have no effect
-assert_eq!(format!("{:07}", MyInt(9)), "11");
+assert_eq!(format!("{:07}", MyOctalInt(9)), "11");
 ```
 
 
