@@ -25,6 +25,7 @@ pub(crate) struct Format<'a> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct FormatSpec<'a> {
     pub(crate) sign: Option<Sign>,
+    pub(crate) alternate: Option<Alternate>,
     pub(crate) width: Option<Width<'a>>,
     pub(crate) precision: Option<Precision<'a>>,
     pub(crate) ty: Type,
@@ -43,6 +44,10 @@ pub(crate) enum Sign {
     Plus,
     Minus,
 }
+
+/// Type for the [`FormatSpec::alternate`].
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct Alternate;
 
 /// Output of the [`precision`] parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -278,13 +283,12 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
 
     let (input, sign) = optional_result(sign)(input);
 
-    let input = seq(&mut [
-        &mut optional(char('#')),
-        &mut optional(try_seq(&mut [
-            &mut char('0'),
-            &mut lookahead(check_char(|c| !matches!(c, '$'))),
-        ])),
-    ])(input);
+    let (input, alternate) = optional_result(map(char('#'), |i| (i, Alternate)))(input);
+
+    let input = seq(&mut [&mut optional(try_seq(&mut [
+        &mut char('0'),
+        &mut lookahead(check_char(|c| !matches!(c, '$'))),
+    ]))])(input);
 
     let (input, width) = optional_result(count)(input);
 
@@ -300,6 +304,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
         input,
         FormatSpec {
             sign,
+            alternate,
             width,
             precision,
             ty,
@@ -733,6 +738,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -747,6 +753,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -761,6 +768,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -775,6 +783,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -789,6 +798,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -803,6 +813,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -817,6 +828,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -831,6 +843,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: Some(Alternate),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -845,6 +858,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
+                        alternate: Some(Alternate),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -859,6 +873,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: Some(Alternate),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -873,6 +888,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
+                        alternate: Some(Alternate),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -887,6 +903,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -901,6 +918,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: Some(Alternate),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -915,6 +933,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -929,6 +948,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -943,6 +963,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
+                        alternate: Some(Alternate),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -957,6 +978,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: Some(Count::Integer(1)),
                         precision: None,
                         ty: Type::Display,
@@ -971,6 +993,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: Some(Count::Parameter(Argument::Integer(1))),
                         precision: None,
                         ty: Type::Display,
@@ -985,6 +1008,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: None,
                         ty: Type::Display,
@@ -999,6 +1023,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
+                        alternate: Some(Alternate),
                         width: Some(Count::Parameter(Argument::Identifier("Минск"))),
                         precision: None,
                         ty: Type::Display,
@@ -1013,6 +1038,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: Some(Precision::Star),
                         ty: Type::Display,
@@ -1027,6 +1053,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Integer(0))),
                         ty: Type::Display,
@@ -1041,6 +1068,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Integer(0),
@@ -1057,6 +1085,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1073,6 +1102,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
+                        alternate: Some(Alternate),
                         width: Some(Count::Parameter(Argument::Integer(2))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1089,6 +1119,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::LowerDebug,
@@ -1103,6 +1134,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: None,
+                        alternate: None,
                         width: None,
                         precision: None,
                         ty: Type::UpperExp,
@@ -1117,6 +1149,7 @@ mod tests {
                     arg: None,
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
+                        alternate: Some(Alternate),
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1138,6 +1171,7 @@ mod tests {
                         arg: Some(Argument::Integer(0)),
                         spec: Some(FormatSpec {
                             sign: None,
+                            alternate: Some(Alternate),
                             width: None,
                             precision: None,
                             ty: Type::Debug,
@@ -1147,6 +1181,7 @@ mod tests {
                         arg: Some(Argument::Identifier("par")),
                         spec: Some(FormatSpec {
                             sign: None,
+                            alternate: None,
                             width: Some(Count::Parameter(Argument::Identifier("par"))),
                             precision: Some(Precision::Count(Count::Parameter(
                                 Argument::Identifier("a"),
