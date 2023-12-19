@@ -373,6 +373,22 @@ mod structs {
                     struct UpperDebug(i32);
 
                     #[derive(Display)]
+                    #[display("{:^}", _0)]
+                    struct Align(i32);
+
+                    #[derive(Display)]
+                    #[display("{:+}", _0)]
+                    struct Sign(i32);
+
+                    #[derive(Display)]
+                    #[display("{:#b}", _0)]
+                    struct Alternate(i32);
+
+                    #[derive(Display)]
+                    #[display("{:0}", _0)]
+                    struct ZeroPadded(i32);
+
+                    #[derive(Display)]
                     #[display("{:07}", _0)]
                     struct Width(i32);
 
@@ -384,6 +400,10 @@ mod structs {
                     fn assert() {
                         assert_eq!(format!("{:03}", LowerDebug(7)), "7");
                         assert_eq!(format!("{:03}", UpperDebug(8)), "8");
+                        assert_eq!(format!("{:03}", Align(5)), "5");
+                        assert_eq!(format!("{:03}", Sign(5)), "+5");
+                        assert_eq!(format!("{:07}", Alternate(5)), "0b101");
+                        assert_eq!(format!("{:07}", ZeroPadded(-5)), "-5");
                         assert_eq!(format!("{:03}", Width(5)), "0000005");
                         assert_eq!(format!("{:.3}", Precision(1.23456789)), "1.23457");
                     }

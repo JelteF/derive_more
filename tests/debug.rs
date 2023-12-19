@@ -217,6 +217,22 @@ mod structs {
                     struct UpperDebug(i32);
 
                     #[derive(Debug)]
+                    #[debug("{:^}", _0)]
+                    struct Align(i32);
+
+                    #[derive(Debug)]
+                    #[debug("{:+}", _0)]
+                    struct Sign(i32);
+
+                    #[derive(Debug)]
+                    #[debug("{:#b}", _0)]
+                    struct Alternate(i32);
+
+                    #[derive(Debug)]
+                    #[debug("{:0}", _0)]
+                    struct ZeroPadded(i32);
+
+                    #[derive(Debug)]
                     #[debug("{:07}", _0)]
                     struct Width(i32);
 
@@ -228,6 +244,10 @@ mod structs {
                     fn assert() {
                         assert_eq!(format!("{:03?}", LowerDebug(7)), "7");
                         assert_eq!(format!("{:03?}", UpperDebug(8)), "8");
+                        assert_eq!(format!("{:03?}", Align(5)), "5");
+                        assert_eq!(format!("{:03?}", Sign(5)), "+5");
+                        assert_eq!(format!("{:07?}", Alternate(5)), "0b101");
+                        assert_eq!(format!("{:07?}", ZeroPadded(-5)), "-5");
                         assert_eq!(format!("{:03?}", Width(5)), "0000005");
                         assert_eq!(format!("{:.3?}", Precision(1.23456789)), "1.23457");
                     }
@@ -642,6 +662,14 @@ mod enums {
                         LowerDebug(i32),
                         #[debug("{_0:X?}")]
                         UpperDebug(i32),
+                        #[debug("{:^}", _0)]
+                        Align(i32),
+                        #[debug("{:+}", _0)]
+                        Sign(i32),
+                        #[debug("{:#b}", _0)]
+                        Alternate(i32),
+                        #[debug("{:0}", _0)]
+                        ZeroPadded(i32),
                         #[debug("{:07}", _0)]
                         Width(i32),
                         #[debug("{:.5}", _0)]
@@ -652,10 +680,14 @@ mod enums {
                     fn assert() {
                         assert_eq!(format!("{:03?}", Enum::LowerDebug(7)), "7");
                         assert_eq!(format!("{:03?}", Enum::UpperDebug(8)), "8");
+                        assert_eq!(format!("{:03?}", Enum::Align(5)), "5");
+                        assert_eq!(format!("{:03?}", Enum::Sign(5)), "+5");
+                        assert_eq!(format!("{:07?}", Enum::Alternate(5)), "0b101");
+                        assert_eq!(format!("{:07?}", Enum::ZeroPadded(-5)), "-5");
                         assert_eq!(format!("{:03?}", Enum::Width(5)), "0000005");
                         assert_eq!(
                             format!("{:.3?}", Enum::Precision(1.23456789)),
-                            "1.23457"
+                            "1.23457",
                         );
                     }
                 }
@@ -1623,6 +1655,14 @@ mod generic {
                     LowerDebug(A),
                     #[debug("{_0:X?}")]
                     UpperDebug(B),
+                    #[debug("{:^}", _0)]
+                    Align(C),
+                    #[debug("{:+}", _0)]
+                    Sign(C),
+                    #[debug("{:#b}", _0)]
+                    Alternate(C),
+                    #[debug("{:0}", _0)]
+                    ZeroPadded(C),
                     #[debug("{:07}", _0)]
                     Width(C),
                     #[debug("{:.5}", _0)]
@@ -1638,6 +1678,22 @@ mod generic {
                     assert_eq!(
                         format!("{:03?}", Enum::<u8, _, u8, f64>::UpperDebug(8)),
                         "8",
+                    );
+                    assert_eq!(
+                        format!("{:03?}", Enum::<u8, u8, _, f64>::Align(5)),
+                        "5",
+                    );
+                    assert_eq!(
+                        format!("{:03?}", Enum::<u8, u8, _, f64>::Sign(5)),
+                        "+5",
+                    );
+                    assert_eq!(
+                        format!("{:07?}", Enum::<u8, u8, _, f64>::Alternate(5)),
+                        "0b101",
+                    );
+                    assert_eq!(
+                        format!("{:07?}", Enum::<u8, u8, _, f64>::ZeroPadded(-5)),
+                        "-5",
                     );
                     assert_eq!(
                         format!("{:03?}", Enum::<u8, u8, _, f64>::Width(5)),
