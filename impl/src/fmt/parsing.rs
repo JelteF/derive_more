@@ -24,6 +24,7 @@ pub(crate) struct Format<'a> {
 /// Output of the [`format_spec`] parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct FormatSpec<'a> {
+    pub(crate) sign: Option<Sign>,
     pub(crate) width: Option<Width<'a>>,
     pub(crate) precision: Option<Precision<'a>>,
     pub(crate) ty: Type,
@@ -34,6 +35,13 @@ pub(crate) struct FormatSpec<'a> {
 pub(crate) enum Argument<'a> {
     Integer(usize),
     Identifier(&'a str),
+}
+
+/// Output of the [`sign`] parser.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum Sign {
+    Plus,
+    Minus,
 }
 
 /// Output of the [`precision`] parser.
@@ -246,7 +254,7 @@ fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
 ///
 /// # Grammar
 ///
-/// [`format_spec`]` := [[fill]align][sign]['#']['0'][width]`
+/// [`format_spec`]` := [[fill]align][`[`sign`]`]['#']['0'][width]`
 ///                     `['.' `[`precision`]`]`[`type`]
 ///
 /// # Example
@@ -268,8 +276,9 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
         identity,
     )(input);
 
+    let (input, sign) = optional_result(sign)(input);
+
     let input = seq(&mut [
-        &mut optional(one_of("+-")),
         &mut optional(char('#')),
         &mut optional(try_seq(&mut [
             &mut char('0'),
@@ -290,11 +299,33 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
     Some((
         input,
         FormatSpec {
+            sign,
             width,
             precision,
             ty,
         },
     ))
+}
+
+/// Parses a `sign` as defined in the [grammar spec][1].
+///
+/// # Grammar
+///
+/// [`sign`]` := '+' | '-'`
+///
+/// # Example
+///
+/// ```text
+/// +
+/// -
+/// ```
+///
+/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+fn sign(input: &str) -> Option<(LeftToParse<'_>, Sign)> {
+    alt(&mut [
+        &mut map(char('+'), |i| (i, Sign::Plus)),
+        &mut map(char('-'), |i| (i, Sign::Minus)),
+    ])(input)
 }
 
 /// Parses a `precision` as defined in the [grammar spec][1].
@@ -701,6 +732,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -714,6 +746,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -727,6 +760,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -740,6 +774,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -753,6 +788,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -766,6 +802,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Plus),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -779,6 +816,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Minus),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -792,6 +830,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -805,6 +844,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Plus),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -818,6 +858,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -831,6 +872,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Minus),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -844,6 +886,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -857,6 +900,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -870,6 +914,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Minus),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -883,6 +928,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -896,6 +942,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Plus),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -909,6 +956,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: Some(Count::Integer(1)),
                         precision: None,
                         ty: Type::Display,
@@ -922,6 +970,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: Some(Count::Parameter(Argument::Integer(1))),
                         precision: None,
                         ty: Type::Display,
@@ -935,6 +984,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: None,
                         ty: Type::Display,
@@ -948,6 +998,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Minus),
                         width: Some(Count::Parameter(Argument::Identifier("Минск"))),
                         precision: None,
                         ty: Type::Display,
@@ -961,6 +1012,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: Some(Precision::Star),
                         ty: Type::Display,
@@ -974,6 +1026,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Integer(0))),
                         ty: Type::Display,
@@ -987,6 +1040,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Integer(0),
@@ -1002,6 +1056,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1017,6 +1072,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Plus),
                         width: Some(Count::Parameter(Argument::Integer(2))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1032,6 +1088,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::LowerDebug,
@@ -1045,6 +1102,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: None,
                         width: None,
                         precision: None,
                         ty: Type::UpperExp,
@@ -1058,6 +1116,7 @@ mod tests {
                 formats: vec![Format {
                     arg: None,
                     spec: Some(FormatSpec {
+                        sign: Some(Sign::Plus),
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1078,6 +1137,7 @@ mod tests {
                     Format {
                         arg: Some(Argument::Integer(0)),
                         spec: Some(FormatSpec {
+                            sign: None,
                             width: None,
                             precision: None,
                             ty: Type::Debug,
@@ -1086,6 +1146,7 @@ mod tests {
                     Format {
                         arg: Some(Argument::Identifier("par")),
                         spec: Some(FormatSpec {
+                            sign: None,
                             width: Some(Count::Parameter(Argument::Identifier("par"))),
                             precision: Some(Precision::Count(Count::Parameter(
                                 Argument::Identifier("a"),
