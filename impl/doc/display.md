@@ -151,7 +151,7 @@ Or by adding [formatting parameters][1] which cause no visual effects:
 struct MyOctalInt(i32);
 
 // and so, additional formatting parameters have no effect
-assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
+assert_eq!(format!("{:07}", MyOctalInt(9)), "11");
 ```
 
 
