@@ -24,10 +24,24 @@ pub(crate) struct Format<'a> {
 /// Output of the [`format_spec`] parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct FormatSpec<'a> {
+    /// Parsed `[`[`sign`]`]`.
     pub(crate) sign: Option<Sign>,
+
+    /// Parsed `['#']` (alternation).
     pub(crate) alternate: Option<Alternate>,
+
+    /// Parsed `['0']` (padding with zeros).
+    pub(crate) zero_padding: Option<ZeroPadding>,
+
+    /// Parsed `[width]`.
     pub(crate) width: Option<Width<'a>>,
+
+    /// Parsed `['.' `[`precision`]`]`.
     pub(crate) precision: Option<Precision<'a>>,
+
+    /// Parsed [`type`].
+    ///
+    /// [`type`]: type_
     pub(crate) ty: Type,
 }
 
@@ -48,6 +62,10 @@ pub(crate) enum Sign {
 /// Type for the [`FormatSpec::alternate`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Alternate;
+
+/// Type for the [`FormatSpec::zero_padding`].
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct ZeroPadding;
 
 /// Output of the [`precision`] parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -285,10 +303,13 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
 
     let (input, alternate) = optional_result(map(char('#'), |i| (i, Alternate)))(input);
 
-    let input = seq(&mut [&mut optional(try_seq(&mut [
-        &mut char('0'),
-        &mut lookahead(check_char(|c| !matches!(c, '$'))),
-    ]))])(input);
+    let (input, zero_padding) = optional_result(map(
+        try_seq(&mut [
+            &mut char('0'),
+            &mut lookahead(check_char(|c| !matches!(c, '$'))),
+        ]),
+        |i| (i, ZeroPadding),
+    ))(input);
 
     let (input, width) = optional_result(count)(input);
 
@@ -305,6 +326,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
         FormatSpec {
             sign,
             alternate,
+            zero_padding,
             width,
             precision,
             ty,
@@ -739,6 +761,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -754,6 +777,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -769,6 +793,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -784,6 +809,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -799,6 +825,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -814,6 +841,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -829,6 +857,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -844,6 +873,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: Some(Alternate),
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -859,6 +889,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
                         alternate: Some(Alternate),
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -874,6 +905,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: Some(Alternate),
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -889,6 +921,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
                         alternate: Some(Alternate),
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -904,6 +937,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: Some(ZeroPadding),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -919,6 +953,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: Some(Alternate),
+                        zero_padding: Some(ZeroPadding),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -934,6 +969,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
                         alternate: None,
+                        zero_padding: Some(ZeroPadding),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -949,6 +985,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: Some(ZeroPadding),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -964,6 +1001,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
                         alternate: Some(Alternate),
+                        zero_padding: Some(ZeroPadding),
                         width: None,
                         precision: None,
                         ty: Type::Display,
@@ -979,6 +1017,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: Some(Count::Integer(1)),
                         precision: None,
                         ty: Type::Display,
@@ -994,6 +1033,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: Some(Count::Parameter(Argument::Integer(1))),
                         precision: None,
                         ty: Type::Display,
@@ -1009,6 +1049,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: None,
                         ty: Type::Display,
@@ -1024,6 +1065,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Minus),
                         alternate: Some(Alternate),
+                        zero_padding: Some(ZeroPadding),
                         width: Some(Count::Parameter(Argument::Identifier("Минск"))),
                         precision: None,
                         ty: Type::Display,
@@ -1039,6 +1081,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: Some(Precision::Star),
                         ty: Type::Display,
@@ -1054,6 +1097,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Integer(0))),
                         ty: Type::Display,
@@ -1069,6 +1113,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Integer(0),
@@ -1086,6 +1131,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1103,6 +1149,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
                         alternate: Some(Alternate),
+                        zero_padding: None,
                         width: Some(Count::Parameter(Argument::Integer(2))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1120,6 +1167,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::LowerDebug,
@@ -1135,6 +1183,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: None,
                         alternate: None,
+                        zero_padding: None,
                         width: None,
                         precision: None,
                         ty: Type::UpperExp,
@@ -1150,6 +1199,7 @@ mod tests {
                     spec: Some(FormatSpec {
                         sign: Some(Sign::Plus),
                         alternate: Some(Alternate),
+                        zero_padding: None,
                         width: Some(Count::Parameter(Argument::Identifier("par"))),
                         precision: Some(Precision::Count(Count::Parameter(
                             Argument::Identifier("par"),
@@ -1172,6 +1222,7 @@ mod tests {
                         spec: Some(FormatSpec {
                             sign: None,
                             alternate: Some(Alternate),
+                            zero_padding: None,
                             width: None,
                             precision: None,
                             ty: Type::Debug,
@@ -1182,6 +1233,7 @@ mod tests {
                         spec: Some(FormatSpec {
                             sign: None,
                             alternate: None,
+                            zero_padding: None,
                             width: Some(Count::Parameter(Argument::Identifier("par"))),
                             precision: Some(Precision::Count(Count::Parameter(
                                 Argument::Identifier("a"),
