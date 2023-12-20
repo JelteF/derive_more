@@ -97,7 +97,7 @@ mod structs {
                 assert_eq!(format!("{:03?}", Display), "011");
                 assert_eq!(format!("{:03?}", StructDebug), "011");
                 assert_eq!(format!("{:07?}", Binary), "0001011");
-                assert_eq!(format!("{:07?}", Octal), "0000111");
+                assert_eq!(format!("{:07?}", Octal), "0000013");
                 assert_eq!(format!("{:03?}", LowerHex), "00b");
                 assert_eq!(format!("{:03?}", UpperHex), "00B");
                 assert_eq!(format!("{:07?}", LowerExp), "03.14e0");
@@ -672,7 +672,7 @@ mod enums {
                 assert_eq!(format!("{:03?}", Unit::Display), "011");
                 assert_eq!(format!("{:03?}", Unit::Debug), "011");
                 assert_eq!(format!("{:07?}", Unit::Binary), "0001011");
-                assert_eq!(format!("{:07?}", Unit::Octal), "0000111");
+                assert_eq!(format!("{:07?}", Unit::Octal), "0000013");
                 assert_eq!(format!("{:03?}", Unit::LowerHex), "00b");
                 assert_eq!(format!("{:03?}", Unit::UpperHex), "00B");
                 assert_eq!(format!("{:07?}", Unit::LowerExp), "03.14e0");
