@@ -273,10 +273,9 @@ impl<'a> Expansion<'a> {
                 .unwrap_or_default();
         };
 
-        fmt.bindings(self.fields)
-            .map(|b| {
-                let ty = b.ty;
-                let trait_ident = format_ident!("{}", b.trait_name);
+        fmt.bounded_types(self.fields)
+            .map(|(ty, trait_name)| {
+                let trait_ident = format_ident!("{trait_name}");
 
                 parse_quote! { #ty: ::core::fmt::#trait_ident }
             })

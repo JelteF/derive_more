@@ -194,31 +194,29 @@ impl FmtAttribute {
         Some((expr, format_ident!("{trait_name}")))
     }
 
-    /// Returns an [`Iterator`] over [`FmtBinding`]s of this [`FmtAttribute`].
-    fn bindings<'a>(
+    /// Returns an [`Iterator`] over bounded [`syn::Type`]s (and correspondent trait names) by this
+    /// [`FmtAttribute`].
+    fn bounded_types<'a>(
         &'a self,
         fields: &'a syn::Fields,
-    ) -> impl Iterator<Item = FmtBinding<'a>> {
+    ) -> impl Iterator<Item = (&'a syn::Type, &'static str)> {
         let placeholders = Placeholder::parse_fmt_string(&self.lit.value());
 
         // We ignore unknown fields, as compiler will produce better error messages.
         placeholders.into_iter().filter_map(move |placeholder| {
-            let ident = match placeholder.arg {
+            let name = match placeholder.arg {
                 Parameter::Named(name) => self
                     .args
                     .iter()
                     .find_map(|a| (a.alias()? == &name).then_some(&a.expr))
-                    .map_or(Some(format_ident!("{name}")), |expr| {
-                        expr.ident().cloned()
-                    })?,
+                    .map_or(Some(name), |expr| expr.ident().map(ToString::to_string))?,
                 Parameter::Positional(i) => self
                     .args
                     .iter()
                     .nth(i)
                     .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))?
-                    .clone(),
+                    .to_string(),
             };
-            let name = ident.to_string();
 
             let unnamed = name.strip_prefix('_').and_then(|s| s.parse().ok());
             let ty = match (&fields, unnamed) {
@@ -231,11 +229,7 @@ impl FmtAttribute {
                 _ => None,
             }?;
 
-            Some(FmtBinding {
-                ident,
-                ty,
-                trait_name: placeholder.trait_name,
-            })
+            Some((ty, placeholder.trait_name))
         })
     }
 
@@ -282,19 +276,6 @@ impl FmtAttribute {
     }
 }
 
-/// Representation of a Rust binding used in a [`FmtAttribute`].
-#[derive(Debug)]
-struct FmtBinding<'a> {
-    /// [`syn::Ident`] of this [`FmtBinding`].
-    ident: syn::Ident,
-
-    /// [`syn::Type`] of this [`FmtBinding`].
-    ty: &'a syn::Type,
-
-    /// Name of the trait, this [`FmtBinding`] is formatted with.
-    trait_name: &'static str,
-}
-
 /// Representation of a [named parameter][1] (`identifier '=' expression`) in
 /// in a [`FmtAttribute`].
 ///
@@ -303,7 +284,7 @@ struct FmtBinding<'a> {
 struct FmtArgument {
     /// `identifier =` [`Ident`].
     ///
-    /// [`Ident`]: syn::Ident
+    /// [`Ident`]: struct@syn::Ident
     alias: Option<(syn::Ident, token::Eq)>,
 
     /// `expression` [`Expr`].
