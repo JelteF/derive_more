@@ -1893,5 +1893,63 @@ mod generic {
                 );
             }
         }
+
+        mod untriggered {
+            use super::*;
+
+            mod on_modifiers {
+                use super::*;
+
+                #[derive(Display)]
+                enum Enum<A, B, C, D> {
+                    #[display("{_0:x?}")]
+                    LowerDebug(A),
+                    #[display("{_0:X?}")]
+                    UpperDebug(B),
+                    #[display("{:^}", _0)]
+                    Align(C),
+                    #[display("{:+}", _0)]
+                    Sign(C),
+                    #[display("{:#b}", _0)]
+                    Alternate(C),
+                    #[display("{:0}", _0)]
+                    ZeroPadded(C),
+                    #[display("{:07}", _0)]
+                    Width(C),
+                    #[display("{:.5}", _0)]
+                    Precision(D),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(
+                        format!("{:03}", Enum::<_, u8, u8, f64>::LowerDebug(7)),
+                        "7",
+                    );
+                    assert_eq!(
+                        format!("{:03}", Enum::<u8, _, u8, f64>::UpperDebug(8)),
+                        "8",
+                    );
+                    assert_eq!(format!("{:03}", Enum::<u8, u8, _, f64>::Align(5)), "5");
+                    assert_eq!(format!("{:03}", Enum::<u8, u8, _, f64>::Sign(5)), "+5");
+                    assert_eq!(
+                        format!("{:07}", Enum::<u8, u8, _, f64>::Alternate(5)),
+                        "0b101",
+                    );
+                    assert_eq!(
+                        format!("{:07}", Enum::<u8, u8, _, f64>::ZeroPadded(-5)),
+                        "-5",
+                    );
+                    assert_eq!(
+                        format!("{:03}", Enum::<u8, u8, _, f64>::Width(5)),
+                        "0000005",
+                    );
+                    assert_eq!(
+                        format!("{:.3}", Enum::<u8, u8, u8, _>::Precision(1.23456789)),
+                        "1.23457",
+                    );
+                }
+            }
+        }
     }
 }

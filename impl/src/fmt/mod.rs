@@ -148,7 +148,13 @@ impl FmtAttribute {
                 // (2) And the formatting parameter doesn't contain any modifiers.
                 p.spec
                     .map(|s| {
-                        s.width.is_none() && s.precision.is_none() && s.ty.is_trivial()
+                        s.align.is_none()
+                            && s.sign.is_none()
+                            && s.alternate.is_none()
+                            && s.zero_padding.is_none()
+                            && s.width.is_none()
+                            && s.precision.is_none()
+                            && s.ty.is_trivial()
                     })
                     .unwrap_or(true)
             })
