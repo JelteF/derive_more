@@ -12,7 +12,7 @@ use syn::{
 };
 
 /// [`syn::Expr`] [`Parse`]ing polyfill.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum Expr {
     /// [`syn::Expr::Path`] of length 1 [`Parse`]ing polyfill.
     Ident(syn::Ident),
@@ -28,6 +28,12 @@ impl Expr {
             Self::Ident(ident) => Some(ident),
             Self::Other(_) => None,
         }
+    }
+}
+
+impl From<syn::Ident> for Expr {
+    fn from(ident: syn::Ident) -> Self {
+        Self::Ident(ident)
     }
 }
 

@@ -136,44 +136,62 @@ impl FmtAttribute {
     /// Checks whether this [`FmtAttribute`] can be replaced with a trivial delegation (calling a formatting trait
     /// directly instead of interpolation syntax).
     ///
-    /// Returns [`syn::Ident`] of the delegated trait, if delegation is possible.
-    fn delegatable(&self) -> bool {
+    /// If delegation is possible, returns an [`Ident`] of the delegated trait and an [`Expr`] to pass into the
+    /// delegation call.
+    ///
+    /// [`Ident`]: struct@syn::Ident
+    fn delegatable(&self) -> Option<(Expr, syn::Ident)> {
         // `FmtAttribute` is delegatable when:
-        parsing::format(&self.lit.value())
-            .and_then(|(more, p)| {
-                // (1) There is exactly one formatting parameter.
-                more.is_empty().then_some(p)
+
+        // (1) There is exactly one formatting parameter.
+        let lit = self.lit.value();
+        let param =
+            parsing::format(&lit).and_then(|(more, p)| more.is_empty().then_some(p))?;
+
+        // (2) And the formatting parameter doesn't contain any modifiers.
+        if param
+            .spec
+            .map(|s| {
+                s.align.is_some()
+                    || s.sign.is_some()
+                    || s.alternate.is_some()
+                    || s.zero_padding.is_some()
+                    || s.width.is_some()
+                    || s.precision.is_some()
+                    || !s.ty.is_trivial()
             })
-            .filter(|p| {
-                // (2) And the formatting parameter doesn't contain any modifiers.
-                p.spec
-                    .map(|s| {
-                        s.align.is_none()
-                            && s.sign.is_none()
-                            && s.alternate.is_none()
-                            && s.zero_padding.is_none()
-                            && s.width.is_none()
-                            && s.precision.is_none()
-                            && s.ty.is_trivial()
-                    })
-                    .unwrap_or(true)
-            })
-            .filter(|p| match p.arg {
-                // (3) And either exactly one positional argument is specified.
-                Some(parsing::Argument::Integer(_)) | None => self.args.len() == 1,
-                // (4) Or the formatting parameter's name refers to some outer binding.
-                Some(parsing::Argument::Identifier(_)) if self.args.is_empty() => true,
-                // (5) Or exactly one named argument is specified for the formatting parameter's name.
-                Some(parsing::Argument::Identifier(name)) => {
-                    self.args.len() == 1
-                        && self
-                            .args
-                            .first()
-                            .and_then(|a| a.alias.as_ref().map(|a| a.0 == name))
-                            .unwrap_or_default()
-                }
-            })
-            .is_some()
+            .unwrap_or_default()
+        {
+            return None;
+        }
+
+        let expr = match param.arg {
+            // (3) And either exactly one positional argument is specified.
+            Some(parsing::Argument::Integer(_)) | None => (self.args.len() == 1)
+                .then(|| self.args.first())
+                .flatten()
+                .map(|a| a.expr.clone()),
+
+            // (4) Or the formatting parameter's name refers to some outer binding.
+            Some(parsing::Argument::Identifier(name)) if self.args.is_empty() => {
+                Some(format_ident!("{name}").into())
+            }
+
+            // (5) Or exactly one named argument is specified for the formatting parameter's name.
+            Some(parsing::Argument::Identifier(name)) => (self.args.len() == 1)
+                .then(|| self.args.first())
+                .flatten()
+                .filter(|a| a.alias.as_ref().map(|a| a.0 == name).unwrap_or_default())
+                .map(|a| a.expr.clone()),
+        }?;
+
+        let trait_name = param
+            .spec
+            .map(|s| s.ty)
+            .unwrap_or(parsing::Type::Display)
+            .trait_name();
+
+        Some((expr, format_ident!("{trait_name}")))
     }
 
     /// Returns an [`Iterator`] over [`FmtBinding`]s of this [`FmtAttribute`].

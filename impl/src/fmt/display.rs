@@ -222,29 +222,11 @@ impl<'a> Expansion<'a> {
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
-            Some(fmt) => Ok(fmt
-                .delegatable()
-                .then(|| {
-                    let mut bindings = fmt.bindings(self.fields);
-                    let binding = bindings.next()?;
-                    bindings.next().is_none().then_some(binding)
-                })
-                .flatten()
-                .map_or_else(
-                    || {
-                        quote! {
-                            ::core::write!(__derive_more_f, #fmt)
-                        }
-                    },
-                    |b| {
-                        let ident = &b.ident;
-                        let trait_ident = format_ident!("{}", b.trait_name);
-
-                        quote! {
-                            ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
-                        }
-                    },
-                )),
+            Some(fmt) => Ok(if let Some((expr, trait_ident)) = fmt.delegatable() {
+                quote! { ::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+            } else {
+                quote! { ::core::write!(__derive_more_f, #fmt) }
+            }),
             None if self.fields.is_empty() => {
                 let ident_str = self.ident.to_string();
 
