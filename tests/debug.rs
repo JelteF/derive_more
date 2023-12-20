@@ -45,6 +45,122 @@ mod structs {
                 assert_eq!(format!("{Unit:?}"), "Format String");
             }
         }
+
+        mod delegation {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            const I32: i32 = 11;
+            const F64: f64 = 3.14;
+            const POINTER: &f64 = &3.14;
+
+            #[derive(Debug)]
+            #[debug("{I32}")]
+            struct Display;
+
+            #[derive(Debug)]
+            #[debug("{I32:?}")]
+            struct StructDebug;
+
+            #[derive(Debug)]
+            #[debug("{:b}", I32)]
+            struct Binary;
+
+            #[derive(Debug)]
+            #[debug("{0:o}", I32)]
+            struct Octal;
+
+            #[derive(Debug)]
+            #[debug("{I32:x}")]
+            struct LowerHex;
+
+            #[derive(Debug)]
+            #[debug("{:X}", I32)]
+            struct UpperHex;
+
+            #[derive(Debug)]
+            #[debug("{F64:e}")]
+            struct LowerExp;
+
+            #[derive(Debug)]
+            #[debug("{named:E}", named = F64)]
+            struct UpperExp;
+
+            #[derive(Debug)]
+            #[debug("{POINTER:p}")]
+            struct Pointer;
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03?}", Display), "011");
+                assert_eq!(format!("{:03?}", StructDebug), "011");
+                assert_eq!(format!("{:07?}", Binary), "0001011");
+                assert_eq!(format!("{:07?}", Octal), "0000111");
+                assert_eq!(format!("{:03?}", LowerHex), "00b");
+                assert_eq!(format!("{:03?}", UpperHex), "00B");
+                assert_eq!(format!("{:07?}", LowerExp), "03.14e0");
+                assert_eq!(format!("{:07?}", UpperExp), "03.14E0");
+                assert_eq!(format!("{:018?}", Pointer).len(), 18);
+            }
+
+            mod untriggered {
+                mod on_modifiers {
+                    #[cfg(not(feature = "std"))]
+                    use alloc::format;
+
+                    use derive_more::Debug;
+
+                    const I32: i32 = 11;
+                    const F64: f64 = 3.14;
+
+                    #[derive(Debug)]
+                    #[debug("{I32:x?}")]
+                    struct LowerDebug;
+
+                    #[derive(Debug)]
+                    #[debug("{I32:X?}")]
+                    struct UpperDebug;
+
+                    #[derive(Debug)]
+                    #[debug("{:^}", I32)]
+                    struct Align;
+
+                    #[derive(Debug)]
+                    #[debug("{:+}", I32)]
+                    struct Sign;
+
+                    #[derive(Debug)]
+                    #[debug("{:#b}", I32)]
+                    struct Alternate;
+
+                    #[derive(Debug)]
+                    #[debug("{:0}", I32)]
+                    struct ZeroPadded;
+
+                    #[derive(Debug)]
+                    #[debug("{:07}", I32)]
+                    struct Width;
+
+                    #[derive(Debug)]
+                    #[debug("{:.1}", F64)]
+                    struct Precision;
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03?}", LowerDebug), "b");
+                        assert_eq!(format!("{:03?}", UpperDebug), "B");
+                        assert_eq!(format!("{:03?}", Align), "11");
+                        assert_eq!(format!("{:04?}", Sign), "+11");
+                        assert_eq!(format!("{:07?}", Alternate), "0b1011");
+                        assert_eq!(format!("{:07?}", ZeroPadded), "11");
+                        assert_eq!(format!("{:03?}", Width), "0000011");
+                        assert_eq!(format!("{:.3?}", Precision), "3.1");
+                    }
+                }
+            }
+        }
     }
 
     mod single_field {
@@ -517,6 +633,96 @@ mod enums {
             assert_eq!(format!("{:#?}", Enum::Unnamed()), "Unnamed");
             assert_eq!(format!("{:?}", Enum::Named {}), "Named");
             assert_eq!(format!("{:#?}", Enum::Named {}), "Named");
+        }
+
+        mod delegation {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
+            use derive_more::Debug;
+
+            const I32: i32 = 11;
+            const F64: f64 = 3.14;
+            const POINTER: &f64 = &3.14;
+
+            #[derive(Debug)]
+            enum Unit {
+                #[debug("{I32}")]
+                Display,
+                #[debug("{I32:?}")]
+                Debug,
+                #[debug("{:b}", I32)]
+                Binary,
+                #[debug("{0:o}", I32)]
+                Octal,
+                #[debug("{I32:x}")]
+                LowerHex,
+                #[debug("{:X}", I32)]
+                UpperHex,
+                #[debug("{F64:e}")]
+                LowerExp,
+                #[debug("{named:E}", named = F64)]
+                UpperExp,
+                #[debug("{POINTER:p}")]
+                Pointer,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03?}", Unit::Display), "011");
+                assert_eq!(format!("{:03?}", Unit::Debug), "011");
+                assert_eq!(format!("{:07?}", Unit::Binary), "0001011");
+                assert_eq!(format!("{:07?}", Unit::Octal), "0000111");
+                assert_eq!(format!("{:03?}", Unit::LowerHex), "00b");
+                assert_eq!(format!("{:03?}", Unit::UpperHex), "00B");
+                assert_eq!(format!("{:07?}", Unit::LowerExp), "03.14e0");
+                assert_eq!(format!("{:07?}", Unit::UpperExp), "03.14E0");
+                assert_eq!(format!("{:018?}", Unit::Pointer).len(), 18);
+            }
+
+            mod untriggered {
+                mod on_modifiers {
+                    #[cfg(not(feature = "std"))]
+                    use alloc::format;
+
+                    use derive_more::Debug;
+
+                    const I32: i32 = 11;
+                    const F64: f64 = 3.14;
+
+                    #[derive(Debug)]
+                    enum Unit {
+                        #[debug("{I32:x?}")]
+                        LowerDebug,
+                        #[debug("{I32:X?}")]
+                        UpperDebug,
+                        #[debug("{:^}", I32)]
+                        Align,
+                        #[debug("{:+}", I32)]
+                        Sign,
+                        #[debug("{:#b}", I32)]
+                        Alternate,
+                        #[debug("{:0}", I32)]
+                        ZeroPadded,
+                        #[debug("{:07}", I32)]
+                        Width,
+                        #[debug("{:.1}", F64)]
+                        Precision,
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03?}", Unit::LowerDebug), "b");
+                        assert_eq!(format!("{:03?}", Unit::UpperDebug), "B");
+                        assert_eq!(format!("{:03?}", Unit::Align), "11");
+                        assert_eq!(format!("{:04?}", Unit::Sign), "+11");
+                        assert_eq!(format!("{:07?}", Unit::Alternate), "0b1011");
+                        assert_eq!(format!("{:07?}", Unit::ZeroPadded), "11");
+                        assert_eq!(format!("{:03?}", Unit::Width), "0000011");
+                        assert_eq!(format!("{:.3?}", Unit::Precision), "3.1");
+                    }
+                }
+            }
         }
     }
 
