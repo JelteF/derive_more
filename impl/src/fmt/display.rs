@@ -222,11 +222,13 @@ impl<'a> Expansion<'a> {
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
-            Some(fmt) => Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                quote! { ::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
-            } else {
-                quote! { ::core::write!(__derive_more_f, #fmt) }
-            }),
+            Some(fmt) => {
+                Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
+                    quote! { ::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+                } else {
+                    quote! { ::core::write!(__derive_more_f, #fmt) }
+                })
+            }
             None if self.fields.is_empty() => {
                 let ident_str = self.ident.to_string();
 
