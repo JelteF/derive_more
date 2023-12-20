@@ -228,7 +228,7 @@ impl<'a> Expansion<'a> {
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
-            return Ok(if let Some((expr, trait_ident)) = fmt.delegatable() {
+            return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
                 quote! { ::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
             } else {
                 quote! { ::core::write!(__derive_more_f, #fmt) }

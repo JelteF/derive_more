@@ -46,7 +46,7 @@ mod structs {
             }
         }
 
-        mod delegation {
+        mod transparency {
             #[cfg(not(feature = "std"))]
             use alloc::format;
 
@@ -105,7 +105,7 @@ mod structs {
                 assert_eq!(format!("{:018?}", Pointer).len(), 18);
             }
 
-            mod untriggered {
+            mod omitted {
                 mod on_modifiers {
                     #[cfg(not(feature = "std"))]
                     use alloc::format;
@@ -272,7 +272,7 @@ mod structs {
             }
         }
 
-        mod delegation {
+        mod transparency {
             #[cfg(not(feature = "std"))]
             use alloc::format;
 
@@ -317,7 +317,7 @@ mod structs {
                 }
             }
 
-            mod untriggered {
+            mod omitted {
                 mod on_modifiers {
                     #[cfg(not(feature = "std"))]
                     use alloc::format;
@@ -572,7 +572,7 @@ mod structs {
             }
         }
 
-        mod delegation {
+        mod transparency {
             #[cfg(not(feature = "std"))]
             use alloc::format;
 
@@ -635,7 +635,7 @@ mod enums {
             assert_eq!(format!("{:#?}", Enum::Named {}), "Named");
         }
 
-        mod delegation {
+        mod transparency {
             #[cfg(not(feature = "std"))]
             use alloc::format;
 
@@ -680,7 +680,7 @@ mod enums {
                 assert_eq!(format!("{:018?}", Unit::Pointer).len(), 18);
             }
 
-            mod untriggered {
+            mod omitted {
                 mod on_modifiers {
                     #[cfg(not(feature = "std"))]
                     use alloc::format;
@@ -814,7 +814,7 @@ mod enums {
             );
         }
 
-        mod delegation {
+        mod transparency {
             #[cfg(not(feature = "std"))]
             use alloc::format;
 
@@ -855,7 +855,7 @@ mod enums {
                 }
             }
 
-            mod untriggered {
+            mod omitted {
                 mod on_modifiers {
                     #[cfg(not(feature = "std"))]
                     use alloc::format;
@@ -1051,7 +1051,7 @@ mod enums {
             }
         }
 
-        mod delegation {
+        mod transparency {
             #[cfg(not(feature = "std"))]
             use alloc::format;
 
@@ -1812,7 +1812,7 @@ mod generic {
         }
     }
 
-    mod delegation {
+    mod transparency {
         #[cfg(not(feature = "std"))]
         use alloc::format;
 
@@ -1848,7 +1848,7 @@ mod generic {
             );
         }
 
-        mod untriggered {
+        mod omitted {
             mod on_modifiers {
                 #[cfg(not(feature = "std"))]
                 use alloc::format;

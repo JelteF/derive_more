@@ -84,10 +84,10 @@ trait MyTrait { fn my_function(&self) -> i32; }
 ```
 
 
-### Delegation
+### Transparency
 
 If the top-level `#[debug("...", args...)]` attribute (the one for a whole struct or variant) is specified
-and can be trivially substituted with a delegation call to the inner type, then all the additional
+and can be trivially substituted with a transparent delegation call to the inner type, then all the additional
 [formatting parameters][1] do work as expected:
 ```rust
 # use derive_more::Debug;
@@ -100,22 +100,34 @@ struct MyOctalInt(i32);
 assert_eq!(format!("{:03?}", MyOctalInt(9)), "011");
 
 #[derive(Debug)]
-#[debug("{_0:02b}")] // cannot be trivially substituted with `Binary::fmt()`
-struct MyBinaryInt(i32);
+#[debug("{_0:02b}")]     // cannot be trivially substituted with `Binary::fmt()`,
+struct MyBinaryInt(i32); // because of specified formatting parameters
 
 // so, additional formatting parameters have no effect
 assert_eq!(format!("{:07?}", MyBinaryInt(2)), "10");
 ```
 
-If, for some reason, delegation in trivial cases is not desired, it may be suppressed explicitly:
+If, for some reason, transparency in trivial cases is not desired, it may be suppressed explicitly
+either with the [`format_args!()`] macro usage:
 ```rust
 # use derive_more::Debug;
 #
 #[derive(Debug)]
-#[debug("{}", format_args!("{_0:o}"))] // `format_args!()` opaques the inner type
+#[debug("{}", format_args!("{_0:o}"))] // `format_args!()` obscures the inner type
 struct MyOctalInt(i32);
 
 // so, additional formatting parameters have no effect
+assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
+```
+Or by adding [formatting parameters][1] which cause no visual effects:
+```rust
+# use derive_more::Debug;
+#
+#[derive(Debug)]
+#[debug("{_0:^o}")] // `^` is centering, but in absence of additional width has no effect
+struct MyOctalInt(i32);
+
+// and so, additional formatting parameters have no effect
 assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ```
 

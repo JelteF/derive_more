@@ -133,15 +133,15 @@ impl ToTokens for FmtAttribute {
 }
 
 impl FmtAttribute {
-    /// Checks whether this [`FmtAttribute`] can be replaced with a trivial delegation (calling a formatting trait
-    /// directly instead of interpolation syntax).
+    /// Checks whether this [`FmtAttribute`] can be replaced with a transparent delegation (calling
+    /// a formatting trait directly instead of interpolation syntax).
     ///
-    /// If delegation is possible, returns an [`Ident`] of the delegated trait and an [`Expr`] to pass into the
-    /// delegation call.
+    /// If such transparent call is possible, the returns an [`Ident`] of the delegated trait and
+    /// the [`Expr`] to pass into the call, otherwise [`None`].
     ///
     /// [`Ident`]: struct@syn::Ident
-    fn delegatable(&self) -> Option<(Expr, syn::Ident)> {
-        // `FmtAttribute` is delegatable when:
+    fn transparent_call(&self) -> Option<(Expr, syn::Ident)> {
+        // `FmtAttribute` is transparent when:
 
         // (1) There is exactly one formatting parameter.
         let lit = self.lit.value();

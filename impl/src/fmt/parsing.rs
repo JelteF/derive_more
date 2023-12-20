@@ -92,9 +92,9 @@ pub(crate) enum Count<'a> {
     Parameter(Parameter<'a>),
 }
 
-/// Output of the [`type_`] parser. See [formatting traits][1] for more info.
+/// Output of the [`type_`] parser. See [formatting traits][0] for more info.
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-traits
+/// [0]: std::fmt#formatting-traits
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Type {
     Display,
@@ -163,7 +163,7 @@ type Parameter<'a> = Argument<'a>;
 /// [`str`]: prim@str
 type LeftToParse<'a> = &'a str;
 
-/// Parses a `format_string` as defined in the [grammar spec][1].
+/// Parses a `format_string` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -187,7 +187,7 @@ type LeftToParse<'a> = &'a str;
 /// - [`None`] otherwise (not all characters are consumed by underlying
 ///   parsers).
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
     let (mut input, _) = optional_result(text)(input);
 
@@ -207,7 +207,7 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
     input.is_empty().then_some(FormatString { formats })
 }
 
-/// Parses a `maybe_format` as defined in the [grammar spec][1].
+/// Parses a `maybe_format` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -224,7 +224,7 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
 /// ```
 ///
 /// [`format`]: fn@format
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
     alt(&mut [
         &mut map(str("{{"), |i| (i, None)),
@@ -233,7 +233,7 @@ fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
     ])(input)
 }
 
-/// Parses a `format` as defined in the [grammar spec][1].
+/// Parses a `format` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -248,7 +248,7 @@ fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
 /// ```
 ///
 /// [`format`]: fn@format
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 pub(crate) fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
     let input = char('{')(input)?;
 
@@ -265,7 +265,7 @@ pub(crate) fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
     Some((input, Format { arg, spec }))
 }
 
-/// Parses an `argument` as defined in the [grammar spec][1].
+/// Parses an `argument` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -279,7 +279,7 @@ pub(crate) fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
 /// Минск
 /// ```
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
     alt(&mut [
         &mut map(identifier, |(i, ident)| (i, Argument::Identifier(ident))),
@@ -287,7 +287,7 @@ fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
     ])(input)
 }
 
-/// Parses a `format_spec` as defined in the [grammar spec][1].
+/// Parses a `format_spec` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -303,7 +303,7 @@ fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
 /// ```
 ///
 /// [`type`]: type_
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
     let (input, align) = optional_result(alt(&mut [
         &mut and_then(take_any_char, |(i, fill)| {
@@ -348,7 +348,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
     ))
 }
 
-/// Parses an `align` as defined in the [grammar spec][1].
+/// Parses an `align` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -362,7 +362,7 @@ fn format_spec(input: &str) -> Option<(LeftToParse<'_>, FormatSpec<'_>)> {
 /// >
 /// ```
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn align(input: &str) -> Option<(LeftToParse<'_>, Align)> {
     alt(&mut [
         &mut map(char('<'), |i| (i, Align::Left)),
@@ -371,7 +371,7 @@ fn align(input: &str) -> Option<(LeftToParse<'_>, Align)> {
     ])(input)
 }
 
-/// Parses a `sign` as defined in the [grammar spec][1].
+/// Parses a `sign` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -384,7 +384,7 @@ fn align(input: &str) -> Option<(LeftToParse<'_>, Align)> {
 /// -
 /// ```
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn sign(input: &str) -> Option<(LeftToParse<'_>, Sign)> {
     alt(&mut [
         &mut map(char('+'), |i| (i, Sign::Plus)),
@@ -392,7 +392,7 @@ fn sign(input: &str) -> Option<(LeftToParse<'_>, Sign)> {
     ])(input)
 }
 
-/// Parses a `precision` as defined in the [grammar spec][1].
+/// Parses a `precision` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -407,7 +407,7 @@ fn sign(input: &str) -> Option<(LeftToParse<'_>, Sign)> {
 /// *
 /// ```
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn precision(input: &str) -> Option<(LeftToParse<'_>, Precision<'_>)> {
     alt(&mut [
         &mut map(count, |(i, c)| (i, Precision::Count(c))),
@@ -415,7 +415,7 @@ fn precision(input: &str) -> Option<(LeftToParse<'_>, Precision<'_>)> {
     ])(input)
 }
 
-/// Parses a `type` as defined in the [grammar spec][1].
+/// Parses a `type` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -439,7 +439,7 @@ fn precision(input: &str) -> Option<(LeftToParse<'_>, Precision<'_>)> {
 /// ```
 ///
 /// [`type`]: type_
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn type_(input: &str) -> Option<(&str, Type)> {
     alt(&mut [
         &mut map(str("x?"), |i| (i, Type::LowerDebug)),
@@ -456,7 +456,7 @@ fn type_(input: &str) -> Option<(&str, Type)> {
     ])(input)
 }
 
-/// Parses a `count` as defined in the [grammar spec][1].
+/// Parses a `count` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -470,7 +470,7 @@ fn type_(input: &str) -> Option<(&str, Type)> {
 /// par$
 /// ```
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn count(input: &str) -> Option<(LeftToParse<'_>, Count<'_>)> {
     alt(&mut [
         &mut map(parameter, |(i, p)| (i, Count::Parameter(p))),
@@ -478,7 +478,7 @@ fn count(input: &str) -> Option<(LeftToParse<'_>, Count<'_>)> {
     ])(input)
 }
 
-/// Parses a `parameter` as defined in the [grammar spec][1].
+/// Parses a `parameter` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -491,12 +491,12 @@ fn count(input: &str) -> Option<(LeftToParse<'_>, Count<'_>)> {
 /// par$
 /// ```
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn parameter(input: &str) -> Option<(LeftToParse<'_>, Parameter<'_>)> {
     and_then(argument, |(i, arg)| map(char('$'), |i| (i, arg))(i))(input)
 }
 
-/// Parses an `identifier` as defined in the [grammar spec][1].
+/// Parses an `identifier` as defined in the [grammar spec][0].
 ///
 /// # Grammar
 ///
@@ -511,7 +511,7 @@ fn parameter(input: &str) -> Option<(LeftToParse<'_>, Parameter<'_>)> {
 /// Минск
 /// ```
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 /// [2]: https://doc.rust-lang.org/reference/identifiers.html
 fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
     map(
@@ -526,9 +526,9 @@ fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
     )(input)
 }
 
-/// Parses an `integer` as defined in the [grammar spec][1].
+/// Parses an `integer` as defined in the [grammar spec][0].
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn integer(input: &str) -> Option<(LeftToParse<'_>, usize)> {
     and_then(
         take_while1(check_char(|c| c.is_ascii_digit())),
@@ -536,9 +536,9 @@ fn integer(input: &str) -> Option<(LeftToParse<'_>, usize)> {
     )(input)
 }
 
-/// Parses a `text` as defined in the [grammar spec][1].
+/// Parses a `text` as defined in the [grammar spec][0].
 ///
-/// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#syntax
+/// [0]: std::fmt#syntax
 fn text(input: &str) -> Option<(LeftToParse<'_>, &str)> {
     take_until1(any_char, one_of("{}"))(input)
 }

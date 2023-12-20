@@ -11,7 +11,7 @@ the supplied format, or an automatically inferred one.
 You specify the format on each variant by writing e.g. `#[display("my val: {}", some_val * 2)]`.
 For enums, you can either specify it on each variant, or on the enum as a whole.
 
-For variants that don't have a format specified, it will simply delegate to the format of the
+For variants that don't have a format specified, it will simply defer to the format of the
 inner variable. If there is no such variable, or there is more than 1, an error is generated.
 
 
@@ -97,9 +97,9 @@ struct MyStruct<T, U, V> {
 ```
 
 
-### Delegation
+### Transparency
 
-If the `#[display("...", args...)]` attribute is omitted, the implementation simply delegates to the format
+If the `#[display("...", args...)]` attribute is omitted, the implementation transparently delegates to the format
 of the inner type, so all the additional [formatting parameters][1] do work as expected:
 ```rust
 # use derive_more::Display;
@@ -110,8 +110,8 @@ struct MyInt(i32);
 assert_eq!(format!("{:03}", MyInt(7)), "007");
 ```
 
-If the `#[display("...", args...)]` attribute is specified and can be trivially substituted with a delegation
-call to the inner type, then delegation will work too:
+If the `#[display("...", args...)]` attribute is specified and can be trivially substituted with a transparent
+delegation call to the inner type, then additional [formatting parameters][1] will work too:
 ```rust
 # use derive_more::Display;
 #
@@ -123,23 +123,35 @@ struct MyOctalInt(i32);
 assert_eq!(format!("{:03}", MyOctalInt(9)), "011");
 
 #[derive(Display)]
-#[display("{_0:02b}")] // cannot be trivially substituted with `Binary::fmt()`
-struct MyBinaryInt(i32);
+#[display("{_0:02b}")]   // cannot be trivially substituted with `Binary::fmt()`,
+struct MyBinaryInt(i32); // because of specified formatting parameters
 
 // so, additional formatting parameters have no effect
 assert_eq!(format!("{:07}", MyBinaryInt(2)), "10");
 ```
 
-If, for some reason, delegation in trivial cases is not desired, it may be suppressed explicitly:
+If, for some reason, transparency in trivial cases is not desired, it may be suppressed explicitly
+either with the [`format_args!()`] macro usage:
 ```rust
 # use derive_more::Display;
 #
 #[derive(Display)]
-#[display("{}", format_args!("{_0:o}"))] // `format_args!()` opaques the inner type
+#[display("{}", format_args!("{_0:o}"))] // `format_args!()` obscures the inner type
 struct MyOctalInt(i32);
 
 // so, additional formatting parameters have no effect
 assert_eq!(format!("{:07}", MyOctalInt(9)), "11");
+```
+Or by adding [formatting parameters][1] which cause no visual effects:
+```rust
+# use derive_more::Display;
+#
+#[derive(Display)]
+#[display("{_0:^o}")] // `^` is centering, but in absence of additional width has no effect
+struct MyOctalInt(i32);
+
+// and so, additional formatting parameters have no effect
+assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ```
 
 
@@ -225,5 +237,7 @@ assert_eq!(PositiveOrNegative { x: -1 }.to_string(), "Negative");
 
 
 
+
+[`format_args!()`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
 
 [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-parameters

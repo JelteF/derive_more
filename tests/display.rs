@@ -84,7 +84,7 @@ mod structs {
             }
         }
 
-        mod delegation {
+        mod transparency {
             use super::*;
 
             mod interpolated {
@@ -144,7 +144,7 @@ mod structs {
                 }
             }
 
-            mod untriggered {
+            mod omitted {
                 use super::*;
 
                 mod on_modifiers {
@@ -268,7 +268,7 @@ mod structs {
             }
         }
 
-        mod delegation {
+        mod transparency {
             use super::*;
 
             mod direct {
@@ -474,7 +474,7 @@ mod structs {
                 }
             }
 
-            mod untriggered {
+            mod omitted {
                 use super::*;
 
                 mod on_modifiers {
@@ -593,7 +593,7 @@ mod structs {
             }
         }
 
-        mod delegation {
+        mod transparency {
             use super::*;
 
             mod interpolated {
@@ -721,7 +721,7 @@ mod enums {
             assert_eq!(Enum::StrNamed {}.to_string(), "STR_NAMED");
         }
 
-        mod delegation {
+        mod transparency {
             use super::*;
 
             mod interpolated {
@@ -767,7 +767,7 @@ mod enums {
                 }
             }
 
-            mod untriggered {
+            mod omitted {
                 use super::*;
 
                 mod on_modifiers {
@@ -845,7 +845,7 @@ mod enums {
             assert_eq!(Enum::InterpolatedNamed { field: 1 }.to_string(), "1 1");
         }
 
-        mod delegation {
+        mod transparency {
             use super::*;
 
             mod direct {
@@ -1173,7 +1173,7 @@ mod enums {
             );
         }
 
-        mod delegation {
+        mod transparency {
             use super::*;
 
             mod interpolated {
@@ -1807,7 +1807,7 @@ mod generic {
         }
     }
 
-    mod delegation {
+    mod transparency {
         use super::*;
 
         mod direct {
@@ -2100,7 +2100,7 @@ mod generic {
             }
         }
 
-        mod untriggered {
+        mod omitted {
             use super::*;
 
             mod on_modifiers {
