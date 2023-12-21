@@ -208,34 +208,35 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`derive-new`]: https://github.com/nrc/derive-new
 
-[`From`]: https://jeltef.github.io/derive_more/derive_more/from.html
-[`Into`]: https://jeltef.github.io/derive_more/derive_more/into.html
-[`FromStr`]: https://jeltef.github.io/derive_more/derive_more/from_str.html
-[`TryInto`]: https://jeltef.github.io/derive_more/derive_more/try_into.html
-[`IntoIterator`]: https://jeltef.github.io/derive_more/derive_more/into_iterator.html
-[`AsRef`]: https://jeltef.github.io/derive_more/derive_more/as_ref.html
-[`AsMut`]: https://jeltef.github.io/derive_more/derive_more/as_mut.html
+[`From`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.From.html
+[`Into`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Into.html
+[`FromStr`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.FromStr.html
+[`TryFrom`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.TryFrom.html
+[`TryInto`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.TryInto.html
+[`IntoIterator`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.IntoIterator.html
+[`AsRef`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.AsRef.html
+[`AsMut`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.AsMut.html
 
-[`Debug`]: https://github.com/JelteF/derive_more/blob/master/impl/doc/debug.md
-[`Display`-like]: https://jeltef.github.io/derive_more/derive_more/display.html
+[`Debug`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Debug.html
+[`Display`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Display.html
 
-[`Error`]: https://jeltef.github.io/derive_more/derive_more/error.html
+[`Error`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Error.html
 
-[`Index`]: https://jeltef.github.io/derive_more/derive_more/index_op.html
-[`Deref`]: https://jeltef.github.io/derive_more/derive_more/deref.html
-[`Not`-like]: https://jeltef.github.io/derive_more/derive_more/not.html
-[`Add`-like]: https://jeltef.github.io/derive_more/derive_more/add.html
-[`Mul`-like]: https://jeltef.github.io/derive_more/derive_more/mul.html
-[`Sum`-like]: https://jeltef.github.io/derive_more/derive_more/sum.html
-[`IndexMut`]: https://jeltef.github.io/derive_more/derive_more/index_mut.html
-[`DerefMut`]: https://jeltef.github.io/derive_more/derive_more/deref_mut.html
-[`AddAssign`-like]: https://jeltef.github.io/derive_more/derive_more/add_assign.html
-[`MulAssign`-like]: https://jeltef.github.io/derive_more/derive_more/mul_assign.html
+[`Index`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Index.html
+[`Deref`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Deref.html
+[`Not`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Not.html
+[`Add`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Add.html
+[`Mul`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Mul.html
+[`Sum`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Sum.html
+[`IndexMut`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.IndexMut.html
+[`DerefMut`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.DerefMut.html
+[`AddAssign`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.AddAssign.html
+[`MulAssign`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.MulAssign.html
 
-[`Constructor`]: https://jeltef.github.io/derive_more/derive_more/constructor.html
-[`IsVariant`]: https://jeltef.github.io/derive_more/derive_more/is_variant.html
-[`Unwrap`]: https://jeltef.github.io/derive_more/derive_more/unwrap.html
-[`TryUnwrap`]: https://jeltef.github.io/derive_more/derive_more/try_unwrap.html
+[`Constructor`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Constructor.html
+[`IsVariant`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.IsVariant.html
+[`Unwrap`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Unwrap.html
+[`TryUnwrap`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.TryUnwrap.html
 
 [caret requirement]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
 [tilde requirement]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#tilde-requirements
