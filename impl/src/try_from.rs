@@ -61,6 +61,8 @@ struct Expansion {
     attr: Option<ItemAttribute>,
 
     /// [`syn::Ident`] of the enum.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     ident: syn::Ident,
 
     /// [`syn::Generics`] of the enum.

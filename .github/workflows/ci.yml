@@ -145,6 +145,11 @@ jobs:
   #################
 
   rustdoc:
+    name: rustdoc${{ matrix.opts != '' && ' (private)' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        opts: ["", "--document-private-items"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -152,11 +157,11 @@ jobs:
         with:
           toolchain: nightly
 
-      - run: cargo +nightly doc -p derive_more-impl --features full
+      - run: cargo +nightly doc -p derive_more-impl --features full ${{ matrix.opts }}
         env:
           RUSTDOCFLAGS: --cfg docsrs --cfg ci
 
-      - run: cargo +nightly doc -p derive_more --features full
+      - run: cargo +nightly doc -p derive_more --features full ${{ matrix.opts }}
         env:
           RUSTDOCFLAGS: --cfg docsrs --cfg ci
 

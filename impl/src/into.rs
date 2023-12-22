@@ -109,6 +109,8 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// Expansion of an [`Into`] derive macro, generating [`From`] implementations for a struct.
 struct Expansion<'a> {
     /// [`syn::Ident`] of the struct.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     input_ident: &'a syn::Ident,
 
     /// [`syn::Generics`] of the struct.
@@ -306,13 +308,13 @@ struct Conversions {
 /// ```
 #[derive(Clone, Debug)]
 struct ConversionsAttribute {
-    /// [`Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
+    /// [`syn::Type`]s wrapped into `owned(...)` or simply `#[into(...)]`.
     owned: Conversions,
 
-    /// [`Type`]s wrapped into `ref(...)`.
+    /// [`syn::Type`]s wrapped into `ref(...)`.
     r#ref: Conversions,
 
-    /// [`Type`]s wrapped into `ref_mut(...)`.
+    /// [`syn::Type`]s wrapped into `ref_mut(...)`.
     ref_mut: Conversions,
 }
 
@@ -463,6 +465,8 @@ where
 }
 
 /// [`Error`]ors for legacy syntax: `#[into(types(i32, "&str"))]`.
+///
+/// [`Error`]: syn::Error
 fn check_legacy_syntax<'a, F>(tokens: ParseStream<'_>, fields: &'a F) -> syn::Result<()>
 where
     F: FieldsExt + ?Sized,

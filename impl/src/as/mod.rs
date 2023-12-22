@@ -148,15 +148,19 @@ pub fn expand(
 /// - [`syn::Ident`] of the derived trait.
 /// - [`syn::Ident`] of the derived trait method.
 /// - Optional `mut` token indicating [`AsMut`] expansion.
+///
+/// [`syn::Ident`]: struct@syn::Ident
 type ExpansionCtx<'a> = (&'a syn::Ident, &'a syn::Ident, Option<&'a Token![mut]>);
 
 /// Expansion of a macro for generating [`AsRef`]/[`AsMut`] implementations for a single field of a
 /// struct.
 struct Expansion<'a> {
-    /// [`ExpansionCtx] of the derived trait.
+    /// [`ExpansionCtx`] of the derived trait.
     trait_info: ExpansionCtx<'a>,
 
     /// [`syn::Ident`] of the struct.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     ident: &'a syn::Ident,
 
     /// [`syn::Generics`] of the struct.
