@@ -50,9 +50,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 
     Ok(quote! {
         #[automatically_derived]
-        impl #impl_gens ::derive_more::core::fmt::#trait_ident for #ident #ty_gens
-             #where_clause
-        {
+        impl #impl_gens ::derive_more::#trait_ident for #ident #ty_gens #where_clause {
             fn fmt(
                 &self, __derive_more_f: &mut ::derive_more::core::fmt::Formatter<'_>
             ) -> ::derive_more::core::fmt::Result {

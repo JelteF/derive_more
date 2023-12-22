@@ -61,7 +61,7 @@ pub fn expand(
             &generics,
             quote! {
                 where
-                    #ident #ty_generics: ::derive_more::core::fmt::Debug + ::core::fmt::Display
+                    #ident #ty_generics: ::derive_more::core::fmt::Debug + ::derive_more::core::fmt::Display
             },
         );
     }

@@ -46,9 +46,7 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
 
     Ok(quote! {
         #[automatically_derived]
-        impl #impl_gens ::derive_more::core::fmt::Debug for #ident #ty_gens
-             #where_clause
-        {
+        impl #impl_gens ::derive_more::Debug for #ident #ty_gens #where_clause {
             fn fmt(
                 &self, __derive_more_f: &mut ::derive_more::core::fmt::Formatter<'_>
             ) -> ::derive_more::core::fmt::Result {
@@ -356,7 +354,7 @@ impl<'a> Expansion<'a> {
                         ));
                     }
                     Some(FieldAttribute::Left(_skip)) => {}
-                    None => out.extend([parse_quote! { #ty: ::derive_more::core::fmt::Debug }]),
+                    None => out.extend([parse_quote! { #ty: ::derive_more::Debug }]),
                 }
                 Ok(out)
             })
