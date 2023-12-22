@@ -18,8 +18,6 @@ The variables available in the arguments is `self` and each member of the struct
 structs being named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
 
 
-
-
 ### Generic data types
 
 When deriving `Debug` for a generic struct/enum, all generic type arguments _used_ during formatting
@@ -53,8 +51,6 @@ The following where clauses would be generated:
 - `&'a T1: Pointer`
 
 
-
-
 ### Custom trait bounds
 
 Sometimes you may want to specify additional trait bounds on your generic type parameters, so that they could be used
@@ -85,6 +81,54 @@ struct MyStruct<T, U, V, F> {
 }
 
 trait MyTrait { fn my_function(&self) -> i32; }
+```
+
+
+### Transparency
+
+If the top-level `#[debug("...", args...)]` attribute (the one for a whole struct or variant) is specified
+and can be trivially substituted with a transparent delegation call to the inner type, then all the additional
+[formatting parameters][1] do work as expected:
+```rust
+# use derive_more::Debug;
+#
+#[derive(Debug)]
+#[debug("{_0:o}")] // the same as calling `Octal::fmt()`
+struct MyOctalInt(i32);
+
+// so, additional formatting parameters do work transparently
+assert_eq!(format!("{:03?}", MyOctalInt(9)), "011");
+
+#[derive(Debug)]
+#[debug("{_0:02b}")]     // cannot be trivially substituted with `Binary::fmt()`,
+struct MyBinaryInt(i32); // because of specified formatting parameters
+
+// so, additional formatting parameters have no effect
+assert_eq!(format!("{:07?}", MyBinaryInt(2)), "10");
+```
+
+If, for some reason, transparency in trivial cases is not desired, it may be suppressed explicitly
+either with the [`format_args!()`] macro usage:
+```rust
+# use derive_more::Debug;
+#
+#[derive(Debug)]
+#[debug("{}", format_args!("{_0:o}"))] // `format_args!()` obscures the inner type
+struct MyOctalInt(i32);
+
+// so, additional formatting parameters have no effect
+assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
+```
+Or by adding [formatting parameters][1] which cause no visual effects:
+```rust
+# use derive_more::Debug;
+#
+#[derive(Debug)]
+#[debug("{_0:^o}")] // `^` is centering, but in absence of additional width has no effect
+struct MyOctalInt(i32);
+
+// and so, additional formatting parameters have no effect
+assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ```
 
 
@@ -133,3 +177,5 @@ assert_eq!(format!("{:?}", E::EnumFormat(true)), "true");
 
 [`format!()`]: https://doc.rust-lang.org/stable/std/macro.format.html
 [`format_args!()`]: https://doc.rust-lang.org/stable/std/macro.format_args.html
+
+[1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-parameters
