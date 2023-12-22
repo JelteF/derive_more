@@ -12,7 +12,9 @@ use alloc::{
     vec::Vec,
 };
 
-use derive_more::{Binary, Display, Octal, UpperHex};
+use derive_more::{
+    Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
+};
 
 mod structs {
     use super::*;
@@ -79,6 +81,122 @@ mod structs {
                 assert_eq!(Unit.to_string(), "unit: 0");
                 assert_eq!(Tuple().to_string(), "tuple: 0");
                 assert_eq!(Struct {}.to_string(), "struct: 0");
+            }
+        }
+
+        mod transparency {
+            use super::*;
+
+            mod interpolated {
+                use super::*;
+
+                const I32: i32 = 11;
+                const F64: f64 = 3.14;
+                const POINTER: &f64 = &3.14;
+
+                #[derive(Display)]
+                #[display("{I32}")]
+                struct Display;
+
+                #[derive(Display)]
+                #[display("{I32:?}")]
+                struct Debug;
+
+                #[derive(Display)]
+                #[display("{:b}", I32)]
+                struct Binary;
+
+                #[derive(Display)]
+                #[display("{0:o}", I32)]
+                struct Octal;
+
+                #[derive(Display)]
+                #[display("{I32:x}")]
+                struct LowerHex;
+
+                #[derive(Display)]
+                #[display("{:X}", I32)]
+                struct UpperHex;
+
+                #[derive(Display)]
+                #[display("{F64:e}")]
+                struct LowerExp;
+
+                #[derive(Display)]
+                #[display("{named:E}", named = F64)]
+                struct UpperExp;
+
+                #[derive(Display)]
+                #[display("{POINTER:p}")]
+                struct Pointer;
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", Display), "011");
+                    assert_eq!(format!("{:03}", Debug), "011");
+                    assert_eq!(format!("{:07}", Binary), "0001011");
+                    assert_eq!(format!("{:07}", Octal), "0000013");
+                    assert_eq!(format!("{:03}", LowerHex), "00b");
+                    assert_eq!(format!("{:03}", UpperHex), "00B");
+                    assert_eq!(format!("{:07}", LowerExp), "03.14e0");
+                    assert_eq!(format!("{:07}", UpperExp), "03.14E0");
+                    assert_eq!(format!("{:018}", Pointer).len(), 18);
+                }
+            }
+
+            mod omitted {
+                use super::*;
+
+                mod on_modifiers {
+                    use super::*;
+
+                    const I32: i32 = 11;
+                    const F64: f64 = 3.14;
+
+                    #[derive(Display)]
+                    #[display("{I32:x?}")]
+                    struct LowerDebug;
+
+                    #[derive(Display)]
+                    #[display("{I32:X?}")]
+                    struct UpperDebug;
+
+                    #[derive(Display)]
+                    #[display("{:^}", I32)]
+                    struct Align;
+
+                    #[derive(Display)]
+                    #[display("{:+}", I32)]
+                    struct Sign;
+
+                    #[derive(Display)]
+                    #[display("{:#b}", I32)]
+                    struct Alternate;
+
+                    #[derive(Display)]
+                    #[display("{:0}", I32)]
+                    struct ZeroPadded;
+
+                    #[derive(Display)]
+                    #[display("{:07}", I32)]
+                    struct Width;
+
+                    #[derive(Display)]
+                    #[display("{:.1}", F64)]
+                    struct Precision;
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03}", LowerDebug), "b");
+                        assert_eq!(format!("{:03}", UpperDebug), "B");
+                        assert_eq!(format!("{:03}", Align), "11");
+                        assert_eq!(format!("{:04}", Sign), "+11");
+                        assert_eq!(format!("{:07}", Alternate), "0b1011");
+                        assert_eq!(format!("{:07}", ZeroPadded), "11");
+                        assert_eq!(format!("{:03}", Width), "0000011");
+                        assert_eq!(format!("{:.3}", Precision), "3.1");
+                    }
+                }
             }
         }
     }
@@ -149,6 +267,265 @@ mod structs {
                 assert_eq!(Struct { field: 0 }.to_string(), "struct: 0 0");
             }
         }
+
+        mod transparency {
+            use super::*;
+
+            mod direct {
+                use super::*;
+
+                #[derive(Display)]
+                struct TupleDisplay(i32);
+
+                #[derive(Binary)]
+                struct TupleBinary(i32);
+
+                #[derive(Octal)]
+                struct TupleOctal(i32);
+
+                #[derive(LowerHex)]
+                struct StructLowerHex {
+                    field: i32,
+                }
+
+                #[derive(UpperHex)]
+                struct StructUpperHex {
+                    field: i32,
+                }
+
+                #[derive(LowerExp)]
+                struct StructLowerExp {
+                    field: f64,
+                }
+
+                #[derive(UpperExp)]
+                struct StructUpperExp {
+                    field: f64,
+                }
+
+                #[derive(Pointer)]
+                struct StructPointer<'a> {
+                    field: &'a i32,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", TupleDisplay(7)), "007");
+                    assert_eq!(format!("{:07b}", TupleBinary(7)), "0000111");
+                    assert_eq!(format!("{:03o}", TupleOctal(9)), "011");
+                    assert_eq!(format!("{:03x}", StructLowerHex { field: 42 }), "02a");
+                    assert_eq!(format!("{:03X}", StructUpperHex { field: 42 }), "02A");
+                    assert_eq!(
+                        format!("{:07e}", StructLowerExp { field: 42.0 }),
+                        "004.2e1",
+                    );
+                    assert_eq!(
+                        format!("{:07E}", StructUpperExp { field: 42.0 }),
+                        "004.2E1",
+                    );
+                    assert_eq!(
+                        format!("{:018p}", StructPointer { field: &42 }).len(),
+                        18,
+                    );
+                }
+            }
+
+            mod interpolated {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_0}")]
+                struct TupleDisplay(i32);
+
+                #[derive(Display)]
+                #[display("{_0:?}")]
+                struct TupleDebug(i32);
+
+                #[derive(Display)]
+                #[display("{:b}", _0)]
+                struct TupleBinary(i32);
+
+                #[derive(Display)]
+                #[display("{0:o}", _0)]
+                struct TupleOctal(i32);
+
+                #[derive(Display)]
+                #[display("{field:x}")]
+                struct StructLowerHex {
+                    field: i32,
+                }
+
+                #[derive(Display)]
+                #[display("{:X}", field)]
+                struct StructUpperHex {
+                    field: i32,
+                }
+
+                #[derive(Display)]
+                #[display("{field:e}")]
+                struct StructLowerExp {
+                    field: f64,
+                }
+
+                #[derive(Display)]
+                #[display("{named:E}", named = field)]
+                struct StructUpperExp {
+                    field: f64,
+                }
+
+                #[derive(Display)]
+                #[display("{field:p}")]
+                struct StructPointer<'a> {
+                    field: &'a i32,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", TupleDisplay(7)), "007");
+                    assert_eq!(format!("{:03}", TupleDebug(8)), "008");
+                    assert_eq!(format!("{:07}", TupleBinary(7)), "0000111");
+                    assert_eq!(format!("{:03}", TupleOctal(9)), "011");
+                    assert_eq!(format!("{:03}", StructLowerHex { field: 42 }), "02a");
+                    assert_eq!(format!("{:03}", StructUpperHex { field: 42 }), "02A");
+                    assert_eq!(
+                        format!("{:07}", StructLowerExp { field: 42.0 }),
+                        "004.2e1",
+                    );
+                    assert_eq!(
+                        format!("{:07}", StructUpperExp { field: 42.0 }),
+                        "004.2E1",
+                    );
+                    assert_eq!(
+                        format!("{:018}", StructPointer { field: &42 }).len(),
+                        18,
+                    );
+                }
+            }
+
+            mod suppressed {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{_0}"))]
+                struct TupleDisplay(i32);
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{_0:?}"))]
+                struct TupleDebug(i32);
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{_0:b}"))]
+                struct TupleBinary(i32);
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{_0:o}"))]
+                struct TupleOctal(i32);
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{field:x}"))]
+                struct StructLowerHex {
+                    field: i32,
+                }
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{field:X}"))]
+                struct StructUpperHex {
+                    field: i32,
+                }
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{field:e}"))]
+                struct StructLowerExp {
+                    field: f64,
+                }
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{field:E}"))]
+                struct StructUpperExp {
+                    field: f64,
+                }
+
+                #[derive(Display)]
+                #[display("{}", format_args!("{field:p}"))]
+                struct StructPointer<'a> {
+                    field: &'a i32,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", TupleDisplay(7)), "7");
+                    assert_eq!(format!("{:03}", TupleDebug(8)), "8");
+                    assert_eq!(format!("{:07}", TupleBinary(7)), "111");
+                    assert_eq!(format!("{:03}", TupleOctal(9)), "11");
+                    assert_eq!(format!("{:03}", StructLowerHex { field: 42 }), "2a");
+                    assert_eq!(format!("{:03}", StructUpperHex { field: 42 }), "2A");
+                    assert_eq!(
+                        format!("{:07}", StructLowerExp { field: 42.0 }),
+                        "4.2e1",
+                    );
+                    assert_eq!(
+                        format!("{:07}", StructUpperExp { field: 42.0 }),
+                        "4.2E1",
+                    );
+                    assert_ne!(
+                        format!("{:018}", StructPointer { field: &42 }).len(),
+                        18,
+                    );
+                }
+            }
+
+            mod omitted {
+                use super::*;
+
+                mod on_modifiers {
+                    use super::*;
+
+                    #[derive(Display)]
+                    #[display("{_0:x?}")]
+                    struct LowerDebug(i32);
+
+                    #[derive(Display)]
+                    #[display("{_0:X?}")]
+                    struct UpperDebug(i32);
+
+                    #[derive(Display)]
+                    #[display("{:^}", _0)]
+                    struct Align(i32);
+
+                    #[derive(Display)]
+                    #[display("{:+}", _0)]
+                    struct Sign(i32);
+
+                    #[derive(Display)]
+                    #[display("{:#b}", _0)]
+                    struct Alternate(i32);
+
+                    #[derive(Display)]
+                    #[display("{:0}", _0)]
+                    struct ZeroPadded(i32);
+
+                    #[derive(Display)]
+                    #[display("{:07}", _0)]
+                    struct Width(i32);
+
+                    #[derive(Display)]
+                    #[display("{:.5}", _0)]
+                    struct Precision(f64);
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03}", LowerDebug(7)), "7");
+                        assert_eq!(format!("{:03}", UpperDebug(8)), "8");
+                        assert_eq!(format!("{:03}", Align(5)), "5");
+                        assert_eq!(format!("{:03}", Sign(5)), "+5");
+                        assert_eq!(format!("{:07}", Alternate(5)), "0b101");
+                        assert_eq!(format!("{:07}", ZeroPadded(-5)), "-5");
+                        assert_eq!(format!("{:03}", Width(5)), "0000005");
+                        assert_eq!(format!("{:.3}", Precision(1.23456789)), "1.23457");
+                    }
+                }
+            }
+        }
     }
 
     mod multi_field {
@@ -187,15 +564,15 @@ mod structs {
 
             #[derive(Display)]
             #[display(
-            "{_0} {ident} {_1} {} {}",
-            _1, _0 + _1, ident = 123, _1 = _0,
+                "{_0} {ident} {_1} {} {}",
+                _1, _0 + _1, ident = 123, _1 = _0,
             )]
             struct Tuple(i32, i32);
 
             #[derive(Display)]
             #[display(
-            "{field1} {ident} {field2} {} {}",
-            field2, field1 + field2, ident = 123, field2 = field1,
+                "{field1} {ident} {field2} {} {}",
+                field2, field1 + field2, ident = 123, field2 = field1,
             )]
             struct Struct {
                 field1: i32,
@@ -213,6 +590,93 @@ mod structs {
                     .to_string(),
                     "1 123 1 2 3",
                 );
+            }
+        }
+
+        mod transparency {
+            use super::*;
+
+            mod interpolated {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_0}")]
+                struct TupleDisplay(i32, u64);
+
+                #[derive(Display)]
+                #[display("{:?}", _1)]
+                struct TupleDebug(i32, u64);
+
+                #[derive(Display)]
+                #[display("{0:b}", _1)]
+                struct TupleBinary(i32, u64);
+
+                #[derive(Display)]
+                #[display("{named:o}", named = _0)]
+                struct TupleOctal(i32, u64);
+
+                #[derive(Display)]
+                #[display("{b:x}")]
+                struct StructLowerHex {
+                    a: i32,
+                    b: u64,
+                }
+
+                #[derive(Display)]
+                #[display("{:X}", a)]
+                struct StructUpperHex {
+                    a: i32,
+                    b: u64,
+                }
+
+                #[derive(Display)]
+                #[display("{a:e}")]
+                struct StructLowerExp {
+                    a: f64,
+                    b: f32,
+                }
+
+                #[derive(Display)]
+                #[display("{:E}", b)]
+                struct StructUpperExp {
+                    a: f64,
+                    b: f32,
+                }
+
+                #[derive(Display)]
+                #[display("{b:p}")]
+                struct StructPointer<'a> {
+                    a: &'a i32,
+                    b: &'a i32,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", TupleDisplay(7, 8)), "007");
+                    assert_eq!(format!("{:03}", TupleDebug(7, 8)), "008");
+                    assert_eq!(format!("{:07}", TupleBinary(6, 7)), "0000111");
+                    assert_eq!(format!("{:03}", TupleOctal(9, 10)), "011");
+                    assert_eq!(
+                        format!("{:03}", StructLowerHex { a: 41, b: 42 }),
+                        "02a"
+                    );
+                    assert_eq!(
+                        format!("{:03}", StructUpperHex { a: 42, b: 43 }),
+                        "02A"
+                    );
+                    assert_eq!(
+                        format!("{:07}", StructLowerExp { a: 42.0, b: 43.0 }),
+                        "004.2e1",
+                    );
+                    assert_eq!(
+                        format!("{:07}", StructUpperExp { a: 41.0, b: 42.0 }),
+                        "004.2E1",
+                    );
+                    assert_eq!(
+                        format!("{:018}", StructPointer { a: &42, b: &43 }).len(),
+                        18,
+                    );
+                }
             }
         }
     }
@@ -256,6 +720,96 @@ mod enums {
             assert_eq!(Enum::StrUnnamed().to_string(), "STR_UNNAMED");
             assert_eq!(Enum::StrNamed {}.to_string(), "STR_NAMED");
         }
+
+        mod transparency {
+            use super::*;
+
+            mod interpolated {
+                use super::*;
+
+                const I32: i32 = 11;
+                const F64: f64 = 3.14;
+                const POINTER: &f64 = &3.14;
+
+                #[derive(Display)]
+                enum Unit {
+                    #[display("{I32}")]
+                    Display,
+                    #[display("{I32:?}")]
+                    Debug,
+                    #[display("{:b}", I32)]
+                    Binary,
+                    #[display("{0:o}", I32)]
+                    Octal,
+                    #[display("{I32:x}")]
+                    LowerHex,
+                    #[display("{:X}", I32)]
+                    UpperHex,
+                    #[display("{F64:e}")]
+                    LowerExp,
+                    #[display("{named:E}", named = F64)]
+                    UpperExp,
+                    #[display("{POINTER:p}")]
+                    Pointer,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", Unit::Display), "011");
+                    assert_eq!(format!("{:03}", Unit::Debug), "011");
+                    assert_eq!(format!("{:07}", Unit::Binary), "0001011");
+                    assert_eq!(format!("{:07}", Unit::Octal), "0000013");
+                    assert_eq!(format!("{:03}", Unit::LowerHex), "00b");
+                    assert_eq!(format!("{:03}", Unit::UpperHex), "00B");
+                    assert_eq!(format!("{:07}", Unit::LowerExp), "03.14e0");
+                    assert_eq!(format!("{:07}", Unit::UpperExp), "03.14E0");
+                    assert_eq!(format!("{:018}", Unit::Pointer).len(), 18);
+                }
+            }
+
+            mod omitted {
+                use super::*;
+
+                mod on_modifiers {
+                    use super::*;
+
+                    const I32: i32 = 11;
+                    const F64: f64 = 3.14;
+
+                    #[derive(Display)]
+                    enum Unit {
+                        #[display("{I32:x?}")]
+                        LowerDebug,
+                        #[display("{I32:X?}")]
+                        UpperDebug,
+                        #[display("{:^}", I32)]
+                        Align,
+                        #[display("{:+}", I32)]
+                        Sign,
+                        #[display("{:#b}", I32)]
+                        Alternate,
+                        #[display("{:0}", I32)]
+                        ZeroPadded,
+                        #[display("{:07}", I32)]
+                        Width,
+                        #[display("{:.1}", F64)]
+                        Precision,
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(format!("{:03}", Unit::LowerDebug), "b");
+                        assert_eq!(format!("{:03}", Unit::UpperDebug), "B");
+                        assert_eq!(format!("{:03}", Unit::Align), "11");
+                        assert_eq!(format!("{:04}", Unit::Sign), "+11");
+                        assert_eq!(format!("{:07}", Unit::Alternate), "0b1011");
+                        assert_eq!(format!("{:07}", Unit::ZeroPadded), "11");
+                        assert_eq!(format!("{:03}", Unit::Width), "0000011");
+                        assert_eq!(format!("{:.3}", Unit::Precision), "3.1");
+                    }
+                }
+            }
+        }
     }
 
     mod single_field_variant {
@@ -290,6 +844,290 @@ mod enums {
             assert_eq!(Enum::InterpolatedUnnamed(1).to_string(), "1 1");
             assert_eq!(Enum::InterpolatedNamed { field: 1 }.to_string(), "1 1");
         }
+
+        mod transparency {
+            use super::*;
+
+            mod direct {
+                use super::*;
+
+                #[derive(Display)]
+                enum Display {
+                    A(i32),
+                    B { field: u8 },
+                }
+
+                #[derive(Binary)]
+                enum Binary {
+                    A(i32),
+                    B { field: u8 },
+                }
+
+                #[derive(Octal)]
+                enum Octal {
+                    A(i32),
+                    B { field: u8 },
+                }
+
+                #[derive(LowerHex)]
+                enum LowerHex {
+                    A(i32),
+                    B { field: u8 },
+                }
+
+                #[derive(UpperHex)]
+                enum UpperHex {
+                    A(i32),
+                    B { field: u8 },
+                }
+
+                #[derive(LowerExp)]
+                enum LowerExp {
+                    A(f64),
+                    B { field: f32 },
+                }
+
+                #[derive(UpperExp)]
+                enum UpperExp {
+                    A(f64),
+                    B { field: f32 },
+                }
+
+                #[derive(Pointer)]
+                enum Pointer<'a> {
+                    A(&'a i32),
+                    B { field: &'a u8 },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", Display::A(7)), "007");
+                    assert_eq!(format!("{:03}", Display::B { field: 8 }), "008");
+                    assert_eq!(format!("{:07b}", Binary::A(7)), "0000111");
+                    assert_eq!(format!("{:07b}", Binary::B { field: 8 }), "0001000");
+                    assert_eq!(format!("{:03o}", Octal::A(9)), "011");
+                    assert_eq!(format!("{:03o}", Octal::B { field: 10 }), "012");
+                    assert_eq!(format!("{:03x}", LowerHex::A(42)), "02a");
+                    assert_eq!(format!("{:03x}", LowerHex::B { field: 43 }), "02b");
+                    assert_eq!(format!("{:03X}", UpperHex::A(42)), "02A");
+                    assert_eq!(format!("{:03X}", UpperHex::B { field: 43 }), "02B");
+                    assert_eq!(format!("{:07e}", LowerExp::A(42.0)), "004.2e1");
+                    assert_eq!(
+                        format!("{:07e}", LowerExp::B { field: 43.0 }),
+                        "004.3e1",
+                    );
+                    assert_eq!(format!("{:07E}", UpperExp::A(42.0)), "004.2E1");
+                    assert_eq!(
+                        format!("{:07E}", UpperExp::B { field: 43.0 }),
+                        "004.3E1",
+                    );
+                    assert_eq!(format!("{:018p}", Pointer::A(&7)).len(), 18);
+                    assert_eq!(format!("{:018p}", Pointer::B { field: &42 }).len(), 18);
+                }
+            }
+
+            mod interpolated {
+                use super::*;
+
+                #[derive(Display)]
+                enum Display {
+                    #[display("{_0}")]
+                    A(i32),
+                    #[display("{}", field)]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum Debug {
+                    #[display("{0:?}", _0)]
+                    A(i32),
+                    #[display("{named:?}", named = field)]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum Binary {
+                    #[display("{_0:b}")]
+                    A(i32),
+                    #[display("{:b}", field)]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum Octal {
+                    #[display("{_0:o}")]
+                    A(i32),
+                    #[display("{:o}", field)]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum LowerHex {
+                    #[display("{_0:x}")]
+                    A(i32),
+                    #[display("{:x}", field)]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum UpperHex {
+                    #[display("{_0:X}")]
+                    A(i32),
+                    #[display("{:X}", field)]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum LowerExp {
+                    #[display("{:e}", _0)]
+                    A(f64),
+                    #[display("{field:e}")]
+                    B { field: f32 },
+                }
+
+                #[derive(Display)]
+                enum UpperExp {
+                    #[display("{:E}", _0)]
+                    A(f64),
+                    #[display("{field:E}")]
+                    B { field: f32 },
+                }
+
+                #[derive(Display)]
+                enum Pointer<'a> {
+                    #[display("{:p}", _0)]
+                    A(&'a i32),
+                    #[display("{field:p}")]
+                    B { field: &'a u8 },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", Display::A(7)), "007");
+                    assert_eq!(format!("{:03}", Display::B { field: 8 }), "008");
+                    assert_eq!(format!("{:03}", Debug::A(8)), "008");
+                    assert_eq!(format!("{:03}", Debug::B { field: 9 }), "009");
+                    assert_eq!(format!("{:07}", Binary::A(7)), "0000111");
+                    assert_eq!(format!("{:07}", Binary::B { field: 8 }), "0001000");
+                    assert_eq!(format!("{:03}", Octal::A(9)), "011");
+                    assert_eq!(format!("{:03}", Octal::B { field: 10 }), "012");
+                    assert_eq!(format!("{:03}", LowerHex::A(42)), "02a");
+                    assert_eq!(format!("{:03}", LowerHex::B { field: 43 }), "02b");
+                    assert_eq!(format!("{:03}", UpperHex::A(42)), "02A");
+                    assert_eq!(format!("{:03}", UpperHex::B { field: 43 }), "02B");
+                    assert_eq!(format!("{:07}", LowerExp::A(42.0)), "004.2e1");
+                    assert_eq!(
+                        format!("{:07}", LowerExp::B { field: 43.0 }),
+                        "004.3e1",
+                    );
+                    assert_eq!(format!("{:07}", UpperExp::A(42.0)), "004.2E1");
+                    assert_eq!(
+                        format!("{:07}", UpperExp::B { field: 43.0 }),
+                        "004.3E1",
+                    );
+                    assert_eq!(format!("{:018}", Pointer::A(&7)).len(), 18);
+                    assert_eq!(format!("{:018}", Pointer::B { field: &42 }).len(), 18);
+                }
+            }
+
+            mod suppressed {
+                use super::*;
+
+                #[derive(Display)]
+                enum Display {
+                    #[display("{}", format_args!("{_0}"))]
+                    A(i32),
+                    #[display("{}", format_args!("{}", field))]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum Debug {
+                    #[display("{}", format_args!("{_0:?}"))]
+                    A(i32),
+                    #[display("{}", format_args!("{:?}", field))]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum Binary {
+                    #[display("{}", format_args!("{_0:b}"))]
+                    A(i32),
+                    #[display("{}", format_args!("{:b}", field))]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum Octal {
+                    #[display("{}", format_args!("{_0:o}"))]
+                    A(i32),
+                    #[display("{}", format_args!("{:o}", field))]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum LowerHex {
+                    #[display("{}", format_args!("{_0:x}"))]
+                    A(i32),
+                    #[display("{}", format_args!("{:x}", field))]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum UpperHex {
+                    #[display("{}", format_args!("{_0:X}"))]
+                    A(i32),
+                    #[display("{}", format_args!("{:X}", field))]
+                    B { field: u8 },
+                }
+
+                #[derive(Display)]
+                enum LowerExp {
+                    #[display("{}", format_args!("{:e}", _0))]
+                    A(f64),
+                    #[display("{}", format_args!("{field:e}"))]
+                    B { field: f32 },
+                }
+
+                #[derive(Display)]
+                enum UpperExp {
+                    #[display("{}", format_args!("{:E}", _0))]
+                    A(f64),
+                    #[display("{}", format_args!("{field:E}"))]
+                    B { field: f32 },
+                }
+
+                #[derive(Display)]
+                enum Pointer<'a> {
+                    #[display("{}", format_args!("{:p}", _0))]
+                    A(&'a i32),
+                    #[display("{}", format_args!("{field:p}"))]
+                    B { field: &'a u8 },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", Display::A(7)), "7");
+                    assert_eq!(format!("{:03}", Display::B { field: 8 }), "8");
+                    assert_eq!(format!("{:03}", Debug::A(8)), "8");
+                    assert_eq!(format!("{:03}", Debug::B { field: 9 }), "9");
+                    assert_eq!(format!("{:07}", Binary::A(7)), "111");
+                    assert_eq!(format!("{:07}", Binary::B { field: 8 }), "1000");
+                    assert_eq!(format!("{:03}", Octal::A(9)), "11");
+                    assert_eq!(format!("{:03}", Octal::B { field: 10 }), "12");
+                    assert_eq!(format!("{:03}", LowerHex::A(42)), "2a");
+                    assert_eq!(format!("{:03}", LowerHex::B { field: 43 }), "2b");
+                    assert_eq!(format!("{:03}", UpperHex::A(42)), "2A");
+                    assert_eq!(format!("{:03}", UpperHex::B { field: 43 }), "2B");
+                    assert_eq!(format!("{:07}", LowerExp::A(42.0)), "4.2e1");
+                    assert_eq!(format!("{:07}", LowerExp::B { field: 43.0 }), "4.3e1");
+                    assert_eq!(format!("{:07}", UpperExp::A(42.0)), "4.2E1");
+                    assert_eq!(format!("{:07}", UpperExp::B { field: 43.0 }), "4.3E1");
+                    assert_ne!(format!("{:018}", Pointer::A(&7)).len(), 18);
+                    assert_ne!(format!("{:018}", Pointer::B { field: &42 }).len(), 18);
+                }
+            }
+        }
     }
 
     mod multi_field_variant {
@@ -302,13 +1140,13 @@ mod enums {
             #[display("named")]
             StrNamed { field1: i32, field2: i32 },
             #[display(
-            "{_0} {ident} {_1} {} {}",
-            _1, _0 + _1, ident = 123, _1 = _0,
+                "{_0} {ident} {_1} {} {}",
+                _1, _0 + _1, ident = 123, _1 = _0,
             )]
             InterpolatedUnnamed(i32, i32),
             #[display(
-            "{field1} {ident} {field2} {} {}",
-            field2, field1 + field2, ident = 123, field2 = field1,
+                "{field1} {ident} {field2} {} {}",
+                field2, field1 + field2, ident = 123, field2 = field1,
             )]
             InterpolatedNamed { field1: i32, field2: i32 },
         }
@@ -333,6 +1171,117 @@ mod enums {
                 .to_string(),
                 "1 123 1 2 3",
             );
+        }
+
+        mod transparency {
+            use super::*;
+
+            mod interpolated {
+                use super::*;
+
+                #[derive(Display)]
+                enum Display {
+                    #[display("{_0}")]
+                    A(i32, i64),
+                    #[display("{}", b)]
+                    B { a: u8, b: i32 },
+                }
+
+                #[derive(Display)]
+                enum Debug {
+                    #[display("{0:?}", _1)]
+                    A(i32, i64),
+                    #[display("{named:?}", named = a)]
+                    B { a: u8, b: i32 },
+                }
+
+                #[derive(Display)]
+                enum Binary {
+                    #[display("{_0:b}")]
+                    A(i32, i64),
+                    #[display("{:b}", b)]
+                    B { a: u8, b: i32 },
+                }
+
+                #[derive(Display)]
+                enum Octal {
+                    #[display("{_0:o}")]
+                    A(i32, i64),
+                    #[display("{:o}", b)]
+                    B { a: u8, b: i32 },
+                }
+
+                #[derive(Display)]
+                enum LowerHex {
+                    #[display("{_0:x}")]
+                    A(i32, i64),
+                    #[display("{:x}", b)]
+                    B { a: u8, b: i32 },
+                }
+
+                #[derive(Display)]
+                enum UpperHex {
+                    #[display("{_0:X}")]
+                    A(i32, i64),
+                    #[display("{:X}", b)]
+                    B { a: u8, b: i32 },
+                }
+
+                #[derive(Display)]
+                enum LowerExp {
+                    #[display("{:e}", _1)]
+                    A(f64, f32),
+                    #[display("{a:e}")]
+                    B { a: f64, b: f32 },
+                }
+
+                #[derive(Display)]
+                enum UpperExp {
+                    #[display("{:E}", _1)]
+                    A(f64, f32),
+                    #[display("{a:E}")]
+                    B { a: f64, b: f32 },
+                }
+
+                #[derive(Display)]
+                enum Pointer<'a> {
+                    #[display("{:p}", _1)]
+                    A(&'a f64, &'a f32),
+                    #[display("{a:p}")]
+                    B { a: &'a f64, b: &'a f32 },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", Display::A(7, 8)), "007");
+                    assert_eq!(format!("{:03}", Display::B { a: 7, b: 8 }), "008");
+                    assert_eq!(format!("{:03}", Debug::A(7, 8)), "008");
+                    assert_eq!(format!("{:03}", Debug::B { a: 7, b: 8 }), "007");
+                    assert_eq!(format!("{:07}", Binary::A(7, 8)), "0000111");
+                    assert_eq!(format!("{:07}", Binary::B { a: 7, b: 8 }), "0001000");
+                    assert_eq!(format!("{:03}", Octal::A(9, 10)), "011");
+                    assert_eq!(format!("{:03}", Octal::B { a: 9, b: 10 }), "012");
+                    assert_eq!(format!("{:03}", LowerHex::A(42, 41)), "02a");
+                    assert_eq!(format!("{:03}", LowerHex::B { a: 42, b: 43 }), "02b");
+                    assert_eq!(format!("{:03}", UpperHex::A(42, 41)), "02A");
+                    assert_eq!(format!("{:03}", UpperHex::B { a: 42, b: 43 }), "02B");
+                    assert_eq!(format!("{:07}", LowerExp::A(41.0, 42.0)), "004.2e1");
+                    assert_eq!(
+                        format!("{:07}", LowerExp::B { a: 43.0, b: 52.0 }),
+                        "004.3e1",
+                    );
+                    assert_eq!(format!("{:07}", UpperExp::A(41.0, 42.0)), "004.2E1");
+                    assert_eq!(
+                        format!("{:07}", UpperExp::B { a: 43.0, b: 52.0 }),
+                        "004.3E1",
+                    );
+                    assert_eq!(format!("{:018}", Pointer::A(&7.0, &8.3)).len(), 18);
+                    assert_eq!(
+                        format!("{:018}", Pointer::B { a: &42.1, b: &43.3 }).len(),
+                        18,
+                    );
+                }
+            }
         }
     }
 }
@@ -855,6 +1804,358 @@ mod generic {
 
             let s = Struct(NoDisplay);
             assert_eq!(s.to_string(), "no display");
+        }
+    }
+
+    mod transparency {
+        use super::*;
+
+        mod direct {
+            use super::*;
+
+            #[derive(
+                Display, Binary, Octal, LowerHex, UpperHex, LowerExp, UpperExp, Pointer
+            )]
+            struct Tuple<T>(T);
+
+            #[derive(
+                Display, Binary, Octal, LowerHex, UpperHex, LowerExp, UpperExp, Pointer
+            )]
+            struct Struct<T> {
+                field: T,
+            }
+
+            #[derive(
+                Display, Binary, Octal, LowerHex, UpperHex, LowerExp, UpperExp, Pointer
+            )]
+            enum Enum<A, B> {
+                A(A),
+                B { field: B },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03}", Tuple(7)), "007");
+                assert_eq!(format!("{:03}", Struct { field: 7 }), "007");
+                assert_eq!(format!("{:03}", Enum::<_, i8>::A(7)), "007");
+                assert_eq!(format!("{:03}", Enum::<i8, _>::B { field: 8 }), "008");
+                assert_eq!(format!("{:07b}", Tuple(7)), "0000111");
+                assert_eq!(format!("{:07b}", Struct { field: 7 }), "0000111");
+                assert_eq!(format!("{:07b}", Enum::<_, i8>::A(7)), "0000111");
+                assert_eq!(format!("{:07b}", Enum::<i8, _>::B { field: 8 }), "0001000");
+                assert_eq!(format!("{:03o}", Tuple(9)), "011");
+                assert_eq!(format!("{:03o}", Struct { field: 9 }), "011");
+                assert_eq!(format!("{:03o}", Enum::<_, i8>::A(9)), "011");
+                assert_eq!(format!("{:03o}", Enum::<i8, _>::B { field: 10 }), "012");
+                assert_eq!(format!("{:03x}", Tuple(42)), "02a");
+                assert_eq!(format!("{:03x}", Struct { field: 42 }), "02a");
+                assert_eq!(format!("{:03x}", Enum::<_, i8>::A(42)), "02a");
+                assert_eq!(format!("{:03x}", Enum::<i8, _>::B { field: 43 }), "02b");
+                assert_eq!(format!("{:03X}", Tuple(42)), "02A");
+                assert_eq!(format!("{:03X}", Struct { field: 42 }), "02A");
+                assert_eq!(format!("{:03X}", Enum::<_, i8>::A(42)), "02A");
+                assert_eq!(format!("{:03X}", Enum::<i8, _>::B { field: 43 }), "02B");
+                assert_eq!(format!("{:07e}", Tuple(42.0)), "004.2e1");
+                assert_eq!(format!("{:07e}", Struct { field: 42.0 }), "004.2e1");
+                assert_eq!(format!("{:07e}", Enum::<_, i8>::A(42.0)), "004.2e1");
+                assert_eq!(
+                    format!("{:07e}", Enum::<i8, _>::B { field: 43.0 }),
+                    "004.3e1",
+                );
+                assert_eq!(format!("{:07E}", Tuple(42.0)), "004.2E1");
+                assert_eq!(format!("{:07E}", Struct { field: 42.0 }), "004.2E1");
+                assert_eq!(format!("{:07E}", Enum::<_, i8>::A(42.0)), "004.2E1");
+                assert_eq!(
+                    format!("{:07E}", Enum::<i8, _>::B { field: 43.0 }),
+                    "004.3E1",
+                );
+                assert_eq!(format!("{:018p}", Tuple(&42)).len(), 18);
+                assert_eq!(format!("{:018p}", Struct { field: &42 }).len(), 18);
+                assert_eq!(format!("{:018p}", Enum::<_, &i8>::A(&7)).len(), 18);
+                assert_eq!(
+                    format!("{:018p}", Enum::<&i8, _>::B { field: &42 }).len(),
+                    18,
+                );
+            }
+        }
+
+        mod interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("{_0}")]
+            struct TupleDisplay<T>(T);
+
+            #[derive(Display)]
+            #[display("{0:?}", _0)]
+            struct TupleDebug<T>(T);
+
+            #[derive(Display)]
+            #[display("{_0:b}")]
+            struct TupleBinary<T, Y>(T, Y);
+
+            #[derive(Display)]
+            #[display("{_1:o}")]
+            struct TupleOctal<Y, T>(Y, T);
+
+            #[derive(Display)]
+            #[display("{0:x}", _0)]
+            struct TupleLowerHex<T>(T);
+
+            #[derive(Display)]
+            #[display("{_0:X}")]
+            struct TupleUpperHex<T>(T);
+
+            #[derive(Display)]
+            #[display("{:e}", _0)]
+            struct TupleLowerExp<T>(T);
+
+            #[derive(Display)]
+            #[display("{:E}", _0)]
+            struct TupleUpperExp<T>(T);
+
+            #[derive(Display)]
+            #[display("{:p}", _0)]
+            struct TuplePointer<T>(T);
+
+            #[derive(Display)]
+            #[display("{field}")]
+            struct StructDisplay<T> {
+                field: T,
+            }
+
+            #[derive(Display)]
+            #[display("{a:b}")]
+            struct StructBinary<T, Y> {
+                a: T,
+                b: Y,
+            }
+
+            #[derive(Display)]
+            #[display("{named:o}", named = b)]
+            struct StructOctal<Y, T> {
+                a: Y,
+                b: T,
+            }
+
+            #[derive(Display)]
+            #[display("{field:x}")]
+            struct StructLowerHex<T> {
+                field: T,
+            }
+
+            #[derive(Display)]
+            #[display("{field:X}")]
+            struct StructUpperHex<T> {
+                field: T,
+            }
+
+            #[derive(Display)]
+            #[display("{:e}", field)]
+            struct StructLowerExp<T> {
+                field: T,
+            }
+
+            #[derive(Display)]
+            #[display("{:E}", field)]
+            struct StructUpperExp<T> {
+                field: T,
+            }
+
+            #[derive(Display)]
+            #[display("{:p}", field)]
+            struct StructPointer<T> {
+                field: T,
+            }
+
+            #[derive(Display)]
+            enum EnumDisplay<A, B> {
+                #[display("{_0}")]
+                A(A),
+                #[display("{}", field)]
+                B { field: B },
+            }
+
+            #[derive(Display)]
+            enum EnumBinary<A, B, C, D> {
+                #[display("{_0:b}")]
+                A(A, C),
+                #[display("{:b}", b)]
+                B { b: B, d: D },
+            }
+
+            #[derive(Display)]
+            enum EnumOctal<A, B, C, D> {
+                #[display("{_1:o}")]
+                A(A, C),
+                #[display("{:o}", d)]
+                B { b: B, d: D },
+            }
+
+            #[derive(Display)]
+            enum EnumLowerHex<A, B> {
+                #[display("{_0:x}")]
+                A(A),
+                #[display("{:x}", field)]
+                B { field: B },
+            }
+
+            #[derive(Display)]
+            enum EnumUpperHex<A, B> {
+                #[display("{_0:X}")]
+                A(A),
+                #[display("{:X}", field)]
+                B { field: B },
+            }
+
+            #[derive(Display)]
+            enum EnumLowerExp<A, B> {
+                #[display("{:e}", _0)]
+                A(A),
+                #[display("{field:e}")]
+                B { field: B },
+            }
+
+            #[derive(Display)]
+            enum EnumUpperExp<A, B> {
+                #[display("{:E}", _0)]
+                A(A),
+                #[display("{field:E}")]
+                B { field: B },
+            }
+
+            #[derive(Display)]
+            enum EnumPointer<A, B> {
+                #[display("{:p}", _0)]
+                A(A),
+                #[display("{field:p}")]
+                B { field: B },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:03}", TupleDisplay(7)), "007");
+                assert_eq!(format!("{:03}", TupleDebug(8)), "008");
+                assert_eq!(format!("{:03}", StructDisplay { field: 7 }), "007");
+                assert_eq!(format!("{:03}", EnumDisplay::<_, i8>::A(7)), "007");
+                assert_eq!(
+                    format!("{:03}", EnumDisplay::<i8, _>::B { field: 8 }),
+                    "008",
+                );
+                assert_eq!(format!("{:07}", TupleBinary(7, ())), "0000111");
+                assert_eq!(format!("{:07}", StructBinary { a: 7, b: () }), "0000111");
+                assert_eq!(
+                    format!("{:07}", EnumBinary::<_, i8, _, ()>::A(7, ())),
+                    "0000111",
+                );
+                assert_eq!(
+                    format!("{:07}", EnumBinary::<i8, _, (), _>::B { b: 8, d: () }),
+                    "0001000",
+                );
+                assert_eq!(format!("{:03}", TupleOctal((), 9)), "011");
+                assert_eq!(format!("{:03}", StructOctal { a: (), b: 9 }), "011");
+                assert_eq!(
+                    format!("{:03}", EnumOctal::<_, (), _, i8>::A((), 9)),
+                    "011",
+                );
+                assert_eq!(
+                    format!("{:03}", EnumOctal::<(), _, i8, _>::B { b: (), d: 10 }),
+                    "012",
+                );
+                assert_eq!(format!("{:03}", TupleLowerHex(42)), "02a");
+                assert_eq!(format!("{:03}", StructLowerHex { field: 42 }), "02a");
+                assert_eq!(format!("{:03}", EnumLowerHex::<_, i8>::A(42)), "02a");
+                assert_eq!(
+                    format!("{:03}", EnumLowerHex::<i8, _>::B { field: 43 }),
+                    "02b",
+                );
+                assert_eq!(format!("{:03}", TupleUpperHex(42)), "02A");
+                assert_eq!(format!("{:03}", StructUpperHex { field: 42 }), "02A");
+                assert_eq!(format!("{:03}", EnumUpperHex::<_, i8>::A(42)), "02A");
+                assert_eq!(
+                    format!("{:03}", EnumUpperHex::<i8, _>::B { field: 43 }),
+                    "02B",
+                );
+                assert_eq!(format!("{:07}", TupleLowerExp(42.0)), "004.2e1");
+                assert_eq!(format!("{:07}", StructLowerExp { field: 42.0 }), "004.2e1");
+                assert_eq!(format!("{:07}", EnumLowerExp::<_, i8>::A(42.0)), "004.2e1");
+                assert_eq!(
+                    format!("{:07}", EnumLowerExp::<i8, _>::B { field: 43.0 }),
+                    "004.3e1",
+                );
+                assert_eq!(format!("{:07}", TupleUpperExp(42.0)), "004.2E1");
+                assert_eq!(format!("{:07}", StructUpperExp { field: 42.0 }), "004.2E1");
+                assert_eq!(format!("{:07}", EnumUpperExp::<_, i8>::A(42.0)), "004.2E1");
+                assert_eq!(
+                    format!("{:07}", EnumUpperExp::<i8, _>::B { field: 43.0 }),
+                    "004.3E1",
+                );
+                assert_eq!(format!("{:018}", TuplePointer(&42)).len(), 18);
+                assert_eq!(format!("{:018}", StructPointer { field: &42 }).len(), 18);
+                assert_eq!(format!("{:018}", EnumPointer::<_, &i8>::A(&7)).len(), 18);
+                assert_eq!(
+                    format!("{:018}", EnumPointer::<&i8, _>::B { field: &42 }).len(),
+                    18,
+                );
+            }
+        }
+
+        mod omitted {
+            use super::*;
+
+            mod on_modifiers {
+                use super::*;
+
+                #[derive(Display)]
+                enum Enum<A, B, C, D> {
+                    #[display("{_0:x?}")]
+                    LowerDebug(A),
+                    #[display("{_0:X?}")]
+                    UpperDebug(B),
+                    #[display("{:^}", _0)]
+                    Align(C),
+                    #[display("{:+}", _0)]
+                    Sign(C),
+                    #[display("{:#b}", _0)]
+                    Alternate(C),
+                    #[display("{:0}", _0)]
+                    ZeroPadded(C),
+                    #[display("{:07}", _0)]
+                    Width(C),
+                    #[display("{:.5}", _0)]
+                    Precision(D),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(
+                        format!("{:03}", Enum::<_, u8, u8, f64>::LowerDebug(7)),
+                        "7",
+                    );
+                    assert_eq!(
+                        format!("{:03}", Enum::<u8, _, u8, f64>::UpperDebug(8)),
+                        "8",
+                    );
+                    assert_eq!(format!("{:03}", Enum::<u8, u8, _, f64>::Align(5)), "5");
+                    assert_eq!(format!("{:03}", Enum::<u8, u8, _, f64>::Sign(5)), "+5");
+                    assert_eq!(
+                        format!("{:07}", Enum::<u8, u8, _, f64>::Alternate(5)),
+                        "0b101",
+                    );
+                    assert_eq!(
+                        format!("{:07}", Enum::<u8, u8, _, f64>::ZeroPadded(-5)),
+                        "-5",
+                    );
+                    assert_eq!(
+                        format!("{:03}", Enum::<u8, u8, _, f64>::Width(5)),
+                        "0000005",
+                    );
+                    assert_eq!(
+                        format!("{:.3}", Enum::<u8, u8, u8, _>::Precision(1.23456789)),
+                        "1.23457",
+                    );
+                }
+            }
         }
     }
 }

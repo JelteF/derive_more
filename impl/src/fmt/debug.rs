@@ -227,8 +227,12 @@ impl<'a> Expansion<'a> {
     ///
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
-        if let Some(fmt_attr) = &self.attr.fmt {
-            return Ok(quote! { ::core::write!(__derive_more_f, #fmt_attr) });
+        if let Some(fmt) = &self.attr.fmt {
+            return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
+                quote! { ::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+            } else {
+                quote! { ::core::write!(__derive_more_f, #fmt) }
+            });
         };
 
         match self.fields {
@@ -331,8 +335,9 @@ impl<'a> Expansion<'a> {
 
         if let Some(fmt) = self.attr.fmt.as_ref() {
             out.extend(fmt.bounded_types(self.fields).map(|(ty, trait_name)| {
-                let trait_name = format_ident!("{trait_name}");
-                parse_quote! { #ty: ::core::fmt::#trait_name }
+                let trait_ident = format_ident!("{trait_name}");
+
+                parse_quote! { #ty: ::core::fmt::#trait_ident }
             }));
             Ok(out)
         } else {
@@ -344,8 +349,9 @@ impl<'a> Expansion<'a> {
                     Some(FieldAttribute::Right(fmt_attr)) => {
                         out.extend(fmt_attr.bounded_types(self.fields).map(
                             |(ty, trait_name)| {
-                                let trait_name = format_ident!("{trait_name}");
-                                parse_quote! { #ty: ::core::fmt::#trait_name }
+                                let trait_ident = format_ident!("{trait_name}");
+
+                                parse_quote! { #ty: ::core::fmt::#trait_ident }
                             },
                         ));
                     }

@@ -9,12 +9,12 @@ pub(crate) mod display;
 mod parsing;
 
 use proc_macro2::TokenStream;
-use quote::ToTokens;
+use quote::{format_ident, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    token, Ident,
+    token,
 };
 
 use crate::{
@@ -133,7 +133,69 @@ impl ToTokens for FmtAttribute {
 }
 
 impl FmtAttribute {
-    /// Returns an [`Iterator`] over bounded [`syn::Type`]s and trait names.
+    /// Checks whether this [`FmtAttribute`] can be replaced with a transparent delegation (calling
+    /// a formatting trait directly instead of interpolation syntax).
+    ///
+    /// If such transparent call is possible, the returns an [`Ident`] of the delegated trait and
+    /// the [`Expr`] to pass into the call, otherwise [`None`].
+    ///
+    /// [`Ident`]: struct@syn::Ident
+    fn transparent_call(&self) -> Option<(Expr, syn::Ident)> {
+        // `FmtAttribute` is transparent when:
+
+        // (1) There is exactly one formatting parameter.
+        let lit = self.lit.value();
+        let param =
+            parsing::format(&lit).and_then(|(more, p)| more.is_empty().then_some(p))?;
+
+        // (2) And the formatting parameter doesn't contain any modifiers.
+        if param
+            .spec
+            .map(|s| {
+                s.align.is_some()
+                    || s.sign.is_some()
+                    || s.alternate.is_some()
+                    || s.zero_padding.is_some()
+                    || s.width.is_some()
+                    || s.precision.is_some()
+                    || !s.ty.is_trivial()
+            })
+            .unwrap_or_default()
+        {
+            return None;
+        }
+
+        let expr = match param.arg {
+            // (3) And either exactly one positional argument is specified.
+            Some(parsing::Argument::Integer(_)) | None => (self.args.len() == 1)
+                .then(|| self.args.first())
+                .flatten()
+                .map(|a| a.expr.clone()),
+
+            // (4) Or the formatting parameter's name refers to some outer binding.
+            Some(parsing::Argument::Identifier(name)) if self.args.is_empty() => {
+                Some(format_ident!("{name}").into())
+            }
+
+            // (5) Or exactly one named argument is specified for the formatting parameter's name.
+            Some(parsing::Argument::Identifier(name)) => (self.args.len() == 1)
+                .then(|| self.args.first())
+                .flatten()
+                .filter(|a| a.alias.as_ref().map(|a| a.0 == name).unwrap_or_default())
+                .map(|a| a.expr.clone()),
+        }?;
+
+        let trait_name = param
+            .spec
+            .map(|s| s.ty)
+            .unwrap_or(parsing::Type::Display)
+            .trait_name();
+
+        Some((expr, format_ident!("{trait_name}")))
+    }
+
+    /// Returns an [`Iterator`] over bounded [`syn::Type`]s (and correspondent trait names) by this
+    /// [`FmtAttribute`].
     fn bounded_types<'a>(
         &'a self,
         fields: &'a syn::Fields,
@@ -221,7 +283,9 @@ impl FmtAttribute {
 #[derive(Debug)]
 struct FmtArgument {
     /// `identifier =` [`Ident`].
-    alias: Option<(Ident, token::Eq)>,
+    ///
+    /// [`Ident`]: struct@syn::Ident
+    alias: Option<(syn::Ident, token::Eq)>,
 
     /// `expression` [`Expr`].
     expr: Expr,
@@ -231,7 +295,7 @@ impl FmtArgument {
     /// Returns an `identifier` of the [named parameter][1].
     ///
     /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
-    fn alias(&self) -> Option<&Ident> {
+    fn alias(&self) -> Option<&syn::Ident> {
         self.alias.as_ref().map(|(ident, _)| ident)
     }
 }
@@ -239,7 +303,7 @@ impl FmtArgument {
 impl Parse for FmtArgument {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
-            alias: (input.peek(Ident) && input.peek2(token::Eq))
+            alias: (input.peek(syn::Ident) && input.peek2(token::Eq))
                 .then(|| Ok::<_, syn::Error>((input.parse()?, input.parse()?)))
                 .transpose()?,
             expr: input.parse()?,
@@ -283,7 +347,7 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
 }
 
 /// Representation of a formatting placeholder.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Eq, PartialEq)]
 struct Placeholder {
     /// Formatting argument (either named or positional) to be used by this placeholder.
     arg: Parameter,
@@ -378,7 +442,7 @@ impl attr::ParseMultiple for ContainerAttributes {
     fn merge_attrs(
         prev: Spanning<Self>,
         new: Spanning<Self>,
-        name: &Ident,
+        name: &syn::Ident,
     ) -> syn::Result<Spanning<Self>> {
         let Spanning {
             span: prev_span,
