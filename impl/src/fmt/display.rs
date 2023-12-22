@@ -9,7 +9,7 @@ use syn::{parse_quote, spanned::Spanned as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
-use super::{trait_name_to_attribute_name, ContainerAttributes, FmtAttribute};
+use super::{trait_name_to_attribute_name, ContainerAttributes};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -226,6 +226,7 @@ impl<'a> Expansion<'a> {
     /// greater than 1.
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
+    /// [`FmtAttribute`]: super::FmtAttribute
     fn generate_body(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
             Some(fmt) => {
