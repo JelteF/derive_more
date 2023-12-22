@@ -22,7 +22,9 @@ pub(crate) enum Expr {
 }
 
 impl Expr {
-    /// Returns an [`Ident`] in case this [`Expr`] is represented only by it.
+    /// Returns a [`syn::Ident`] in case this [`Expr`] is represented only by it.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     pub(crate) fn ident(&self) -> Option<&syn::Ident> {
         match self {
             Self::Ident(ident) => Some(ident),
@@ -50,12 +52,12 @@ impl Parse for Expr {
                 take_until1(
                     alt([
                         &mut seq([
-                            &mut colon2,
+                            &mut path_sep,
                             &mut balanced_pair(punct('<'), punct('>')),
                         ]),
                         &mut seq([
                             &mut balanced_pair(punct('<'), punct('>')),
-                            &mut colon2,
+                            &mut path_sep,
                         ]),
                         &mut balanced_pair(punct('|'), punct('|')),
                         &mut token_tree,
@@ -81,8 +83,10 @@ impl ToTokens for Expr {
 /// Result of parsing.
 type ParsingResult<'a> = Option<(TokenStream, Cursor<'a>)>;
 
-/// Tries to parse a [`syn::token::Colon2`].
-pub fn colon2(c: Cursor<'_>) -> ParsingResult<'_> {
+/// Tries to parse a [`token::PathSep`].
+///
+/// [`token::PathSep`]: struct@syn::token::PathSep
+pub fn path_sep(c: Cursor<'_>) -> ParsingResult<'_> {
     seq([
         &mut punct_with_spacing(':', Spacing::Joint),
         &mut punct(':'),

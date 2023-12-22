@@ -101,6 +101,8 @@ struct FmtAttribute {
     lit: syn::LitStr,
 
     /// Optional [`token::Comma`].
+    ///
+    /// [`token::Comma`]: struct@token::Comma
     comma: Option<token::Comma>,
 
     /// Interpolation arguments.
@@ -414,6 +416,8 @@ impl Placeholder {
 ///
 /// `#[<attribute>(...)]` can be specified only once, while multiple `#[<attribute>(bound(...))]`
 /// are allowed.
+///
+/// [`fmt::Display`]: std::fmt::Display
 #[derive(Debug, Default)]
 struct ContainerAttributes {
     /// Interpolation [`FmtAttribute`].
@@ -468,7 +472,7 @@ impl attr::ParseMultiple for ContainerAttributes {
     }
 }
 
-/// Matches the provided `trait_name` to appropriate [`Attribute::Fmt`] argument name.
+/// Matches the provided `trait_name` to appropriate [`FmtAttribute`]'s argument name.
 fn trait_name_to_attribute_name<T>(trait_name: T) -> &'static str
 where
     T: for<'a> PartialEq<&'a str>,

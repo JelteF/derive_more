@@ -67,6 +67,8 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 /// - Struct/enum/union [`syn::Ident`].
 /// - Derived trait [`syn::Ident`].
 /// - Attribute name [`syn::Ident`].
+///
+/// [`syn::Ident`]: struct@syn::Ident
 type ExpansionCtx<'a> = (
     &'a ContainerAttributes,
     &'a syn::Ident,
@@ -202,12 +204,16 @@ struct Expansion<'a> {
     attrs: &'a ContainerAttributes,
 
     /// Struct or enum [`syn::Ident`].
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     ident: &'a syn::Ident,
 
     /// Struct or enum [`syn::Fields`].
     fields: &'a syn::Fields,
 
     /// [`fmt`] trait [`syn::Ident`].
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     trait_ident: &'a syn::Ident,
 }
 
@@ -220,6 +226,7 @@ impl<'a> Expansion<'a> {
     /// greater than 1.
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
+    /// [`FmtAttribute`]: super::FmtAttribute
     fn generate_body(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
             Some(fmt) => {
