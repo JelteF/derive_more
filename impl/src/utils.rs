@@ -156,7 +156,10 @@ pub fn add_extra_ty_param_bound_op<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
 ) -> Generics {
-    add_extra_ty_param_bound(generics, &quote! { ::derive_more::core::ops::#trait_ident })
+    add_extra_ty_param_bound(
+        generics,
+        &quote! { ::derive_more::core::ops::#trait_ident },
+    )
 }
 
 pub fn add_extra_ty_param_bound<'a>(

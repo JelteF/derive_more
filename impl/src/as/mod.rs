@@ -235,7 +235,9 @@ impl<'a> ToTokens for Expansion<'a> {
                 ImplKind::Specialized
             };
 
-            let trait_ty = quote! { ::derive_more::core::convert::#trait_ident <#return_ty> };
+            let trait_ty = quote! {
+                ::derive_more::core::convert::#trait_ident <#return_ty>
+            };
 
             let generics = match &impl_kind {
                 ImplKind::Forwarded => {
