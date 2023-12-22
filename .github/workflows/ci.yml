@@ -145,7 +145,7 @@ jobs:
   #################
 
   rustdoc:
-    name: rustdoc${{ matrix.opts != "" && " (private)" || "" }}
+    name: rustdoc${{ matrix.opts != '' && ' (private)' || '' }}
     strategy:
       fail-fast: false
       matrix:
