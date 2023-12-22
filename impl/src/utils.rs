@@ -1780,6 +1780,7 @@ pub(crate) mod attr {
             /// If there is no explicitly specified  primitive integer type, then returns a
             /// [default `isize` discriminant][0].
             ///
+            /// [`syn::Ident`]: struct@syn::Ident
             /// [0]: https://doc.rust-lang.org/reference/items/enumerations.html#discriminants
             pub(crate) fn ty(&self) -> syn::Ident {
                 self.0
@@ -2216,7 +2217,7 @@ mod fields_ext {
 
     /// [`syn::Fields`] extension.
     pub(crate) trait FieldsExt: Len {
-        /// Validates the provided [`parsing::Type`] against these [`syn::Fields`].
+        /// Validates the provided [`syn::Type`] against these [`syn::Fields`].
         fn validate_type<'t>(
             &self,
             ty: &'t syn::Type,

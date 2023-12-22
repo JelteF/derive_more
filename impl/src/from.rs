@@ -120,9 +120,13 @@ struct Expansion<'a> {
     attrs: Option<&'a VariantAttribute>,
 
     /// Struct or enum [`syn::Ident`].
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     ident: &'a syn::Ident,
 
     /// Variant [`syn::Ident`] in case of enum expansion.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     variant: Option<&'a syn::Ident>,
 
     /// Struct or variant [`syn::Fields`].
@@ -132,7 +136,7 @@ struct Expansion<'a> {
     generics: &'a syn::Generics,
 
     /// Indicator whether one of the enum variants has
-    /// [`VariantAttribute::From`], [`VariantAttribute::Types`] or
+    /// [`VariantAttribute::Empty`], [`VariantAttribute::Types`] or
     /// [`VariantAttribute::Forward`].
     ///
     /// Always [`false`] for structs.
@@ -254,6 +258,9 @@ impl<'a> Expansion<'a> {
     /// Expands fields initialization wrapped into [`token::Brace`]s in case of
     /// [`syn::FieldsNamed`], or [`token::Paren`] in case of
     /// [`syn::FieldsUnnamed`].
+    ///
+    /// [`token::Brace`]: struct@token::Brace
+    /// [`token::Paren`]: struct@token::Paren
     fn expand_fields(
         &self,
         mut wrap: impl FnMut(
