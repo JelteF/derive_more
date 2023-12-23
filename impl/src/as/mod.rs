@@ -240,7 +240,7 @@ impl<'a> ToTokens for Expansion<'a> {
             };
 
             let trait_ty = quote! {
-                ::derive_more::core::convert::#trait_ident <#return_ty>
+                ::derive_more::#trait_ident <#return_ty>
             };
 
             let generics = match &impl_kind {
