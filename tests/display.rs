@@ -139,7 +139,7 @@ mod structs {
                     assert_eq!(format!("{:03}", UpperHex), "00B");
                     assert_eq!(format!("{:07}", LowerExp), "03.15e0");
                     assert_eq!(format!("{:07}", UpperExp), "03.15E0");
-                    assert_eq!(format!("{:018}", Pointer).len(), 18);
+                    assert_eq!(format!("{:018}", Pointer), format!("{POINTER:018p}"));
                 }
             }
 
@@ -322,9 +322,10 @@ mod structs {
                         format!("{:07E}", StructUpperExp { field: 42.0 }),
                         "004.2E1",
                     );
+                    let a = 42;
                     assert_eq!(
-                        format!("{:018p}", StructPointer { field: &42 }).len(),
-                        18,
+                        format!("{:018p}", StructPointer { field: &a }),
+                        format!("{:018p}", &a),
                     );
                 }
             }
@@ -394,9 +395,10 @@ mod structs {
                         format!("{:07}", StructUpperExp { field: 42.0 }),
                         "004.2E1",
                     );
+                    let a = 42;
                     assert_eq!(
-                        format!("{:018}", StructPointer { field: &42 }).len(),
-                        18,
+                        format!("{:018}", StructPointer { field: &a }),
+                        format!("{:018p}", &a),
                     );
                 }
             }
@@ -466,9 +468,10 @@ mod structs {
                         format!("{:07}", StructUpperExp { field: 42.0 }),
                         "4.2E1",
                     );
-                    assert_ne!(
-                        format!("{:018}", StructPointer { field: &42 }).len(),
-                        18,
+                    let a = 42;
+                    assert_eq!(
+                        format!("{:018}", StructPointer { field: &a }),
+                        format!("{:p}", &a),
                     );
                 }
             }
@@ -671,9 +674,10 @@ mod structs {
                         format!("{:07}", StructUpperExp { a: 41.0, b: 42.0 }),
                         "004.2E1",
                     );
+                    let (a, b) = (42, 43);
                     assert_eq!(
-                        format!("{:018}", StructPointer { a: &42, b: &43 }).len(),
-                        18,
+                        format!("{:018}", StructPointer { a: &a, b: &b }),
+                        format!("{:018p}", &b),
                     );
                 }
             }
@@ -764,7 +768,10 @@ mod enums {
                     assert_eq!(format!("{:03}", Unit::UpperHex), "00B");
                     assert_eq!(format!("{:07}", Unit::LowerExp), "03.15e0");
                     assert_eq!(format!("{:07}", Unit::UpperExp), "03.15E0");
-                    assert_eq!(format!("{:018}", Unit::Pointer).len(), 18);
+                    assert_eq!(
+                        format!("{:018}", Unit::Pointer),
+                        format!("{POINTER:018p}"),
+                    );
                 }
             }
 
@@ -922,8 +929,15 @@ mod enums {
                         format!("{:07E}", UpperExp::B { field: 43.0 }),
                         "004.3E1",
                     );
-                    assert_eq!(format!("{:018p}", Pointer::A(&7)).len(), 18);
-                    assert_eq!(format!("{:018p}", Pointer::B { field: &42 }).len(), 18);
+                    let (a, b) = (7, 42);
+                    assert_eq!(
+                        format!("{:018p}", Pointer::A(&a)),
+                        format!("{:018p}", &a),
+                    );
+                    assert_eq!(
+                        format!("{:018p}", Pointer::B { field: &b }),
+                        format!("{:018p}", &b),
+                    );
                 }
             }
 
@@ -1026,8 +1040,15 @@ mod enums {
                         format!("{:07}", UpperExp::B { field: 43.0 }),
                         "004.3E1",
                     );
-                    assert_eq!(format!("{:018}", Pointer::A(&7)).len(), 18);
-                    assert_eq!(format!("{:018}", Pointer::B { field: &42 }).len(), 18);
+                    let (a, b) = (7, 42);
+                    assert_eq!(
+                        format!("{:018}", Pointer::A(&a)),
+                        format!("{:018p}", &a),
+                    );
+                    assert_eq!(
+                        format!("{:018}", Pointer::B { field: &b }),
+                        format!("{:018p}", &b),
+                    );
                 }
             }
 
@@ -1124,8 +1145,12 @@ mod enums {
                     assert_eq!(format!("{:07}", LowerExp::B { field: 43.0 }), "4.3e1");
                     assert_eq!(format!("{:07}", UpperExp::A(42.0)), "4.2E1");
                     assert_eq!(format!("{:07}", UpperExp::B { field: 43.0 }), "4.3E1");
-                    assert_ne!(format!("{:018}", Pointer::A(&7)).len(), 18);
-                    assert_ne!(format!("{:018}", Pointer::B { field: &42 }).len(), 18);
+                    let (a, b) = (7, 42);
+                    assert_eq!(format!("{:018}", Pointer::A(&a)), format!("{:0p}", &a));
+                    assert_eq!(
+                        format!("{:018}", Pointer::B { field: &b }),
+                        format!("{:p}", &b),
+                    );
                 }
             }
         }
@@ -1276,10 +1301,14 @@ mod enums {
                         format!("{:07}", UpperExp::B { a: 43.0, b: 52.0 }),
                         "004.3E1",
                     );
-                    assert_eq!(format!("{:018}", Pointer::A(&7.0, &8.3)).len(), 18);
+                    let (a, b) = (8.3, 42.1);
                     assert_eq!(
-                        format!("{:018}", Pointer::B { a: &42.1, b: &43.3 }).len(),
-                        18,
+                        format!("{:018}", Pointer::A(&7.0, &a)),
+                        format!("{:018p}", &a),
+                    );
+                    assert_eq!(
+                        format!("{:018}", Pointer::B { a: &b, b: &43.3 }),
+                        format!("{:018p}", &b),
                     );
                 }
             }
@@ -2024,12 +2053,19 @@ mod generic {
                     format!("{:07E}", Enum::<i8, _>::B { field: 43.0 }),
                     "004.3E1",
                 );
-                assert_eq!(format!("{:018p}", Tuple(&42)).len(), 18);
-                assert_eq!(format!("{:018p}", Struct { field: &42 }).len(), 18);
-                assert_eq!(format!("{:018p}", Enum::<_, &i8>::A(&7)).len(), 18);
+                let (a, b) = (42, 7);
+                assert_eq!(format!("{:018p}", Tuple(&a)), format!("{:018p}", &a));
                 assert_eq!(
-                    format!("{:018p}", Enum::<&i8, _>::B { field: &42 }).len(),
-                    18,
+                    format!("{:018p}", Struct { field: &a }),
+                    format!("{:018p}", &a),
+                );
+                assert_eq!(
+                    format!("{:018p}", Enum::<_, &i8>::A(&b)),
+                    format!("{:018p}", &b),
+                );
+                assert_eq!(
+                    format!("{:018p}", Enum::<&i8, _>::B { field: &a }),
+                    format!("{:018p}", &a),
                 );
             }
         }
@@ -2245,12 +2281,19 @@ mod generic {
                     format!("{:07}", EnumUpperExp::<i8, _>::B { field: 43.0 }),
                     "004.3E1",
                 );
-                assert_eq!(format!("{:018}", TuplePointer(&42)).len(), 18);
-                assert_eq!(format!("{:018}", StructPointer { field: &42 }).len(), 18);
-                assert_eq!(format!("{:018}", EnumPointer::<_, &i8>::A(&7)).len(), 18);
+                let (a, b) = (42, 7);
+                assert_eq!(format!("{:018}", TuplePointer(&a)), format!("{:018p}", &a));
                 assert_eq!(
-                    format!("{:018}", EnumPointer::<&i8, _>::B { field: &42 }).len(),
-                    18,
+                    format!("{:018}", StructPointer { field: &a }),
+                    format!("{:018p}", &a),
+                );
+                assert_eq!(
+                    format!("{:018}", EnumPointer::<_, &i8>::A(&b)),
+                    format!("{:018p}", &b),
+                );
+                assert_eq!(
+                    format!("{:018}", EnumPointer::<&i8, _>::B { field: &a }),
+                    format!("{:018p}", &a),
                 );
             }
         }
