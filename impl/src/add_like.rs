@@ -32,7 +32,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
         },
         Data::Enum(ref data_enum) => (
             quote! {
-                ::core::result::Result<#input_type #ty_generics, ::derive_more::BinaryError>
+                ::derive_more::core::result::Result<#input_type #ty_generics, ::derive_more::BinaryError>
             },
             enum_content(input_type, data_enum, &method_ident),
         ),
@@ -98,7 +98,7 @@ fn enum_content(
                 let matcher = quote! {
                     (#subtype(#(#l_vars),*),
                      #subtype(#(#r_vars),*)) => {
-                        ::core::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
+                        ::derive_more::core::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
                     }
                 };
                 matches.push(matcher);
@@ -117,7 +117,9 @@ fn enum_content(
                 let matcher = quote! {
                     (#subtype{#(#field_names: #l_vars),*},
                      #subtype{#(#field_names: #r_vars),*}) => {
-                        ::core::result::Result::Ok(#subtype{#(#field_names: #l_vars.#method_iter(#r_vars)),*})
+                        ::derive_more::core::result::Result::Ok(#subtype{
+                            #(#field_names: #l_vars.#method_iter(#r_vars)),*
+                        })
                     }
                 };
                 matches.push(matcher);
@@ -125,7 +127,7 @@ fn enum_content(
             Fields::Unit => {
                 let operation_name = method_ident.to_string();
                 matches.push(quote! {
-                    (#subtype, #subtype) => ::core::result::Result::Err(
+                    (#subtype, #subtype) => ::derive_more::core::result::Result::Err(
                         ::derive_more::BinaryError::Unit(
                             ::derive_more::UnitError::new(#operation_name)
                         )
@@ -140,7 +142,7 @@ fn enum_content(
         // match.
         let operation_name = method_ident.to_string();
         matches.push(quote! {
-            _ => ::core::result::Result::Err(::derive_more::BinaryError::Mismatch(
+            _ => ::derive_more::core::result::Result::Err(::derive_more::BinaryError::Mismatch(
                 ::derive_more::WrongVariantError::new(#operation_name)
             ))
         });

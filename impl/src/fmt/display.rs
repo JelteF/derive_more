@@ -50,12 +50,10 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 
     Ok(quote! {
         #[automatically_derived]
-        impl #impl_gens ::core::fmt::#trait_ident for #ident #ty_gens
-             #where_clause
-        {
+        impl #impl_gens ::derive_more::#trait_ident for #ident #ty_gens #where_clause {
             fn fmt(
-                &self, __derive_more_f: &mut ::core::fmt::Formatter<'_>
-            ) -> ::core::fmt::Result {
+                &self, __derive_more_f: &mut ::derive_more::core::fmt::Formatter<'_>
+            ) -> ::derive_more::core::fmt::Result {
                 #body
             }
         }
@@ -190,7 +188,7 @@ fn expand_union(
 
     Ok((
         attrs.bounds.0.clone().into_iter().collect(),
-        quote! { ::core::write!(__derive_more_f, #fmt) },
+        quote! { ::derive_more::core::write!(__derive_more_f, #fmt) },
     ))
 }
 
@@ -231,16 +229,16 @@ impl<'a> Expansion<'a> {
         match &self.attrs.fmt {
             Some(fmt) => {
                 Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                    quote! { ::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+                    quote! { ::derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
                 } else {
-                    quote! { ::core::write!(__derive_more_f, #fmt) }
+                    quote! { ::derive_more::core::write!(__derive_more_f, #fmt) }
                 })
             }
             None if self.fields.is_empty() => {
                 let ident_str = self.ident.to_string();
 
                 Ok(quote! {
-                    ::core::write!(__derive_more_f, #ident_str)
+                    ::derive_more::core::write!(__derive_more_f, #ident_str)
                 })
             }
             None if self.fields.len() == 1 => {
@@ -253,7 +251,7 @@ impl<'a> Expansion<'a> {
                 let trait_ident = self.trait_ident;
 
                 Ok(quote! {
-                    ::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+                    ::derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
                 })
             }
             _ => Err(syn::Error::new(
@@ -277,7 +275,7 @@ impl<'a> Expansion<'a> {
                 .map(|f| {
                     let ty = &f.ty;
                     let trait_ident = &self.trait_ident;
-                    vec![parse_quote! { #ty: ::core::fmt::#trait_ident }]
+                    vec![parse_quote! { #ty: ::derive_more::core::fmt::#trait_ident }]
                 })
                 .unwrap_or_default();
         };
@@ -286,7 +284,7 @@ impl<'a> Expansion<'a> {
             .map(|(ty, trait_name)| {
                 let trait_ident = format_ident!("{trait_name}");
 
-                parse_quote! { #ty: ::core::fmt::#trait_ident }
+                parse_quote! { #ty: ::derive_more::core::fmt::#trait_ident }
             })
             .chain(self.attrs.bounds.0.clone())
             .collect()

@@ -144,7 +144,7 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     for type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
         let bound: TypeParamBound = parse_quote! {
-            ::core::ops::#trait_ident<Output=#type_ident>
+            ::derive_more::core::ops::#trait_ident<Output=#type_ident>
         };
         type_param.bounds.push(bound)
     }
@@ -156,7 +156,10 @@ pub fn add_extra_ty_param_bound_op<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
 ) -> Generics {
-    add_extra_ty_param_bound(generics, &quote! { ::core::ops::#trait_ident })
+    add_extra_ty_param_bound(
+        generics,
+        &quote! { ::derive_more::core::ops::#trait_ident },
+    )
 }
 
 pub fn add_extra_ty_param_bound<'a>(
@@ -226,11 +229,11 @@ pub fn add_where_clauses_for_new_ident<'a>(
     sized: bool,
 ) -> Generics {
     let generic_param = if fields.len() > 1 {
-        quote! { #type_ident: ::core::marker::Copy }
+        quote! { #type_ident: ::derive_more::core::marker::Copy }
     } else if sized {
         quote! { #type_ident }
     } else {
-        quote! { #type_ident: ?::core::marker::Sized }
+        quote! { #type_ident: ?::derive_more::core::marker::Sized }
     };
 
     let generics = add_extra_where_clauses(generics, type_where_clauses);

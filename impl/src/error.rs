@@ -47,7 +47,7 @@ pub fn expand(
 
     let provide = provide.map(|provide| {
         quote! {
-            fn provide<'_request>(&'_request self, request: &mut ::core::error::Request<'_request>) {
+            fn provide<'_request>(&'_request self, request: &mut ::derive_more::core::error::Request<'_request>) {
                 #provide
             }
         }
@@ -61,7 +61,7 @@ pub fn expand(
             &generics,
             quote! {
                 where
-                    #ident #ty_generics: ::core::fmt::Debug + ::core::fmt::Display
+                    #ident #ty_generics: ::derive_more::core::fmt::Debug + ::derive_more::core::fmt::Display
             },
         );
     }
@@ -71,8 +71,12 @@ pub fn expand(
         generics = utils::add_extra_where_clauses(
             &generics,
             quote! {
-                where
-                    #(#bounds: ::core::fmt::Debug + ::core::fmt::Display + ::derive_more::Error + 'static),*
+                where #(
+                    #bounds: ::derive_more::core::fmt::Debug
+                             + ::derive_more::core::fmt::Display
+                             + ::derive_more::Error
+                             + 'static
+                ),*
             },
         );
     }

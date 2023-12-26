@@ -165,7 +165,7 @@ impl<'a> Expansion<'a> {
                         let index = index.into_iter();
                         let from_ty = from_tys.next().unwrap_or_else(|| unreachable!());
                         quote! {
-                            #( #ident: )* <#ty as ::core::convert::From<#from_ty>>::from(
+                            #( #ident: )* <#ty as ::derive_more::From<#from_ty>>::from(
                                 value #( .#index )*
                             ),
                         }
@@ -173,9 +173,7 @@ impl<'a> Expansion<'a> {
 
                     Ok(quote! {
                         #[automatically_derived]
-                        impl #impl_gens ::core::convert::From<#ty>
-                         for #ident #ty_gens #where_clause
-                        {
+                        impl #impl_gens ::derive_more::From<#ty> for #ident #ty_gens #where_clause {
                             #[inline]
                             fn from(value: #ty) -> Self {
                                 #ident #( :: #variant )* #init
@@ -195,9 +193,7 @@ impl<'a> Expansion<'a> {
 
                 Ok(quote! {
                     #[automatically_derived]
-                    impl #impl_gens ::core::convert::From<(#( #field_tys ),*)>
-                     for #ident #ty_gens #where_clause
-                    {
+                    impl #impl_gens ::derive_more::From<(#( #field_tys ),*)> for #ident #ty_gens #where_clause {
                         #[inline]
                         fn from(value: (#( #field_tys ),*)) -> Self {
                             #ident #( :: #variant )* #init
@@ -213,7 +209,7 @@ impl<'a> Expansion<'a> {
                     let index = index.into_iter();
                     let gen_ident = format_ident!("__FromT{i}");
                     let out = quote! {
-                        #( #ident: )* <#ty as ::core::convert::From<#gen_ident>>::from(
+                        #( #ident: )* <#ty as ::derive_more::From<#gen_ident>>::from(
                             value #( .#index )*
                         ),
                     };
@@ -227,7 +223,7 @@ impl<'a> Expansion<'a> {
                     let mut generics = self.generics.clone();
                     for (ty, ident) in field_tys.iter().zip(&gen_idents) {
                         generics.make_where_clause().predicates.push(
-                            parse_quote! { #ty: ::core::convert::From<#ident> },
+                            parse_quote! { #ty: ::derive_more::From<#ident> },
                         );
                         generics
                             .params
@@ -239,9 +235,7 @@ impl<'a> Expansion<'a> {
 
                 Ok(quote! {
                     #[automatically_derived]
-                    impl #impl_gens ::core::convert::From<(#( #gen_idents ),*)>
-                     for #ident #ty_gens #where_clause
-                    {
+                    impl #impl_gens ::derive_more::From<(#( #gen_idents ),*)> for #ident #ty_gens #where_clause {
                         #[inline]
                         fn from(value: (#( #gen_idents ),*)) -> Self {
                             #ident #(:: #variant)* #init

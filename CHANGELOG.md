@@ -93,6 +93,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#284](https://github.com/JelteF/derive_more/pull/284))
 - Fix documentation of generated bounds in `Display` derive.
   ([#297](https://github.com/JelteF/derive_more/pull/297))
+- Hygiene of macro expansions in presence of custom `core` crate.
+  ([#327](https://github.com/JelteF/derive_more/pull/327))
 
 ## 0.99.10 - 2020-09-11
 

@@ -42,7 +42,7 @@ pub fn struct_from(state: &State, trait_name: &'static str) -> TokenStream {
             type Err = <#field_type as #trait_path>::Err;
 
             #[inline]
-            fn from_str(src: &str) -> ::core::result::Result<Self, Self::Err> {
+            fn from_str(src: &str) -> ::derive_more::core::result::Result<Self, Self::Err> {
                 Ok(#body)
             }
         }
@@ -97,7 +97,7 @@ fn enum_from(
             type Err = ::derive_more::FromStrError;
 
             #[inline]
-            fn from_str(src: &str) -> ::core::result::Result<Self, Self::Err> {
+            fn from_str(src: &str) -> ::derive_more::core::result::Result<Self, Self::Err> {
                 Ok(match src.to_lowercase().as_str() {
                     #(#cases)*
                     _ => return Err(::derive_more::FromStrError::new(#input_type_name)),

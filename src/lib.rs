@@ -48,6 +48,12 @@
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(clippy::nonstandard_macro_braces)]
 
+// For macro expansion internals only.
+// Ensures better hygiene in case a local crate `core` is present in workspace of the user code,
+// or some other crate is renamed as `core`.
+#[doc(hidden)]
+pub use core;
+
 // Not public, but exported API. For macro expansion internals only.
 #[doc(hidden)]
 pub mod __private {

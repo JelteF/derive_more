@@ -179,13 +179,13 @@ impl<'a> Expansion<'a> {
 
                 Ok(quote! {
                     #[automatically_derived]
-                    impl #impl_gens ::core::convert::From<#r #lf #m #input_ident #ty_gens>
+                    impl #impl_gens ::derive_more::core::convert::From<#r #lf #m #input_ident #ty_gens>
                      for ( #( #r #lf #m #tys ),* ) #where_clause
                     {
                         #[inline]
                         fn from(value: #r #lf #m #input_ident #ty_gens) -> Self {
                             (#(
-                                <#r #m #tys as ::core::convert::From<_>>::from(
+                                <#r #m #tys as ::derive_more::core::convert::From<_>>::from(
                                     #r #m value. #fields_idents
                                 )
                             ),*)
