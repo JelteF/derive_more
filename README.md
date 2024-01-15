@@ -153,23 +153,25 @@ use derive_more::Display;
 
 To avoid redundant compilation times, by default no derives are supported.
 You have to enable each type of derive as a feature in `Cargo.toml`:
-
 ```toml
 [dependencies]
-derive_more = "=1.0.0-beta.6"
 # You can specify the types of derives that you need for less time spent
 # compiling. For the full list of features see this crate its `Cargo.toml`.
-features = ["from", "add", "iterator"]
-
+derive_more = { version = "=1.0.0-beta.6", features = ["from", "add", "iterator"] }
+```
+```toml
+[dependencies]
 # If you don't care much about compilation times and simply want to have
 # support for all the possible derives, you can use the "full" feature.
-features = ["full"]
-
+derive_more = { version = "=1.0.0-beta.6", features = ["full"] }
+```
+```toml
+[dependencies]
 # If you run in a `no_std` environment you should disable the default features,
 # because the only default feature is the "std" feature.
 # NOTE: You can combine this with "full" feature to get support for all the
 #       possible derives in a `no_std` environment.
-default-features = false
+derive_more = { version = "=1.0.0-beta.6", default-features = false }
 ```
 
 And this to the top of your Rust file:
