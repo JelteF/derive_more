@@ -175,11 +175,7 @@ pub fn seq<const N: usize>(
 pub fn alt<const N: usize>(
     mut parsers: [&mut dyn FnMut(Cursor<'_>) -> ParsingResult<'_>; N],
 ) -> impl FnMut(Cursor<'_>) -> ParsingResult<'_> + '_ {
-    move |c| {
-        parsers
-            .iter_mut()
-            .find_map(|parser| parser(c).map(|(s, c)| (s, c)))
-    }
+    move |c| parsers.iter_mut().find_map(|parser| parser(c))
 }
 
 /// Parses with `basic` while `until` fails. Returns [`None`] in case
