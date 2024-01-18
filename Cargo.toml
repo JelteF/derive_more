@@ -11,7 +11,7 @@ documentation = "https://docs.rs/derive_more"
 
 readme = "README.md"
 keywords = ["derive", "Add", "From", "Display", "IntoIterator"]
-categories = ["development-tools", "development-tools::procedural-macro-helpers", "no-std"]
+categories = ["development-tools", "development-tools::procedural-macro-helpers", "no-std", "rust-patterns"]
 
 include = [
     "src/**/*.rs",
