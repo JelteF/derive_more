@@ -69,6 +69,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#298](https://github.com/JelteF/derive_more/pull/298))
 - Add `TryFrom` derive for enums to convert from their discriminant.
   ([#300](https://github.com/JelteF/derive_more/pull/300))
+- `#[inline]` attributes to `IsVariant` and `Debug` implementations.
+  ([#334](https://github.com/JelteF/derive_more/pull/334)
 
 ### Changed
 

@@ -44,6 +44,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[doc = "Returns `true` if this value is of type `"]
             #[doc = #variant_name]
             #[doc = "`. Returns `false` otherwise"]
+            #[inline]
             pub const fn #fn_name(&self) -> bool {
                 match self {
                     #enum_name ::#variant_ident #data_pattern => true,

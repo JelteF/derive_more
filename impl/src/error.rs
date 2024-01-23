@@ -37,6 +37,8 @@ pub fn expand(
     };
 
     let source = source.map(|source| {
+        // Not using `#[inline]` here on purpose, since this is almost never part
+        // of a hot codepath.
         quote! {
             fn source(&self) -> Option<&(dyn ::derive_more::Error + 'static)> {
                 use ::derive_more::__private::AsDynError;
@@ -46,6 +48,8 @@ pub fn expand(
     });
 
     let provide = provide.map(|provide| {
+        // Not using `#[inline]` here on purpose, since this is almost never part
+        // of a hot codepath.
         quote! {
             fn provide<'_request>(&'_request self, request: &mut ::derive_more::core::error::Request<'_request>) {
                 #provide
