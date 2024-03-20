@@ -48,6 +48,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
 
             #[inline]
             fn #method_ident(self, rhs: #input_type #ty_generics) -> #output_type {
+                let lhs: Self = self;
                 #block
             }
         }
@@ -149,7 +150,7 @@ fn enum_content(
         });
     }
     quote! {
-        match (self, rhs) {
+        match (lhs, rhs) {
             #(#matches),*
         }
     }

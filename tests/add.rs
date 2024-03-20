@@ -47,3 +47,8 @@ fn test_sanity() {
 
 #[derive(Add)]
 struct TupleRecursive((i32, u8), [(i32, u8); 10]);
+
+#[derive(Add)]
+pub struct GenericArrayStruct<T> {
+    pub a: [T; 2],
+}

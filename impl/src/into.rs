@@ -237,30 +237,30 @@ impl Parse for FieldAttribute {
     }
 }
 
+type Untyped = Either<attr::Skip, Either<attr::Empty, ConversionsAttribute>>;
+impl From<Untyped> for FieldAttribute {
+    fn from(v: Untyped) -> Self {
+        match v {
+            Untyped::Left(skip) => Self {
+                skip: Some(skip),
+                convs: None,
+            },
+            Untyped::Right(c) => Self {
+                skip: None,
+                convs: Some(match c {
+                    Either::Left(_empty) => ConversionsAttribute::default(),
+                    Either::Right(convs) => convs,
+                }),
+            },
+        }
+    }
+}
+
 impl attr::ParseMultiple for FieldAttribute {
     fn parse_attr_with<P: attr::Parser>(
         attr: &syn::Attribute,
         parser: &P,
     ) -> syn::Result<Self> {
-        type Untyped = Either<attr::Skip, Either<attr::Empty, ConversionsAttribute>>;
-        impl From<Untyped> for FieldAttribute {
-            fn from(v: Untyped) -> Self {
-                match v {
-                    Untyped::Left(skip) => Self {
-                        skip: Some(skip),
-                        convs: None,
-                    },
-                    Untyped::Right(c) => Self {
-                        skip: None,
-                        convs: Some(match c {
-                            Either::Left(_empty) => ConversionsAttribute::default(),
-                            Either::Right(convs) => convs,
-                        }),
-                    },
-                }
-            }
-        }
-
         Untyped::parse_attr_with(attr, parser).map(Self::from)
     }
 
