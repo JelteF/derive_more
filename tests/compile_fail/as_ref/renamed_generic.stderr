@@ -5,10 +5,7 @@ error[E0599]: the method `as_ref` exists for struct `Baz<i32>`, but its trait bo
    | ------------- doesn't satisfy `Foo<i32>: AsRef<Foo<i32>>`
 ...
 7  | struct Baz<T>(Foo<T>);
-   | -------------
-   | |
-   | method `as_ref` not found for this struct
-   | doesn't satisfy `Baz<i32>: AsRef<Foo<i32>>`
+   | ------------- method `as_ref` not found for this struct because it doesn't satisfy `Baz<i32>: AsRef<Foo<i32>>`
 ...
 11 |     let _: &Bar<i32> = item.as_ref();
    |                             ^^^^^^ method cannot be called on `Baz<i32>` due to unsatisfied trait bounds
