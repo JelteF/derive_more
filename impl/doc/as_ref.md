@@ -24,7 +24,7 @@ Generates:
 
 ```rust
 # struct MyWrapper(String);
-impl AsRef<String> for MyWrapper {
+impl derive_more::AsRef<String> for MyWrapper {
     fn as_ref(&self) -> &String {
         &self.0
     }
@@ -50,9 +50,9 @@ This generates code equivalent to:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<T: ?Sized> AsRef<T> for SingleFieldForward
+impl<T: ?Sized> derive_more::AsRef<T> for SingleFieldForward
 where
-    Vec<i32>: AsRef<T>,
+    Vec<i32>: derive_more::AsRef<T>,
 {
     #[inline]
     fn as_ref(&self) -> &T {

@@ -26,7 +26,7 @@ Code like this will be generated:
 
 ```rust
 # struct MyInts(i32, i32);
-impl ::core::ops::Add for MyInts {
+impl derive_more::Add for MyInts {
     type Output = MyInts;
     fn add(self, rhs: MyInts) -> MyInts {
         MyInts(self.0.add(rhs.0), self.1.add(rhs.1))
@@ -60,7 +60,7 @@ Code like this will be generated:
 #     x: i32,
 #     y: i32,
 # }
-impl ::core::ops::Add for Point2D {
+impl derive_more::Add for Point2D {
     type Output = Point2D;
     fn add(self, rhs: Point2D) -> Point2D {
         Point2D {
@@ -112,9 +112,9 @@ Code like this will be generated:
 #     UnsignedTwo(u32),
 #     Unit,
 # }
-impl ::core::ops::Add for MixedInts {
-    type Output = Result<MixedInts, ::derive_more::BinaryError>;
-    fn add(self, rhs: MixedInts) -> Result<MixedInts, ::derive_more::BinaryError> {
+impl derive_more::Add for MixedInts {
+    type Output = Result<MixedInts, derive_more::BinaryError>;
+    fn add(self, rhs: MixedInts) -> Result<MixedInts, derive_more::BinaryError> {
         match (self, rhs) {
             (MixedInts::SmallInt(__l_0), MixedInts::SmallInt(__r_0)) => {
                 Ok(MixedInts::SmallInt(__l_0.add(__r_0)))
@@ -138,11 +138,11 @@ impl ::core::ops::Add for MixedInts {
             (MixedInts::UnsignedTwo(__l_0), MixedInts::UnsignedTwo(__r_0)) => {
                 Ok(MixedInts::UnsignedTwo(__l_0.add(__r_0)))
             }
-            (MixedInts::Unit, MixedInts::Unit) => Err(::derive_more::BinaryError::Unit(
-                ::derive_more::UnitError::new("add"),
+            (MixedInts::Unit, MixedInts::Unit) => Err(derive_more::BinaryError::Unit(
+                derive_more::UnitError::new("add"),
             )),
-            _ => Err(::derive_more::BinaryError::Mismatch(
-                ::derive_more::WrongVariantError::new("add"),
+            _ => Err(derive_more::BinaryError::Mismatch(
+                derive_more::WrongVariantError::new("add"),
             )),
         }
     }

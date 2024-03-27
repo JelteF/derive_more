@@ -46,11 +46,11 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
 
     Ok(quote! {
         #[automatically_derived]
-        impl #impl_gens ::derive_more::Debug for #ident #ty_gens #where_clause {
+        impl #impl_gens derive_more::Debug for #ident #ty_gens #where_clause {
             #[inline]
             fn fmt(
-                &self, __derive_more_f: &mut ::derive_more::core::fmt::Formatter<'_>
-            ) -> ::derive_more::core::fmt::Result {
+                &self, __derive_more_f: &mut derive_more::core::fmt::Formatter<'_>
+            ) -> derive_more::core::fmt::Result {
                 #body
             }
         }
@@ -228,9 +228,9 @@ impl<'a> Expansion<'a> {
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
             return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                quote! { ::derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+                quote! { derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
             } else {
-                quote! { ::derive_more::core::write!(__derive_more_f, #fmt) }
+                quote! { derive_more::core::write!(__derive_more_f, #fmt) }
             });
         };
 
@@ -238,7 +238,7 @@ impl<'a> Expansion<'a> {
             syn::Fields::Unit => {
                 let ident = self.ident.to_string();
                 Ok(quote! {
-                    ::derive_more::core::fmt::Formatter::write_str(
+                    derive_more::core::fmt::Formatter::write_str(
                         __derive_more_f,
                         #ident,
                     )
@@ -249,40 +249,41 @@ impl<'a> Expansion<'a> {
                 let ident_str = self.ident.to_string();
 
                 let out = quote! {
-                    &mut ::derive_more::__private::debug_tuple(
+                    &mut derive_more::__private::debug_tuple(
                         __derive_more_f,
                         #ident_str,
                     )
                 };
                 let out = unnamed.unnamed.iter().enumerate().try_fold(
                     out,
-                    |out, (i, field)| {
-                        match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
-                            .map(Spanning::into_inner)
-                        {
-                            Some(FieldAttribute::Left(_skip)) => {
-                                exhaustive = false;
-                                Ok::<_, syn::Error>(out)
-                            }
-                            Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
-                                ::derive_more::__private::DebugTuple::field(
-                                    #out,
-                                    &::derive_more::core::format_args!(#fmt_attr),
-                                )
-                            }),
-                            None => {
-                                let ident = format_ident!("_{i}");
-                                Ok(quote! {
-                                    ::derive_more::__private::DebugTuple::field(#out, #ident)
-                                })
-                            }
+                    |out, (i, field)| match FieldAttribute::parse_attrs(
+                        &field.attrs,
+                        self.attr_name,
+                    )?
+                    .map(Spanning::into_inner)
+                    {
+                        Some(FieldAttribute::Left(_skip)) => {
+                            exhaustive = false;
+                            Ok::<_, syn::Error>(out)
+                        }
+                        Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
+                            derive_more::__private::DebugTuple::field(
+                                #out,
+                                &derive_more::core::format_args!(#fmt_attr),
+                            )
+                        }),
+                        None => {
+                            let ident = format_ident!("_{i}");
+                            Ok(quote! {
+                                derive_more::__private::DebugTuple::field(#out, #ident)
+                            })
                         }
                     },
                 )?;
                 Ok(if exhaustive {
-                    quote! { ::derive_more::__private::DebugTuple::finish(#out) }
+                    quote! { derive_more::__private::DebugTuple::finish(#out) }
                 } else {
-                    quote! { ::derive_more::__private::DebugTuple::finish_non_exhaustive(#out) }
+                    quote! { derive_more::__private::DebugTuple::finish_non_exhaustive(#out) }
                 })
             }
             syn::Fields::Named(named) => {
@@ -290,7 +291,7 @@ impl<'a> Expansion<'a> {
                 let ident = self.ident.to_string();
 
                 let out = quote! {
-                    &mut ::derive_more::core::fmt::Formatter::debug_struct(
+                    &mut derive_more::core::fmt::Formatter::debug_struct(
                         __derive_more_f,
                         #ident,
                     )
@@ -308,21 +309,21 @@ impl<'a> Expansion<'a> {
                                 Ok::<_, syn::Error>(out)
                             }
                             Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
-                                ::derive_more::core::fmt::DebugStruct::field(
+                                derive_more::core::fmt::DebugStruct::field(
                                     #out,
                                     #field_str,
-                                    &::derive_more::core::format_args!(#fmt_attr),
+                                    &derive_more::core::format_args!(#fmt_attr),
                                 )
                             }),
                             None => Ok(quote! {
-                                ::derive_more::core::fmt::DebugStruct::field(#out, #field_str, #field_ident)
+                                derive_more::core::fmt::DebugStruct::field(#out, #field_str, #field_ident)
                             }),
                         }
                     })?;
                 Ok(if exhaustive {
-                    quote! { ::derive_more::core::fmt::DebugStruct::finish(#out) }
+                    quote! { derive_more::core::fmt::DebugStruct::finish(#out) }
                 } else {
-                    quote! { ::derive_more::core::fmt::DebugStruct::finish_non_exhaustive(#out) }
+                    quote! { derive_more::core::fmt::DebugStruct::finish_non_exhaustive(#out) }
                 })
             }
         }
@@ -336,7 +337,7 @@ impl<'a> Expansion<'a> {
             out.extend(fmt.bounded_types(self.fields).map(|(ty, trait_name)| {
                 let trait_ident = format_ident!("{trait_name}");
 
-                parse_quote! { #ty: ::derive_more::core::fmt::#trait_ident }
+                parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
             }));
             Ok(out)
         } else {
@@ -350,12 +351,12 @@ impl<'a> Expansion<'a> {
                             |(ty, trait_name)| {
                                 let trait_ident = format_ident!("{trait_name}");
 
-                                parse_quote! { #ty: ::derive_more::core::fmt::#trait_ident }
+                                parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
                             },
                         ));
                     }
                     Some(FieldAttribute::Left(_skip)) => {}
-                    None => out.extend([parse_quote! { #ty: ::derive_more::Debug }]),
+                    None => out.extend([parse_quote! { #ty: derive_more::Debug }]),
                 }
                 Ok(out)
             })

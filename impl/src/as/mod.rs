@@ -240,7 +240,7 @@ impl<'a> ToTokens for Expansion<'a> {
             };
 
             let trait_ty = quote! {
-                ::derive_more::#trait_ident <#return_ty>
+                derive_more::#trait_ident <#return_ty>
             };
 
             let generics = match &impl_kind {
@@ -253,7 +253,7 @@ impl<'a> ToTokens for Expansion<'a> {
                     if is_blanket {
                         generics
                             .params
-                            .push(parse_quote! { #return_ty: ?::derive_more::core::marker::Sized });
+                            .push(parse_quote! { #return_ty: ?derive_more::core::marker::Sized });
                     }
                     Cow::Owned(generics)
                 }
@@ -270,11 +270,11 @@ impl<'a> ToTokens for Expansion<'a> {
                     <#field_ty as #trait_ty>::#method_ident(#field_ref)
                 }),
                 ImplKind::Specialized => Cow::Owned(quote! {
-                    use ::derive_more::__private::ExtractRef as _;
+                    use derive_more::__private::ExtractRef as _;
 
                     let conv =
-                        <::derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
-                         as ::derive_more::core::default::Default>::default();
+                        <derive_more::__private::Conv<& #mut_ #field_ty, #return_ty>
+                         as derive_more::core::default::Default>::default();
                     (&&conv).__extract_ref(#field_ref)
                 }),
             };

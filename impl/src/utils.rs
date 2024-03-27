@@ -144,7 +144,7 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     for type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
         let bound: TypeParamBound = parse_quote! {
-            ::derive_more::core::ops::#trait_ident<Output=#type_ident>
+            derive_more::core::ops::#trait_ident<Output = #type_ident>
         };
         type_param.bounds.push(bound)
     }
@@ -156,10 +156,7 @@ pub fn add_extra_ty_param_bound_op<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
 ) -> Generics {
-    add_extra_ty_param_bound(
-        generics,
-        &quote! { ::derive_more::core::ops::#trait_ident },
-    )
+    add_extra_ty_param_bound(generics, &quote! { derive_more::core::ops::#trait_ident })
 }
 
 pub fn add_extra_ty_param_bound<'a>(
@@ -229,11 +226,11 @@ pub fn add_where_clauses_for_new_ident<'a>(
     sized: bool,
 ) -> Generics {
     let generic_param = if fields.len() > 1 {
-        quote! { #type_ident: ::derive_more::core::marker::Copy }
+        quote! { #type_ident: derive_more::core::marker::Copy }
     } else if sized {
         quote! { #type_ident }
     } else {
-        quote! { #type_ident: ?::derive_more::core::marker::Sized }
+        quote! { #type_ident: ?derive_more::core::marker::Sized }
     };
 
     let generics = add_extra_where_clauses(generics, type_where_clauses);
@@ -377,7 +374,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { ::derive_more::#trait_ident };
+        let trait_path = quote! { derive_more::#trait_ident };
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
                 Fields::Unnamed(ref fields) => {
@@ -520,7 +517,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { ::derive_more::#trait_ident };
+        let trait_path = quote! { derive_more::#trait_ident };
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {
                 (DeriveType::Unnamed, unnamed_to_vec(fields))

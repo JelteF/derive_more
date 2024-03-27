@@ -44,8 +44,8 @@ Code like this will be generated:
 
 ```rust
 # struct MyInt(i32);
-impl ::core::str::FromStr for MyInt {
-    type Err = <i32 as ::core::str::FromStr>::Err;
+impl derive_more::FromStr for MyInt {
+    type Err = <i32 as derive_more::FromStr>::Err;
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         return Ok(MyInt(i32::from_str(src)?));
     }
@@ -74,8 +74,8 @@ Code like this will be generated:
 # struct Point1D {
 #     x: i32,
 # }
-impl ::core::str::FromStr for Point1D {
-    type Err = <i32 as ::core::str::FromStr>::Err;
+impl derive_more::FromStr for Point1D {
+    type Err = <i32 as derive_more::FromStr>::Err;
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         return Ok(Point1D {
             x: i32::from_str(src)?,
@@ -121,14 +121,14 @@ Code like this will be generated:
 #     Baz,
 # }
 #
-impl ::core::str::FromStr for EnumNoFields {
-    type Err = ::derive_more::FromStrError;
+impl derive_more::FromStr for EnumNoFields {
+    type Err = derive_more::FromStrError;
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         Ok(match src.to_lowercase().as_str() {
             "foo" => EnumNoFields::Foo,
             "bar" => EnumNoFields::Bar,
             "baz" => EnumNoFields::Baz,
-            _ => return Err(::derive_more::FromStrError::new("EnumNoFields")),
+            _ => return Err(derive_more::FromStrError::new("EnumNoFields")),
         })
     }
 }

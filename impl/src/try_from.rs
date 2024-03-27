@@ -121,16 +121,18 @@ impl ToTokens for Expansion {
 
         quote! {
             #[automatically_derived]
-            impl #impl_generics ::derive_more::TryFrom<#repr_ty #ty_generics> for #ident #where_clause {
-                type Error = ::derive_more::TryFromReprError<#repr_ty>;
+            impl #impl_generics derive_more::TryFrom<#repr_ty #ty_generics> for #ident #where_clause {
+                type Error = derive_more::TryFromReprError<#repr_ty>;
 
                 #[allow(non_upper_case_globals)]
                 #[inline]
-                fn try_from(val: #repr_ty) -> ::derive_more::core::result::Result<Self, Self::Error> {
+                fn try_from(val: #repr_ty) -> derive_more::core::result::Result<Self, Self::Error> {
                     #( const #consts: #repr_ty = #discriminants; )*
                     match val {
-                        #(#consts => ::derive_more::core::result::Result::Ok(#ident::#variants),)*
-                        _ => ::derive_more::core::result::Result::Err(::derive_more::TryFromReprError::new(val)),
+                        #(#consts => derive_more::core::result::Result::Ok(#ident::#variants),)*
+                        _ => derive_more::core::result::Result::Err(
+                            derive_more::TryFromReprError::new(val)
+                        ),
                     }
                 }
             }
