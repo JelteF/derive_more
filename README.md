@@ -143,7 +143,32 @@ This crate also re-exports all the standard library traits that it adds derives
 for. So, both the `Display` derive and the `Display` trait will be in scope when
 you add the following code:
 ```rust
-use derive_more::Display;
+use derive_more::Display; // also imports `core::fmt::Display`
+```
+
+For derive macros only, without the corresponding traits, do import them from
+the `derive` module:
+```rust
+use derive_more::derive::Display; // imports macro only
+```
+
+#### Hygiene
+
+For hygiene purposes, macros use `derive_more::*` absolute paths in their expansions.
+This might introduce a trouble, if you want to re-export `derive_more` macros in your
+own crate without using the `derive_more` as a direct dependency in downstream crates:
+```rust,ignore
+use my_lib::Display; // re-exported in `my_lib` crate
+
+#[derive(Display)] // error: could not find `derive_more` in the list of imported crates
+struct MyInt(i32);
+```
+In such case, you should re-export the `derive_more` module too:
+```rust,ignore
+use my_lib::{derive_more, Display}; // re-exported in `my_lib` crate
+
+#[derive(Display)] // works fine now!
+struct MyInt(i32);
 ```
 
 
