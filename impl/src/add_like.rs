@@ -98,7 +98,9 @@ fn enum_content(
                 let matcher = quote! {
                     (#subtype(#(#l_vars),*),
                      #subtype(#(#r_vars),*)) => {
-                        derive_more::core::result::Result::Ok(#subtype(#(#l_vars.#method_iter(#r_vars)),*))
+                        derive_more::core::result::Result::Ok(
+                            #subtype(#(#l_vars.#method_iter(#r_vars)),*)
+                        )
                     }
                 };
                 matches.push(matcher);

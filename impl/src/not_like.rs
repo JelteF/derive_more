@@ -162,7 +162,9 @@ fn enum_output_type_and_content(
     };
 
     let output_type = if has_unit_type {
-        quote! { derive_more::core::result::Result<#input_type #ty_generics, derive_more::UnitError> }
+        quote! {
+            derive_more::core::result::Result<#input_type #ty_generics, derive_more::UnitError>
+        }
     } else {
         quote! { #input_type #ty_generics }
     };

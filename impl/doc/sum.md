@@ -42,23 +42,24 @@ struct MyInts(i32, i64);
 Code like this will be generated for the `Sum` implementation:
 
 ```rust
+# use ::core::ops::Add;
 # struct MyInts(i32, i64);
-# impl ::core::ops::Add for MyInts {
+# impl Add for MyInts {
 #     type Output = MyInts;
 #     #[inline]
 #     fn add(self, rhs: MyInts) -> MyInts {
 #         MyInts(self.0.add(rhs.0), self.1.add(rhs.1))
 #     }
 # }
-impl ::core::iter::Sum for MyInts {
+impl derive_more::Sum for MyInts {
     #[inline]
-    fn sum<I: ::core::iter::Iterator<Item = Self>>(iter: I) -> Self {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(
             MyInts(
-                ::core::iter::empty::<i32>().sum(),
-                ::core::iter::empty::<i64>().sum(),
+                derive_more::core::iter::empty::<i32>().sum(),
+                derive_more::core::iter::empty::<i64>().sum(),
             ),
-            ::core::ops::Add::add,
+            derive_more::core::ops::Add::add,
         )
     }
 }

@@ -256,26 +256,27 @@ impl<'a> Expansion<'a> {
                 };
                 let out = unnamed.unnamed.iter().enumerate().try_fold(
                     out,
-                    |out, (i, field)| {
-                        match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
-                            .map(Spanning::into_inner)
-                        {
-                            Some(FieldAttribute::Left(_skip)) => {
-                                exhaustive = false;
-                                Ok::<_, syn::Error>(out)
-                            }
-                            Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
-                                derive_more::__private::DebugTuple::field(
-                                    #out,
-                                    &derive_more::core::format_args!(#fmt_attr),
-                                )
-                            }),
-                            None => {
-                                let ident = format_ident!("_{i}");
-                                Ok(quote! {
-                                    derive_more::__private::DebugTuple::field(#out, #ident)
-                                })
-                            }
+                    |out, (i, field)| match FieldAttribute::parse_attrs(
+                        &field.attrs,
+                        self.attr_name,
+                    )?
+                    .map(Spanning::into_inner)
+                    {
+                        Some(FieldAttribute::Left(_skip)) => {
+                            exhaustive = false;
+                            Ok::<_, syn::Error>(out)
+                        }
+                        Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
+                            derive_more::__private::DebugTuple::field(
+                                #out,
+                                &derive_more::core::format_args!(#fmt_attr),
+                            )
+                        }),
+                        None => {
+                            let ident = format_ident!("_{i}");
+                            Ok(quote! {
+                                derive_more::__private::DebugTuple::field(#out, #ident)
+                            })
                         }
                     },
                 )?;

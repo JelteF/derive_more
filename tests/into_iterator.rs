@@ -77,7 +77,7 @@ struct Numbers3 {
     useless2: bool,
 }
 
-// Test that owned is not enabled when ref/ref_mut are enabled without owned
+// Test that `owned` is not enabled when `ref`/`ref_mut` are enabled without `owned`.
 impl ::core::iter::IntoIterator for Numbers3 {
     type Item = <Vec<i32> as ::core::iter::IntoIterator>::Item;
     type IntoIter = <Vec<i32> as ::core::iter::IntoIterator>::IntoIter;

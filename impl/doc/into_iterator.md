@@ -63,30 +63,30 @@ Code like this will be generated:
 #     numbers: Vec<i32>,
 #     useless: bool,
 # }
-impl ::core::iter::IntoIterator for Numbers {
-    type Item = <Vec<i32> as ::core::iter::IntoIterator>::Item;
-    type IntoIter = <Vec<i32> as ::core::iter::IntoIterator>::IntoIter;
+impl derive_more::IntoIterator for Numbers {
+    type Item = <Vec<i32> as derive_more::IntoIterator>::Item;
+    type IntoIter = <Vec<i32> as derive_more::IntoIterator>::IntoIter;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        <Vec<i32> as ::core::iter::IntoIterator>::into_iter(self.numbers)
+        <Vec<i32> as derive_more::IntoIterator>::into_iter(self.numbers)
     }
 }
 
-impl<'__deriveMoreLifetime> ::core::iter::IntoIterator for &'__deriveMoreLifetime Numbers {
-    type Item = <&'__deriveMoreLifetime Vec<i32> as ::core::iter::IntoIterator>::Item;
-    type IntoIter = <&'__deriveMoreLifetime Vec<i32> as ::core::iter::IntoIterator>::IntoIter;
+impl<'__deriveMoreLifetime> derive_more::IntoIterator for &'__deriveMoreLifetime Numbers {
+    type Item = <&'__deriveMoreLifetime Vec<i32> as derive_more::IntoIterator>::Item;
+    type IntoIter = <&'__deriveMoreLifetime Vec<i32> as derive_more::IntoIterator>::IntoIter;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        <&'__deriveMoreLifetime Vec<i32> as ::core::iter::IntoIterator>::into_iter(&self.numbers)
+        <&'__deriveMoreLifetime Vec<i32> as derive_more::IntoIterator>::into_iter(&self.numbers)
     }
 }
 
-impl<'__deriveMoreLifetime> ::core::iter::IntoIterator for &'__deriveMoreLifetime mut Numbers {
-    type Item = <&'__deriveMoreLifetime mut Vec<i32> as ::core::iter::IntoIterator>::Item;
-    type IntoIter = <&'__deriveMoreLifetime mut Vec<i32> as ::core::iter::IntoIterator>::IntoIter;
+impl<'__deriveMoreLifetime> derive_more::IntoIterator for &'__deriveMoreLifetime mut Numbers {
+    type Item = <&'__deriveMoreLifetime mut Vec<i32> as derive_more::IntoIterator>::Item;
+    type IntoIter = <&'__deriveMoreLifetime mut Vec<i32> as derive_more::IntoIterator>::IntoIter;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        <&'__deriveMoreLifetime mut Vec<i32> as ::core::iter::IntoIterator>::into_iter(
+        <&'__deriveMoreLifetime mut Vec<i32> as derive_more::IntoIterator>::into_iter(
             &mut self.numbers,
         )
     }

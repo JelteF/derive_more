@@ -24,7 +24,7 @@ Generates:
 
 ```rust
 # struct MyWrapper(String);
-impl AsMut<String> for MyWrapper {
+impl derive_more::AsMut<String> for MyWrapper {
     fn as_mut(&mut self) -> &mut String {
         &mut self.0
     }
@@ -50,9 +50,9 @@ This generates code equivalent to:
 
 ```rust
 # struct SingleFieldForward(Vec<i32>);
-impl<T: ?Sized> AsMut<T> for SingleFieldForward
+impl<T: ?Sized> derive_more::AsMut<T> for SingleFieldForward
 where
-    Vec<i32>: AsMut<T>,
+    Vec<i32>: derive_more::AsMut<T>,
 {
     #[inline]
     fn as_mut(&mut self) -> &mut T {

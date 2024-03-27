@@ -130,7 +130,9 @@ impl ToTokens for Expansion {
                     #( const #consts: #repr_ty = #discriminants; )*
                     match val {
                         #(#consts => derive_more::core::result::Result::Ok(#ident::#variants),)*
-                        _ => derive_more::core::result::Result::Err(derive_more::TryFromReprError::new(val)),
+                        _ => derive_more::core::result::Result::Err(
+                            derive_more::TryFromReprError::new(val)
+                        ),
                     }
                 }
             }

@@ -51,7 +51,10 @@ pub fn expand(
         // Not using `#[inline]` here on purpose, since this is almost never part
         // of a hot codepath.
         quote! {
-            fn provide<'_request>(&'_request self, request: &mut derive_more::core::error::Request<'_request>) {
+            fn provide<'_request>(
+                &'_request self,
+                request: &mut derive_more::core::error::Request<'_request>,
+            ) {
                 #provide
             }
         }
@@ -65,7 +68,8 @@ pub fn expand(
             &generics,
             quote! {
                 where
-                    #ident #ty_generics: derive_more::core::fmt::Debug + derive_more::core::fmt::Display
+                    #ident #ty_generics: derive_more::core::fmt::Debug
+                                         + derive_more::core::fmt::Display
             },
         );
     }

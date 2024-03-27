@@ -43,7 +43,7 @@ pub fn struct_from(state: &State, trait_name: &'static str) -> TokenStream {
 
             #[inline]
             fn from_str(src: &str) -> derive_more::core::result::Result<Self, Self::Err> {
-                Ok(#body)
+                derive_more::core::result::Result::Ok(#body)
             }
         }
     }
