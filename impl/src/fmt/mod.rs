@@ -93,7 +93,7 @@ impl BoundsAttribute {
 /// ```
 ///
 /// [`fmt`]: std::fmt
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct FmtAttribute {
     /// Interpolation [`syn::LitStr`].
     ///
@@ -135,21 +135,6 @@ impl ToTokens for FmtAttribute {
 }
 
 impl FmtAttribute {
-    // TODO:
-    fn append_args(&mut self, more: impl IntoIterator<Item = FmtArgument>) {
-        let more = more
-            .into_iter()
-            .filter(|new| {
-                new.alias.is_none()
-                    || self
-                        .args
-                        .iter()
-                        .all(|old| old.alias.is_none() || old.alias != new.alias)
-            })
-            .collect::<Vec<_>>();
-        self.args.extend(more);
-    }
-
     /// Checks whether this [`FmtAttribute`] can be replaced with a transparent delegation (calling
     /// a formatting trait directly instead of interpolation syntax).
     ///
@@ -211,8 +196,8 @@ impl FmtAttribute {
         Some((expr, format_ident!("{trait_name}")))
     }
 
-    /// Returns an [`Iterator`] over bounded [`syn::Type`]s (and correspondent trait names) by this
-    /// [`FmtAttribute`].
+    /// Returns an [`Iterator`] over bounded [`syn::Type`]s (and correspondent trait names) of the
+    /// provided [`syn::Fields`] used by this [`FmtAttribute`].
     fn bounded_types<'a>(
         &'a self,
         fields: &'a syn::Fields,
@@ -247,6 +232,45 @@ impl FmtAttribute {
             }?;
 
             Some((ty, placeholder.trait_name))
+        })
+    }
+
+    /// Returns an [`Iterator`] over the provided [`syn::Field`]s used by this [`FmtAttribute`],
+    /// along with the correspondent [`syn::Ident`] it's referred by in this [`FmtAttribute`].
+    fn iter_used_fields<'a>(
+        &'a self,
+        fields: &'a syn::Fields,
+    ) -> impl Iterator<Item = (syn::Ident, &'a syn::Field)> {
+        let placeholders = Placeholder::parse_fmt_string(&self.lit.value());
+
+        // We ignore unknown fields, as compiler will produce better error messages.
+        placeholders.into_iter().filter_map(move |placeholder| {
+            let name = match &placeholder.arg {
+                Parameter::Named(name) => self
+                    .args
+                    .iter()
+                    .find_map(|a| (a.alias()? == &name).then_some(&a.expr))
+                    .map_or(Some(format_ident!("{name}")), |expr| expr.ident().cloned())?,
+                Parameter::Positional(i) => self
+                    .args
+                    .iter()
+                    .nth(*i)
+                    .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))?
+                    .clone(),
+            };
+            let position = name.to_string().strip_prefix('_').and_then(|s| s.parse().ok());
+
+            let field = match (&fields, position) {
+                (syn::Fields::Unnamed(f), Some(i)) => {
+                    f.unnamed.iter().nth(i)
+                }
+                (syn::Fields::Named(f), None) => f.named.iter().find_map(|f| {
+                    f.ident.as_ref().filter(|s| **s == name).map(|_| f)
+                }),
+                _ => None,
+            }?;
+
+            Some((name, field))
         })
     }
 
@@ -296,7 +320,7 @@ impl FmtAttribute {
 /// Representation of a [named parameter][1] (`identifier '=' expression`) in a [`FmtAttribute`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct FmtArgument {
     /// `identifier =` [`Ident`].
     ///

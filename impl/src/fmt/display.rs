@@ -5,11 +5,11 @@ use std::fmt;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, spanned::Spanned as _};
+use syn::{parse_quote, spanned::Spanned as _, token};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
-use super::{trait_name_to_attribute_name, ContainerAttributes};
+use super::{trait_name_to_attribute_name, ContainerAttributes, FmtArgument};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -32,7 +32,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     let trait_ident = format_ident!("{trait_name}");
     let ident = &input.ident;
 
-    let ctx = (attrs, ident, &trait_ident, &attr_name);
+    let ctx = (&attrs, ident, &trait_ident, &attr_name);
     let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => expand_struct(s, ctx),
         syn::Data::Enum(e) => expand_enum(e, ctx),
@@ -68,7 +68,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 ///
 /// [`syn::Ident`]: struct@syn::Ident
 type ExpansionCtx<'a> = (
-    ContainerAttributes,
+    &'a ContainerAttributes,
     &'a syn::Ident,
     &'a syn::Ident,
     &'a syn::Ident,
@@ -79,33 +79,30 @@ fn expand_struct(
     s: &syn::DataStruct,
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    let mut s = Expansion {
+    let s = Expansion {
         attrs,
         fields: &s.fields,
         trait_ident,
         ident,
     };
 
-    // It's important to generate bounds first, before we're going to modify the `fmt` expression.
+    let expr = s.generate_expr()?;
     let bounds = s.generate_bounds();
 
-    let args = s.fields.iter().enumerate().map(|(i, f)| {
+    let vars = s.fields.iter().enumerate().map(|(i, f)| {
         let var = f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"));
         let member = f
             .ident
             .clone()
             .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-        parse_quote! {
-            #var = self.#member
+        quote! {
+            let #var = &self.#member;
         }
     });
-    if let Some(fmt_attr) = &mut s.attrs.fmt {
-        fmt_attr.append_args(args);
-    }
-    let fmt_expr = s.generate_expr()?;
 
     let body = quote! {
-        #fmt_expr
+        #( #vars )*
+        #expr
     };
 
     Ok((bounds, body))
@@ -142,11 +139,12 @@ fn expand_enum(
             }
 
             let v = Expansion {
-                attrs,
+                attrs: &attrs,
                 fields: &variant.fields,
                 trait_ident,
                 ident,
             };
+
             let arm_body = v.generate_expr()?;
             bounds.extend(v.generate_bounds());
 
@@ -203,7 +201,7 @@ fn expand_union(
 #[derive(Debug)]
 struct Expansion<'a> {
     /// Derive macro [`ContainerAttributes`].
-    attrs: ContainerAttributes,
+    attrs: &'a ContainerAttributes,
 
     /// Struct or enum [`syn::Ident`].
     ///
@@ -234,7 +232,18 @@ impl<'a> Expansion<'a> {
                 Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
                     quote! { derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
                 } else {
-                    quote! { derive_more::core::write!(__derive_more_f, #fmt) }
+                    let mut fmt_expr = fmt.clone();
+                    let additional_args = fmt.iter_used_fields(&self.fields).map(
+                        |(name, _)| -> FmtArgument {
+                            parse_quote! { #name = *#name }
+                        },
+                    );
+                    fmt_expr.args.extend(additional_args);
+                    if !fmt_expr.args.is_empty() { // TODO: Move into separate method.
+                        fmt_expr.comma = Some(token::Comma::default());
+                    }
+
+                    quote! { derive_more::core::write!(__derive_more_f, #fmt_expr) }
                 })
             }
             None if self.fields.is_empty() => {
@@ -250,7 +259,6 @@ impl<'a> Expansion<'a> {
                     .iter()
                     .next()
                     .unwrap_or_else(|| unreachable!("fields.len() == 1"));
-                // TODO: Re-check `fmt::Pointer` scenario?
                 let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
                 let trait_ident = self.trait_ident;
 
