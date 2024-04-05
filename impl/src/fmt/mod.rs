@@ -135,6 +135,21 @@ impl ToTokens for FmtAttribute {
 }
 
 impl FmtAttribute {
+    // TODO:
+    fn append_args(&mut self, more: impl IntoIterator<Item = FmtArgument>) {
+        let more = more
+            .into_iter()
+            .filter(|new| {
+                new.alias.is_none()
+                    || self
+                        .args
+                        .iter()
+                        .all(|old| old.alias.is_none() || old.alias != new.alias)
+            })
+            .collect::<Vec<_>>();
+        self.args.extend(more);
+    }
+
     /// Checks whether this [`FmtAttribute`] can be replaced with a transparent delegation (calling
     /// a formatting trait directly instead of interpolation syntax).
     ///
@@ -278,8 +293,7 @@ impl FmtAttribute {
     }
 }
 
-/// Representation of a [named parameter][1] (`identifier '=' expression`) in
-/// in a [`FmtAttribute`].
+/// Representation of a [named parameter][1] (`identifier '=' expression`) in a [`FmtAttribute`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
 #[derive(Debug)]

@@ -32,7 +32,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     let trait_ident = format_ident!("{trait_name}");
     let ident = &input.ident;
 
-    let ctx = (&attrs, ident, &trait_ident, &attr_name);
+    let ctx = (attrs, ident, &trait_ident, &attr_name);
     let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => expand_struct(s, ctx),
         syn::Data::Enum(e) => expand_enum(e, ctx),
@@ -68,7 +68,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 ///
 /// [`syn::Ident`]: struct@syn::Ident
 type ExpansionCtx<'a> = (
-    &'a ContainerAttributes,
+    ContainerAttributes,
     &'a syn::Ident,
     &'a syn::Ident,
     &'a syn::Ident,
@@ -79,29 +79,33 @@ fn expand_struct(
     s: &syn::DataStruct,
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    let s = Expansion {
+    let mut s = Expansion {
         attrs,
         fields: &s.fields,
         trait_ident,
         ident,
     };
-    let bounds = s.generate_bounds();
-    let body = s.generate_body()?;
 
-    let vars = s.fields.iter().enumerate().map(|(i, f)| {
+    // It's important to generate bounds first, before we're going to modify the `fmt` expression.
+    let bounds = s.generate_bounds();
+
+    let args = s.fields.iter().enumerate().map(|(i, f)| {
         let var = f.ident.clone().unwrap_or_else(|| format_ident!("_{i}"));
         let member = f
             .ident
             .clone()
             .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-        quote! {
-            let #var = &self.#member;
+        parse_quote! {
+            #var = self.#member
         }
     });
+    if let Some(fmt_attr) = &mut s.attrs.fmt {
+        fmt_attr.append_args(args);
+    }
+    let fmt_expr = s.generate_expr()?;
 
     let body = quote! {
-        #( #vars )*
-        #body
+        #fmt_expr
     };
 
     Ok((bounds, body))
@@ -138,12 +142,12 @@ fn expand_enum(
             }
 
             let v = Expansion {
-                attrs: &attrs,
+                attrs,
                 fields: &variant.fields,
                 trait_ident,
                 ident,
             };
-            let arm_body = v.generate_body()?;
+            let arm_body = v.generate_expr()?;
             bounds.extend(v.generate_bounds());
 
             let fields_idents =
@@ -199,7 +203,7 @@ fn expand_union(
 #[derive(Debug)]
 struct Expansion<'a> {
     /// Derive macro [`ContainerAttributes`].
-    attrs: &'a ContainerAttributes,
+    attrs: ContainerAttributes,
 
     /// Struct or enum [`syn::Ident`].
     ///
@@ -216,16 +220,15 @@ struct Expansion<'a> {
 }
 
 impl<'a> Expansion<'a> {
-    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
+    /// Generates [`Display::fmt()`] implementation expression for a struct or an enum variant.
     ///
     /// # Errors
     ///
-    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is
-    /// greater than 1.
+    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is greater than 1.
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
     /// [`FmtAttribute`]: super::FmtAttribute
-    fn generate_body(&self) -> syn::Result<TokenStream> {
+    fn generate_expr(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
             Some(fmt) => {
                 Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
@@ -246,7 +249,8 @@ impl<'a> Expansion<'a> {
                     .fields
                     .iter()
                     .next()
-                    .unwrap_or_else(|| unreachable!("count() == 1"));
+                    .unwrap_or_else(|| unreachable!("fields.len() == 1"));
+                // TODO: Re-check `fmt::Pointer` scenario?
                 let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
                 let trait_ident = self.trait_ident;
 
