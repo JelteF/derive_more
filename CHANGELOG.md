@@ -75,6 +75,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - The `Constructor` and `IsVariant` derives now generate `const fn` functions.
+- Static methods derived by `IsVariant` are now marked `#[must_use]`.
 - The `Unwrap` and `IsVariant` derives now generate doc comments.
 - `#[automatically_derived]` is now emitted from all macro expansions. This
   should prevent code style linters from attempting to modify the generated
