@@ -1,0 +1,15 @@
+error: unused return value of `MustUse::is_yes` that must be used
+ --> tests/compile_fail/is_variant/must_use.rs:9:5
+  |
+9 |     must_use.is_yes();
+  |     ^^^^^^^^^^^^^^^^^
+  |
+note: the lint level is defined here
+ --> tests/compile_fail/is_variant/must_use.rs:6:10
+  |
+6 | #[forbid(unused_must_use)]
+  |          ^^^^^^^^^^^^^^^
+help: use `let _ = ...` to ignore the resulting value
+  |
+9 |     let _ = must_use.is_yes();
+  |     +++++++
