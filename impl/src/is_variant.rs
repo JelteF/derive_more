@@ -47,10 +47,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[inline]
             #[must_use]
             pub const fn #fn_name(&self) -> bool {
-                match self {
-                    #enum_name ::#variant_ident #data_pattern => true,
-                    _ => false
-                }
+                matches!(self, #enum_name ::#variant_ident #data_pattern)
             }
         };
         funcs.push(func);
