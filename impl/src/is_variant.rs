@@ -45,11 +45,9 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             #[doc = #variant_name]
             #[doc = "`. Returns `false` otherwise"]
             #[inline]
+            #[must_use]
             pub const fn #fn_name(&self) -> bool {
-                match self {
-                    #enum_name ::#variant_ident #data_pattern => true,
-                    _ => false
-                }
+                derive_more::core::matches!(self, #enum_name ::#variant_ident #data_pattern)
             }
         };
         funcs.push(func);

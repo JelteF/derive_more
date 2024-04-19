@@ -234,7 +234,7 @@ required-features = ["try_unwrap"]
 [[test]]
 name = "compile_fail"
 path = "tests/compile_fail/mod.rs"
-required-features = ["as_ref", "debug", "display", "from", "into"]
+required-features = ["as_ref", "debug", "display", "from", "into", "is_variant", "try_from"]
 
 [[test]]
 name = "no_std"
