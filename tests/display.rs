@@ -680,6 +680,55 @@ mod structs {
             }
         }
     }
+
+    mod unnamed_pointer {
+        use super::*;
+        use std::fmt;
+
+        #[derive(Display)]
+        #[display("{_0:p}")]
+        struct UnnamedPointer<'a>(&'a u32);
+
+        #[derive(Display)]
+        #[display("{}", format!("{_0:p}"))]
+        struct UnnamedPointerWithFormat<'a>(&'a u32);
+
+        #[derive(Pointer)]
+        struct UnnamedPointerDerivePointer<'a, E>(&'a E);
+
+        #[test]
+        fn assert_no_double_reference() {
+            let i: u32 = line!();
+            assert_eq!(
+                format!("{}", UnnamedPointer(&i)),
+                format!("{:p}", &i)
+            );
+        }
+
+        #[test]
+        fn assert_no_double_reference_with_format() {
+            let i: u32 = line!();
+            assert_eq!(
+                format!("{}", UnnamedPointerWithFormat(&i)),
+                format!("{:p}", &i)
+            );
+        }
+
+        #[test]
+        fn assert_no_double_reference_deriving_pointer() {
+            let i: u32 = line!();
+            let j: &u32 = &i;
+            let k: &&u32 = &j;
+            assert_eq!(
+                format!("{:p}", UnnamedPointerDerivePointer(j)),
+                format!("{:p}", j)
+            );
+            assert_eq!(
+                format!("{:p}", UnnamedPointerDerivePointer(k)),
+                format!("{:p}", k)
+            );
+        }
+    }
 }
 
 mod enums {
