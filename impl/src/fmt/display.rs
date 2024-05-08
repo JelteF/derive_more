@@ -11,6 +11,8 @@ use crate::utils::{attr::ParseMultiple as _, Spanning};
 
 use super::{trait_name_to_attribute_name, ContainerAttributes};
 
+const POINTER_TRAIT_NAME: &str = "Pointer";
+
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
 /// Available macros:
@@ -94,8 +96,14 @@ fn expand_struct(
             .ident
             .clone()
             .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-        quote! {
-            let #var = &self.#member;
+        if let syn::Type::Reference(_) = f.ty {
+            quote! {
+                let #var = self.#member;
+            }
+        } else {
+            quote! {
+                let #var = &self.#member;
+            }
         }
     });
 
@@ -251,7 +259,7 @@ impl<'a> Expansion<'a> {
                 let trait_ident = self.trait_ident;
 
                 Ok(quote! {
-                    derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+                    derive_more::core::fmt::#trait_ident::fmt(&#ident, __derive_more_f)
                 })
             }
             _ => Err(syn::Error::new(
@@ -265,6 +273,30 @@ impl<'a> Expansion<'a> {
         }
     }
 
+    /// Get the type to be bound by the trait to be derived.
+    /// For example, deriving `Display` for `Struct<E>(E)` requires the type `E`
+    /// to have the trait bound `Display`.
+    ///
+    /// For traits other than `Pointer`, all layers of `&` on the outside are
+    /// stripped because the trait's format function does the same.
+    fn get_bound_constrained_type<'b, 'c>(
+        &'c self,
+        input_type: &'b syn::Type,
+        trait_ident: &'b syn::Ident
+    ) -> &'b syn::Type {
+        let mut ty = input_type;
+        if !trait_ident.eq(POINTER_TRAIT_NAME) {
+            loop {
+                if let syn::Type::Reference(syn::TypeReference { elem, .. }) = ty {
+                    ty = elem;
+                } else {
+                    break;
+                }
+            }
+        }
+        ty
+    }
+
     /// Generates trait bounds for a struct or an enum variant.
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
         let Some(fmt) = &self.attrs.fmt else {
@@ -273,7 +305,7 @@ impl<'a> Expansion<'a> {
                 .iter()
                 .next()
                 .map(|f| {
-                    let ty = &f.ty;
+                    let ty = self.get_bound_constrained_type(&f.ty, &self.trait_ident);
                     let trait_ident = &self.trait_ident;
                     vec![parse_quote! { #ty: derive_more::core::fmt::#trait_ident }]
                 })
