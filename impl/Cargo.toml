@@ -34,7 +34,7 @@ rustc_version = { version = "0.4", optional = true }
 
 [dev-dependencies]
 derive_more = { path = "..", features = ["full"] }
-itertools = "0.12.0"
+itertools = "0.13.0"
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
