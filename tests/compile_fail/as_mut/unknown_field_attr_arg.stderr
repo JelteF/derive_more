@@ -3,14 +3,3 @@ error[E0412]: cannot find type `baz` in this scope
   |
 3 |     #[as_mut(baz)]
   |              ^^^ not found in this scope
-  |
-help: you might be missing a type parameter
-  |
-1 | #[derive(derive_more::AsMut<baz>)]
-  |                            +++++
-
-error[E0412]: cannot find type `baz` in this scope
- --> tests/compile_fail/as_mut/unknown_field_attr_arg.rs:3:14
-  |
-3 |     #[as_mut(baz)]
-  |              ^^^ not found in this scope

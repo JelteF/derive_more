@@ -3,14 +3,3 @@ error[E0412]: cannot find type `baz` in this scope
   |
 2 | #[as_ref(baz)]
   |          ^^^ not found in this scope
-  |
-help: you might be missing a type parameter
-  |
-1 | #[derive(derive_more::AsRef<baz>)]
-  |                            +++++
-
-error[E0412]: cannot find type `baz` in this scope
- --> tests/compile_fail/as_ref/unknown_struct_attr_arg.rs:2:10
-  |
-2 | #[as_ref(baz)]
-  |          ^^^ not found in this scope
