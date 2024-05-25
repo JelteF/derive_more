@@ -39,10 +39,9 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             Fields::Unnamed(_) => quote! { (..) },
             Fields::Unit => quote! {},
         };
-        let variant_name = stringify!(variant_ident);
         let func = quote! {
             #[doc = "Returns `true` if this value is of type `"]
-            #[doc = #variant_name]
+            #[doc = stringify!(#variant_ident)]
             #[doc = "`. Returns `false` otherwise"]
             #[inline]
             #[must_use]
