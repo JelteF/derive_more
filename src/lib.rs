@@ -190,6 +190,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use syn::parse::Error as ParseError;
 
+mod syn_compat;
 mod utils;
 
 #[cfg(any(feature = "add_assign", feature = "mul_assign"))]

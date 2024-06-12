@@ -1,12 +1,13 @@
 #![cfg_attr(not(feature = "default"), allow(dead_code), allow(unused_mut))]
 
+use crate::syn_compat::{AttributeExt as _, NestedMeta, ParsedMeta};
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
     parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
     DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    Generics, Ident, ImplGenerics, Index, Meta, NestedMeta, Result, Token, Type,
-    TypeGenerics, TypeParamBound, Variant, WhereClause,
+    Generics, Ident, ImplGenerics, Index, Result, Token, Type, TypeGenerics,
+    TypeParamBound, Variant, WhereClause,
 };
 
 #[derive(Clone, Copy, Default)]
@@ -897,7 +898,7 @@ fn get_meta_info(
     }
 
     let list = match meta.clone() {
-        Meta::Path(_) => {
+        ParsedMeta::Path(_) => {
             if allowed_attr_params.contains(&"ignore") {
                 return Ok(info);
             } else {
@@ -910,8 +911,8 @@ fn get_meta_info(
                 ));
             }
         }
-        Meta::List(list) => list,
-        Meta::NameValue(val) => {
+        ParsedMeta::List(list) => list,
+        ParsedMeta::NameValue(val) => {
             return Err(Error::new(
                 val.span(),
                 "Attribute doesn't support name-value format here",
@@ -942,7 +943,7 @@ fn parse_punctuated_nested_meta(
         };
 
         match meta {
-            Meta::List(list) if list.path.is_ident("not") => {
+            ParsedMeta::List(list) if list.path.is_ident("not") => {
                 if wrapper_name.is_some() {
                     // Only single top-level `not` attribute is allowed.
                     return Err(Error::new(
@@ -958,7 +959,7 @@ fn parse_punctuated_nested_meta(
                 )?;
             }
 
-            Meta::List(list) => {
+            ParsedMeta::List(list) => {
                 let path = &list.path;
                 if !allowed_attr_params.iter().any(|param| path.is_ident(param)) {
                     return Err(Error::new(
@@ -988,7 +989,7 @@ fn parse_punctuated_nested_meta(
                         for meta in &list.nested {
                             let typ: syn::Type = match meta {
                                 NestedMeta::Meta(meta) => {
-                                    let path = if let Meta::Path(p) = meta {
+                                    let path = if let ParsedMeta::Path(p) = meta {
                                         p
                                     } else {
                                         return Err(Error::new(
@@ -1058,7 +1059,7 @@ fn parse_punctuated_nested_meta(
                 }
             }
 
-            Meta::Path(path) => {
+            ParsedMeta::Path(path) => {
                 if !allowed_attr_params.iter().any(|param| path.is_ident(param)) {
                     return Err(Error::new(
                         meta.span(),
@@ -1094,7 +1095,7 @@ fn parse_punctuated_nested_meta(
                 }
             }
 
-            Meta::NameValue(val) => {
+            ParsedMeta::NameValue(val) => {
                 return Err(Error::new(
                     val.span(),
                     "Attribute doesn't support name-value parameters here",
