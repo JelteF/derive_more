@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Update syn to version 2.x
 - Bump minimum supported rust version to 1.65
 
-## 0.99.10 - 2020-??-??
+## 0.99.10 - 2020-09-11
 
 ### Improvements
 
