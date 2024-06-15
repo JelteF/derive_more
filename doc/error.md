@@ -46,7 +46,7 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 
 # Example usage
 
-```rust
+```ignore
 #![feature(backtrace)]
 # #[macro_use] extern crate derive_more;
 # use std::error::Error as _;
