@@ -149,7 +149,10 @@ fn parse_meta_path(input: ParseStream) -> Result<Path> {
     })
 }
 
-pub(crate) fn parse_meta_after_path(path: Path, input: ParseStream) -> Result<ParsedMeta> {
+pub(crate) fn parse_meta_after_path(
+    path: Path,
+    input: ParseStream,
+) -> Result<ParsedMeta> {
     if input.peek(token::Paren) {
         parse_meta_list_after_path(path, input).map(ParsedMeta::List)
     } else if input.peek(Token![=]) {
