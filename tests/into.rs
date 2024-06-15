@@ -58,6 +58,7 @@ impl<T> From<&mut Wrapped<T>> for &mut Transmuted<T> {
 }
 
 mod unit {
+    #![allow(clippy::unit_cmp)]
     use super::*;
 
     #[derive(Debug, Into, PartialEq)]
@@ -128,6 +129,7 @@ mod single_field {
 
         #[test]
         fn assert() {
+            #![allow(clippy::unit_cmp)]
             assert_eq!((), Tuple(42).into());
             assert_eq!((), Struct { field: 42 }.into());
         }
@@ -308,6 +310,7 @@ mod single_field {
 
             #[test]
             fn assert() {
+                #![allow(clippy::unit_cmp)]
                 assert_eq!((), Tuple(Wrapped(42)).into());
                 assert_eq!((), Struct { field: Wrapped(42) }.into());
             }

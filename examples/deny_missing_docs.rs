@@ -1,5 +1,6 @@
 //! Some docs
 
+#![allow(dead_code)]
 #![deny(missing_docs)]
 
 use derive_more::{

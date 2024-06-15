@@ -1,4 +1,7 @@
 #![allow(dead_code)]
+// Allow redundant closures in tests, because we use them to create backtraces with different
+// addresses.
+#![allow(clippy::redundant_closure, clippy::redundant_closure_call)]
 
 use core::error::{request_ref, request_value};
 

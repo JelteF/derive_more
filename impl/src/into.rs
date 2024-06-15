@@ -179,6 +179,7 @@ impl<'a> Expansion<'a> {
 
                 Ok(quote! {
                     #[automatically_derived]
+                    #[allow(clippy::unused_unit)]
                     impl #impl_gens derive_more::core::convert::From<#r #lf #m #input_ident #ty_gens>
                      for ( #( #r #lf #m #tys ),* ) #where_clause
                     {

@@ -230,5 +230,5 @@ fn test_try_into() {
         u32::try_from(i).unwrap_err().to_string(),
         "Only Unsigned, NamedUnsigned can be converted to u32"
     );
-    assert_eq!((), i.try_into().unwrap());
+    assert!(matches!(i.try_into().unwrap(), ()));
 }

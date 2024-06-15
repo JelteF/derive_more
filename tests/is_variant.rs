@@ -43,16 +43,16 @@ pub fn test_is_variant() {
 
 #[derive(IsVariant)]
 enum Color {
-    RGB(u8, u8, u8),
-    CMYK { c: u8, m: u8, y: u8, k: u8 },
+    Rgb(u8, u8, u8),
+    Cmyk { c: u8, m: u8, y: u8, k: u8 },
 }
 
 const _: () = {
-    let color = Color::RGB(0, 0, 0);
+    let color = Color::Rgb(0, 0, 0);
     assert!(color.is_rgb());
     assert!(!color.is_cmyk());
 
-    let color = Color::CMYK {
+    let color = Color::Cmyk {
         c: 0,
         m: 0,
         y: 0,
