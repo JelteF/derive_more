@@ -691,7 +691,7 @@ impl<'a, 'b> State<'a, 'b> {
                     if fields_type_params.contains_key(arg) {
                         bounds
                             .entry(fields_type_params[arg].clone())
-                            .or_insert_with(HashSet::default)
+                            .or_default()
                             .insert(trait_name_to_trait_bound(pl.trait_name));
                     }
                 }

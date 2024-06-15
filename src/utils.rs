@@ -261,7 +261,6 @@ pub enum DeriveType {
 pub struct State<'input> {
     pub input: &'input DeriveInput,
     pub trait_name: &'static str,
-    pub trait_ident: Ident,
     pub method_ident: Ident,
     pub trait_module: TokenStream,
     pub trait_path: TokenStream,
@@ -535,7 +534,6 @@ impl<'input> State<'input> {
         Ok(State {
             input,
             trait_name,
-            trait_ident,
             method_ident,
             trait_module,
             trait_path,
@@ -595,7 +593,6 @@ impl<'input> State<'input> {
             trait_path,
             trait_path_params: vec![],
             trait_attr,
-            trait_ident,
             method_ident,
             // input,
             fields,
@@ -628,7 +625,6 @@ impl<'input> State<'input> {
             field_type: data.field_types[0],
             member: data.members[0].clone(),
             info: data.infos[0].clone(),
-            field_ident: data.field_idents[0].clone(),
             trait_path: data.trait_path,
             trait_path_with_params: data.trait_path_with_params.clone(),
             casted_trait: data.casted_traits[0].clone(),
@@ -701,17 +697,9 @@ impl<'input> State<'input> {
             panic!("can only derive({}) for enum", self.trait_name)
         }
         let variants = self.enabled_variants();
-        let trait_path = &self.trait_path;
-        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
         MultiVariantData {
-            input_type: &self.input.ident,
             variants,
             variant_states: self.enabled_variant_states(),
-            infos: self.enabled_infos(),
-            trait_path,
-            impl_generics,
-            ty_generics,
-            where_clause,
         }
     }
 
@@ -793,7 +781,6 @@ pub struct SingleFieldData<'input, 'state> {
     pub input_type: &'input Ident,
     pub field: &'input Field,
     pub field_type: &'input Type,
-    pub field_ident: TokenStream,
     pub member: TokenStream,
     pub info: FullMetaInfo,
     pub trait_path: &'state TokenStream,
@@ -828,14 +815,8 @@ pub struct MultiFieldData<'input, 'state> {
 }
 
 pub struct MultiVariantData<'input, 'state> {
-    pub input_type: &'input Ident,
     pub variants: Vec<&'input Variant>,
     pub variant_states: Vec<&'state State<'input>>,
-    pub infos: Vec<FullMetaInfo>,
-    pub trait_path: &'state TokenStream,
-    pub impl_generics: ImplGenerics<'state>,
-    pub ty_generics: TypeGenerics<'state>,
-    pub where_clause: Option<&'state WhereClause>,
 }
 
 impl<'input, 'state> MultiFieldData<'input, 'state> {
@@ -1189,7 +1170,7 @@ pub fn get_if_type_parameter_used_in_type(
     if is_type_parameter_used_in_type(type_parameters, ty) {
         match ty {
             syn::Type::Reference(syn::TypeReference { elem: ty, .. }) => {
-                Some((&**ty).clone())
+                Some((**ty).clone())
             }
             ty => Some(ty.clone()),
         }
