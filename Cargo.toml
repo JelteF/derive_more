@@ -19,6 +19,7 @@ include = [
     "README.md",
     "CHANGELOG.md",
     "tests/**/*.rs", # debian packaging wants this
+    "examples/**/*.rs",
 ]
 autotests = true
 
