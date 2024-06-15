@@ -20,6 +20,7 @@ include = [
     "README.md",
     "CHANGELOG.md",
     "tests/**/*.rs", # debian packaging wants this
+    "examples/**/*.rs"
 ]
 
 [workspace]
@@ -42,6 +43,9 @@ github = { repository = "JelteF/derive_more", workflow = "CI" }
 [package.metadata.docs.rs]
 features = ["full"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
 
 [features]
 default = ["std"]
