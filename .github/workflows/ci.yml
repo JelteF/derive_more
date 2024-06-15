@@ -38,7 +38,7 @@ jobs:
           override: true
 
       - name: Install tomljson
-        run: go get github.com/pelletier/go-toml/cmd/tomljson
+        run: go install github.com/pelletier/go-toml/cmd/tomljson
 
       - name: Test
         run: |
