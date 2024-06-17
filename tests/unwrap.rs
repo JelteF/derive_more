@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(dead_code)]
+#![allow(dead_code)] // some code is tested for type checking only
 
 use derive_more::Unwrap;
 
@@ -19,8 +19,8 @@ enum Maybe<T> {
 
 #[derive(Unwrap)]
 enum Color {
-    RGB(u8, u8, u8),
-    CMYK(u8, u8, u8, u8),
+    Rgb(u8, u8, u8),
+    Cmyk(u8, u8, u8, u8),
 }
 
 /// With lifetime
@@ -72,11 +72,11 @@ enum Tuple<T> {
 
 #[test]
 pub fn test_unwrap() {
-    assert_eq!(Maybe::<()>::Nothing.unwrap_nothing(), ());
+    assert!(matches!(Maybe::<()>::Nothing.unwrap_nothing(), ()));
     assert_eq!(Maybe::Just(1).unwrap_just(), 1);
 
-    assert_eq!((&Maybe::Just(42)).unwrap_just_ref(), &42);
-    assert_eq!((&mut Maybe::Just(42)).unwrap_just_mut(), &mut 42);
+    assert_eq!(Maybe::Just(42).unwrap_just_ref(), &42);
+    assert_eq!(Maybe::Just(42).unwrap_just_mut(), &mut 42);
 }
 
 #[test]

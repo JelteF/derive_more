@@ -1,5 +1,5 @@
 #![no_std]
-#![allow(dead_code)]
+#![allow(dead_code)] // some code is tested for type checking only
 
 use derive_more::{
     Add, AddAssign, Constructor, Deref, DerefMut, Display, From, FromStr, Index,

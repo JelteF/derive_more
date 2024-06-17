@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(dead_code)]
+#![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
@@ -230,5 +230,5 @@ fn test_try_into() {
         u32::try_from(i).unwrap_err().to_string(),
         "Only Unsigned, NamedUnsigned can be converted to u32"
     );
-    assert_eq!((), i.try_into().unwrap());
+    assert!(matches!(i.try_into().unwrap(), ()));
 }

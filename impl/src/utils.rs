@@ -1,7 +1,6 @@
 #![cfg_attr(
     not(all(feature = "add", feature = "mul")),
-    allow(dead_code),
-    allow(unused_mut)
+    allow(dead_code, unused_mut)
 )]
 
 use proc_macro2::TokenStream;

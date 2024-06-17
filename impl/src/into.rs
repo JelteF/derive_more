@@ -178,6 +178,7 @@ impl<'a> Expansion<'a> {
                 let tys: Vec<_> = fields_tys.validate_type(out_ty)?.collect();
 
                 Ok(quote! {
+                    #[allow(clippy::unused_unit)]
                     #[automatically_derived]
                     impl #impl_gens derive_more::core::convert::From<#r #lf #m #input_ident #ty_gens>
                      for ( #( #r #lf #m #tys ),* ) #where_clause

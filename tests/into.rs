@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(dead_code)]
+#![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
@@ -58,6 +58,8 @@ impl<T> From<&mut Wrapped<T>> for &mut Transmuted<T> {
 }
 
 mod unit {
+    #![allow(clippy::unit_cmp)] // because of type inference in assertions
+
     use super::*;
 
     #[derive(Debug, Into, PartialEq)]
@@ -128,6 +130,8 @@ mod single_field {
 
         #[test]
         fn assert() {
+            #![allow(clippy::unit_cmp)] // because of type inference in assertions
+
             assert_eq!((), Tuple(42).into());
             assert_eq!((), Struct { field: 42 }.into());
         }
@@ -308,6 +312,8 @@ mod single_field {
 
             #[test]
             fn assert() {
+                #![allow(clippy::unit_cmp)] // because of type inference in assertions
+
                 assert_eq!((), Tuple(Wrapped(42)).into());
                 assert_eq!((), Struct { field: Wrapped(42) }.into());
             }
@@ -1071,10 +1077,10 @@ mod with_fields {
 
         #[test]
         fn tuple() {
-            let foo = Tuple(1, 2.0, 3.0);
+            let t = Tuple(1, 2.0, 3.0);
 
-            assert_eq!(1, foo.into());
-            assert_eq!(3.0, foo.into());
+            assert_eq!(1, t.into());
+            assert_eq!(3.0, t.into());
         }
 
         #[derive(Clone, Copy, Debug, Into)]
@@ -1104,14 +1110,14 @@ mod with_fields {
 
         #[test]
         fn named() {
-            let foo = Struct {
+            let s = Struct {
                 a: 1,
                 b: 2.0,
                 c: 3.0,
             };
 
-            assert_eq!(1, foo.into());
-            assert_eq!(3.0, foo.into());
+            assert_eq!(1, s.into());
+            assert_eq!(3.0, s.into());
         }
 
         mod types {
@@ -1142,12 +1148,12 @@ mod with_fields {
 
             #[test]
             fn tuple() {
-                let foo = Tuple("1".to_owned(), 2.0, 3.0);
+                let f = Tuple("1".to_owned(), 2.0, 3.0);
 
-                assert_eq!(Box::<str>::from("1".to_owned()), foo.clone().into());
-                assert_eq!(Cow::Borrowed("1"), Cow::<str>::from(foo.clone()));
-                assert_eq!(3.0f32, foo.clone().into());
-                assert_eq!(3.0f64, foo.into());
+                assert_eq!(Box::<str>::from("1".to_owned()), f.clone().into());
+                assert_eq!(Cow::Borrowed("1"), Cow::<str>::from(f.clone()));
+                assert_eq!(3.0f32, f.clone().into());
+                assert_eq!(3.0f64, f.into());
             }
 
             #[derive(Clone, Debug, Into)]
@@ -1185,16 +1191,16 @@ mod with_fields {
 
             #[test]
             fn named() {
-                let foo = Struct {
+                let s = Struct {
                     a: "1".to_owned(),
                     b: 2.0,
                     c: 3.0,
                 };
 
-                assert_eq!(Box::<str>::from("1".to_owned()), foo.clone().into());
-                assert_eq!(Cow::Borrowed("1"), Cow::<str>::from(foo.clone()));
-                assert_eq!(3.0f32, foo.clone().into());
-                assert_eq!(3.0f64, foo.into());
+                assert_eq!(Box::<str>::from("1".to_owned()), s.clone().into());
+                assert_eq!(Cow::Borrowed("1"), Cow::<str>::from(s.clone()));
+                assert_eq!(3.0f32, s.clone().into());
+                assert_eq!(3.0f64, s.into());
             }
 
             mod r#ref {
@@ -1213,10 +1219,10 @@ mod with_fields {
 
                 #[test]
                 fn tuple() {
-                    let foo = Tuple("1".to_owned(), 2.0, 3.0);
+                    let t = Tuple("1".to_owned(), 2.0, 3.0);
 
-                    assert_eq!(&"1".to_owned(), <&String>::from(&foo));
-                    assert_eq!(&3.0, <&f64>::from(&foo));
+                    assert_eq!(&"1".to_owned(), <&String>::from(&t));
+                    assert_eq!(&3.0, <&f64>::from(&t));
                 }
 
                 #[derive(Debug, Into)]
@@ -1246,14 +1252,14 @@ mod with_fields {
 
                 #[test]
                 fn named() {
-                    let foo = Struct {
+                    let s = Struct {
                         a: "1".to_owned(),
                         b: 2.0,
                         c: 3.0,
                     };
 
-                    assert_eq!(&"1".to_owned(), <&String>::from(&foo));
-                    assert_eq!(&3.0, <&f64>::from(&foo));
+                    assert_eq!(&"1".to_owned(), <&String>::from(&s));
+                    assert_eq!(&3.0, <&f64>::from(&s));
                 }
 
                 mod types {
@@ -1267,10 +1273,10 @@ mod with_fields {
 
                     #[test]
                     fn tuple() {
-                        let foo = Tuple(Wrapped(1), Wrapped(2));
+                        let t = Tuple(Wrapped(1), Wrapped(2));
 
-                        assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
-                        assert_eq!(&Wrapped(2), <&Wrapped<i64>>::from(&foo));
+                        assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&t));
+                        assert_eq!(&Wrapped(2), <&Wrapped<i64>>::from(&t));
                     }
 
                     #[derive(Debug, Into)]
@@ -1283,13 +1289,13 @@ mod with_fields {
 
                     #[test]
                     fn named() {
-                        let foo = Struct {
+                        let s = Struct {
                             a: Wrapped(1),
                             b: Wrapped(2),
                         };
 
-                        assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
-                        assert_eq!(&Wrapped(2), <&Wrapped<i64>>::from(&foo));
+                        assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&s));
+                        assert_eq!(&Wrapped(2), <&Wrapped<i64>>::from(&s));
                     }
                 }
 
@@ -1301,10 +1307,10 @@ mod with_fields {
 
                     #[test]
                     fn tuple() {
-                        let mut foo = Tuple(1, 2.0, 3.0);
+                        let mut t = Tuple(1, 2.0, 3.0);
 
-                        assert_eq!(&mut 1, <&mut i32>::from(&mut foo));
-                        assert_eq!(&mut 3.0, <&mut f64>::from(&mut foo));
+                        assert_eq!(&mut 1, <&mut i32>::from(&mut t));
+                        assert_eq!(&mut 3.0, <&mut f64>::from(&mut t));
                     }
 
                     #[derive(Debug, Into)]
@@ -1318,14 +1324,14 @@ mod with_fields {
 
                     #[test]
                     fn named() {
-                        let mut foo = Struct {
+                        let mut s = Struct {
                             a: 1,
                             b: 2.0,
                             c: 3.0,
                         };
 
-                        assert_eq!(&mut 1, <&mut i32>::from(&mut foo));
-                        assert_eq!(&mut 3.0, <&mut f64>::from(&mut foo));
+                        assert_eq!(&mut 1, <&mut i32>::from(&mut s));
+                        assert_eq!(&mut 3.0, <&mut f64>::from(&mut s));
                     }
 
                     mod types {
@@ -1339,15 +1345,15 @@ mod with_fields {
 
                         #[test]
                         fn tuple() {
-                            let mut foo = Tuple(Wrapped(1), Wrapped(2));
+                            let mut t = Tuple(Wrapped(1), Wrapped(2));
 
                             assert_eq!(
                                 &mut Transmuted(1),
-                                <&mut Transmuted<i32>>::from(&mut foo),
+                                <&mut Transmuted<i32>>::from(&mut t),
                             );
                             assert_eq!(
                                 &mut Wrapped(2),
-                                <&mut Wrapped<i64>>::from(&mut foo),
+                                <&mut Wrapped<i64>>::from(&mut t),
                             );
                         }
 
@@ -1361,18 +1367,18 @@ mod with_fields {
 
                         #[test]
                         fn named() {
-                            let mut foo = Struct {
+                            let mut s = Struct {
                                 a: Wrapped(1),
                                 b: Wrapped(2),
                             };
 
                             assert_eq!(
                                 &mut Transmuted(1),
-                                <&mut Transmuted<i32>>::from(&mut foo),
+                                <&mut Transmuted<i32>>::from(&mut s),
                             );
                             assert_eq!(
                                 &mut Wrapped(2),
-                                <&mut Wrapped<i64>>::from(&mut foo),
+                                <&mut Wrapped<i64>>::from(&mut s),
                             );
                         }
                     }
@@ -1396,14 +1402,14 @@ mod with_fields {
 
         #[test]
         fn tuple() {
-            let mut foo = Tuple(Wrapped(1), Wrapped(2.0), Wrapped(3.0));
+            let mut t = Tuple(Wrapped(1), Wrapped(2.0), Wrapped(3.0));
 
-            assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
-            assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut foo));
-            assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut foo));
-            assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&foo).into());
-            assert_eq!(&Wrapped(2.0), <&Wrapped<f32>>::from(&foo));
-            assert_eq!(Wrapped(1), foo.into());
+            assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&t));
+            assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut t));
+            assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut t));
+            assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&t).into());
+            assert_eq!(&Wrapped(2.0), <&Wrapped<f32>>::from(&t));
+            assert_eq!(Wrapped(1), t.into());
         }
 
         #[derive(Debug, Into)]
@@ -1420,18 +1426,18 @@ mod with_fields {
 
         #[test]
         fn named() {
-            let mut foo = Struct {
+            let mut s = Struct {
                 a: Wrapped(1),
                 b: Wrapped(2.0),
                 c: Wrapped(3.0),
             };
 
-            assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
-            assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut foo));
-            assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut foo));
-            assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&foo).into());
-            assert_eq!(&Wrapped(2.0), <&Wrapped<f32>>::from(&foo));
-            assert_eq!(Wrapped(1), foo.into());
+            assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&s));
+            assert_eq!(&mut Transmuted(3.0), <&mut Transmuted<f32>>::from(&mut s));
+            assert_eq!(&mut Wrapped(3.0), <&mut Wrapped<f32>>::from(&mut s));
+            assert_eq!((&Wrapped(1), &Transmuted(3.0)), (&s).into());
+            assert_eq!(&Wrapped(2.0), <&Wrapped<f32>>::from(&s));
+            assert_eq!(Wrapped(1), s.into());
         }
 
         mod separate {
@@ -1455,21 +1461,18 @@ mod with_fields {
 
             #[test]
             fn tuple() {
-                let mut foo = Tuple(Wrapped(1), Wrapped(2.0));
+                let mut t = Tuple(Wrapped(1), Wrapped(2.0));
 
-                assert_eq!((&Wrapped(1), &Wrapped(2.0)), (&foo).into());
-                assert_eq!((Wrapped(1), Wrapped(2.0)), foo.into());
-                assert_eq!((Wrapped(1), Transmuted(2.0)), foo.into());
-                assert_eq!((&mut Wrapped(1), &mut Transmuted(2.0)), (&mut foo).into());
-                assert_eq!(&Wrapped(1), <&Wrapped<i32>>::from(&foo));
-                assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
-                assert_eq!(Wrapped(1), <Wrapped<i32>>::from(foo));
-                assert_eq!(&mut Wrapped(2.0), <&mut Wrapped<f32>>::from(&mut foo));
-                assert_eq!(
-                    &mut Transmuted(2.0),
-                    <&mut Transmuted<f32>>::from(&mut foo),
-                );
-                assert_eq!(Wrapped(2.0), <Wrapped<f32>>::from(foo));
+                assert_eq!((&Wrapped(1), &Wrapped(2.0)), (&t).into());
+                assert_eq!((Wrapped(1), Wrapped(2.0)), t.into());
+                assert_eq!((Wrapped(1), Transmuted(2.0)), t.into());
+                assert_eq!((&mut Wrapped(1), &mut Transmuted(2.0)), (&mut t).into());
+                assert_eq!(&Wrapped(1), <&Wrapped<i32>>::from(&t));
+                assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&t));
+                assert_eq!(Wrapped(1), <Wrapped<i32>>::from(t));
+                assert_eq!(&mut Wrapped(2.0), <&mut Wrapped<f32>>::from(&mut t));
+                assert_eq!(&mut Transmuted(2.0), <&mut Transmuted<f32>>::from(&mut t));
+                assert_eq!(Wrapped(2.0), <Wrapped<f32>>::from(t));
             }
 
             #[derive(Clone, Copy, Debug, Into)]
@@ -1490,24 +1493,21 @@ mod with_fields {
 
             #[test]
             fn named() {
-                let mut foo = Struct {
+                let mut s = Struct {
                     a: Wrapped(1),
                     b: Wrapped(2.0),
                 };
 
-                assert_eq!((&Wrapped(1), &Wrapped(2.0)), (&foo).into());
-                assert_eq!((Wrapped(1), Wrapped(2.0)), foo.into());
-                assert_eq!((Wrapped(1), Transmuted(2.0)), foo.into());
-                assert_eq!((&mut Wrapped(1), &mut Transmuted(2.0)), (&mut foo).into());
-                assert_eq!(&Wrapped(1), <&Wrapped<i32>>::from(&foo));
-                assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&foo));
-                assert_eq!(Wrapped(1), <Wrapped<i32>>::from(foo));
-                assert_eq!(&mut Wrapped(2.0), <&mut Wrapped<f32>>::from(&mut foo));
-                assert_eq!(
-                    &mut Transmuted(2.0),
-                    <&mut Transmuted<f32>>::from(&mut foo),
-                );
-                assert_eq!(Wrapped(2.0), <Wrapped<f32>>::from(foo));
+                assert_eq!((&Wrapped(1), &Wrapped(2.0)), (&s).into());
+                assert_eq!((Wrapped(1), Wrapped(2.0)), s.into());
+                assert_eq!((Wrapped(1), Transmuted(2.0)), s.into());
+                assert_eq!((&mut Wrapped(1), &mut Transmuted(2.0)), (&mut s).into());
+                assert_eq!(&Wrapped(1), <&Wrapped<i32>>::from(&s));
+                assert_eq!(&Transmuted(1), <&Transmuted<i32>>::from(&s));
+                assert_eq!(Wrapped(1), <Wrapped<i32>>::from(s));
+                assert_eq!(&mut Wrapped(2.0), <&mut Wrapped<f32>>::from(&mut s));
+                assert_eq!(&mut Transmuted(2.0), <&mut Transmuted<f32>>::from(&mut s),);
+                assert_eq!(Wrapped(2.0), <Wrapped<f32>>::from(s));
             }
         }
     }

@@ -495,7 +495,6 @@ where
 mod fmt_attribute_spec {
     use itertools::Itertools as _;
     use quote::ToTokens;
-    use syn;
 
     use super::FmtAttribute;
 
@@ -574,7 +573,7 @@ mod placeholder_parse_fmt_string_spec {
     fn indicates_position_and_trait_name_for_each_fmt_placeholder() {
         let fmt_string = "{},{:?},{{}},{{{1:0$}}}-{2:.1$x}{par:#?}{:width$}";
         assert_eq!(
-            Placeholder::parse_fmt_string(&fmt_string),
+            Placeholder::parse_fmt_string(fmt_string),
             vec![
                 Placeholder {
                     arg: Parameter::Positional(0),

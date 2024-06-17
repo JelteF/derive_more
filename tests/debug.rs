@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(dead_code)]
+#![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
@@ -53,8 +53,8 @@ mod structs {
             use derive_more::Debug;
 
             const I32: i32 = 11;
-            const F64: f64 = 3.14;
-            const POINTER: &f64 = &3.14;
+            const F64: f64 = 3.15;
+            const POINTER: &f64 = &3.15;
 
             #[derive(Debug)]
             #[debug("{I32}")]
@@ -100,8 +100,8 @@ mod structs {
                 assert_eq!(format!("{:07?}", Octal), "0000013");
                 assert_eq!(format!("{:03?}", LowerHex), "00b");
                 assert_eq!(format!("{:03?}", UpperHex), "00B");
-                assert_eq!(format!("{:07?}", LowerExp), "03.14e0");
-                assert_eq!(format!("{:07?}", UpperExp), "03.14E0");
+                assert_eq!(format!("{:07?}", LowerExp), "03.15e0");
+                assert_eq!(format!("{:07?}", UpperExp), "03.15E0");
                 assert_eq!(format!("{:018?}", Pointer).len(), 18);
             }
 
@@ -113,7 +113,7 @@ mod structs {
                     use derive_more::Debug;
 
                     const I32: i32 = 11;
-                    const F64: f64 = 3.14;
+                    const F64: f64 = 3.15;
 
                     #[derive(Debug)]
                     #[debug("{I32:x?}")]
@@ -593,7 +593,7 @@ mod structs {
             fn assert() {
                 assert_eq!(format!("{:03?}", TupleOctal(9, 4)), "011");
                 assert_eq!(
-                    format!("{:.1?}", StructLowerExp { a: 7, b: 3.14 }),
+                    format!("{:.1?}", StructLowerExp { a: 7, b: 3.15 }),
                     "3.1e0",
                 );
             }
@@ -642,8 +642,8 @@ mod enums {
             use derive_more::Debug;
 
             const I32: i32 = 11;
-            const F64: f64 = 3.14;
-            const POINTER: &f64 = &3.14;
+            const F64: f64 = 3.15;
+            const POINTER: &f64 = &3.15;
 
             #[derive(Debug)]
             enum Unit {
@@ -675,8 +675,8 @@ mod enums {
                 assert_eq!(format!("{:07?}", Unit::Octal), "0000013");
                 assert_eq!(format!("{:03?}", Unit::LowerHex), "00b");
                 assert_eq!(format!("{:03?}", Unit::UpperHex), "00B");
-                assert_eq!(format!("{:07?}", Unit::LowerExp), "03.14e0");
-                assert_eq!(format!("{:07?}", Unit::UpperExp), "03.14E0");
+                assert_eq!(format!("{:07?}", Unit::LowerExp), "03.15e0");
+                assert_eq!(format!("{:07?}", Unit::UpperExp), "03.15E0");
                 assert_eq!(format!("{:018?}", Unit::Pointer).len(), 18);
             }
 
@@ -688,7 +688,7 @@ mod enums {
                     use derive_more::Debug;
 
                     const I32: i32 = 11;
-                    const F64: f64 = 3.14;
+                    const F64: f64 = 3.15;
 
                     #[derive(Debug)]
                     enum Unit {
@@ -1069,7 +1069,7 @@ mod enums {
             fn assert() {
                 assert_eq!(format!("{:03?}", Enum::TupleOctal(9, 4)), "011");
                 assert_eq!(
-                    format!("{:.1?}", Enum::StructLowerExp { a: 7, b: 3.14 }),
+                    format!("{:.1?}", Enum::StructLowerExp { a: 7, b: 3.15 }),
                     "3.1e0",
                 );
             }
@@ -1840,7 +1840,7 @@ mod generic {
         #[test]
         fn assert() {
             assert_eq!(format!("{:03?}", Tuple(9)), "011");
-            assert_eq!(format!("{:.1?}", Struct { a: 9, b: 3.14 }), "3.1e0");
+            assert_eq!(format!("{:.1?}", Struct { a: 9, b: 3.15 }), "3.1e0");
             assert_eq!(format!("{:03?}", Enum::<_, u8, u8>::Debug(7)), "007");
             assert_eq!(
                 format!("{:03?}", Enum::<u8, _, _>::Display { b: 7, c: 8 }),

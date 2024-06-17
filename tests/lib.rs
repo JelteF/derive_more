@@ -188,7 +188,7 @@ fn main() {
 
     let mut myint: MyInt = 5.into();
     let _: Unit = ().into();
-    assert_eq!((), Unit.into());
+    assert!(matches!(Unit.into(), ()));
     assert_eq!(Unit, Unit::new());
     assert_eq!(MyInt(5), 5.into());
     assert_eq!(Ok(MyInt(5)), "5".parse());

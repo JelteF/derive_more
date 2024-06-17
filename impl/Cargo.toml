@@ -44,7 +44,7 @@ features = ["full"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(nighthly)"] }
 
 [features]
 default = []

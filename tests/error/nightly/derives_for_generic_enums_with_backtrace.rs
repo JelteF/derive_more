@@ -1,4 +1,6 @@
-#![allow(dead_code)]
+// For creating backtraces with different addresses in tests.
+#![allow(clippy::redundant_closure, clippy::redundant_closure_call)] // for testing
+#![allow(dead_code)] // some code is tested for type checking only
 
 use core::error::{request_ref, request_value};
 
