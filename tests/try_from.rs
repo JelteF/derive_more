@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(dead_code)]
+#![allow(dead_code)] // some code is tested for type checking only
 
 use derive_more::TryFrom;
 
@@ -56,6 +56,7 @@ fn enum_with_complex_repr() {
     assert!(Enum::try_from(-1).is_err());
 }
 
+#[cfg(not(msrv))] // TODO: Remove once MSRV bumps 1.66 or higher.
 #[test]
 fn test_discriminants_on_enum_with_fields() {
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]

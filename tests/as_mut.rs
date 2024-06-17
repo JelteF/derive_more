@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(dead_code, clippy::unnecessary_mut_passed)]
+#![allow(clippy::unnecessary_mut_passed)] // testing correct signatures rather than actual code
+#![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;

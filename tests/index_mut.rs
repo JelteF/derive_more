@@ -1,4 +1,4 @@
-#![allow(dead_code, unused_imports)]
+#![allow(dead_code)] // some code is tested for type checking only
 
 use derive_more::IndexMut;
 
