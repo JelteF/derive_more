@@ -24,9 +24,22 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
         .unwrap_or_default();
     let ident = &input.ident;
 
+    let type_variables = input
+        .generics
+        .params
+        .iter()
+        .filter_map(|param| match param {
+            syn::GenericParam::Lifetime(_) => None,
+            syn::GenericParam::Type(ty) => Some(&ty.ident),
+            syn::GenericParam::Const(_) => None,
+        })
+        .collect();
+
     let (bounds, body) = match &input.data {
-        syn::Data::Struct(s) => expand_struct(attrs, ident, s, &attr_name),
-        syn::Data::Enum(e) => expand_enum(attrs, e, &attr_name),
+        syn::Data::Struct(s) => {
+            expand_struct(attrs, ident, s, type_variables, &attr_name)
+        }
+        syn::Data::Enum(e) => expand_enum(attrs, e, type_variables, &attr_name),
         syn::Data::Union(_) => {
             return Err(syn::Error::new(
                 input.span(),
@@ -64,11 +77,13 @@ fn expand_struct(
     attrs: ContainerAttributes,
     ident: &Ident,
     s: &syn::DataStruct,
+    type_variables: Vec<&syn::Ident>,
     attr_name: &syn::Ident,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
         attr: &attrs,
         fields: &s.fields,
+        type_variables: &type_variables,
         ident,
         attr_name,
     };
@@ -99,6 +114,7 @@ fn expand_struct(
 fn expand_enum(
     mut attrs: ContainerAttributes,
     e: &syn::DataEnum,
+    type_variables: Vec<&syn::Ident>,
     attr_name: &syn::Ident,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     if let Some(enum_fmt) = attrs.fmt.as_ref() {
@@ -136,6 +152,7 @@ fn expand_enum(
             let v = Expansion {
                 attr: &attrs,
                 fields: &variant.fields,
+                type_variables: &type_variables,
                 ident,
                 attr_name,
             };
@@ -194,6 +211,9 @@ struct Expansion<'a> {
 
     /// Struct or enum [`syn::Fields`].
     fields: &'a syn::Fields,
+
+    /// Type variables in this struct or enum.
+    type_variables: &'a [&'a syn::Ident],
 
     /// Name of the attributes, considered by this macro.
     attr_name: &'a syn::Ident,
@@ -334,15 +354,26 @@ impl<'a> Expansion<'a> {
         let mut out = self.attr.bounds.0.clone().into_iter().collect::<Vec<_>>();
 
         if let Some(fmt) = self.attr.fmt.as_ref() {
-            out.extend(fmt.bounded_types(self.fields).map(|(ty, trait_name)| {
-                let trait_ident = format_ident!("{trait_name}");
+            out.extend(fmt.bounded_types(self.fields).filter_map(
+                |(ty, trait_name)| {
+                    if !self.contains_type_variable(ty) {
+                        return None;
+                    }
 
-                parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
-            }));
+                    let trait_ident = format_ident!("{trait_name}");
+
+                    Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
+                },
+            ));
             Ok(out)
         } else {
             self.fields.iter().try_fold(out, |mut out, field| {
                 let ty = &field.ty;
+
+                if !self.contains_type_variable(ty) {
+                    return Ok(out);
+                }
+
                 match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
                     .map(Spanning::into_inner)
                 {
@@ -360,6 +391,96 @@ impl<'a> Expansion<'a> {
                 }
                 Ok(out)
             })
+        }
+    }
+
+    fn contains_type_variable(&self, ty: &syn::Type) -> bool {
+        match ty {
+            syn::Type::Path(syn::TypePath { qself, path }) => {
+                if let Some(qself) = qself {
+                    if self.contains_type_variable(&qself.ty) {
+                        return true;
+                    }
+                }
+
+                if let Some(ident) = path.get_ident() {
+                    self.type_variables
+                        .iter()
+                        .any(|type_var| *type_var == ident)
+                } else {
+                    path.segments.iter().any(|segment| {
+                        self.type_variables
+                            .iter()
+                            .any(|type_var| *type_var == &segment.ident)
+                            || match &segment.arguments {
+                                syn::PathArguments::None => false,
+                                syn::PathArguments::AngleBracketed(
+                                    syn::AngleBracketedGenericArguments {
+                                        args, ..
+                                    },
+                                ) => args.iter().any(|generic| match generic {
+                                    syn::GenericArgument::Type(ty)
+                                    | syn::GenericArgument::AssocType(
+                                        syn::AssocType { ty, .. },
+                                    ) => self.contains_type_variable(ty),
+
+                                    syn::GenericArgument::Lifetime(_)
+                                    | syn::GenericArgument::Const(_)
+                                    | syn::GenericArgument::AssocConst(_)
+                                    | syn::GenericArgument::Constraint(_) => false,
+                                    _ => false,
+                                }),
+                                syn::PathArguments::Parenthesized(
+                                    syn::ParenthesizedGenericArguments {
+                                        inputs,
+                                        output,
+                                        ..
+                                    },
+                                ) => {
+                                    inputs
+                                        .iter()
+                                        .any(|ty| self.contains_type_variable(ty))
+                                        || match output {
+                                            syn::ReturnType::Default => false,
+                                            syn::ReturnType::Type(_, ty) => {
+                                                self.contains_type_variable(ty)
+                                            }
+                                        }
+                                }
+                            }
+                    })
+                }
+            }
+
+            syn::Type::Array(syn::TypeArray { elem, .. })
+            | syn::Type::Group(syn::TypeGroup { elem, .. })
+            | syn::Type::Paren(syn::TypeParen { elem, .. })
+            | syn::Type::Ptr(syn::TypePtr { elem, .. })
+            | syn::Type::Reference(syn::TypeReference { elem, .. })
+            | syn::Type::Slice(syn::TypeSlice { elem, .. }) => {
+                self.contains_type_variable(elem)
+            }
+
+            syn::Type::BareFn(syn::TypeBareFn { inputs, output, .. }) => {
+                inputs
+                    .iter()
+                    .any(|arg| self.contains_type_variable(&arg.ty))
+                    || match output {
+                        syn::ReturnType::Default => false,
+                        syn::ReturnType::Type(_, ty) => self.contains_type_variable(ty),
+                    }
+            }
+            syn::Type::Tuple(syn::TypeTuple { elems, .. }) => {
+                elems.iter().any(|ty| self.contains_type_variable(ty))
+            }
+
+            syn::Type::ImplTrait(_) => false,
+            syn::Type::Infer(_) => false,
+            syn::Type::Macro(_) => false,
+            syn::Type::Never(_) => false,
+            syn::Type::TraitObject(_) => false,
+            syn::Type::Verbatim(_) => false,
+            _ => false,
         }
     }
 }

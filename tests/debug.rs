@@ -1932,3 +1932,70 @@ mod complex_enum_syntax {
         assert_eq!(format!("{:?}", Enum::A), "A");
     }
 }
+
+// See: https://github.com/JelteF/derive_more/issues/363
+mod type_variables {
+    #[cfg(not(feature = "std"))]
+    use alloc::{boxed::Box, format, vec, vec::Vec};
+
+    use derive_more::Debug;
+
+    #[derive(Debug)]
+    struct ItemStruct {
+        next: Option<Box<ItemStruct>>,
+    }
+
+    #[derive(Debug)]
+    struct ItemTuple(Option<Box<ItemTuple>>);
+
+    #[derive(Debug)]
+    #[debug("Item({_0:?})")]
+    struct ItemTupleContainerFmt(Option<Box<ItemTupleContainerFmt>>);
+
+    #[derive(Debug)]
+    enum ItemEnum {
+        Node { children: Vec<ItemEnum>, inner: i32 },
+        Leaf { inner: i32 },
+    }
+
+    #[test]
+    fn assert() {
+        assert_eq!(
+            format!(
+                "{:?}",
+                ItemStruct {
+                    next: Some(Box::new(ItemStruct { next: None }))
+                }
+            ),
+            "ItemStruct { next: Some(ItemStruct { next: None }) }"
+        );
+
+        assert_eq!(
+            format!("{:?}", ItemTuple(Some(Box::new(ItemTuple(None)))),),
+            "ItemTuple(Some(ItemTuple(None)))"
+        );
+
+        assert_eq!(
+            format!(
+                "{:?}",
+                ItemTupleContainerFmt(Some(Box::new(ItemTupleContainerFmt(None)))),
+            ),
+            "Item(Some(Item(None)))"
+        );
+
+        let item = ItemEnum::Node {
+            children: vec![
+                ItemEnum::Node {
+                    children: vec![],
+                    inner: 0,
+                },
+                ItemEnum::Leaf { inner: 1 },
+            ],
+            inner: 2,
+        };
+        assert_eq!(
+            format!("{item:?}"),
+            "Node { children: [Node { children: [], inner: 0 }, Leaf { inner: 1 }], inner: 2 }",
+        )
+    }
+}
