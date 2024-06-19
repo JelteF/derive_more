@@ -9,7 +9,7 @@ Derive `TryFrom` allows you to convert enum discriminants into their correspondi
 
 By default, a `TryFrom<isize>` is generated, matching the [type of the discriminant](https://doc.rust-lang.org/reference/items/enumerations.html#discriminants).
 The type can be changed with a `#[repr(u/i*)]` attribute, e.g., `#[repr(u8)]` or `#[repr(i32)]`.
-Only field-less variants can be constructed from their variant, therefor the `TryFrom` implementation will return an error for a discriminant representing a variant with fields.
+Only field-less variants can be constructed from their variant, therefore the `TryFrom` implementation will return an error for a discriminant representing a variant with fields.
 
 ```rust
 # #[cfg(msrv)] fn main() {} // TODO: Remove once MSRV bumps 1.66 or higher.

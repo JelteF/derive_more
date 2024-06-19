@@ -43,7 +43,7 @@ mod try_from {
     }
 
     #[cfg(feature = "std")]
-    // `T` should only be an integer type and therefor be debug
+    // `T` should only be an integer type and therefore be debug
     impl<T: fmt::Debug> std::error::Error for TryFromReprError<T> {}
 }
 
