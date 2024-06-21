@@ -1,11 +1,11 @@
 # What `#[derive(Add)]` generates
 
-The derived `Add` implementation will allow two structs from the same type to be
-added together. This done by adding their respective fields together and
+The derived `Add` implementation will allow two structs of the same type to be
+added together. This is done by adding their respective fields together and
 creating a new struct with those values.
 For enums each variant can be added in a similar way to another instance of that
-same variant. There's one big difference however, it returns a
-`Result<EnumType>`, because an error is returned when to different variants are
+same variant. There's one big difference however: it returns a
+`Result<EnumType>`, because an error is returned when two different variants are
 added together.
 
 
