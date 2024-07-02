@@ -248,7 +248,10 @@ fn main() {
 
     assert_eq!(MyInt(50), MyInt(5) * 10);
     assert_eq!(DoubleUInt(5, 6) * 10, DoubleUInt(50, 60));
-    // assert_eq!(DoubleUIntStruct{x:5, y:6} * 10, DoubleUIntStruct{x:50, y:60});
+    assert_eq!(
+        DoubleUIntStruct { x: 5, y: 6 } * 10,
+        DoubleUIntStruct { x: 50, y: 60 }
+    );
 
     let mut myint = MyInt(5);
     assert_eq!(5, *myint);
