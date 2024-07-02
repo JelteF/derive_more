@@ -26,6 +26,12 @@ The variables available in the arguments is `self` and each member of the varian
 with members of tuple structs being named with a leading underscore and their index,
 i.e. `_0`, `_1`, `_2`, etc.
 
+For enums you can also specify a shared format on the enum itself instead of
+the variant. This format is used for each of the variants, and can be
+customized per variant by including the special `{_variant}` placeholder in
+this shared format, which is then replaced by the format string that's provided
+on the variant.
+
 
 ### Other formatting traits
 
@@ -175,6 +181,7 @@ struct Point2D {
 }
 
 #[derive(Display)]
+#[display("Enum E: {_variant}")]
 enum E {
     Uint(u32),
     #[display("I am B {:b}", i)]
@@ -183,6 +190,13 @@ enum E {
     },
     #[display("I am C {}", _0.display())]
     Path(PathBuf),
+}
+
+#[derive(Display)]
+#[display("Enum E2: {_0:?}")]
+enum E2 {
+    Uint(u32),
+    String(&'static str, &'static str),
 }
 
 #[derive(Display)]
@@ -223,9 +237,11 @@ impl PositiveOrNegative {
 
 assert_eq!(MyInt(-2).to_string(), "-2");
 assert_eq!(Point2D { x: 3, y: 4 }.to_string(), "(3, 4)");
-assert_eq!(E::Uint(2).to_string(), "2");
-assert_eq!(E::Binary { i: -2 }.to_string(), "I am B 11111110");
-assert_eq!(E::Path("abc".into()).to_string(), "I am C abc");
+assert_eq!(E::Uint(2).to_string(), "Enum E: 2");
+assert_eq!(E::Binary { i: -2 }.to_string(), "Enum E: I am B 11111110");
+assert_eq!(E::Path("abc".into()).to_string(), "Enum E: I am C abc");
+assert_eq!(E2::Uint(2).to_string(), "Enum E2: 2");
+assert_eq!(E2::String("shown", "ignored").to_string(), "Enum E2: \"shown\"");
 assert_eq!(U { i: 2 }.to_string(), "Hello there!");
 assert_eq!(format!("{:o}", S), "7");
 assert_eq!(format!("{:X}", UH), "UpperHex");

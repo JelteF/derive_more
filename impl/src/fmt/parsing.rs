@@ -9,7 +9,7 @@ use unicode_xid::UnicodeXID as XID;
 /// Output of the [`format_string`] parser.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct FormatString<'a> {
-    pub(crate) formats: Vec<Format<'a>>,
+    pub(crate) elements: Vec<MaybeFormat<'a>>,
 }
 
 /// Output of the [`format`] parser.
@@ -150,7 +150,11 @@ type Fill = char;
 type Width<'a> = Count<'a>;
 
 /// Output of the [`maybe_format`] parser.
-type MaybeFormat<'a> = Option<Format<'a>>;
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum MaybeFormat<'a> {
+    Format { raw: &'a str, format: Format<'a> },
+    Text(&'a str),
+}
 
 /// Output of the [`identifier`] parser.
 type Identifier<'a> = &'a str;
@@ -188,23 +192,32 @@ type LeftToParse<'a> = &'a str;
 ///   parsers).
 ///
 /// [0]: std::fmt#syntax
-pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
-    let (mut input, _) = optional_result(text)(input);
-
-    let formats = iter::repeat(())
+pub(crate) fn format_string(mut input: &str) -> Option<FormatString<'_>> {
+    let elements = iter::repeat(())
         .scan(&mut input, |input, _| {
-            let (curr, format) =
-                alt(&mut [&mut maybe_format, &mut map(text, |(i, _)| (i, None))])(
-                    input,
-                )?;
+            let (curr, format) = alt(&mut [
+                &mut maybe_format,
+                &mut map(text, |(i, x)| (i, MaybeFormat::Text(x))),
+            ])(input)?;
             **input = curr;
             Some(format)
         })
-        .flatten()
         .collect();
-
     // Should consume all tokens for a successful parse.
-    input.is_empty().then_some(FormatString { formats })
+    input.is_empty().then_some(FormatString { elements })
+}
+
+// Same as `format_string` but returns only the `Format` parts of the string.
+pub(crate) fn format_string_formats(input: &str) -> Option<Vec<Format>> {
+    format_string(input).map(|f| {
+        f.elements
+            .into_iter()
+            .filter_map(|e| match e {
+                MaybeFormat::Format { format, .. } => Some(format),
+                _ => None,
+            })
+            .collect()
+    })
 }
 
 /// Parses a `maybe_format` as defined in the [grammar spec][0].
@@ -227,9 +240,12 @@ pub(crate) fn format_string(input: &str) -> Option<FormatString<'_>> {
 /// [0]: std::fmt#syntax
 fn maybe_format(input: &str) -> Option<(LeftToParse<'_>, MaybeFormat<'_>)> {
     alt(&mut [
-        &mut map(str("{{"), |i| (i, None)),
-        &mut map(str("}}"), |i| (i, None)),
-        &mut map(format, |(i, format)| (i, Some(format))),
+        &mut map(str("{{"), |i| (i, MaybeFormat::Text("{{"))),
+        &mut map(str("}}"), |i| (i, MaybeFormat::Text("}}"))),
+        &mut map(format, |(i, format)| {
+            let raw = &input[..input.len() - i.len()];
+            (i, MaybeFormat::Format { raw, format })
+        }),
     ])(input)
 }
 
@@ -720,592 +736,569 @@ mod tests {
 
     #[test]
     fn text() {
-        assert_eq!(format_string(""), Some(FormatString { formats: vec![] }));
-        assert_eq!(
-            format_string("test"),
-            Some(FormatString { formats: vec![] }),
-        );
-        assert_eq!(
-            format_string("Минск"),
-            Some(FormatString { formats: vec![] }),
-        );
-        assert_eq!(format_string("🦀"), Some(FormatString { formats: vec![] }));
+        assert_eq!(format_string_formats(""), Some(vec![]));
+        assert_eq!(format_string_formats("test"), Some(vec![]),);
+        assert_eq!(format_string_formats("Минск"), Some(vec![]),);
+        assert_eq!(format_string_formats("🦀"), Some(vec![]));
     }
 
     #[test]
     fn argument() {
         assert_eq!(
-            format_string("{}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: None,
-                }],
-            }),
+            format_string_formats("{}"),
+            Some(vec![Format {
+                arg: None,
+                spec: None,
+            }],),
         );
         assert_eq!(
-            format_string("{0}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: Some(Argument::Integer(0)),
-                    spec: None,
-                }],
-            }),
+            format_string_formats("{0}"),
+            Some(vec![Format {
+                arg: Some(Argument::Integer(0)),
+                spec: None,
+            }],),
         );
         assert_eq!(
-            format_string("{par}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: Some(Argument::Identifier("par")),
-                    spec: None,
-                }],
-            }),
+            format_string_formats("{par}"),
+            Some(vec![Format {
+                arg: Some(Argument::Identifier("par")),
+                spec: None,
+            }],),
         );
         assert_eq!(
-            format_string("{Минск}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: Some(Argument::Identifier("Минск")),
-                    spec: None,
-                }],
-            }),
+            format_string_formats("{Минск}"),
+            Some(vec![Format {
+                arg: Some(Argument::Identifier("Минск")),
+                spec: None,
+            }],),
         );
     }
 
     #[test]
     fn spec() {
         assert_eq!(
-            format_string("{:}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:^}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((None, Align::Center)),
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:^}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((None, Align::Center)),
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:-<}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('-'), Align::Left)),
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:-<}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('-'), Align::Left)),
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{: <}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some(' '), Align::Left)),
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{: <}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some(' '), Align::Left)),
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:^<}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('^'), Align::Left)),
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:^<}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('^'), Align::Left)),
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:+}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: Some(Sign::Plus),
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:+}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: Some(Sign::Plus),
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:^<-}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('^'), Align::Left)),
-                        sign: Some(Sign::Minus),
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:^<-}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('^'), Align::Left)),
+                    sign: Some(Sign::Minus),
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:#}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: Some(Alternate),
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:#}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: Some(Alternate),
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:+#}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: Some(Sign::Plus),
-                        alternate: Some(Alternate),
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:+#}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: Some(Sign::Plus),
+                    alternate: Some(Alternate),
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:-<#}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('-'), Align::Left)),
-                        sign: None,
-                        alternate: Some(Alternate),
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:-<#}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('-'), Align::Left)),
+                    sign: None,
+                    alternate: Some(Alternate),
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:^<-#}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('^'), Align::Left)),
-                        sign: Some(Sign::Minus),
-                        alternate: Some(Alternate),
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:^<-#}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('^'), Align::Left)),
+                    sign: Some(Sign::Minus),
+                    alternate: Some(Alternate),
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:0}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: Some(ZeroPadding),
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:0}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: Some(ZeroPadding),
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:#0}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: Some(Alternate),
-                        zero_padding: Some(ZeroPadding),
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:#0}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: Some(Alternate),
+                    zero_padding: Some(ZeroPadding),
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:-0}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: Some(Sign::Minus),
-                        alternate: None,
-                        zero_padding: Some(ZeroPadding),
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:-0}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: Some(Sign::Minus),
+                    alternate: None,
+                    zero_padding: Some(ZeroPadding),
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:^<0}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('^'), Align::Left)),
-                        sign: None,
-                        alternate: None,
-                        zero_padding: Some(ZeroPadding),
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:^<0}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('^'), Align::Left)),
+                    sign: None,
+                    alternate: None,
+                    zero_padding: Some(ZeroPadding),
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:^<+#0}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('^'), Align::Left)),
-                        sign: Some(Sign::Plus),
-                        alternate: Some(Alternate),
-                        zero_padding: Some(ZeroPadding),
-                        width: None,
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:^<+#0}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('^'), Align::Left)),
+                    sign: Some(Sign::Plus),
+                    alternate: Some(Alternate),
+                    zero_padding: Some(ZeroPadding),
+                    width: None,
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:1}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: Some(Count::Integer(1)),
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:1}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: Some(Count::Integer(1)),
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:1$}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: Some(Count::Parameter(Argument::Integer(1))),
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:1$}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: Some(Count::Parameter(Argument::Integer(1))),
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:par$}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: Some(Count::Parameter(Argument::Identifier("par"))),
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:par$}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: Some(Count::Parameter(Argument::Identifier("par"))),
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:-^-#0Минск$}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some('-'), Align::Center)),
-                        sign: Some(Sign::Minus),
-                        alternate: Some(Alternate),
-                        zero_padding: Some(ZeroPadding),
-                        width: Some(Count::Parameter(Argument::Identifier("Минск"))),
-                        precision: None,
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:-^-#0Минск$}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some('-'), Align::Center)),
+                    sign: Some(Sign::Minus),
+                    alternate: Some(Alternate),
+                    zero_padding: Some(ZeroPadding),
+                    width: Some(Count::Parameter(Argument::Identifier("Минск"))),
+                    precision: None,
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:.*}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: Some(Precision::Star),
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:.*}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: Some(Precision::Star),
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:.0}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: Some(Precision::Count(Count::Integer(0))),
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:.0}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: Some(Precision::Count(Count::Integer(0))),
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:.0$}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Integer(0),
-                        ))),
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:.0$}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: Some(Precision::Count(Count::Parameter(
+                        Argument::Integer(0),
+                    ))),
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:.par$}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Identifier("par"),
-                        ))),
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{:.par$}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: Some(Precision::Count(Count::Parameter(
+                        Argument::Identifier("par"),
+                    ))),
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{: >+#2$.par$}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some(' '), Align::Right)),
-                        sign: Some(Sign::Plus),
-                        alternate: Some(Alternate),
-                        zero_padding: None,
-                        width: Some(Count::Parameter(Argument::Integer(2))),
-                        precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Identifier("par"),
-                        ))),
-                        ty: Type::Display,
-                    }),
-                }],
-            }),
+            format_string_formats("{: >+#2$.par$}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some(' '), Align::Right)),
+                    sign: Some(Sign::Plus),
+                    alternate: Some(Alternate),
+                    zero_padding: None,
+                    width: Some(Count::Parameter(Argument::Integer(2))),
+                    precision: Some(Precision::Count(Count::Parameter(
+                        Argument::Identifier("par"),
+                    ))),
+                    ty: Type::Display,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:x?}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::LowerDebug,
-                    }),
-                }],
-            }),
+            format_string_formats("{:x?}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::LowerDebug,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{:E}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: None,
-                        sign: None,
-                        alternate: None,
-                        zero_padding: None,
-                        width: None,
-                        precision: None,
-                        ty: Type::UpperExp,
-                    }),
-                }],
-            }),
+            format_string_formats("{:E}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: None,
+                    sign: None,
+                    alternate: None,
+                    zero_padding: None,
+                    width: None,
+                    precision: None,
+                    ty: Type::UpperExp,
+                }),
+            }],),
         );
         assert_eq!(
-            format_string("{: >+#par$.par$X?}"),
-            Some(FormatString {
-                formats: vec![Format {
-                    arg: None,
-                    spec: Some(FormatSpec {
-                        align: Some((Some(' '), Align::Right)),
-                        sign: Some(Sign::Plus),
-                        alternate: Some(Alternate),
-                        zero_padding: None,
-                        width: Some(Count::Parameter(Argument::Identifier("par"))),
-                        precision: Some(Precision::Count(Count::Parameter(
-                            Argument::Identifier("par"),
-                        ))),
-                        ty: Type::UpperDebug,
-                    }),
-                }],
-            }),
+            format_string_formats("{: >+#par$.par$X?}"),
+            Some(vec![Format {
+                arg: None,
+                spec: Some(FormatSpec {
+                    align: Some((Some(' '), Align::Right)),
+                    sign: Some(Sign::Plus),
+                    alternate: Some(Alternate),
+                    zero_padding: None,
+                    width: Some(Count::Parameter(Argument::Identifier("par"))),
+                    precision: Some(Precision::Count(Count::Parameter(
+                        Argument::Identifier("par"),
+                    ))),
+                    ty: Type::UpperDebug,
+                }),
+            }],),
         );
     }
 
     #[test]
-    fn full() {
+    fn full_format() {
+        assert_eq!(
+            format_string_formats("prefix{{{0:#?}postfix{par:-^par$.a$}}}"),
+            Some(vec![
+                Format {
+                    arg: Some(Argument::Integer(0)),
+                    spec: Some(FormatSpec {
+                        align: None,
+                        sign: None,
+                        alternate: Some(Alternate),
+                        zero_padding: None,
+                        width: None,
+                        precision: None,
+                        ty: Type::Debug,
+                    }),
+                },
+                Format {
+                    arg: Some(Argument::Identifier("par")),
+                    spec: Some(FormatSpec {
+                        align: Some((Some('-'), Align::Center)),
+                        sign: None,
+                        alternate: None,
+                        zero_padding: None,
+                        width: Some(Count::Parameter(Argument::Identifier("par"))),
+                        precision: Some(Precision::Count(Count::Parameter(
+                            Argument::Identifier("a"),
+                        ))),
+                        ty: Type::Display,
+                    }),
+                },
+            ],),
+        );
+    }
+
+    #[test]
+    fn full_parts() {
         assert_eq!(
             format_string("prefix{{{0:#?}postfix{par:-^par$.a$}}}"),
             Some(FormatString {
-                formats: vec![
-                    Format {
-                        arg: Some(Argument::Integer(0)),
-                        spec: Some(FormatSpec {
-                            align: None,
-                            sign: None,
-                            alternate: Some(Alternate),
-                            zero_padding: None,
-                            width: None,
-                            precision: None,
-                            ty: Type::Debug,
-                        }),
+                elements: vec![
+                    MaybeFormat::Text("prefix"),
+                    MaybeFormat::Text("{{"),
+                    MaybeFormat::Format {
+                        raw: "{0:#?}",
+                        format: Format {
+                            arg: Some(Argument::Integer(0)),
+                            spec: Some(FormatSpec {
+                                align: None,
+                                sign: None,
+                                alternate: Some(Alternate),
+                                zero_padding: None,
+                                width: None,
+                                precision: None,
+                                ty: Type::Debug,
+                            }),
+                        }
                     },
-                    Format {
-                        arg: Some(Argument::Identifier("par")),
-                        spec: Some(FormatSpec {
-                            align: Some((Some('-'), Align::Center)),
-                            sign: None,
-                            alternate: None,
-                            zero_padding: None,
-                            width: Some(Count::Parameter(Argument::Identifier("par"))),
-                            precision: Some(Precision::Count(Count::Parameter(
-                                Argument::Identifier("a"),
-                            ))),
-                            ty: Type::Display,
-                        }),
+                    MaybeFormat::Text("postfix"),
+                    MaybeFormat::Format {
+                        raw: "{par:-^par$.a$}",
+                        format: Format {
+                            arg: Some(Argument::Identifier("par")),
+                            spec: Some(FormatSpec {
+                                align: Some((Some('-'), Align::Center)),
+                                sign: None,
+                                alternate: None,
+                                zero_padding: None,
+                                width: Some(Count::Parameter(Argument::Identifier(
+                                    "par"
+                                ))),
+                                precision: Some(Precision::Count(Count::Parameter(
+                                    Argument::Identifier("a"),
+                                ))),
+                                ty: Type::Display,
+                            }),
+                        }
                     },
-                ],
+                    MaybeFormat::Text("}}"),
+                ]
             }),
         );
     }
 
     #[test]
     fn error() {
-        assert_eq!(format_string("{"), None);
-        assert_eq!(format_string("}"), None);
-        assert_eq!(format_string("{{}"), None);
-        assert_eq!(format_string("{:x?"), None);
-        assert_eq!(format_string("{:.}"), None);
-        assert_eq!(format_string("{:q}"), None);
-        assert_eq!(format_string("{:par}"), None);
-        assert_eq!(format_string("{⚙️}"), None);
+        assert_eq!(format_string_formats("{"), None);
+        assert_eq!(format_string_formats("}"), None);
+        assert_eq!(format_string_formats("{{}"), None);
+        assert_eq!(format_string_formats("{:x?"), None);
+        assert_eq!(format_string_formats("{:.}"), None);
+        assert_eq!(format_string_formats("{:q}"), None);
+        assert_eq!(format_string_formats("{:par}"), None);
+        assert_eq!(format_string_formats("{⚙️}"), None);
     }
 }

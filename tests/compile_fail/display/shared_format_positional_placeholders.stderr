@@ -1,0 +1,17 @@
+error: shared format string cannot contain positional placeholders, use named placeholders instead
+ --> tests/compile_fail/display/shared_format_positional_placeholders.rs:2:11
+  |
+2 | #[display("Stuff({})")]
+  |           ^^^^^^^^^^^
+
+error: shared format string cannot contain positional placeholders, use named placeholders instead
+ --> tests/compile_fail/display/shared_format_positional_placeholders.rs:8:11
+  |
+8 | #[display("Stuff({0})")]
+  |           ^^^^^^^^^^^^
+
+error: shared format string does not support positional placeholders, use named placeholders instead
+  --> tests/compile_fail/display/shared_format_positional_placeholders.rs:14:22
+   |
+14 | #[display("Stuff()", _0, _2)]
+   |                      ^^

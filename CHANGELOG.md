@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking changes
 
-- The minimum supported Rust version (MSRV) is now Rust 1.65.
+- The minimum supported Rust version (MSRV) is now Rust 1.70.
 - Add the `std` feature which should be disabled in `no_std` environments.
 - All Cargo features, except `std`, are now disabled by default. The `full`
   feature can be used to get the old behavior of supporting all possible
@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   [#294](https://github.com/JelteF/derive_more/pull/294))
 - The `as_mut` feature is removed, and the `AsMut` derive is now gated by the
   `as_ref` feature. ([#295](https://github.com/JelteF/derive_more/pull/295))
+- A top level `#[display("...")]` attribute on an enum now requires the usage
+  of `{_variant}` to include the variant instead of including it at `{}`. ([#377](https://github.com/JelteF/derive_more/pull/377))
 
 ### Added
 

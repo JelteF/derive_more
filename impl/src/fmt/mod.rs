@@ -372,9 +372,9 @@ impl Placeholder {
     /// Parses [`Placeholder`]s from the provided formatting string.
     fn parse_fmt_string(s: &str) -> Vec<Self> {
         let mut n = 0;
-        parsing::format_string(s)
+        parsing::format_string_formats(s)
             .into_iter()
-            .flat_map(|f| f.formats)
+            .flatten()
             .map(|format| {
                 let (maybe_arg, ty) = (
                     format.arg,

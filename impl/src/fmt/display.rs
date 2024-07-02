@@ -9,7 +9,7 @@ use syn::{parse_quote, spanned::Spanned as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
-use super::{trait_name_to_attribute_name, ContainerAttributes};
+use super::{parsing, trait_name_to_attribute_name, ContainerAttributes, FmtAttribute};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -80,6 +80,7 @@ fn expand_struct(
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
+        shared_format: None,
         attrs,
         fields: &s.fields,
         trait_ident,
@@ -110,12 +111,8 @@ fn expand_struct(
 /// Expands a [`fmt`]-like derive macro for the provided enum.
 fn expand_enum(
     e: &syn::DataEnum,
-    (attrs, _, trait_ident, attr_name): ExpansionCtx<'_>,
+    (shared_attrs, _, trait_ident, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    if attrs.fmt.is_some() {
-        todo!("https://github.com/JelteF/derive_more/issues/142");
-    }
-
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
@@ -138,6 +135,7 @@ fn expand_enum(
             }
 
             let v = Expansion {
+                shared_format: shared_attrs.fmt.as_ref(),
                 attrs: &attrs,
                 fields: &variant.fields,
                 trait_ident,
@@ -198,6 +196,9 @@ fn expand_union(
 /// [`Display::fmt()`]: fmt::Display::fmt()
 #[derive(Debug)]
 struct Expansion<'a> {
+    /// Format shared between all variants of an enum.
+    shared_format: Option<&'a FmtAttribute>,
+
     /// Derive macro [`ContainerAttributes`].
     attrs: &'a ContainerAttributes,
 
@@ -226,6 +227,81 @@ impl<'a> Expansion<'a> {
     /// [`Display::fmt()`]: fmt::Display::fmt()
     /// [`FmtAttribute`]: super::FmtAttribute
     fn generate_body(&self) -> syn::Result<TokenStream> {
+        if self.shared_format.is_none() {
+            return self.generate_body_impl();
+        }
+        let shared_format = self.shared_format.as_ref().unwrap();
+        if !shared_format.args.is_empty() {
+            return Err(syn::Error::new(
+                shared_format.args.span(),
+                "shared format string does not support positional placeholders, use named placeholders instead",
+            ));
+        }
+        let mut tokens = TokenStream::new();
+        let mut maybe_body = None;
+        let mut current_format = String::new();
+        let fmt_string = shared_format.lit.value();
+        let maybe_format_string = parsing::format_string(&fmt_string);
+        let Some(format_string) = maybe_format_string else {
+            // If we could not parse the format string, we just use the original string so
+            // we get a nice error message. We also panic as a safety precaution in case our
+            // parsing fails to parse something that write! allows.
+            return Ok(quote! {
+                derive_more::core::write!(__derive_more_f, #shared_format);
+                unreachable!("derive_more could not parse shared format string, but rust could: {:?}", #fmt_string);
+            });
+        };
+        for part in format_string.elements {
+            match part {
+                parsing::MaybeFormat::Text(s) => {
+                    current_format.push_str(s);
+                }
+                parsing::MaybeFormat::Format { raw, format } => {
+                    if format.arg == Some(parsing::Argument::Identifier("_variant")) {
+                        if format.spec.is_some() {
+                            return Err(syn::Error::new(
+                                shared_format.span(),
+                                "shared format _variant placeholder cannot contain format specifiers",
+                            ));
+                        }
+                        if !current_format.is_empty() {
+                            tokens.extend(quote! { derive_more::core::write!(__derive_more_f, #current_format)?; });
+                            current_format.clear();
+                        }
+                        if maybe_body.is_none() {
+                            maybe_body = Some(self.generate_body_impl()?);
+                        }
+                        let body = maybe_body.as_ref().unwrap();
+                        tokens.extend(quote! { #body?; });
+                    } else {
+                        if format.arg.is_none()
+                            || matches!(format.arg, Some(parsing::Argument::Integer(_)))
+                        {
+                            return Err(syn::Error::new(
+                                shared_format.span(),
+                                "shared format string cannot contain positional placeholders, use named placeholders instead",
+                            ));
+                        }
+                        current_format.push_str(raw);
+                    }
+                }
+            };
+        }
+        if !current_format.is_empty() {
+            tokens.extend(
+                quote! { derive_more::core::write!(__derive_more_f, #current_format) },
+            )
+        } else {
+            tokens.extend(quote! { Ok(()) });
+        }
+        Ok(tokens)
+    }
+
+    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant
+    /// without considering `shared_format`.
+    ///
+    /// [`Display::fmt()`]: fmt::Display::fmt()
+    fn generate_body_impl(&self) -> syn::Result<TokenStream> {
         match &self.attrs.fmt {
             Some(fmt) => {
                 Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
@@ -267,27 +343,55 @@ impl<'a> Expansion<'a> {
 
     /// Generates trait bounds for a struct or an enum variant.
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
+        let mut bounds: Vec<syn::WherePredicate> =
+            if let Some(shared_format) = self.shared_format {
+                let shared_bounds = shared_format
+                    .bounded_types(self.fields)
+                    .map(|(ty, trait_name)| {
+                        let trait_ident = format_ident!("{trait_name}");
+
+                        parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
+                    })
+                    .chain(self.attrs.bounds.0.clone())
+                    .collect();
+                // If it doesn't contain _variant we don't need to add any other bounds
+                if !parsing::format_string_formats(&shared_format.lit.value())
+                    .into_iter()
+                    .flatten()
+                    .any(|f| f.arg == Some(parsing::Argument::Identifier("_variant")))
+                {
+                    return shared_bounds;
+                }
+                shared_bounds
+            } else {
+                Vec::new()
+            };
+
         let Some(fmt) = &self.attrs.fmt else {
-            return self
-                .fields
-                .iter()
-                .next()
-                .map(|f| {
-                    let ty = &f.ty;
-                    let trait_ident = &self.trait_ident;
-                    vec![parse_quote! { #ty: derive_more::core::fmt::#trait_ident }]
-                })
-                .unwrap_or_default();
+            bounds.extend(
+                self.fields
+                    .iter()
+                    .next()
+                    .map(|f| {
+                        let ty = &f.ty;
+                        let trait_ident = &self.trait_ident;
+                        vec![parse_quote! { #ty: derive_more::core::fmt::#trait_ident }]
+                    })
+                    .unwrap_or_default(),
+            );
+            return bounds;
         };
 
-        fmt.bounded_types(self.fields)
-            .map(|(ty, trait_name)| {
-                let trait_ident = format_ident!("{trait_name}");
+        bounds.extend(
+            fmt.bounded_types(self.fields)
+                .map(|(ty, trait_name)| {
+                    let trait_ident = format_ident!("{trait_name}");
 
-                parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
-            })
-            .chain(self.attrs.bounds.0.clone())
-            .collect()
+                    parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
+                })
+                .chain(self.attrs.bounds.0.clone()),
+        );
+        bounds
     }
 }
 

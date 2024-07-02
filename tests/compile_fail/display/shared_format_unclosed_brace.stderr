@@ -1,0 +1,9 @@
+error: invalid format string: expected `'}'`, found `')'`
+ --> tests/compile_fail/display/shared_format_unclosed_brace.rs:2:19
+  |
+2 | #[display("Stuff({)")]
+  |                  -^ expected `'}'` in format string
+  |                  |
+  |                  because of this opening brace
+  |
+  = note: if you intended to print `{`, you can escape it using `{{`
