@@ -113,14 +113,16 @@ impl Parse for FmtAttribute {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         Self::check_legacy_fmt(input)?;
 
-        Ok(Self {
+        let mut parsed = Self {
             lit: input.parse()?,
             comma: input
                 .peek(token::Comma)
                 .then(|| input.parse())
                 .transpose()?,
             args: input.parse_terminated(FmtArgument::parse, token::Comma)?,
-        })
+        };
+        parsed.args.pop_punct();
+        Ok(parsed)
     }
 }
 
@@ -271,6 +273,15 @@ impl FmtAttribute {
             .as_deref()
                 == Some(name)
         })
+    }
+
+    fn placeholder_names(&self) -> impl Iterator<Item = String> {
+        Placeholder::parse_fmt_string(&self.lit.value())
+            .into_iter()
+            .filter_map(|placeholder| match placeholder.arg {
+                Parameter::Named(name) => Some(name),
+                _ => None,
+            })
     }
 
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.

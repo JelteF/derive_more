@@ -262,6 +262,16 @@ mod structs {
                     field: &'a i32,
                 }
 
+                #[derive(Debug)]
+                #[debug("{_0:p}")]
+                struct TupleTransparent<'a>(&'a i32);
+
+                #[derive(Debug)]
+                #[debug("{field:p}")]
+                struct StructTransparent<'a> {
+                    field: &'a i32,
+                }
+
                 #[test]
                 fn assert() {
                     let a = 42;
@@ -272,6 +282,14 @@ mod structs {
                     assert_eq!(
                         format!("{:?}", Struct { field: &a }),
                         format!("Struct {{ field: {0:p}.{0:p} }}", &a),
+                    );
+                    assert_eq!(
+                        format!("{:?}", TupleTransparent(&a)),
+                        format!("{0:p}", &a),
+                    );
+                    assert_eq!(
+                        format!("{:?}", StructTransparent { field: &a }),
+                        format!("{0:p}", &a),
                     );
                 }
             }
@@ -564,11 +582,11 @@ mod structs {
                 use derive_more::Debug;
 
                 #[derive(Debug)]
-                #[debug("{_0:p} * {_1:p}", _0 = self.0)]
+                #[debug("{_0:p} * {_1:p}")]
                 struct Tuple<'a, 'b>(&'a u8, &'b bool);
 
                 #[derive(Debug)]
-                #[debug("{a:p} * {b:p}", a = self.a)]
+                #[debug("{a:p} * {b:p}")]
                 struct Struct<'a, 'b> {
                     a: &'a u8,
                     b: &'b bool,
@@ -1305,7 +1323,7 @@ mod generic {
 
     #[derive(Debug)]
     struct AliasedFieldNamedGenericStruct<T> {
-        #[debug("{field1}", field1 = field2)]
+        #[debug("{field3}", field3 = field2)]
         field1: T,
         field2: i32,
     }
@@ -1423,7 +1441,7 @@ mod generic {
     }
 
     #[derive(Debug)]
-    struct AliasedFieldUnnamedGenericStruct<T>(#[debug("{_0}", _0 = _1)] T, i32);
+    struct AliasedFieldUnnamedGenericStruct<T>(#[debug("{_2}", _2 = _1)] T, i32);
     #[test]
     fn aliased_field_unnamed_generic_struct() {
         assert_eq!(

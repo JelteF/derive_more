@@ -14,8 +14,26 @@ This derive macro is a clever superset of `Debug` from standard library. Additio
 You supply a format by placing an attribute on a struct or enum variant, or its particular field:
 `#[debug("...", args...)]`. The format is exactly like in [`format!()`] or any other [`format_args!()`]-based macros.
 
-The variables available in the arguments is `self` and each member of the struct or enum variant, with members of tuple
-structs being named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
+The variables available in the arguments is `self` and each member of the
+struct or enum variant, with members of tuple structs being named with a
+leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc. Due to
+ownership/lifetime limitations the member variables are all references to the
+fields, except when used directly in the format string. For most purposes this
+detail doesn't matter, but it is quite important when using `Pointer`
+formatting. If you don't use the `{field:p}` syntax, you have to dereference
+once to get the address of the field itself, instead of the address of the
+reference to the field:
+
+```rust
+#[derive(derive_more::Debug)]
+#[debug("{field:p} {:p}", *field)]
+struct RefInt<'a> {
+    field: &'a i32,
+}
+
+let a = &123;
+assert_eq!(format!("{:?}", RefInt{field: &a}), format!("{a:p} {:p}", a));
+```
 
 
 ### Generic data types

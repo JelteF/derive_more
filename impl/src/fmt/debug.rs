@@ -244,15 +244,49 @@ impl<'a> Expansion<'a> {
         Ok(())
     }
 
+    fn field_idents(&self) -> impl Iterator<Item = Ident> + '_ {
+        self.fields
+            .iter()
+            .enumerate()
+            .map(|(i, f)| f.ident.clone().unwrap_or_else(|| format_ident!("_{i}")))
+    }
+
+    fn field_params<'selff, 's>(
+        &'selff self,
+        fmt: &'a FmtAttribute,
+    ) -> impl Iterator<Item = TokenStream> + 's
+    where
+        'a: 's,
+        'selff: 's,
+    {
+        let used_arguments: Vec<String> = fmt.placeholder_names().collect();
+        self.field_idents().filter_map(move |var| {
+            if used_arguments.contains(&var.to_string()) {
+                Some(quote! { #var = *#var })
+            } else {
+                None
+            }
+        })
+    }
+
     /// Generates [`Debug::fmt()`] implementation for a struct or an enum variant.
     ///
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
             return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                quote! { derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+                let expr = if self.field_idents().any(|var| {
+                    fmt.placeholder_names()
+                        .any(|arg| arg == var.to_string().as_str())
+                }) {
+                    quote! { #expr }
+                } else {
+                    quote! { &(#expr) }
+                };
+                quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
             } else {
-                quote! { derive_more::core::write!(__derive_more_f, #fmt) }
+                let field_params = self.field_params(fmt);
+                quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#field_params),*) }
             });
         };
 
@@ -288,12 +322,14 @@ impl<'a> Expansion<'a> {
                             exhaustive = false;
                             Ok::<_, syn::Error>(out)
                         }
-                        Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
-                            derive_more::__private::DebugTuple::field(
-                                #out,
-                                &derive_more::core::format_args!(#fmt_attr),
+                        Some(FieldAttribute::Right(fmt_attr)) => {
+                            let field_params = self.field_params(&fmt_attr);
+                            Ok(quote! {
+                                derive_more::__private::DebugTuple::field(
+                                    #out,
+                                    &derive_more::core::format_args!(#fmt_attr, #(#field_params),*),
                             )
-                        }),
+                        })},
                         None => {
                             let ident = format_ident!("_{i}");
                             Ok(quote! {
@@ -330,13 +366,15 @@ impl<'a> Expansion<'a> {
                                 exhaustive = false;
                                 Ok::<_, syn::Error>(out)
                             }
-                            Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
+                            Some(FieldAttribute::Right(fmt_attr)) => {
+                            let field_params = self.field_params(&fmt_attr);
+                            Ok(quote! {
                                 derive_more::core::fmt::DebugStruct::field(
                                     #out,
                                     #field_str,
-                                    &derive_more::core::format_args!(#fmt_attr),
+                                    &derive_more::core::format_args!(#fmt_attr, #(#field_params),*),
                                 )
-                            }),
+                            })},
                             None => Ok(quote! {
                                 derive_more::core::fmt::DebugStruct::field(#out, #field_str, &#field_ident)
                             }),

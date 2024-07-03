@@ -447,7 +447,7 @@ mod structs {
                 }
 
                 #[derive(Display)]
-                #[display("{}", format_args!("{field:p}"))]
+                #[display("{}", format_args!("{field:p}", field = *field))]
                 struct StructPointer<'a> {
                     field: &'a i32,
                 }
@@ -566,15 +566,15 @@ mod structs {
 
             #[derive(Display)]
             #[display(
-                "{_0} {ident} {_1} {} {}",
-                _1, _0 + _1, ident = 123, _1 = _0,
+                "{_0} {ident} {_2} {} {}",
+                _1, _0 + _1, ident = 123, _2 = _0,
             )]
             struct Tuple(i32, i32);
 
             #[derive(Display)]
             #[display(
-                "{field1} {ident} {field2} {} {}",
-                field2, field1 + field2, ident = 123, field2 = field1,
+                "{field1} {ident} {field3} {} {}",
+                field2, field1 + field2, ident = 123, field3 = field1,
             )]
             struct Struct {
                 field1: i32,
@@ -1010,7 +1010,7 @@ mod enums {
 
                 #[derive(Display)]
                 enum Pointer<'a> {
-                    #[display("{:p}", _0)]
+                    #[display("{:p}", *_0)]
                     A(&'a i32),
                     #[display("{field:p}")]
                     B { field: &'a u8 },
@@ -1121,9 +1121,9 @@ mod enums {
 
                 #[derive(Display)]
                 enum Pointer<'a> {
-                    #[display("{}", format_args!("{:p}", _0))]
+                    #[display("{}", format_args!("{:p}", *_0))]
                     A(&'a i32),
-                    #[display("{}", format_args!("{field:p}"))]
+                    #[display("{}", format_args!("{field:p}", field = *field))]
                     B { field: &'a u8 },
                 }
 
@@ -1166,13 +1166,13 @@ mod enums {
             #[display("named")]
             StrNamed { field1: i32, field2: i32 },
             #[display(
-                "{_0} {ident} {_1} {} {}",
-                _1, _0 + _1, ident = 123, _1 = _0,
+                "{_0} {ident} {_2} {} {}",
+                _1, _0 + _1, ident = 123, _2 = _0,
             )]
             InterpolatedUnnamed(i32, i32),
             #[display(
-                "{field1} {ident} {field2} {} {}",
-                field2, field1 + field2, ident = 123, field2 = field1,
+                "{field1} {ident} {field3} {} {}",
+                field2, field1 + field2, ident = 123, field3 = field1,
             )]
             InterpolatedNamed { field1: i32, field2: i32 },
         }
@@ -1271,7 +1271,7 @@ mod enums {
 
                 #[derive(Display)]
                 enum Pointer<'a> {
-                    #[display("{:p}", _1)]
+                    #[display("{:p}", *_1)]
                     A(&'a f64, &'a f32),
                     #[display("{a:p}")]
                     B { a: &'a f64, b: &'a f32 },
@@ -1464,6 +1464,31 @@ mod enums {
                     assert_eq!(Enum::<u8>::A(1).to_string(), "Variant A 1");
                     assert_eq!(Enum::<u8>::B("abc").to_string(), "Variant B abc");
                     assert_eq!(Enum::<u8>::C(9).to_string(), "Variant C 9");
+                }
+            }
+
+            mod pointer {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("Pointer {_0:p} {_variant} {_0:p}")]
+                enum Pointer<'a> {
+                    #[display("A")]
+                    A(&'a f64),
+                    #[display("B")]
+                    B(&'a f32),
+                }
+                #[test]
+                fn assert() {
+                    let (a, b) = (8.3, 42.1);
+                    assert_eq!(
+                        format!("{}", Pointer::A(&a)),
+                        format!("Pointer {0:p} A {0:p}", &a),
+                    );
+                    assert_eq!(
+                        format!("{}", Pointer::B(&b)),
+                        format!("Pointer {0:p} B {0:p}", &b),
+                    );
                 }
             }
         }
@@ -2106,7 +2131,7 @@ mod generic {
             struct TupleUpperExp<T>(T);
 
             #[derive(Display)]
-            #[display("{:p}", _0)]
+            #[display("{_0:p}")]
             struct TuplePointer<T>(T);
 
             #[derive(Display)]
@@ -2154,7 +2179,7 @@ mod generic {
             }
 
             #[derive(Display)]
-            #[display("{:p}", field)]
+            #[display("{field:p}")]
             struct StructPointer<T> {
                 field: T,
             }
@@ -2217,7 +2242,7 @@ mod generic {
 
             #[derive(Display)]
             enum EnumPointer<A, B> {
-                #[display("{:p}", _0)]
+                #[display("{_0:p}")]
                 A(A),
                 #[display("{field:p}")]
                 B { field: B },
