@@ -42,7 +42,6 @@
     doc = include_str!("../README.md")
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(all(not(feature = "std"), feature = "error"), feature(error_in_core))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(any(not(docsrs), ci), deny(rustdoc::all))]
 #![forbid(non_ascii_idents, unsafe_code)]

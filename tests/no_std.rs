@@ -74,3 +74,58 @@ enum EnumWithUnit {
     SmallInt(i32),
     Unit,
 }
+
+#[rustversion::nightly]
+mod error {
+    use derive_more::{Display, Error, From};
+    #[derive(Default, Debug, Display, Error)]
+    struct Simple;
+
+    #[derive(Default, Debug, Display, Error)]
+    struct WithSource {
+        source: Simple,
+    }
+    #[derive(Default, Debug, Display, Error)]
+    struct WithExplicitSource {
+        #[error(source)]
+        explicit_source: Simple,
+    }
+
+    #[derive(Default, Debug, Display, Error)]
+    struct Tuple(Simple);
+
+    #[derive(Default, Debug, Display, Error)]
+    struct WithoutSource(#[error(not(source))] i32);
+    #[derive(Debug, Display, Error, From)]
+    enum CompoundError {
+        Simple,
+        WithSource {
+            source: Simple,
+        },
+        WithExplicitSource {
+            #[error(source)]
+            explicit_source: WithSource,
+        },
+        Tuple(WithExplicitSource),
+        WithoutSource(#[error(not(source))] Tuple),
+    }
+
+    #[test]
+    fn assert() {
+        assert!(Simple.source().is_none());
+        assert!(WithSource::default().source().is_some());
+        assert!(WithExplicitSource::default().source().is_some());
+        assert!(Tuple::default().source().is_some());
+        assert!(Tuple::default().source().is_some());
+        assert!(WithoutSource::default().source().is_none());
+        assert!(CompoundError::Simple.source().is_none());
+        assert!(CompoundError::from(Simple).source().is_some());
+        assert!(CompoundError::from(WithSource::default())
+            .source()
+            .is_some());
+        assert!(CompoundError::from(WithExplicitSource::default())
+            .source()
+            .is_some());
+        assert!(CompoundError::from(Tuple::default()).source().is_none());
+    }
+}
