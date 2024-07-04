@@ -71,6 +71,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#300](https://github.com/JelteF/derive_more/pull/300))
 - `#[inline]` attributes to `IsVariant` and `Debug` implementations.
   ([#334](https://github.com/JelteF/derive_more/pull/334)
+- Add `#[track_caller]` to `Add`, `Mul`, `AddAssign` and `MulAssign` derives
+  ([#378](https://github.com/JelteF/derive_more/pull/378)
+
 
 ### Changed
 
