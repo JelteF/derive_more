@@ -5,12 +5,7 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::{
-    boxed::Box,
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{format, string::ToString};
 
 use derive_more::{
     Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
