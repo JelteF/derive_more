@@ -85,8 +85,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   should prevent code style linters from attempting to modify the generated
   code.
 - Upgrade to `syn` 2.0.
-- The `Error` derive now works in nightly `no_std` environments when enabling
-  `#![feature(error_in_core)]`.
+- The `Error` derive now works in nightly `no_std` environments
 
 ### Fixed
 
