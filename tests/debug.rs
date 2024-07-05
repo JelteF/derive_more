@@ -1935,8 +1935,14 @@ mod complex_enum_syntax {
 
 // See: https://github.com/JelteF/derive_more/issues/363
 mod type_variables {
-    #[cfg(not(feature = "std"))]
-    use alloc::{boxed::Box, format, vec, vec::Vec};
+    mod our_alloc {
+        #[cfg(not(feature = "std"))]
+        pub use alloc::{boxed::Box, format, vec, vec::Vec};
+        #[cfg(feature = "std")]
+        pub use std::{boxed::Box, format, vec, vec::Vec};
+    }
+
+    use our_alloc::{format, vec, Box, Vec};
 
     use derive_more::Debug;
 
@@ -1956,6 +1962,69 @@ mod type_variables {
     enum ItemEnum {
         Node { children: Vec<ItemEnum>, inner: i32 },
         Leaf { inner: i32 },
+    }
+
+    #[derive(Debug)]
+    struct VecMeansDifferent<Vec> {
+        next: our_alloc::Vec<i32>,
+        real: Vec,
+    }
+
+    #[derive(Debug)]
+    struct Array<T> {
+        #[debug("{t}")]
+        t: [T; 10],
+    }
+
+    mod parens {
+        #![allow(unused_parens)] // test that type is found even in parentheses
+        use derive_more::Debug;
+        #[derive(Debug)]
+        struct Paren<T> {
+            t: (T),
+        }
+    }
+
+    #[derive(Debug)]
+    struct ParenthesizedGenericArgumentsInput<T> {
+        t: dyn Fn(T) -> i32,
+    }
+
+    #[derive(Debug)]
+    struct ParenthesizedGenericArgumentsOutput<T> {
+        t: dyn Fn(i32) -> T,
+    }
+
+    #[derive(Debug)]
+    struct Ptr<T> {
+        t: *const T,
+    }
+
+    #[derive(Debug)]
+    struct Reference<'a, T> {
+        t: &'a T,
+    }
+
+    #[derive(Debug)]
+    struct Slice<'a, T> {
+        t: &'a [T],
+    }
+
+    #[derive(Debug)]
+    struct BareFn<T> {
+        t: Box<fn(T) -> T>,
+    }
+
+    #[derive(Debug)]
+    struct Tuple<T> {
+        t: Box<(T, T)>,
+    }
+
+    trait MyTrait<T> {}
+
+    #[derive(Debug)]
+    struct TraitObject<T> {
+        t: Box<dyn MyTrait<T>>,
     }
 
     #[test]

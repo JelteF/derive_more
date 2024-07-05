@@ -24,22 +24,21 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
         .unwrap_or_default();
     let ident = &input.ident;
 
-    let type_variables = input
+    let type_params: Vec<_> = input
         .generics
         .params
         .iter()
         .filter_map(|param| match param {
-            syn::GenericParam::Lifetime(_) => None,
-            syn::GenericParam::Type(ty) => Some(&ty.ident),
-            syn::GenericParam::Const(_) => None,
+            syn::GenericParam::Type(param) => Some(&param.ident),
+            _ => None,
         })
         .collect();
 
     let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => {
-            expand_struct(attrs, ident, s, type_variables, &attr_name)
+            expand_struct(attrs, ident, s, &type_params, &attr_name)
         }
-        syn::Data::Enum(e) => expand_enum(attrs, e, type_variables, &attr_name),
+        syn::Data::Enum(e) => expand_enum(attrs, e, &type_params, &attr_name),
         syn::Data::Union(_) => {
             return Err(syn::Error::new(
                 input.span(),
@@ -77,13 +76,13 @@ fn expand_struct(
     attrs: ContainerAttributes,
     ident: &Ident,
     s: &syn::DataStruct,
-    type_variables: Vec<&syn::Ident>,
+    type_params: &[&syn::Ident],
     attr_name: &syn::Ident,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
         attr: &attrs,
         fields: &s.fields,
-        type_variables: &type_variables,
+        type_params,
         ident,
         attr_name,
     };
@@ -114,7 +113,7 @@ fn expand_struct(
 fn expand_enum(
     mut attrs: ContainerAttributes,
     e: &syn::DataEnum,
-    type_variables: Vec<&syn::Ident>,
+    type_params: &[&syn::Ident],
     attr_name: &syn::Ident,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     if let Some(enum_fmt) = attrs.fmt.as_ref() {
@@ -152,7 +151,7 @@ fn expand_enum(
             let v = Expansion {
                 attr: &attrs,
                 fields: &variant.fields,
-                type_variables: &type_variables,
+                type_params,
                 ident,
                 attr_name,
             };
@@ -212,8 +211,8 @@ struct Expansion<'a> {
     /// Struct or enum [`syn::Fields`].
     fields: &'a syn::Fields,
 
-    /// Type variables in this struct or enum.
-    type_variables: &'a [&'a syn::Ident],
+    /// Type parameters in this struct or enum.
+    type_params: &'a [&'a syn::Ident],
 
     /// Name of the attributes, considered by this macro.
     attr_name: &'a syn::Ident,
@@ -356,7 +355,7 @@ impl<'a> Expansion<'a> {
         if let Some(fmt) = self.attr.fmt.as_ref() {
             out.extend(fmt.bounded_types(self.fields).filter_map(
                 |(ty, trait_name)| {
-                    if !self.contains_type_variable(ty) {
+                    if !self.contains_generic_param(ty) {
                         return None;
                     }
 
@@ -370,7 +369,7 @@ impl<'a> Expansion<'a> {
             self.fields.iter().try_fold(out, |mut out, field| {
                 let ty = &field.ty;
 
-                if !self.contains_type_variable(ty) {
+                if !self.contains_generic_param(ty) {
                     return Ok(out);
                 }
 
@@ -394,61 +393,54 @@ impl<'a> Expansion<'a> {
         }
     }
 
-    fn contains_type_variable(&self, ty: &syn::Type) -> bool {
+    fn path_contains_generic_param(&self, path: &syn::Path) -> bool {
+        path.segments
+            .iter()
+            .any(|segment| match &segment.arguments {
+                syn::PathArguments::None => false,
+                syn::PathArguments::AngleBracketed(
+                    syn::AngleBracketedGenericArguments { args, .. },
+                ) => args.iter().any(|generic| match generic {
+                    syn::GenericArgument::Type(ty)
+                    | syn::GenericArgument::AssocType(syn::AssocType { ty, .. }) => {
+                        self.contains_generic_param(ty)
+                    }
+
+                    syn::GenericArgument::Lifetime(_)
+                    | syn::GenericArgument::Const(_)
+                    | syn::GenericArgument::AssocConst(_)
+                    | syn::GenericArgument::Constraint(_) => false,
+                    _ => unimplemented!(
+                        "syntax is not supported by derive_more, please report a bug"
+                    ),
+                }),
+                syn::PathArguments::Parenthesized(
+                    syn::ParenthesizedGenericArguments { inputs, output, .. },
+                ) => {
+                    inputs.iter().any(|ty| self.contains_generic_param(ty))
+                        || match output {
+                            syn::ReturnType::Default => false,
+                            syn::ReturnType::Type(_, ty) => {
+                                self.contains_generic_param(ty)
+                            }
+                        }
+                }
+            })
+    }
+
+    fn contains_generic_param(&self, ty: &syn::Type) -> bool {
         match ty {
             syn::Type::Path(syn::TypePath { qself, path }) => {
                 if let Some(qself) = qself {
-                    if self.contains_type_variable(&qself.ty) {
+                    if self.contains_generic_param(&qself.ty) {
                         return true;
                     }
                 }
 
                 if let Some(ident) = path.get_ident() {
-                    self.type_variables
-                        .iter()
-                        .any(|type_var| *type_var == ident)
+                    self.type_params.iter().any(|param| *param == ident)
                 } else {
-                    path.segments.iter().any(|segment| {
-                        self.type_variables
-                            .iter()
-                            .any(|type_var| *type_var == &segment.ident)
-                            || match &segment.arguments {
-                                syn::PathArguments::None => false,
-                                syn::PathArguments::AngleBracketed(
-                                    syn::AngleBracketedGenericArguments {
-                                        args, ..
-                                    },
-                                ) => args.iter().any(|generic| match generic {
-                                    syn::GenericArgument::Type(ty)
-                                    | syn::GenericArgument::AssocType(
-                                        syn::AssocType { ty, .. },
-                                    ) => self.contains_type_variable(ty),
-
-                                    syn::GenericArgument::Lifetime(_)
-                                    | syn::GenericArgument::Const(_)
-                                    | syn::GenericArgument::AssocConst(_)
-                                    | syn::GenericArgument::Constraint(_) => false,
-                                    _ => false,
-                                }),
-                                syn::PathArguments::Parenthesized(
-                                    syn::ParenthesizedGenericArguments {
-                                        inputs,
-                                        output,
-                                        ..
-                                    },
-                                ) => {
-                                    inputs
-                                        .iter()
-                                        .any(|ty| self.contains_type_variable(ty))
-                                        || match output {
-                                            syn::ReturnType::Default => false,
-                                            syn::ReturnType::Type(_, ty) => {
-                                                self.contains_type_variable(ty)
-                                            }
-                                        }
-                                }
-                            }
-                    })
+                    self.path_contains_generic_param(path)
                 }
             }
 
@@ -458,29 +450,42 @@ impl<'a> Expansion<'a> {
             | syn::Type::Ptr(syn::TypePtr { elem, .. })
             | syn::Type::Reference(syn::TypeReference { elem, .. })
             | syn::Type::Slice(syn::TypeSlice { elem, .. }) => {
-                self.contains_type_variable(elem)
+                self.contains_generic_param(elem)
             }
 
             syn::Type::BareFn(syn::TypeBareFn { inputs, output, .. }) => {
                 inputs
                     .iter()
-                    .any(|arg| self.contains_type_variable(&arg.ty))
+                    .any(|arg| self.contains_generic_param(&arg.ty))
                     || match output {
                         syn::ReturnType::Default => false,
-                        syn::ReturnType::Type(_, ty) => self.contains_type_variable(ty),
+                        syn::ReturnType::Type(_, ty) => self.contains_generic_param(ty),
                     }
             }
             syn::Type::Tuple(syn::TypeTuple { elems, .. }) => {
-                elems.iter().any(|ty| self.contains_type_variable(ty))
+                elems.iter().any(|ty| self.contains_generic_param(ty))
             }
 
             syn::Type::ImplTrait(_) => false,
             syn::Type::Infer(_) => false,
             syn::Type::Macro(_) => false,
             syn::Type::Never(_) => false,
-            syn::Type::TraitObject(_) => false,
+            syn::Type::TraitObject(syn::TypeTraitObject { bounds, .. }) => {
+                bounds.iter().any(|bound| match bound {
+                    syn::TypeParamBound::Trait(syn::TraitBound { path, .. }) => {
+                        self.path_contains_generic_param(path)
+                    }
+                    syn::TypeParamBound::Lifetime(_) => false,
+                    syn::TypeParamBound::Verbatim(_) => false,
+                    _ => unimplemented!(
+                        "syntax is not supported by derive_more, please report a bug"
+                    ),
+                })
+            }
             syn::Type::Verbatim(_) => false,
-            _ => false,
+            _ => unimplemented!(
+                "syntax is not supported by derive_more, please report a bug"
+            ),
         }
     }
 }
