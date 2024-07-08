@@ -40,6 +40,13 @@ enum MixedInts {
     Unit2,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Wrapper<'a, const Y: usize, U>(&'a [U; Y]);
+
+enum Foo<'lt: 'static, T: Clone, const X: usize> {
+    X(Wrapper<'lt, X, T>),
+}
+
 #[test]
 fn test_try_into() {
     let mut i = MixedInts::SmallInt(42);
