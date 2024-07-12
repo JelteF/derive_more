@@ -1918,7 +1918,7 @@ mod generic {
 // See: https://github.com/JelteF/derive_more/issues/301
 mod complex_enum_syntax {
     #[cfg(not(feature = "std"))]
-    use alloc::{boxed::Box, format};
+    use alloc::format;
 
     use derive_more::Debug;
 

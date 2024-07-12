@@ -5,7 +5,7 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::{boxed::Box, format, vec, vec::Vec};
+use alloc::{boxed::Box, vec, vec::Vec};
 
 use derive_more::DerefMut;
 
