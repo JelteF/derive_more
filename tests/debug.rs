@@ -1978,7 +1978,9 @@ mod type_variables {
 
     mod parens {
         #![allow(unused_parens)] // test that type is found even in parentheses
+
         use derive_more::Debug;
+
         #[derive(Debug)]
         struct Paren<T> {
             t: (T),
@@ -2034,14 +2036,14 @@ mod type_variables {
                 "{:?}",
                 ItemStruct {
                     next: Some(Box::new(ItemStruct { next: None }))
-                }
+                },
             ),
-            "ItemStruct { next: Some(ItemStruct { next: None }) }"
+            "ItemStruct { next: Some(ItemStruct { next: None }) }",
         );
 
         assert_eq!(
-            format!("{:?}", ItemTuple(Some(Box::new(ItemTuple(None)))),),
-            "ItemTuple(Some(ItemTuple(None)))"
+            format!("{:?}", ItemTuple(Some(Box::new(ItemTuple(None))))),
+            "ItemTuple(Some(ItemTuple(None)))",
         );
 
         assert_eq!(
@@ -2049,7 +2051,7 @@ mod type_variables {
                 "{:?}",
                 ItemTupleContainerFmt(Some(Box::new(ItemTupleContainerFmt(None)))),
             ),
-            "Item(Some(Item(None)))"
+            "Item(Some(Item(None)))",
         );
 
         let item = ItemEnum::Node {

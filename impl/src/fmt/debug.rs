@@ -28,9 +28,9 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
         .generics
         .params
         .iter()
-        .filter_map(|param| match param {
-            syn::GenericParam::Type(param) => Some(&param.ident),
-            _ => None,
+        .filter_map(|p| match p {
+            syn::GenericParam::Type(t) => Some(&t.ident),
+            syn::GenericParam::Const(..) | syn::GenericParam::Lifetime(..) => None,
         })
         .collect();
 
@@ -393,6 +393,7 @@ impl<'a> Expansion<'a> {
         }
     }
 
+    /// Checks whether the provided [`syn::Path`] contains any of these [`Expansion::type_params`].
     fn path_contains_generic_param(&self, path: &syn::Path) -> bool {
         path.segments
             .iter()
@@ -411,7 +412,7 @@ impl<'a> Expansion<'a> {
                     | syn::GenericArgument::AssocConst(_)
                     | syn::GenericArgument::Constraint(_) => false,
                     _ => unimplemented!(
-                        "syntax is not supported by derive_more, please report a bug"
+                        "syntax is not supported by `derive_more`, please report a bug",
                     ),
                 }),
                 syn::PathArguments::Parenthesized(
@@ -428,7 +429,11 @@ impl<'a> Expansion<'a> {
             })
     }
 
+    /// Checks whether the provided [`syn::Type`] contains any of these [`Expansion::type_params`].
     fn contains_generic_param(&self, ty: &syn::Type) -> bool {
+        if self.type_params.is_empty() {
+            return false;
+        }
         match ty {
             syn::Type::Path(syn::TypePath { qself, path }) => {
                 if let Some(qself) = qself {
@@ -478,13 +483,13 @@ impl<'a> Expansion<'a> {
                     syn::TypeParamBound::Lifetime(_) => false,
                     syn::TypeParamBound::Verbatim(_) => false,
                     _ => unimplemented!(
-                        "syntax is not supported by derive_more, please report a bug"
+                        "syntax is not supported by `derive_more`, please report a bug",
                     ),
                 })
             }
             syn::Type::Verbatim(_) => false,
             _ => unimplemented!(
-                "syntax is not supported by derive_more, please report a bug"
+                "syntax is not supported by `derive_more`, please report a bug",
             ),
         }
     }
