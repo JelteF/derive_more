@@ -46,6 +46,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             type Output = #output_type;
 
             #[inline]
+            #[track_caller]
             fn #method_ident(self, rhs: #input_type #ty_generics) -> #output_type {
                 #block
             }
