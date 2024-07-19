@@ -96,7 +96,7 @@ fn expand_struct(
             .ident
             .clone()
             .map_or_else(|| syn::Member::Unnamed(i.into()), syn::Member::Named);
-        quote! { let #var = &&self.#member; }
+        quote! { let #var = &self.#member; }
     });
 
     let body = quote! {
@@ -294,7 +294,7 @@ impl<'a> Expansion<'a> {
                         None => {
                             let ident = format_ident!("_{i}");
                             Ok(quote! {
-                                derive_more::__private::DebugTuple::field(#out, #ident)
+                                derive_more::__private::DebugTuple::field(#out, &#ident)
                             })
                         }
                     },
@@ -335,7 +335,7 @@ impl<'a> Expansion<'a> {
                                 )
                             }),
                             None => Ok(quote! {
-                                derive_more::core::fmt::DebugStruct::field(#out, #field_str, #field_ident)
+                                derive_more::core::fmt::DebugStruct::field(#out, #field_str, &#field_ident)
                             }),
                         }
                     })?;

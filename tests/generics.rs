@@ -3,7 +3,7 @@
 
 use derive_more::{
     Add, AddAssign, Constructor, Deref, DerefMut, Display, Error, From, FromStr, Index,
-    IndexMut, IntoIterator, Mul, MulAssign, Not, Sum,
+    IndexMut, IntoIterator, Mul, MulAssign, Not, Sum, TryInto,
 };
 
 #[derive(
@@ -261,4 +261,12 @@ struct StructLifetimeGenericBoundsConstDefault<
     const X: usize = 42,
 > {
     inner: &'lt E,
+}
+
+#[derive(Debug, Display)]
+struct Wrapper<'a, const Y: usize, U>(&'a [U; Y]);
+
+#[derive(Debug, Display, TryInto)]
+enum Foo<'lt: 'static, T: Clone, const X: usize> {
+    X(Wrapper<'lt, X, T>),
 }

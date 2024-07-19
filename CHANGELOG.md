@@ -71,6 +71,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#300](https://github.com/JelteF/derive_more/pull/300))
 - `#[inline]` attributes to `IsVariant` and `Debug` implementations.
   ([#334](https://github.com/JelteF/derive_more/pull/334)
+- Add `#[track_caller]` to `Add`, `Mul`, `AddAssign` and `MulAssign` derives
+  ([#378](https://github.com/JelteF/derive_more/pull/378)
+
 
 ### Changed
 
@@ -82,8 +85,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   should prevent code style linters from attempting to modify the generated
   code.
 - Upgrade to `syn` 2.0.
-- The `Error` derive now works in nightly `no_std` environments when enabling
-  `#![feature(error_in_core)]`.
+- The `Error` derive now works in nightly `no_std` environments
 
 ### Fixed
 
