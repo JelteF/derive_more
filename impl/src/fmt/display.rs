@@ -225,7 +225,6 @@ impl<'a> Expansion<'a> {
     /// greater than 1.
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
-    /// [`FmtAttribute`]: super::FmtAttribute
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if self.shared_format.is_none() {
             return self.generate_body_impl();
@@ -234,7 +233,8 @@ impl<'a> Expansion<'a> {
         if !shared_format.args.is_empty() {
             return Err(syn::Error::new(
                 shared_format.args.span(),
-                "shared format string does not support positional placeholders, use named placeholders instead",
+                "shared format string does not support positional placeholders, use named \
+                 placeholders instead",
             ));
         }
         let mut tokens = TokenStream::new();
@@ -243,12 +243,15 @@ impl<'a> Expansion<'a> {
         let fmt_string = shared_format.lit.value();
         let maybe_format_string = parsing::format_string(&fmt_string);
         let Some(format_string) = maybe_format_string else {
-            // If we could not parse the format string, we just use the original string so
-            // we get a nice error message. We also panic as a safety precaution in case our
-            // parsing fails to parse something that write! allows.
+            // If we could not parse the format string, we just use the original string, so we get
+            // a nice error message. We also panic as a safety precaution in case our parsing fails
+            // to parse something that `write!()` allows.
             return Ok(quote! {
                 derive_more::core::write!(__derive_more_f, #shared_format);
-                unreachable!("derive_more could not parse shared format string, but rust could: {:?}", #fmt_string);
+                unreachable!(
+                    "`derive_more` could not parse shared format string, but Rust could: {:?}",
+                    #fmt_string,
+                );
             });
         };
         for part in format_string.elements {
@@ -261,7 +264,8 @@ impl<'a> Expansion<'a> {
                         if format.spec.is_some() {
                             return Err(syn::Error::new(
                                 shared_format.span(),
-                                "shared format _variant placeholder cannot contain format specifiers",
+                                "shared format `_variant` placeholder cannot contain format \
+                                 specifiers",
                             ));
                         }
                         if !current_format.is_empty() {
@@ -279,7 +283,8 @@ impl<'a> Expansion<'a> {
                         {
                             return Err(syn::Error::new(
                                 shared_format.span(),
-                                "shared format string cannot contain positional placeholders, use named placeholders instead",
+                                "shared format string cannot contain positional placeholders, use \
+                                 named placeholders instead",
                             ));
                         }
                         current_format.push_str(raw);

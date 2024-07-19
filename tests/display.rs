@@ -1281,6 +1281,7 @@ mod enums {
 
         mod shared_format {
             use super::*;
+
             mod single {
                 use super::*;
 
@@ -1299,8 +1300,8 @@ mod enums {
                 #[test]
                 fn assert() {
                     assert_eq!(Enum::A(1).to_string(), "Variant: A 1");
-                    assert_eq!(Enum::B { field: 2 }.to_string(), "Variant: B 2",);
-                    assert_eq!(Enum::C.to_string(), "Variant: C",);
+                    assert_eq!(Enum::B { field: 2 }.to_string(), "Variant: B 2");
+                    assert_eq!(Enum::C.to_string(), "Variant: C");
                 }
             }
 
@@ -1308,7 +1309,7 @@ mod enums {
                 use super::*;
 
                 #[derive(Display)]
-                #[display("{_variant} Variant: {_variant} {_variant}")]
+                #[display("{} Variant: {} {}", _variant)]
                 enum Enum {
                     #[display("A {_0}")]
                     A(i32),
@@ -1326,15 +1327,14 @@ mod enums {
                         Enum::B { field: 2 }.to_string(),
                         "B 2 Variant: B 2 B 2",
                     );
-                    assert_eq!(Enum::C.to_string(), "C Variant: C C",);
+                    assert_eq!(Enum::C.to_string(), "C Variant: C C");
                 }
             }
 
             mod none {
                 use super::*;
 
-                /// Make sure that variant specific bounds are not added if _variant is
-                /// not used.
+                /// Make sure that variant-specific bounds are not added if `_variant` is not used.
                 struct NoDisplay;
 
                 #[derive(Display)]

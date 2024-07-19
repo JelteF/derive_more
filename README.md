@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
 [![Rust Documentation](https://docs.rs/derive_more/badge.svg)](https://docs.rs/derive_more)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
-[![Rust 1.70+](https://img.shields.io/badge/rustc-1.70+-lightgray.svg)](https://blog.rust-lang.org/2022/11/03/Rust-1.70.0.html)
+[![Rust 1.70+](https://img.shields.io/badge/rustc-1.70+-lightgray.svg)](https://blog.rust-lang.org/2023/06/01/Rust-1.70.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
 Rust has lots of builtin traits that are implemented for its basic types, such
