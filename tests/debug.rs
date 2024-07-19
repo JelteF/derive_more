@@ -1932,3 +1932,141 @@ mod complex_enum_syntax {
         assert_eq!(format!("{:?}", Enum::A), "A");
     }
 }
+
+// See: https://github.com/JelteF/derive_more/issues/363
+mod type_variables {
+    mod our_alloc {
+        #[cfg(not(feature = "std"))]
+        pub use alloc::{boxed::Box, format, vec, vec::Vec};
+        #[cfg(feature = "std")]
+        pub use std::{boxed::Box, format, vec, vec::Vec};
+    }
+
+    use our_alloc::{format, vec, Box, Vec};
+
+    use derive_more::Debug;
+
+    #[derive(Debug)]
+    struct ItemStruct {
+        next: Option<Box<ItemStruct>>,
+    }
+
+    #[derive(Debug)]
+    struct ItemTuple(Option<Box<ItemTuple>>);
+
+    #[derive(Debug)]
+    #[debug("Item({_0:?})")]
+    struct ItemTupleContainerFmt(Option<Box<ItemTupleContainerFmt>>);
+
+    #[derive(Debug)]
+    enum ItemEnum {
+        Node { children: Vec<ItemEnum>, inner: i32 },
+        Leaf { inner: i32 },
+    }
+
+    #[derive(Debug)]
+    struct VecMeansDifferent<Vec> {
+        next: our_alloc::Vec<i32>,
+        real: Vec,
+    }
+
+    #[derive(Debug)]
+    struct Array<T> {
+        #[debug("{t}")]
+        t: [T; 10],
+    }
+
+    mod parens {
+        #![allow(unused_parens)] // test that type is found even in parentheses
+
+        use derive_more::Debug;
+
+        #[derive(Debug)]
+        struct Paren<T> {
+            t: (T),
+        }
+    }
+
+    #[derive(Debug)]
+    struct ParenthesizedGenericArgumentsInput<T> {
+        t: dyn Fn(T) -> i32,
+    }
+
+    #[derive(Debug)]
+    struct ParenthesizedGenericArgumentsOutput<T> {
+        t: dyn Fn(i32) -> T,
+    }
+
+    #[derive(Debug)]
+    struct Ptr<T> {
+        t: *const T,
+    }
+
+    #[derive(Debug)]
+    struct Reference<'a, T> {
+        t: &'a T,
+    }
+
+    #[derive(Debug)]
+    struct Slice<'a, T> {
+        t: &'a [T],
+    }
+
+    #[derive(Debug)]
+    struct BareFn<T> {
+        t: Box<fn(T) -> T>,
+    }
+
+    #[derive(Debug)]
+    struct Tuple<T> {
+        t: Box<(T, T)>,
+    }
+
+    trait MyTrait<T> {}
+
+    #[derive(Debug)]
+    struct TraitObject<T> {
+        t: Box<dyn MyTrait<T>>,
+    }
+
+    #[test]
+    fn assert() {
+        assert_eq!(
+            format!(
+                "{:?}",
+                ItemStruct {
+                    next: Some(Box::new(ItemStruct { next: None }))
+                },
+            ),
+            "ItemStruct { next: Some(ItemStruct { next: None }) }",
+        );
+
+        assert_eq!(
+            format!("{:?}", ItemTuple(Some(Box::new(ItemTuple(None))))),
+            "ItemTuple(Some(ItemTuple(None)))",
+        );
+
+        assert_eq!(
+            format!(
+                "{:?}",
+                ItemTupleContainerFmt(Some(Box::new(ItemTupleContainerFmt(None)))),
+            ),
+            "Item(Some(Item(None)))",
+        );
+
+        let item = ItemEnum::Node {
+            children: vec![
+                ItemEnum::Node {
+                    children: vec![],
+                    inner: 0,
+                },
+                ItemEnum::Leaf { inner: 1 },
+            ],
+            inner: 2,
+        };
+        assert_eq!(
+            format!("{item:?}"),
+            "Node { children: [Node { children: [], inner: 0 }, Leaf { inner: 1 }], inner: 2 }",
+        )
+    }
+}
