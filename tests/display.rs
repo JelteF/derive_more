@@ -1309,7 +1309,7 @@ mod enums {
                 use super::*;
 
                 #[derive(Display)]
-                #[display("{} Variant: {} {}", _variant)]
+                #[display("{_variant} Variant: {_variant} {_variant}")]
                 enum Enum {
                     #[display("A {_0}")]
                     A(i32),
