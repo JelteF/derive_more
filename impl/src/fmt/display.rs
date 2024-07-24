@@ -243,63 +243,73 @@ impl<'a> Expansion<'a> {
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
-        let mut body = match &self.attrs.fmt {
-            Some(fmt) => {
-                if let Some((expr, trait_ident)) = fmt.transparent_call() {
+        let mut body = TokenStream::new();
+
+        if self
+            .shared_attr
+            .map_or(true, |a| a.contains_arg("_variant"))
+        {
+            body = match &self.attrs.fmt {
+                Some(fmt) => {
+                    if let Some((expr, trait_ident)) = fmt.transparent_call() {
+                        if self.shared_attr.is_some() {
+                            let placeholder =
+                                trait_name_to_default_placeholder_literal(&trait_ident);
+
+                            quote! { derive_more::core::format_args!(#placeholder, #expr) }
+                        } else {
+                            quote! {
+                                derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f)
+                            }
+                        }
+                    } else if self.shared_attr.is_some() {
+                        quote! { derive_more::core::format_args!(#fmt) }
+                    } else {
+                        quote! { derive_more::core::write!(__derive_more_f, #fmt) }
+                    }
+                }
+                None if self.fields.is_empty() => {
+                    let ident_str = self.ident.to_string();
+
+                    if self.shared_attr.is_some() {
+                        quote! { #ident_str }
+                    } else {
+                        quote! { derive_more::core::write!(__derive_more_f, #ident_str) }
+                    }
+                }
+                None if self.fields.len() == 1 => {
+                    let field = self
+                        .fields
+                        .iter()
+                        .next()
+                        .unwrap_or_else(|| unreachable!("count() == 1"));
+                    let ident =
+                        field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
+                    let trait_ident = self.trait_ident;
+
                     if self.shared_attr.is_some() {
                         let placeholder =
-                            trait_name_to_default_placeholder_literal(&trait_ident);
+                            trait_name_to_default_placeholder_literal(trait_ident);
 
-                        quote! { derive_more::core::format_args!(#placeholder, #expr) }
+                        quote! { derive_more::core::format_args!(#placeholder, #ident) }
                     } else {
                         quote! {
-                            derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f)
+                            derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
                         }
                     }
-                } else if self.shared_attr.is_some() {
-                    quote! { derive_more::core::format_args!(#fmt) }
-                } else {
-                    quote! { derive_more::core::write!(__derive_more_f, #fmt) }
                 }
-            }
-            None if self.fields.is_empty() => {
-                let ident_str = self.ident.to_string();
-
-                if self.shared_attr.is_some() {
-                    quote! { #ident_str }
-                } else {
-                    quote! { derive_more::core::write!(__derive_more_f, #ident_str) }
-                }
-            }
-            None if self.fields.len() == 1 => {
-                let field = self
-                    .fields
-                    .iter()
-                    .next()
-                    .unwrap_or_else(|| unreachable!("count() == 1"));
-                let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
-                let trait_ident = self.trait_ident;
-
-                if self.shared_attr.is_some() {
-                    let placeholder =
-                        trait_name_to_default_placeholder_literal(trait_ident);
-
-                    quote! { derive_more::core::format_args!(#placeholder, #ident) }
-                } else {
-                    quote! { derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f) }
-                }
-            }
-            _ => {
-                return Err(syn::Error::new(
-                    self.fields.span(),
-                    format!(
-                        "struct or enum variant with more than 1 field must have \
+                _ => {
+                    return Err(syn::Error::new(
+                        self.fields.span(),
+                        format!(
+                            "struct or enum variant with more than 1 field must have \
                      `#[{}(\"...\", ...)]` attribute",
-                        trait_name_to_attribute_name(self.trait_ident),
-                    ),
-                ))
-            }
-        };
+                            trait_name_to_attribute_name(self.trait_ident),
+                        ),
+                    ))
+                }
+            };
+        }
 
         if let Some(shared_fmt) = &self.shared_attr {
             let shared_body = if let Some((shared_expr, shared_trait_ident)) =
@@ -312,10 +322,10 @@ impl<'a> Expansion<'a> {
                 quote! { derive_more::core::write!(__derive_more_f, #shared_fmt) }
             };
 
-            body = if shared_fmt.contains_arg("_variant") {
-                quote! { match #body { _variant => #shared_body } }
-            } else {
+            body = if body.is_empty() {
                 shared_body
+            } else {
+                quote! { match #body { _variant => #shared_body } }
             };
         }
 
