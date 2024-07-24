@@ -193,7 +193,7 @@ enum E {
 }
 
 #[derive(Display)]
-#[display("Enum E2: {_0:?}")]
+#[display("Enum E2: {:?}", _0)]
 enum E2 {
     Uint(u32),
     String(&'static str, &'static str),

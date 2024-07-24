@@ -235,6 +235,33 @@ impl FmtAttribute {
         })
     }
 
+    /// Checks whether this [`FmtAttribute`] contains an argument with the provided `name`, either
+    /// in its direct [`FmtArgument`]s or inside [`Placeholder`]s.
+    fn contains_parameter(&self, name: &str) -> bool {
+        let placeholders = Placeholder::parse_fmt_string(&self.lit.value());
+
+        placeholders
+            .into_iter()
+            .filter_map(move |placeholder| {
+                match placeholder.arg {
+                    Parameter::Named(name) => self
+                        .args
+                        .iter()
+                        .find_map(|a| (a.alias()? == &name).then_some(&a.expr))
+                        .map_or(Some(name), |expr| {
+                            expr.ident().map(ToString::to_string)
+                        }),
+                    Parameter::Positional(i) => self
+                        .args
+                        .iter()
+                        .nth(i)
+                        .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))
+                        .map(ToString::to_string),
+                }
+            })
+            .any(|arg_name| arg_name == name)
+    }
+
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
     fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
         let fork = input.fork();
@@ -278,8 +305,7 @@ impl FmtAttribute {
     }
 }
 
-/// Representation of a [named parameter][1] (`identifier '=' expression`) in
-/// in a [`FmtAttribute`].
+/// Representation of a [named parameter][1] (`identifier '=' expression`) in a [`FmtAttribute`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
 #[derive(Debug)]
@@ -372,9 +398,9 @@ impl Placeholder {
     /// Parses [`Placeholder`]s from the provided formatting string.
     fn parse_fmt_string(s: &str) -> Vec<Self> {
         let mut n = 0;
-        parsing::format_string_formats(s)
+        parsing::format_string(s)
             .into_iter()
-            .flatten()
+            .flat_map(|f| f.formats)
             .map(|format| {
                 let (maybe_arg, ty) = (
                     format.arg,

@@ -9,7 +9,7 @@ use syn::{parse_quote, spanned::Spanned as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
-use super::{parsing, trait_name_to_attribute_name, ContainerAttributes, FmtAttribute};
+use super::{trait_name_to_attribute_name, ContainerAttributes, FmtAttribute};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -80,7 +80,7 @@ fn expand_struct(
     (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
-        shared_format: None,
+        shared_attr: None,
         attrs,
         fields: &s.fields,
         trait_ident,
@@ -111,8 +111,14 @@ fn expand_struct(
 /// Expands a [`fmt`]-like derive macro for the provided enum.
 fn expand_enum(
     e: &syn::DataEnum,
-    (shared_attrs, _, trait_ident, attr_name): ExpansionCtx<'_>,
+    (container_attrs, _, trait_ident, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
+    /*if let Some(shared_attr) = &container_attrs.fmt {
+        if shared_attr.placeholders_by_name("_variant").any(|p| false) {
+            todo!()
+        }
+    }*/
+
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
@@ -135,7 +141,7 @@ fn expand_enum(
             }
 
             let v = Expansion {
-                shared_format: shared_attrs.fmt.as_ref(),
+                shared_attr: container_attrs.fmt.as_ref(),
                 attrs: &attrs,
                 fields: &variant.fields,
                 trait_ident,
@@ -196,8 +202,10 @@ fn expand_union(
 /// [`Display::fmt()`]: fmt::Display::fmt()
 #[derive(Debug)]
 struct Expansion<'a> {
-    /// Format shared between all variants of an enum.
-    shared_format: Option<&'a FmtAttribute>,
+    /// [`FmtAttribute`] shared between all variants of an enum.
+    ///
+    /// [`None`] for a struct.
+    shared_attr: Option<&'a FmtAttribute>,
 
     /// Derive macro [`ContainerAttributes`].
     attrs: &'a ContainerAttributes,
@@ -226,101 +234,33 @@ impl<'a> Expansion<'a> {
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
-        if self.shared_format.is_none() {
-            return self.generate_body_impl();
-        }
-        let shared_format = self.shared_format.as_ref().unwrap();
-        if !shared_format.args.is_empty() {
-            return Err(syn::Error::new(
-                shared_format.args.span(),
-                "shared format string does not support positional placeholders, use named \
-                 placeholders instead",
-            ));
-        }
-        let mut tokens = TokenStream::new();
-        let mut maybe_body = None;
-        let mut current_format = String::new();
-        let fmt_string = shared_format.lit.value();
-        let maybe_format_string = parsing::format_string(&fmt_string);
-        let Some(format_string) = maybe_format_string else {
-            // If we could not parse the format string, we just use the original string, so we get
-            // a nice error message. We also panic as a safety precaution in case our parsing fails
-            // to parse something that `write!()` allows.
-            return Ok(quote! {
-                derive_more::core::write!(__derive_more_f, #shared_format);
-                unreachable!(
-                    "`derive_more` could not parse shared format string, but Rust could: {:?}",
-                    #fmt_string,
-                );
-            });
-        };
-        for part in format_string.elements {
-            match part {
-                parsing::MaybeFormat::Text(s) => {
-                    current_format.push_str(s);
-                }
-                parsing::MaybeFormat::Format { raw, format } => {
-                    if format.arg == Some(parsing::Argument::Identifier("_variant")) {
-                        if format.spec.is_some() {
-                            return Err(syn::Error::new(
-                                shared_format.span(),
-                                "shared format `_variant` placeholder cannot contain format \
-                                 specifiers",
-                            ));
-                        }
-                        if !current_format.is_empty() {
-                            tokens.extend(quote! { derive_more::core::write!(__derive_more_f, #current_format)?; });
-                            current_format.clear();
-                        }
-                        if maybe_body.is_none() {
-                            maybe_body = Some(self.generate_body_impl()?);
-                        }
-                        let body = maybe_body.as_ref().unwrap();
-                        tokens.extend(quote! { #body?; });
-                    } else {
-                        if format.arg.is_none()
-                            || matches!(format.arg, Some(parsing::Argument::Integer(_)))
-                        {
-                            return Err(syn::Error::new(
-                                shared_format.span(),
-                                "shared format string cannot contain positional placeholders, use \
-                                 named placeholders instead",
-                            ));
-                        }
-                        current_format.push_str(raw);
-                    }
-                }
-            };
-        }
-        if !current_format.is_empty() {
-            tokens.extend(
-                quote! { derive_more::core::write!(__derive_more_f, #current_format) },
-            )
-        } else {
-            tokens.extend(quote! { Ok(()) });
-        }
-        Ok(tokens)
-    }
-
-    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant
-    /// without considering `shared_format`.
-    ///
-    /// [`Display::fmt()`]: fmt::Display::fmt()
-    fn generate_body_impl(&self) -> syn::Result<TokenStream> {
-        match &self.attrs.fmt {
+        let mut body = match &self.attrs.fmt {
             Some(fmt) => {
-                Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                    quote! { derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+                if let Some((expr, trait_ident)) = fmt.transparent_call() {
+                    if self.shared_attr.is_some() {
+                        let placeholder =
+                            trait_name_to_default_placeholder_literal(&trait_ident);
+
+                        quote! { derive_more::core::format_args!(#placeholder, #expr) }
+                    } else {
+                        quote! {
+                            derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f)
+                        }
+                    }
+                } else if self.shared_attr.is_some() {
+                    quote! { derive_more::core::format_args!(#fmt) }
                 } else {
                     quote! { derive_more::core::write!(__derive_more_f, #fmt) }
-                })
+                }
             }
             None if self.fields.is_empty() => {
                 let ident_str = self.ident.to_string();
 
-                Ok(quote! {
-                    derive_more::core::write!(__derive_more_f, #ident_str)
-                })
+                if self.shared_attr.is_some() {
+                    quote! { #ident_str }
+                } else {
+                    quote! { derive_more::core::write!(__derive_more_f, #ident_str) }
+                }
             }
             None if self.fields.len() == 1 => {
                 let field = self
@@ -331,71 +271,85 @@ impl<'a> Expansion<'a> {
                 let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
                 let trait_ident = self.trait_ident;
 
-                Ok(quote! {
-                    derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
-                })
+                if self.shared_attr.is_some() {
+                    let placeholder =
+                        trait_name_to_default_placeholder_literal(trait_ident);
+
+                    quote! { derive_more::core::format_args!(#placeholder, #ident) }
+                } else {
+                    quote! { derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f) }
+                }
             }
-            _ => Err(syn::Error::new(
-                self.fields.span(),
-                format!(
-                    "struct or enum variant with more than 1 field must have \
+            _ => {
+                return Err(syn::Error::new(
+                    self.fields.span(),
+                    format!(
+                        "struct or enum variant with more than 1 field must have \
                      `#[{}(\"...\", ...)]` attribute",
-                    trait_name_to_attribute_name(self.trait_ident),
-                ),
-            )),
+                        trait_name_to_attribute_name(self.trait_ident),
+                    ),
+                ))
+            }
+        };
+
+        if let Some(shared_fmt) = &self.shared_attr {
+            let shared_body = if let Some((shared_expr, shared_trait_ident)) =
+                shared_fmt.transparent_call()
+            {
+                quote! {
+                    derive_more::core::fmt::#shared_trait_ident::fmt(#shared_expr, __derive_more_f)
+                }
+            } else {
+                quote! { derive_more::core::write!(__derive_more_f, #shared_fmt) }
+            };
+
+            body = if shared_fmt.contains_parameter("_variant") {
+                quote! { match #body { _variant => #shared_body } }
+            } else {
+                shared_body
+            };
         }
+
+        Ok(body)
     }
 
     /// Generates trait bounds for a struct or an enum variant.
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
-        let mut bounds: Vec<syn::WherePredicate> =
-            if let Some(shared_format) = self.shared_format {
-                let shared_bounds = shared_format
-                    .bounded_types(self.fields)
-                    .map(|(ty, trait_name)| {
-                        let trait_ident = format_ident!("{trait_name}");
+        let mut bounds = vec![];
 
-                        parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
-                    })
-                    .chain(self.attrs.bounds.0.clone())
-                    .collect();
-                // If it doesn't contain _variant we don't need to add any other bounds
-                if !parsing::format_string_formats(&shared_format.lit.value())
-                    .into_iter()
-                    .flatten()
-                    .any(|f| f.arg == Some(parsing::Argument::Identifier("_variant")))
-                {
-                    return shared_bounds;
-                }
-                shared_bounds
+        if self
+            .shared_attr
+            .map_or(true, |a| a.contains_parameter("_variant"))
+        {
+            if let Some(fmt) = &self.attrs.fmt {
+                bounds.extend(
+                    fmt.bounded_types(self.fields)
+                        .map(|(ty, trait_name)| {
+                            let trait_ident = format_ident!("{trait_name}");
+
+                            parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
+                        })
+                        .chain(self.attrs.bounds.0.clone()),
+                );
             } else {
-                Vec::new()
+                bounds.extend(self.fields.iter().next().map(|f| {
+                    let ty = &f.ty;
+                    let trait_ident = &self.trait_ident;
+                    parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
+                }))
             };
+        }
 
-        let Some(fmt) = &self.attrs.fmt else {
-            bounds.extend(
-                self.fields
-                    .iter()
-                    .next()
-                    .map(|f| {
-                        let ty = &f.ty;
-                        let trait_ident = &self.trait_ident;
-                        vec![parse_quote! { #ty: derive_more::core::fmt::#trait_ident }]
-                    })
-                    .unwrap_or_default(),
-            );
-            return bounds;
-        };
-
-        bounds.extend(
-            fmt.bounded_types(self.fields)
-                .map(|(ty, trait_name)| {
+        if let Some(shared_fmt) = &self.shared_attr {
+            bounds.extend(shared_fmt.bounded_types(self.fields).map(
+                |(ty, trait_name)| {
                     let trait_ident = format_ident!("{trait_name}");
 
                     parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
-                })
-                .chain(self.attrs.bounds.0.clone()),
-        );
+                },
+            ));
+        }
+
         bounds
     }
 }
@@ -411,6 +365,22 @@ fn normalize_trait_name(name: &str) -> &'static str {
         "Pointer" => "Pointer",
         "UpperExp" => "UpperExp",
         "UpperHex" => "UpperHex",
+        _ => unimplemented!(),
+    }
+}
+
+/// Matches the provided [`fmt`] trait `name` to its default formatting placeholder.
+fn trait_name_to_default_placeholder_literal(name: &syn::Ident) -> &'static str {
+    match () {
+        _ if name == "Binary" => "{:b}",
+        _ if name == "Debug" => "{:?}",
+        _ if name == "Display" => "{}",
+        _ if name == "LowerExp" => "{:e}",
+        _ if name == "LowerHex" => "{:x}",
+        _ if name == "Octal" => "{:o}",
+        _ if name == "Pointer" => "{:p}",
+        _ if name == "UpperExp" => "{:E}",
+        _ if name == "UpperHex" => "{:X}",
         _ => unimplemented!(),
     }
 }
