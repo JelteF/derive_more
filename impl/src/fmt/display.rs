@@ -113,11 +113,20 @@ fn expand_enum(
     e: &syn::DataEnum,
     (container_attrs, _, trait_ident, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    /*if let Some(shared_attr) = &container_attrs.fmt {
-        if shared_attr.placeholders_by_name("_variant").any(|p| false) {
-            todo!()
+    if let Some(shared_fmt) = &container_attrs.fmt {
+        if shared_fmt
+            .placeholders_by_arg("_variant")
+            .any(|p| p.has_modifiers || p.trait_name != "Display")
+        {
+            // TODO: This limitation can be lifted, by analyzing the `shared_fmt` deeper and using
+            //       `&dyn fmt::TraitName` for transparency instead of just `format_args!()` in the
+            //       expansion.
+            return Err(syn::Error::new(
+                shared_fmt.span(),
+                "shared format `_variant` placeholder cannot contain format specifiers",
+            ));
         }
-    }*/
+    }
 
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
@@ -303,7 +312,7 @@ impl<'a> Expansion<'a> {
                 quote! { derive_more::core::write!(__derive_more_f, #shared_fmt) }
             };
 
-            body = if shared_fmt.contains_parameter("_variant") {
+            body = if shared_fmt.contains_arg("_variant") {
                 quote! { match #body { _variant => #shared_body } }
             } else {
                 shared_body
@@ -319,7 +328,7 @@ impl<'a> Expansion<'a> {
 
         if self
             .shared_attr
-            .map_or(true, |a| a.contains_parameter("_variant"))
+            .map_or(true, |a| a.contains_arg("_variant"))
         {
             if let Some(fmt) = &self.attrs.fmt {
                 bounds.extend(
