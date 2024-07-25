@@ -1,0 +1,5 @@
+error: shared format `_variant` placeholder cannot contain format specifiers
+ --> tests/compile_fail/display/shared_format_variant_spec.rs:2:11
+  |
+2 | #[display("Stuff({_variant:?})")]
+  |           ^^^^^^^^^^^^^^^^^^^^^

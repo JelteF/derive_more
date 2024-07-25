@@ -1,0 +1,34 @@
+error: 1 positional argument in format string, but no arguments were given
+ --> tests/compile_fail/display/shared_format_positional_placeholders.rs:2:18
+  |
+2 | #[display("Stuff({})")]
+  |                  ^^
+
+error: invalid reference to positional argument 0 (no arguments were given)
+ --> tests/compile_fail/display/shared_format_positional_placeholders.rs:8:19
+  |
+8 | #[display("Stuff({0})")]
+  |                   ^
+  |
+  = note: positional arguments are zero-based
+
+error: multiple unused formatting arguments
+  --> tests/compile_fail/display/shared_format_positional_placeholders.rs:14:22
+   |
+14 | #[display("Stuff()", _0, _2)]
+   |           ---------  ^^  ^^ argument never used
+   |           |          |
+   |           |          argument never used
+   |           multiple missing formatting specifiers
+
+error[E0425]: cannot find value `_0` in this scope
+  --> tests/compile_fail/display/shared_format_positional_placeholders.rs:14:22
+   |
+14 | #[display("Stuff()", _0, _2)]
+   |                      ^^ not found in this scope
+
+error[E0425]: cannot find value `_2` in this scope
+  --> tests/compile_fail/display/shared_format_positional_placeholders.rs:14:26
+   |
+14 | #[display("Stuff()", _0, _2)]
+   |                          ^^ not found in this scope

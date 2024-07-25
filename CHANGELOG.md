@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   [#294](https://github.com/JelteF/derive_more/pull/294))
 - The `as_mut` feature is removed, and the `AsMut` derive is now gated by the
   `as_ref` feature. ([#295](https://github.com/JelteF/derive_more/pull/295))
+- A top level `#[display("...")]` attribute on an enum now requires the usage
+  of `{_variant}` to include the variant instead of including it at `{}`. ([#377](https://github.com/JelteF/derive_more/pull/377))
 
 ### Added
 

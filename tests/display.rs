@@ -21,6 +21,9 @@ mod structs {
         struct Unit;
 
         #[derive(Display)]
+        struct r#RawUnit;
+
+        #[derive(Display)]
         struct Tuple();
 
         #[derive(Display)]
@@ -29,6 +32,7 @@ mod structs {
         #[test]
         fn assert() {
             assert_eq!(Unit.to_string(), "Unit");
+            assert_eq!(r#RawUnit.to_string(), "RawUnit");
             assert_eq!(Tuple().to_string(), "Tuple");
             assert_eq!(Struct {}.to_string(), "Struct");
         }
@@ -696,6 +700,7 @@ mod enums {
         #[derive(Display)]
         enum Enum {
             Unit,
+            r#RawUnit,
             Unnamed(),
             Named {},
             #[display("STR_UNIT")]
@@ -709,6 +714,7 @@ mod enums {
         #[test]
         fn assert() {
             assert_eq!(Enum::Unit.to_string(), "Unit");
+            assert_eq!(Enum::r#RawUnit.to_string(), "RawUnit");
             assert_eq!(Enum::Unnamed().to_string(), "Unnamed");
             assert_eq!(Enum::Named {}.to_string(), "Named");
             assert_eq!(Enum::StrUnit.to_string(), "STR_UNIT");
@@ -1275,6 +1281,160 @@ mod enums {
                         format!("{:018}", Pointer::B { a: &42.1, b: &43.3 }).len(),
                         18,
                     );
+                }
+            }
+        }
+
+        mod shared_format {
+            use super::*;
+
+            mod single {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("Variant: {_variant}")]
+                enum Enum {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::A(1).to_string(), "Variant: A 1");
+                    assert_eq!(Enum::B { field: 2 }.to_string(), "Variant: B 2");
+                    assert_eq!(Enum::C.to_string(), "Variant: C");
+                }
+            }
+
+            mod transparent {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_variant}")]
+                enum Enum {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                    #[display("{_0:b}")]
+                    TransparentBinary(i32),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::A(1).to_string(), "A 1");
+                    assert_eq!(Enum::B { field: 2 }.to_string(), "B 2");
+                    assert_eq!(Enum::C.to_string(), "C");
+                    assert_eq!(
+                        format!("{:08}", Enum::TransparentBinary(4)),
+                        "00000100",
+                    );
+                }
+            }
+
+            mod multiple {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_variant} Variant: {_variant} {}", _variant)]
+                enum Enum {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::A(1).to_string(), "A 1 Variant: A 1 A 1");
+                    assert_eq!(
+                        Enum::B { field: 2 }.to_string(),
+                        "B 2 Variant: B 2 B 2",
+                    );
+                    assert_eq!(Enum::C.to_string(), "C Variant: C C");
+                }
+            }
+
+            mod none {
+                use super::*;
+
+                /// Make sure that variant-specific bounds are not added if `_variant` is not used.
+                struct NoDisplay;
+
+                #[derive(Display)]
+                #[display("Variant")]
+                enum Enum<T> {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                    D(T),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::<NoDisplay>::A(1).to_string(), "Variant");
+                    assert_eq!(
+                        Enum::<NoDisplay>::B { field: 2 }.to_string(),
+                        "Variant",
+                    );
+                    assert_eq!(Enum::<NoDisplay>::C.to_string(), "Variant");
+                    assert_eq!(Enum::<NoDisplay>::D(NoDisplay).to_string(), "Variant");
+                }
+            }
+
+            mod use_field {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("Variant {_0}")]
+                enum Enum<T> {
+                    A(i32),
+                    B(&'static str),
+                    C(T),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::<u8>::A(1).to_string(), "Variant 1");
+                    assert_eq!(Enum::<u8>::B("abc").to_string(), "Variant abc");
+                    assert_eq!(Enum::<u8>::C(9).to_string(), "Variant 9");
+                }
+            }
+
+            mod use_field_and_variant {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("Variant {_variant} {}", _0)]
+                enum Enum<T> {
+                    #[display("A")]
+                    A(i32),
+                    #[display("B")]
+                    B(&'static str),
+                    #[display("C")]
+                    C(T),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::<u8>::A(1).to_string(), "Variant A 1");
+                    assert_eq!(Enum::<u8>::B("abc").to_string(), "Variant B abc");
+                    assert_eq!(Enum::<u8>::C(9).to_string(), "Variant C 9");
                 }
             }
         }

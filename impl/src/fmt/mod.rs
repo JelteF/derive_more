@@ -235,6 +235,44 @@ impl FmtAttribute {
         })
     }
 
+    #[cfg(feature = "display")]
+    /// Checks whether this [`FmtAttribute`] contains an argument with the provided `name` (either
+    /// in its direct [`FmtArgument`]s or inside [`Placeholder`]s).
+    fn contains_arg(&self, name: &str) -> bool {
+        self.placeholders_by_arg(name).next().is_some()
+    }
+
+    #[cfg(feature = "display")]
+    /// Returns an [`Iterator`] over [`Placeholder`]s using an argument with the provided `name`
+    /// (either in its direct [`FmtArgument`]s of this [`FmtAttribute`] or inside the
+    /// [`Placeholder`] itself).
+    fn placeholders_by_arg<'a>(
+        &'a self,
+        name: &'a str,
+    ) -> impl Iterator<Item = Placeholder> + 'a {
+        let placeholders = Placeholder::parse_fmt_string(&self.lit.value());
+
+        placeholders.into_iter().filter(move |placeholder| {
+            match &placeholder.arg {
+                Parameter::Named(name) => self
+                    .args
+                    .iter()
+                    .find_map(|a| (a.alias()? == name).then_some(&a.expr))
+                    .map_or(Some(name.clone()), |expr| {
+                        expr.ident().map(ToString::to_string)
+                    }),
+                Parameter::Positional(i) => self
+                    .args
+                    .iter()
+                    .nth(*i)
+                    .and_then(|a| a.expr.ident().filter(|_| a.alias.is_none()))
+                    .map(ToString::to_string),
+            }
+            .as_deref()
+                == Some(name)
+        })
+    }
+
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
     fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
         let fork = input.fork();
@@ -278,8 +316,7 @@ impl FmtAttribute {
     }
 }
 
-/// Representation of a [named parameter][1] (`identifier '=' expression`) in
-/// in a [`FmtAttribute`].
+/// Representation of a [named parameter][1] (`identifier '=' expression`) in a [`FmtAttribute`].
 ///
 /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#named-parameters
 #[derive(Debug)]
@@ -351,20 +388,13 @@ impl<'a> From<parsing::Argument<'a>> for Parameter {
 /// Representation of a formatting placeholder.
 #[derive(Debug, Eq, PartialEq)]
 struct Placeholder {
-    /// Formatting argument (either named or positional) to be used by this placeholder.
+    /// Formatting argument (either named or positional) to be used by this [`Placeholder`].
     arg: Parameter,
 
-    /// [Width parameter][1], if present.
-    ///
-    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#width
-    width: Option<Parameter>,
+    /// Indicator whether this [`Placeholder`] has any formatting modifiers.
+    has_modifiers: bool,
 
-    /// [Precision parameter][1], if present.
-    ///
-    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#precision
-    precision: Option<Parameter>,
-
-    /// Name of [`std::fmt`] trait to be used for rendering this placeholder.
+    /// Name of [`std::fmt`] trait to be used for rendering this [`Placeholder`].
     trait_name: &'static str,
 }
 
@@ -389,16 +419,18 @@ impl Placeholder {
 
                 Self {
                     arg: position,
-                    width: format.spec.and_then(|s| match s.width {
-                        Some(parsing::Count::Parameter(arg)) => Some(arg.into()),
-                        _ => None,
-                    }),
-                    precision: format.spec.and_then(|s| match s.precision {
-                        Some(parsing::Precision::Count(parsing::Count::Parameter(
-                            arg,
-                        ))) => Some(arg.into()),
-                        _ => None,
-                    }),
+                    has_modifiers: format
+                        .spec
+                        .map(|s| {
+                            s.align.is_some()
+                                || s.sign.is_some()
+                                || s.alternate.is_some()
+                                || s.zero_padding.is_some()
+                                || s.width.is_some()
+                                || s.precision.is_some()
+                                || !s.ty.is_trivial()
+                        })
+                        .unwrap_or_default(),
                     trait_name: ty.trait_name(),
                 }
             })
@@ -577,38 +609,32 @@ mod placeholder_parse_fmt_string_spec {
             vec![
                 Placeholder {
                     arg: Parameter::Positional(0),
-                    width: None,
-                    precision: None,
+                    has_modifiers: false,
                     trait_name: "Display",
                 },
                 Placeholder {
                     arg: Parameter::Positional(1),
-                    width: None,
-                    precision: None,
+                    has_modifiers: false,
                     trait_name: "Debug",
                 },
                 Placeholder {
                     arg: Parameter::Positional(1),
-                    width: Some(Parameter::Positional(0)),
-                    precision: None,
+                    has_modifiers: true,
                     trait_name: "Display",
                 },
                 Placeholder {
                     arg: Parameter::Positional(2),
-                    width: None,
-                    precision: Some(Parameter::Positional(1)),
+                    has_modifiers: true,
                     trait_name: "LowerHex",
                 },
                 Placeholder {
                     arg: Parameter::Named("par".to_owned()),
-                    width: None,
-                    precision: None,
+                    has_modifiers: true,
                     trait_name: "Debug",
                 },
                 Placeholder {
                     arg: Parameter::Positional(2),
-                    width: Some(Parameter::Named("width".to_owned())),
-                    precision: None,
+                    has_modifiers: true,
                     trait_name: "Display",
                 },
             ],

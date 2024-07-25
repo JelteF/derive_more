@@ -2,8 +2,6 @@
 # See full lints list at:
 # https://rust-lang.github.io/rust-clippy/master/index.html
 
-msrv = "1.65.0"
-
 # Ensures consistent bracing for macro calls in the codebase.
 # Extends default settings:
 # https://github.com/rust-lang/rust-clippy/blob/master/clippy_lints/src/nonstandard_macro_braces.rs#L143-L184
