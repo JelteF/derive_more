@@ -274,7 +274,7 @@ impl<'a> Expansion<'a> {
                     if self.shared_attr.is_some() {
                         quote! { #ident_str }
                     } else {
-                        quote! { derive_more::core::write!(__derive_more_f, #ident_str) }
+                        quote! { __derive_more_f.write_str(#ident_str) }
                     }
                 }
                 None if self.fields.len() == 1 => {
