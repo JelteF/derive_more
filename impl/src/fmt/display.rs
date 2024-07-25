@@ -5,7 +5,7 @@ use std::fmt;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, spanned::Spanned as _, ext::IdentExt as _};
+use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
@@ -256,14 +256,14 @@ impl<'a> Expansion<'a> {
                             let placeholder =
                                 trait_name_to_default_placeholder_literal(&trait_ident);
 
-                            quote! { derive_more::core::format_args!(#placeholder, #expr) }
+                            quote! { &derive_more::core::format_args!(#placeholder, #expr) }
                         } else {
                             quote! {
                                 derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f)
                             }
                         }
                     } else if self.shared_attr.is_some() {
-                        quote! { derive_more::core::format_args!(#fmt) }
+                        quote! { &derive_more::core::format_args!(#fmt) }
                     } else {
                         quote! { derive_more::core::write!(__derive_more_f, #fmt) }
                     }
@@ -291,7 +291,7 @@ impl<'a> Expansion<'a> {
                         let placeholder =
                             trait_name_to_default_placeholder_literal(trait_ident);
 
-                        quote! { derive_more::core::format_args!(#placeholder, #ident) }
+                        quote! { &derive_more::core::format_args!(#placeholder, #ident) }
                     } else {
                         quote! {
                             derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)

@@ -1305,6 +1305,29 @@ mod enums {
                 }
             }
 
+            mod transparent {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_variant}")]
+                enum Enum {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::A(1).to_string(), "A 1");
+                    assert_eq!(Enum::B { field: 2 }.to_string(), "B 2");
+                    assert_eq!(Enum::C.to_string(), "C");
+                }
+            }
+
             mod multiple {
                 use super::*;
 
