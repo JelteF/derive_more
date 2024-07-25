@@ -2314,3 +2314,184 @@ mod generic {
         }
     }
 }
+
+// See: https://github.com/JelteF/derive_more/issues/363
+mod type_variables {
+    mod our_alloc {
+        #[cfg(not(feature = "std"))]
+        pub use alloc::{boxed::Box, format, vec::Vec};
+        #[cfg(feature = "std")]
+        pub use std::{boxed::Box, format, vec::Vec};
+    }
+
+    use our_alloc::{format, Box};
+
+    // We want `Vec` in scope to test that code generation works if it is there.
+    #[allow(unused_imports)]
+    use our_alloc::Vec;
+
+    use derive_more::Display;
+
+    #[derive(Display, Debug)]
+    #[display("{inner:?}")]
+    #[display(bounds(T: Display))]
+    struct OptionalBox<T> {
+        inner: Option<Box<T>>,
+    }
+
+    #[derive(Display, Debug)]
+    #[display("{next}")]
+    struct ItemStruct {
+        next: OptionalBox<ItemStruct>,
+    }
+
+    #[derive(Display)]
+    #[derive(Debug)]
+    struct ItemTuple(OptionalBox<ItemTuple>);
+
+    #[derive(Display)]
+    #[derive(Debug)]
+    #[display("Item({_0})")]
+    struct ItemTupleContainerFmt(OptionalBox<ItemTupleContainerFmt>);
+
+    #[derive(Display, Debug)]
+    #[display("{next}")]
+    enum ItemEnumOuterFormat {
+        Variant1 {
+            next: OptionalBox<ItemEnumOuterFormat>,
+        },
+        Variant2 {
+            next: OptionalBox<i32>,
+        },
+    }
+
+    #[derive(Display, Debug)]
+    enum ItemEnumInnerFormat {
+        #[display("{next} {inner}")]
+        Node {
+            next: OptionalBox<ItemEnumInnerFormat>,
+            inner: i32,
+        },
+        #[display("{inner}")]
+        Leaf { inner: i32 },
+    }
+
+    #[derive(Display)]
+    #[derive(Debug)]
+    #[display("{next:?}, {real:?}")]
+    struct VecMeansDifferent<Vec> {
+        next: our_alloc::Vec<i32>,
+        real: Vec,
+    }
+
+    #[derive(Display)]
+    #[derive(Debug)]
+    #[display("{t:?}")]
+    struct Array<T> {
+        t: [T; 10],
+    }
+
+    mod parens {
+        #![allow(unused_parens)] // test that type is found even in parentheses
+
+        use derive_more::Display;
+
+        #[derive(Display)]
+        struct Paren<T> {
+            t: (T),
+        }
+    }
+
+    #[derive(Display)]
+    struct ParenthesizedGenericArgumentsInput<T> {
+        t: dyn Fn(T) -> i32,
+    }
+
+    #[derive(Display)]
+    struct ParenthesizedGenericArgumentsOutput<T> {
+        t: dyn Fn(i32) -> T,
+    }
+
+    #[derive(Display)]
+    struct Ptr<T> {
+        t: *const T,
+    }
+
+    #[derive(Display)]
+    struct Reference<'a, T> {
+        t: &'a T,
+    }
+
+    #[derive(Display)]
+    struct Slice<'a, T> {
+        t: &'a [T],
+    }
+
+    #[derive(Display)]
+    struct BareFn<T> {
+        t: Box<fn(T) -> T>,
+    }
+
+    #[derive(Display)]
+    struct Tuple<T> {
+        t: Box<(T, T)>,
+    }
+
+    trait MyTrait<T> {}
+
+    #[derive(Display)]
+    struct TraitObject<T> {
+        t: Box<dyn MyTrait<T>>,
+    }
+
+    #[test]
+    fn assert() {
+        assert_eq!(
+            format!(
+                "{}",
+                ItemStruct {
+                    next: OptionalBox {
+                        inner: Some(Box::new(ItemStruct {
+                            next: OptionalBox { inner: None },
+                        })),
+                    },
+                },
+            ),
+            "Some(ItemStruct { next: OptionalBox { inner: None } })",
+        );
+
+        assert_eq!(
+            format!(
+                "{}",
+                ItemTuple(OptionalBox {
+                    inner: Some(Box::new(ItemTuple(OptionalBox { inner: None }))),
+                }),
+            ),
+            "Some(ItemTuple(OptionalBox { inner: None }))",
+        );
+
+        assert_eq!(
+            format!(
+                "{}",
+                ItemTupleContainerFmt(OptionalBox {
+                    inner: Some(Box::new(ItemTupleContainerFmt(OptionalBox {
+                        inner: None,
+                    }))),
+                }),
+            ),
+            "Item(Some(ItemTupleContainerFmt(OptionalBox { inner: None })))",
+        );
+
+        let item = ItemEnumOuterFormat::Variant1 {
+            next: OptionalBox {
+                inner: Some(Box::new(ItemEnumOuterFormat::Variant2 {
+                    next: OptionalBox { inner: None },
+                })),
+            },
+        };
+        assert_eq!(
+            format!("{item}"),
+            "Some(Variant2 { next: OptionalBox { inner: None } })",
+        )
+    }
+}

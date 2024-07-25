@@ -9,7 +9,10 @@ use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
-use super::{trait_name_to_attribute_name, ContainerAttributes, FmtAttribute};
+use super::{
+    trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
+    FmtAttribute,
+};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -32,7 +35,17 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     let trait_ident = format_ident!("{trait_name}");
     let ident = &input.ident;
 
-    let ctx = (&attrs, ident, &trait_ident, &attr_name);
+    let type_params = input
+        .generics
+        .params
+        .iter()
+        .filter_map(|p| match p {
+            syn::GenericParam::Type(t) => Some(&t.ident),
+            syn::GenericParam::Const(..) | syn::GenericParam::Lifetime(..) => None,
+        })
+        .collect::<Vec<_>>();
+
+    let ctx: ExpansionCtx = (&attrs, &type_params, ident, &trait_ident, &attr_name);
     let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => expand_struct(s, ctx),
         syn::Data::Enum(e) => expand_enum(e, ctx),
@@ -62,6 +75,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 
 /// Type alias for an expansion context:
 /// - [`ContainerAttributes`].
+/// - Type parameters. Slice of [`syn::Ident`].
 /// - Struct/enum/union [`syn::Ident`].
 /// - Derived trait [`syn::Ident`].
 /// - Attribute name [`syn::Ident`].
@@ -69,6 +83,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 /// [`syn::Ident`]: struct@syn::Ident
 type ExpansionCtx<'a> = (
     &'a ContainerAttributes,
+    &'a [&'a syn::Ident],
     &'a syn::Ident,
     &'a syn::Ident,
     &'a syn::Ident,
@@ -77,12 +92,13 @@ type ExpansionCtx<'a> = (
 /// Expands a [`fmt::Display`]-like derive macro for the provided struct.
 fn expand_struct(
     s: &syn::DataStruct,
-    (attrs, ident, trait_ident, _): ExpansionCtx<'_>,
+    (attrs, type_params, ident, trait_ident, _): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
         shared_attr: None,
         attrs,
         fields: &s.fields,
+        type_params,
         trait_ident,
         ident,
     };
@@ -111,7 +127,7 @@ fn expand_struct(
 /// Expands a [`fmt`]-like derive macro for the provided enum.
 fn expand_enum(
     e: &syn::DataEnum,
-    (container_attrs, _, trait_ident, attr_name): ExpansionCtx<'_>,
+    (container_attrs, type_params, _, trait_ident, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     if let Some(shared_fmt) = &container_attrs.fmt {
         if shared_fmt
@@ -153,6 +169,7 @@ fn expand_enum(
                 shared_attr: container_attrs.fmt.as_ref(),
                 attrs: &attrs,
                 fields: &variant.fields,
+                type_params,
                 trait_ident,
                 ident,
             };
@@ -190,7 +207,7 @@ fn expand_enum(
 /// Expands a [`fmt::Display`]-like derive macro for the provided union.
 fn expand_union(
     u: &syn::DataUnion,
-    (attrs, _, _, attr_name): ExpansionCtx<'_>,
+    (attrs, _, _, _, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let fmt = &attrs.fmt.as_ref().ok_or_else(|| {
         syn::Error::new(
@@ -226,6 +243,9 @@ struct Expansion<'a> {
 
     /// Struct or enum [`syn::Fields`].
     fields: &'a syn::Fields,
+
+    /// Type parameters in this struct or enum.
+    type_params: &'a [&'a syn::Ident],
 
     /// [`fmt`] trait [`syn::Ident`].
     ///
@@ -338,28 +358,37 @@ impl<'a> Expansion<'a> {
             if let Some(fmt) = &self.attrs.fmt {
                 bounds.extend(
                     fmt.bounded_types(self.fields)
-                        .map(|(ty, trait_name)| {
+                        .filter_map(|(ty, trait_name)| {
+                            if !ty.contains_generics(self.type_params) {
+                                return None;
+                            }
                             let trait_ident = format_ident!("{trait_name}");
 
-                            parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
+                            Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
                         })
                         .chain(self.attrs.bounds.0.clone()),
                 );
             } else {
-                bounds.extend(self.fields.iter().next().map(|f| {
+                bounds.extend(self.fields.iter().next().and_then(|f| {
                     let ty = &f.ty;
+                    if !ty.contains_generics(self.type_params) {
+                        return None;
+                    }
                     let trait_ident = &self.trait_ident;
-                    parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
-                }))
+                    Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
+                }));
             };
         }
 
         if let Some(shared_fmt) = &self.shared_attr {
-            bounds.extend(shared_fmt.bounded_types(self.fields).map(
+            bounds.extend(shared_fmt.bounded_types(self.fields).filter_map(
                 |(ty, trait_name)| {
+                    if !ty.contains_generics(self.type_params) {
+                        return None;
+                    }
                     let trait_ident = format_ident!("{trait_name}");
 
-                    parse_quote! { #ty: derive_more::core::fmt::#trait_ident }
+                    Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
                 },
             ));
         }

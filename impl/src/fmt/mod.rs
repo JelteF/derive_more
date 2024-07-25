@@ -523,6 +523,121 @@ where
     }
 }
 
+trait ContainsGenericsExt {
+    /// Checks whether this definition contains any of the provided `type_params`.
+    fn contains_generics(&self, type_params: &[&syn::Ident]) -> bool;
+}
+
+impl ContainsGenericsExt for syn::Type {
+    fn contains_generics(&self, type_params: &[&syn::Ident]) -> bool {
+        if type_params.is_empty() {
+            return false;
+        }
+        match self {
+            Self::Path(syn::TypePath { qself, path }) => {
+                if let Some(qself) = qself {
+                    if qself.ty.contains_generics(type_params) {
+                        return true;
+                    }
+                }
+
+                if let Some(ident) = path.get_ident() {
+                    type_params.iter().any(|param| *param == ident)
+                } else {
+                    path.contains_generics(type_params)
+                }
+            }
+
+            Self::Array(syn::TypeArray { elem, .. })
+            | Self::Group(syn::TypeGroup { elem, .. })
+            | Self::Paren(syn::TypeParen { elem, .. })
+            | Self::Ptr(syn::TypePtr { elem, .. })
+            | Self::Reference(syn::TypeReference { elem, .. })
+            | Self::Slice(syn::TypeSlice { elem, .. }) => {
+                elem.contains_generics(type_params)
+            }
+
+            Self::BareFn(syn::TypeBareFn { inputs, output, .. }) => {
+                inputs
+                    .iter()
+                    .any(|arg| arg.ty.contains_generics(type_params))
+                    || match output {
+                        syn::ReturnType::Default => false,
+                        syn::ReturnType::Type(_, ty) => {
+                            ty.contains_generics(type_params)
+                        }
+                    }
+            }
+
+            Self::Tuple(syn::TypeTuple { elems, .. }) => {
+                elems.iter().any(|ty| ty.contains_generics(type_params))
+            }
+
+            Self::TraitObject(syn::TypeTraitObject { bounds, .. }) => {
+                bounds.iter().any(|bound| match bound {
+                    syn::TypeParamBound::Trait(syn::TraitBound { path, .. }) => {
+                        path.contains_generics(type_params)
+                    }
+                    syn::TypeParamBound::Lifetime(..)
+                    | syn::TypeParamBound::Verbatim(..) => false,
+                    _ => unimplemented!(
+                        "syntax is not supported by `derive_more`, please report a bug",
+                    ),
+                })
+            }
+
+            Self::ImplTrait(..)
+            | Self::Infer(..)
+            | Self::Macro(..)
+            | Self::Never(..)
+            | Self::Verbatim(..) => false,
+            _ => unimplemented!(
+                "syntax is not supported by `derive_more`, please report a bug",
+            ),
+        }
+    }
+}
+
+impl ContainsGenericsExt for syn::Path {
+    fn contains_generics(&self, type_params: &[&syn::Ident]) -> bool {
+        if type_params.is_empty() {
+            return false;
+        }
+        self.segments
+            .iter()
+            .any(|segment| match &segment.arguments {
+                syn::PathArguments::None => false,
+                syn::PathArguments::AngleBracketed(
+                    syn::AngleBracketedGenericArguments { args, .. },
+                ) => args.iter().any(|generic| match generic {
+                    syn::GenericArgument::Type(ty)
+                    | syn::GenericArgument::AssocType(syn::AssocType { ty, .. }) => {
+                        ty.contains_generics(type_params)
+                    }
+
+                    syn::GenericArgument::Lifetime(..)
+                    | syn::GenericArgument::Const(..)
+                    | syn::GenericArgument::AssocConst(..)
+                    | syn::GenericArgument::Constraint(..) => false,
+                    _ => unimplemented!(
+                        "syntax is not supported by `derive_more`, please report a bug",
+                    ),
+                }),
+                syn::PathArguments::Parenthesized(
+                    syn::ParenthesizedGenericArguments { inputs, output, .. },
+                ) => {
+                    inputs.iter().any(|ty| ty.contains_generics(type_params))
+                        || match output {
+                            syn::ReturnType::Default => false,
+                            syn::ReturnType::Type(_, ty) => {
+                                ty.contains_generics(type_params)
+                            }
+                        }
+                }
+            })
+    }
+}
+
 #[cfg(test)]
 mod fmt_attribute_spec {
     use itertools::Itertools as _;
