@@ -5,7 +5,7 @@ use std::fmt;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, spanned::Spanned as _};
+use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
@@ -262,36 +262,35 @@ impl<'a> Expansion<'a> {
     fn generate_body(&self) -> syn::Result<TokenStream> {
         let mut body = TokenStream::new();
 
-        if self
+        // If `shared_attr` is a transparent call, then we consider it being absent.
+        let has_shared_attr = self
             .shared_attr
-            .map_or(true, |a| a.contains_arg("_variant"))
+            .map_or(false, |a| a.transparent_call().is_none());
+
+        if !has_shared_attr
+            || self
+                .shared_attr
+                .map_or(true, |a| a.contains_arg("_variant"))
         {
             body = match &self.attrs.fmt {
                 Some(fmt) => {
-                    if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                        if self.shared_attr.is_some() {
-                            let placeholder =
-                                trait_name_to_default_placeholder_literal(&trait_ident);
-
-                            quote! { derive_more::core::format_args!(#placeholder, #expr) }
-                        } else {
-                            quote! {
-                                derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f)
-                            }
+                    if has_shared_attr {
+                        quote! { &derive_more::core::format_args!(#fmt) }
+                    } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
+                        quote! {
+                            derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f)
                         }
-                    } else if self.shared_attr.is_some() {
-                        quote! { derive_more::core::format_args!(#fmt) }
                     } else {
                         quote! { derive_more::core::write!(__derive_more_f, #fmt) }
                     }
                 }
                 None if self.fields.is_empty() => {
-                    let ident_str = self.ident.to_string();
+                    let ident_str = self.ident.unraw().to_string();
 
-                    if self.shared_attr.is_some() {
+                    if has_shared_attr {
                         quote! { #ident_str }
                     } else {
-                        quote! { derive_more::core::write!(__derive_more_f, #ident_str) }
+                        quote! { __derive_more_f.write_str(#ident_str) }
                     }
                 }
                 None if self.fields.len() == 1 => {
@@ -304,11 +303,11 @@ impl<'a> Expansion<'a> {
                         field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
                     let trait_ident = self.trait_ident;
 
-                    if self.shared_attr.is_some() {
+                    if has_shared_attr {
                         let placeholder =
                             trait_name_to_default_placeholder_literal(trait_ident);
 
-                        quote! { derive_more::core::format_args!(#placeholder, #ident) }
+                        quote! { &derive_more::core::format_args!(#placeholder, #ident) }
                     } else {
                         quote! {
                             derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
@@ -328,22 +327,18 @@ impl<'a> Expansion<'a> {
             };
         }
 
-        if let Some(shared_fmt) = &self.shared_attr {
-            let shared_body = if let Some((shared_expr, shared_trait_ident)) =
-                shared_fmt.transparent_call()
-            {
-                quote! {
-                    derive_more::core::fmt::#shared_trait_ident::fmt(#shared_expr, __derive_more_f)
-                }
-            } else {
-                quote! { derive_more::core::write!(__derive_more_f, #shared_fmt) }
-            };
+        if has_shared_attr {
+            if let Some(shared_fmt) = &self.shared_attr {
+                let shared_body = quote! {
+                    derive_more::core::write!(__derive_more_f, #shared_fmt)
+                };
 
-            body = if body.is_empty() {
-                shared_body
-            } else {
-                quote! { match #body { _variant => #shared_body } }
-            };
+                body = if body.is_empty() {
+                    shared_body
+                } else {
+                    quote! { match #body { _variant => #shared_body } }
+                }
+            }
         }
 
         Ok(body)
