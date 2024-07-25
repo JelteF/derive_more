@@ -11,7 +11,10 @@ use crate::utils::{
     Either, Spanning,
 };
 
-use super::{trait_name_to_attribute_name, ContainerAttributes, FmtAttribute};
+use super::{
+    trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
+    FmtAttribute,
+};
 
 /// Expands a [`fmt::Debug`] derive macro.
 ///
@@ -24,7 +27,7 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
         .unwrap_or_default();
     let ident = &input.ident;
 
-    let type_params: Vec<_> = input
+    let type_params = input
         .generics
         .params
         .iter()
@@ -32,7 +35,7 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
             syn::GenericParam::Type(t) => Some(&t.ident),
             syn::GenericParam::Const(..) | syn::GenericParam::Lifetime(..) => None,
         })
-        .collect();
+        .collect::<Vec<_>>();
 
     let (bounds, body) = match &input.data {
         syn::Data::Struct(s) => {
@@ -355,7 +358,7 @@ impl<'a> Expansion<'a> {
         if let Some(fmt) = self.attr.fmt.as_ref() {
             out.extend(fmt.bounded_types(self.fields).filter_map(
                 |(ty, trait_name)| {
-                    if !self.contains_generic_param(ty) {
+                    if !ty.contains_generics(self.type_params) {
                         return None;
                     }
 
@@ -369,7 +372,7 @@ impl<'a> Expansion<'a> {
             self.fields.iter().try_fold(out, |mut out, field| {
                 let ty = &field.ty;
 
-                if !self.contains_generic_param(ty) {
+                if !ty.contains_generics(self.type_params) {
                     return Ok(out);
                 }
 
@@ -390,107 +393,6 @@ impl<'a> Expansion<'a> {
                 }
                 Ok(out)
             })
-        }
-    }
-
-    /// Checks whether the provided [`syn::Path`] contains any of these [`Expansion::type_params`].
-    fn path_contains_generic_param(&self, path: &syn::Path) -> bool {
-        path.segments
-            .iter()
-            .any(|segment| match &segment.arguments {
-                syn::PathArguments::None => false,
-                syn::PathArguments::AngleBracketed(
-                    syn::AngleBracketedGenericArguments { args, .. },
-                ) => args.iter().any(|generic| match generic {
-                    syn::GenericArgument::Type(ty)
-                    | syn::GenericArgument::AssocType(syn::AssocType { ty, .. }) => {
-                        self.contains_generic_param(ty)
-                    }
-
-                    syn::GenericArgument::Lifetime(_)
-                    | syn::GenericArgument::Const(_)
-                    | syn::GenericArgument::AssocConst(_)
-                    | syn::GenericArgument::Constraint(_) => false,
-                    _ => unimplemented!(
-                        "syntax is not supported by `derive_more`, please report a bug",
-                    ),
-                }),
-                syn::PathArguments::Parenthesized(
-                    syn::ParenthesizedGenericArguments { inputs, output, .. },
-                ) => {
-                    inputs.iter().any(|ty| self.contains_generic_param(ty))
-                        || match output {
-                            syn::ReturnType::Default => false,
-                            syn::ReturnType::Type(_, ty) => {
-                                self.contains_generic_param(ty)
-                            }
-                        }
-                }
-            })
-    }
-
-    /// Checks whether the provided [`syn::Type`] contains any of these [`Expansion::type_params`].
-    fn contains_generic_param(&self, ty: &syn::Type) -> bool {
-        if self.type_params.is_empty() {
-            return false;
-        }
-        match ty {
-            syn::Type::Path(syn::TypePath { qself, path }) => {
-                if let Some(qself) = qself {
-                    if self.contains_generic_param(&qself.ty) {
-                        return true;
-                    }
-                }
-
-                if let Some(ident) = path.get_ident() {
-                    self.type_params.iter().any(|param| *param == ident)
-                } else {
-                    self.path_contains_generic_param(path)
-                }
-            }
-
-            syn::Type::Array(syn::TypeArray { elem, .. })
-            | syn::Type::Group(syn::TypeGroup { elem, .. })
-            | syn::Type::Paren(syn::TypeParen { elem, .. })
-            | syn::Type::Ptr(syn::TypePtr { elem, .. })
-            | syn::Type::Reference(syn::TypeReference { elem, .. })
-            | syn::Type::Slice(syn::TypeSlice { elem, .. }) => {
-                self.contains_generic_param(elem)
-            }
-
-            syn::Type::BareFn(syn::TypeBareFn { inputs, output, .. }) => {
-                inputs
-                    .iter()
-                    .any(|arg| self.contains_generic_param(&arg.ty))
-                    || match output {
-                        syn::ReturnType::Default => false,
-                        syn::ReturnType::Type(_, ty) => self.contains_generic_param(ty),
-                    }
-            }
-            syn::Type::Tuple(syn::TypeTuple { elems, .. }) => {
-                elems.iter().any(|ty| self.contains_generic_param(ty))
-            }
-
-            syn::Type::ImplTrait(_) => false,
-            syn::Type::Infer(_) => false,
-            syn::Type::Macro(_) => false,
-            syn::Type::Never(_) => false,
-            syn::Type::TraitObject(syn::TypeTraitObject { bounds, .. }) => {
-                bounds.iter().any(|bound| match bound {
-                    syn::TypeParamBound::Trait(syn::TraitBound { path, .. }) => {
-                        self.path_contains_generic_param(path)
-                    }
-                    syn::TypeParamBound::Lifetime(_) => false,
-                    syn::TypeParamBound::Verbatim(_) => false,
-                    _ => unimplemented!(
-                        "syntax is not supported by `derive_more`, please report a bug",
-                    ),
-                })
-            }
-            syn::Type::Verbatim(_) => false,
-            _ => unimplemented!(
-                "syntax is not supported by `derive_more`, please report a bug",
-            ),
         }
     }
 }

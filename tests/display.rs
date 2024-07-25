@@ -2452,9 +2452,9 @@ mod type_variables {
                 ItemStruct {
                     next: OptionalBox {
                         inner: Some(Box::new(ItemStruct {
-                            next: OptionalBox { inner: None }
-                        }))
-                    }
+                            next: OptionalBox { inner: None },
+                        })),
+                    },
                 },
             ),
             "Some(ItemStruct { next: OptionalBox { inner: None } })",
@@ -2464,7 +2464,7 @@ mod type_variables {
             format!(
                 "{}",
                 ItemTuple(OptionalBox {
-                    inner: Some(Box::new(ItemTuple(OptionalBox { inner: None })))
+                    inner: Some(Box::new(ItemTuple(OptionalBox { inner: None }))),
                 }),
             ),
             "Some(ItemTuple(OptionalBox { inner: None }))",
@@ -2475,8 +2475,8 @@ mod type_variables {
                 "{}",
                 ItemTupleContainerFmt(OptionalBox {
                     inner: Some(Box::new(ItemTupleContainerFmt(OptionalBox {
-                        inner: None
-                    })))
+                        inner: None,
+                    }))),
                 }),
             ),
             "Item(Some(ItemTupleContainerFmt(OptionalBox { inner: None })))",
