@@ -1324,6 +1324,8 @@ mod enums {
                         field: i32,
                     },
                     C,
+                    #[display("{_0:b}")]
+                    TransparentBinary(i32),
                 }
 
                 #[test]
@@ -1331,6 +1333,10 @@ mod enums {
                     assert_eq!(Enum::A(1).to_string(), "A 1");
                     assert_eq!(Enum::B { field: 2 }.to_string(), "B 2");
                     assert_eq!(Enum::C.to_string(), "C");
+                    assert_eq!(
+                        format!("{:08}", Enum::TransparentBinary(4)),
+                        "00000100",
+                    );
                 }
             }
 
