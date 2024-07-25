@@ -5,7 +5,7 @@ use std::fmt;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, spanned::Spanned as _};
+use syn::{parse_quote, spanned::Spanned as _, ext::IdentExt as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
@@ -269,7 +269,7 @@ impl<'a> Expansion<'a> {
                     }
                 }
                 None if self.fields.is_empty() => {
-                    let ident_str = self.ident.to_string();
+                    let ident_str = self.ident.unraw().to_string();
 
                     if self.shared_attr.is_some() {
                         quote! { #ident_str }
