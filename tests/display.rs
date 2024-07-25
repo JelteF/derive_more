@@ -21,6 +21,9 @@ mod structs {
         struct Unit;
 
         #[derive(Display)]
+        struct r#RawUnit;
+
+        #[derive(Display)]
         struct Tuple();
 
         #[derive(Display)]
@@ -29,6 +32,7 @@ mod structs {
         #[test]
         fn assert() {
             assert_eq!(Unit.to_string(), "Unit");
+            assert_eq!(r#RawUnit.to_string(), "RawUnit");
             assert_eq!(Tuple().to_string(), "Tuple");
             assert_eq!(Struct {}.to_string(), "Struct");
         }
@@ -696,6 +700,7 @@ mod enums {
         #[derive(Display)]
         enum Enum {
             Unit,
+            r#RawUnit,
             Unnamed(),
             Named {},
             #[display("STR_UNIT")]
@@ -709,6 +714,7 @@ mod enums {
         #[test]
         fn assert() {
             assert_eq!(Enum::Unit.to_string(), "Unit");
+            assert_eq!(Enum::r#RawUnit.to_string(), "RawUnit");
             assert_eq!(Enum::Unnamed().to_string(), "Unnamed");
             assert_eq!(Enum::Named {}.to_string(), "Named");
             assert_eq!(Enum::StrUnit.to_string(), "STR_UNIT");
