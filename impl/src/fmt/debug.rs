@@ -250,12 +250,7 @@ impl<'a> Expansion<'a> {
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
             return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                let expr = if self
-                    .fields
-                    .fmt_args_idents()
-                    .into_iter()
-                    .any(|field| expr == field)
-                {
+                let expr = if self.fields.fmt_args_idents().any(|field| expr == field) {
                     quote! { #expr }
                 } else {
                     quote! { &(#expr) }
