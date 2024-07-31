@@ -102,7 +102,7 @@ mod structs {
                 assert_eq!(format!("{:03?}", UpperHex), "00B");
                 assert_eq!(format!("{:07?}", LowerExp), "03.15e0");
                 assert_eq!(format!("{:07?}", UpperExp), "03.15E0");
-                assert_eq!(format!("{:018?}", Pointer).len(), 18);
+                assert_eq!(format!("{:018?}", Pointer), format!("{POINTER:018p}"));
             }
 
             mod omitted {
@@ -245,6 +245,53 @@ mod structs {
                     format!("{:#?}", Struct { field: 0 }),
                     "Struct {\n    field: 0.0,\n}",
                 );
+            }
+
+            mod pointer {
+                #[cfg(not(feature = "std"))]
+                use alloc::format;
+
+                use derive_more::Debug;
+
+                #[derive(Debug)]
+                struct Tuple<'a>(#[debug("{_0:p}.{:p}", self.0)] &'a i32);
+
+                #[derive(Debug)]
+                struct Struct<'a> {
+                    #[debug("{field:p}.{:p}", self.field)]
+                    field: &'a i32,
+                }
+
+                #[derive(Debug)]
+                #[debug("{_0:p}")]
+                struct TupleTransparent<'a>(&'a i32);
+
+                #[derive(Debug)]
+                #[debug("{field:p}")]
+                struct StructTransparent<'a> {
+                    field: &'a i32,
+                }
+
+                #[test]
+                fn assert() {
+                    let a = 42;
+                    assert_eq!(
+                        format!("{:?}", Tuple(&a)),
+                        format!("Tuple({0:p}.{0:p})", &a),
+                    );
+                    assert_eq!(
+                        format!("{:?}", Struct { field: &a }),
+                        format!("Struct {{ field: {0:p}.{0:p} }}", &a),
+                    );
+                    assert_eq!(
+                        format!("{:?}", TupleTransparent(&a)),
+                        format!("{0:p}", &a),
+                    );
+                    assert_eq!(
+                        format!("{:?}", StructTransparent { field: &a }),
+                        format!("{0:p}", &a),
+                    );
+                }
             }
         }
 
@@ -527,6 +574,37 @@ mod structs {
                 assert_eq!(format!("{:?}", Tuple(10, true)), "10 * true");
                 assert_eq!(format!("{:?}", Struct { a: 10, b: true }), "10 * true");
             }
+
+            mod pointer {
+                #[cfg(not(feature = "std"))]
+                use alloc::format;
+
+                use derive_more::Debug;
+
+                #[derive(Debug)]
+                #[debug("{_0:p} * {_1:p}")]
+                struct Tuple<'a, 'b>(&'a u8, &'b bool);
+
+                #[derive(Debug)]
+                #[debug("{a:p} * {b:p}")]
+                struct Struct<'a, 'b> {
+                    a: &'a u8,
+                    b: &'b bool,
+                }
+
+                #[test]
+                fn assert() {
+                    let (a, b) = (10, true);
+                    assert_eq!(
+                        format!("{:?}", Tuple(&a, &b)),
+                        format!("{:p} * {:p}", &a, &b),
+                    );
+                    assert_eq!(
+                        format!("{:?}", Struct { a: &a, b: &b }),
+                        format!("{:p} * {:p}", &a, &b),
+                    );
+                }
+            }
         }
 
         mod ignore {
@@ -677,7 +755,10 @@ mod enums {
                 assert_eq!(format!("{:03?}", Unit::UpperHex), "00B");
                 assert_eq!(format!("{:07?}", Unit::LowerExp), "03.15e0");
                 assert_eq!(format!("{:07?}", Unit::UpperExp), "03.15E0");
-                assert_eq!(format!("{:018?}", Unit::Pointer).len(), 18);
+                assert_eq!(
+                    format!("{:018?}", Unit::Pointer),
+                    format!("{POINTER:018p}"),
+                );
             }
 
             mod omitted {

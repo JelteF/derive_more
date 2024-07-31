@@ -13,7 +13,7 @@ use crate::utils::{
 
 use super::{
     trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FmtAttribute,
+    FieldsExt as _, FmtAttribute,
 };
 
 /// Expands a [`fmt::Debug`] derive macro.
@@ -250,9 +250,22 @@ impl<'a> Expansion<'a> {
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
             return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                quote! { derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f) }
+                let expr = if self
+                    .fields
+                    .fmt_args_idents()
+                    .into_iter()
+                    .any(|field| expr == field)
+                {
+                    quote! { #expr }
+                } else {
+                    quote! { &(#expr) }
+                };
+
+                quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
             } else {
-                quote! { derive_more::core::write!(__derive_more_f, #fmt) }
+                let deref_args = fmt.additional_deref_args(self.fields);
+
+                quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*) }
             });
         };
 
@@ -288,12 +301,16 @@ impl<'a> Expansion<'a> {
                             exhaustive = false;
                             Ok::<_, syn::Error>(out)
                         }
-                        Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
-                            derive_more::__private::DebugTuple::field(
-                                #out,
-                                &derive_more::core::format_args!(#fmt_attr),
-                            )
-                        }),
+                        Some(FieldAttribute::Right(fmt_attr)) => {
+                            let deref_args = fmt_attr.additional_deref_args(self.fields);
+
+                            Ok(quote! {
+                                derive_more::__private::DebugTuple::field(
+                                    #out,
+                                    &derive_more::core::format_args!(#fmt_attr, #(#deref_args),*),
+                                )
+                            })
+                        }
                         None => {
                             let ident = format_ident!("_{i}");
                             Ok(quote! {
@@ -319,29 +336,38 @@ impl<'a> Expansion<'a> {
                     )
                 };
                 let out = named.named.iter().try_fold(out, |out, field| {
-                        let field_ident = field.ident.as_ref().unwrap_or_else(|| {
-                            unreachable!("`syn::Fields::Named`");
-                        });
-                        let field_str = field_ident.to_string();
-                        match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
-                            .map(Spanning::into_inner)
-                        {
-                            Some(FieldAttribute::Left(_skip)) => {
-                                exhaustive = false;
-                                Ok::<_, syn::Error>(out)
-                            }
-                            Some(FieldAttribute::Right(fmt_attr)) => Ok(quote! {
+                    let field_ident = field.ident.as_ref().unwrap_or_else(|| {
+                        unreachable!("`syn::Fields::Named`");
+                    });
+                    let field_str = field_ident.to_string();
+                    match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
+                        .map(Spanning::into_inner)
+                    {
+                        Some(FieldAttribute::Left(_skip)) => {
+                            exhaustive = false;
+                            Ok::<_, syn::Error>(out)
+                        }
+                        Some(FieldAttribute::Right(fmt_attr)) => {
+                            let deref_args =
+                                fmt_attr.additional_deref_args(self.fields);
+
+                            Ok(quote! {
                                 derive_more::core::fmt::DebugStruct::field(
                                     #out,
                                     #field_str,
-                                    &derive_more::core::format_args!(#fmt_attr),
+                                    &derive_more::core::format_args!(
+                                        #fmt_attr, #(#deref_args),*
+                                    ),
                                 )
-                            }),
-                            None => Ok(quote! {
-                                derive_more::core::fmt::DebugStruct::field(#out, #field_str, &#field_ident)
-                            }),
+                            })
                         }
-                    })?;
+                        None => Ok(quote! {
+                            derive_more::core::fmt::DebugStruct::field(
+                                #out, #field_str, &#field_ident
+                            )
+                        }),
+                    }
+                })?;
                 Ok(if exhaustive {
                     quote! { derive_more::core::fmt::DebugStruct::finish(#out) }
                 } else {

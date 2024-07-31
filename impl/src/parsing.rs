@@ -71,6 +71,12 @@ impl Parse for Expr {
     }
 }
 
+impl PartialEq<syn::Ident> for Expr {
+    fn eq(&self, other: &syn::Ident) -> bool {
+        self.ident().map_or(false, |i| i == other)
+    }
+}
+
 impl ToTokens for Expr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {

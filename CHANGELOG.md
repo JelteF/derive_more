@@ -104,6 +104,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Hygiene of macro expansions in presence of custom `core` crate.
   ([#327](https://github.com/JelteF/derive_more/pull/327))
 - Fix documentation of generated methods in `IsVariant` derive.
+- Make `{field:p}` do the expected thing in format strings for `Display` and
+  `Debug`. Also document weirdness around `Pointer` formatting when using
+  expressions, due to field variables being references.
+  ([#381](https://github.com/JelteF/derive_more/pull/381))
 
 ## 0.99.10 - 2020-09-11
 

@@ -22,9 +22,28 @@ inner variable. If there is no such variable, or there is more than 1, an error 
 You supply a format by attaching an attribute of the syntax: `#[display("...", args...)]`.
 The format supplied is passed verbatim to `write!`.
 
-The variables available in the arguments is `self` and each member of the variant,
-with members of tuple structs being named with a leading underscore and their index,
-i.e. `_0`, `_1`, `_2`, etc.
+The variables available in the arguments is `self` and each member of the
+struct or enum variant, with members of tuple structs being named with a
+leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc. Due to
+ownership/lifetime limitations the member variables are all references to the
+fields, except when used directly in the format string. For most purposes this
+detail doesn't matter, but it is quite important when using `Pointer`
+formatting. If you don't use the `{field:p}` syntax, you have to dereference
+once to get the address of the field itself, instead of the address of the
+reference to the field:
+
+```rust
+# use derive_more::Display;
+#
+#[derive(Display)]
+#[display("{field:p} {:p}", *field)]
+struct RefInt<'a> {
+    field: &'a i32,
+}
+
+let a = &123;
+assert_eq!(format!("{}", RefInt{field: &a}), format!("{a:p} {:p}", a));
+```
 
 For enums you can also specify a shared format on the enum itself instead of
 the variant. This format is used for each of the variants, and can be
@@ -55,7 +74,7 @@ E.g., for a structure `Foo` defined like this:
 # trait Trait { type Type; }
 #
 #[derive(Display)]
-#[display("{} {} {:?} {:p}", a, b, c, d)]
+#[display("{a} {b} {c:?} {d:p}")]
 struct Foo<'a, T1, T2: Trait, T3> {
     a: T1,
     b: <T2 as Trait>::Type,

@@ -11,7 +11,7 @@ use crate::utils::{attr::ParseMultiple as _, Spanning};
 
 use super::{
     trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FmtAttribute,
+    FieldsExt as _, FmtAttribute,
 };
 
 /// Expands a [`fmt::Display`]-like derive macro.
@@ -278,13 +278,30 @@ impl<'a> Expansion<'a> {
             body = match &self.attrs.fmt {
                 Some(fmt) => {
                     if has_shared_attr {
-                        quote! { &derive_more::core::format_args!(#fmt) }
+                        let deref_args = fmt.additional_deref_args(self.fields);
+
+                        quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
                     } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
+                        let expr = if self
+                            .fields
+                            .fmt_args_idents()
+                            .into_iter()
+                            .any(|field| expr == field)
+                        {
+                            quote! { #expr }
+                        } else {
+                            quote! { &(#expr) }
+                        };
+
                         quote! {
-                            derive_more::core::fmt::#trait_ident::fmt(&(#expr), __derive_more_f)
+                            derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f)
                         }
                     } else {
-                        quote! { derive_more::core::write!(__derive_more_f, #fmt) }
+                        let deref_args = fmt.additional_deref_args(self.fields);
+
+                        quote! {
+                            derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*)
+                        }
                     }
                 }
                 None if self.fields.is_empty() => {
@@ -332,8 +349,10 @@ impl<'a> Expansion<'a> {
 
         if has_shared_attr {
             if let Some(shared_fmt) = &self.shared_attr {
+                let deref_args = shared_fmt.additional_deref_args(self.fields);
+
                 let shared_body = quote! {
-                    derive_more::core::write!(__derive_more_f, #shared_fmt)
+                    derive_more::core::write!(__derive_more_f, #shared_fmt, #(#deref_args),*)
                 };
 
                 body = if body.is_empty() {

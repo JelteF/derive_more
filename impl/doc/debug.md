@@ -14,8 +14,28 @@ This derive macro is a clever superset of `Debug` from standard library. Additio
 You supply a format by placing an attribute on a struct or enum variant, or its particular field:
 `#[debug("...", args...)]`. The format is exactly like in [`format!()`] or any other [`format_args!()`]-based macros.
 
-The variables available in the arguments is `self` and each member of the struct or enum variant, with members of tuple
-structs being named with a leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc.
+The variables available in the arguments is `self` and each member of the
+struct or enum variant, with members of tuple structs being named with a
+leading underscore and their index, i.e. `_0`, `_1`, `_2`, etc. Due to
+ownership/lifetime limitations the member variables are all references to the
+fields, except when used directly in the format string. For most purposes this
+detail doesn't matter, but it is quite important when using `Pointer`
+formatting. If you don't use the `{field:p}` syntax, you have to dereference
+once to get the address of the field itself, instead of the address of the
+reference to the field:
+
+```rust
+use derive_more::Debug;
+
+#[derive(Debug)]
+#[debug("{field:p} {:p}", *field)]
+struct RefInt<'a> {
+    field: &'a i32,
+}
+
+let a = &123;
+assert_eq!(format!("{:?}", RefInt{field: &a}), format!("{a:p} {:p}", a));
+```
 
 
 ### Generic data types
@@ -90,8 +110,8 @@ If the top-level `#[debug("...", args...)]` attribute (the one for a whole struc
 and can be trivially substituted with a transparent delegation call to the inner type, then all the additional
 [formatting parameters][1] do work as expected:
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug("{_0:o}")] // the same as calling `Octal::fmt()`
 struct MyOctalInt(i32);
@@ -110,8 +130,8 @@ assert_eq!(format!("{:07?}", MyBinaryInt(2)), "10");
 If, for some reason, transparency in trivial cases is not desired, it may be suppressed explicitly
 either with the [`format_args!()`] macro usage:
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug("{}", format_args!("{_0:o}"))] // `format_args!()` obscures the inner type
 struct MyOctalInt(i32);
@@ -121,8 +141,8 @@ assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ```
 Or by adding [formatting parameters][1] which cause no visual effects:
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug("{_0:^o}")] // `^` is centering, but in absence of additional width has no effect
 struct MyOctalInt(i32);
