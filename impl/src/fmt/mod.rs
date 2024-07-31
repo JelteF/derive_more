@@ -669,6 +669,8 @@ impl ContainsGenericsExt for syn::Path {
 trait FieldsExt {
     /// Returns an [`Iterator`] over [`syn::Ident`]s representing these [`syn::Fields`] in a
     /// [`FmtAttribute`] as [`FmtArgument`]s or named [`Placeholder`]s.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     fn fmt_args_idents(&self) -> impl Iterator<Item = syn::Ident> + '_;
 }
 
