@@ -290,13 +290,16 @@ impl FmtAttribute {
             })
             .collect::<Vec<_>>();
 
-        fields.fmt_args_idents().filter_map(move |field_name| {
-            (used_args.iter().any(|arg| field_name == arg)
-                && !self.args.iter().any(|arg| {
-                    arg.alias.as_ref().map_or(false, |(n, _)| n == &field_name)
-                }))
-            .then(|| quote! { #field_name = *#field_name })
-        })
+        fields
+            .fmt_args_idents()
+            .into_iter()
+            .filter_map(move |field_name| {
+                (used_args.iter().any(|arg| field_name == arg)
+                    && !self.args.iter().any(|arg| {
+                        arg.alias.as_ref().map_or(false, |(n, _)| n == &field_name)
+                    }))
+                .then(|| quote! { #field_name = *#field_name })
+            })
     }
 
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
@@ -671,14 +674,17 @@ trait FieldsExt {
     /// [`FmtAttribute`] as [`FmtArgument`]s or named [`Placeholder`]s.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    fn fmt_args_idents(&self) -> impl Iterator<Item = syn::Ident> + '_;
+    // TODO: Return `impl Iterator<Item = syn::Ident> + '_` once MSRV is bumped up to 1.75 or
+    //       higher.
+    fn fmt_args_idents(&self) -> Vec<syn::Ident>;
 }
 
 impl FieldsExt for syn::Fields {
-    fn fmt_args_idents(&self) -> impl Iterator<Item = syn::Ident> + '_ {
+    fn fmt_args_idents(&self) -> Vec<syn::Ident> {
         self.iter()
             .enumerate()
             .map(|(i, f)| f.ident.clone().unwrap_or_else(|| format_ident!("_{i}")))
+            .collect()
     }
 }
 
