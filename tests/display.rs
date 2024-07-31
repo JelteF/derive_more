@@ -566,15 +566,15 @@ mod structs {
 
             #[derive(Display)]
             #[display(
-                "{_0} {ident} {_2} {} {}",
-                _1, _0 + _1, ident = 123, _2 = _0,
+                "{_0} {ident} {_1} {} {}",
+                _1, _0 + _1, ident = 123, _1 = _0,
             )]
             struct Tuple(i32, i32);
 
             #[derive(Display)]
             #[display(
-                "{field1} {ident} {field3} {} {}",
-                field2, field1 + field2, ident = 123, field3 = field1,
+                "{field1} {ident} {field2} {} {}",
+                field2, field1 + field2, ident = 123, field2 = field1,
             )]
             struct Struct {
                 field1: i32,
@@ -1166,13 +1166,13 @@ mod enums {
             #[display("named")]
             StrNamed { field1: i32, field2: i32 },
             #[display(
-                "{_0} {ident} {_2} {} {}",
-                _1, _0 + _1, ident = 123, _2 = _0,
+                "{_0} {ident} {_1} {} {}",
+                _1, _0 + _1, ident = 123, _1 = _0,
             )]
             InterpolatedUnnamed(i32, i32),
             #[display(
-                "{field1} {ident} {field3} {} {}",
-                field2, field1 + field2, ident = 123, field3 = field1,
+                "{field1} {ident} {field2} {} {}",
+                field2, field1 + field2, ident = 123, field2 = field1,
             )]
             InterpolatedNamed { field1: i32, field2: i32 },
         }
@@ -1482,11 +1482,11 @@ mod enums {
                 fn assert() {
                     let (a, b) = (8.3, 42.1);
                     assert_eq!(
-                        format!("{}", Pointer::A(&a)),
+                        Pointer::A(&a).to_string(),
                         format!("Pointer {0:p} A {0:p}", &a),
                     );
                     assert_eq!(
-                        format!("{}", Pointer::B(&b)),
+                        Pointer::B(&b).to_string(),
                         format!("Pointer {0:p} B {0:p}", &b),
                     );
                 }

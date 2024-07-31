@@ -9,7 +9,7 @@ pub(crate) mod display;
 mod parsing;
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
@@ -275,13 +275,28 @@ impl FmtAttribute {
         })
     }
 
-    fn placeholder_names(&self) -> impl Iterator<Item = String> {
-        Placeholder::parse_fmt_string(&self.lit.value())
+    /// Returns an [`Iterator`] over the additional formatting arguments doing the dereferencing
+    /// replacement in this [`FmtAttribute`] for those [`Placeholder`] representing the provided
+    /// [`syn::Fields`] and requiring it
+    fn additional_deref_args<'fmt: 'ret, 'fields: 'ret, 'ret>(
+        &'fmt self,
+        fields: &'fields syn::Fields,
+    ) -> impl Iterator<Item = TokenStream> + 'ret {
+        let used_args = Placeholder::parse_fmt_string(&self.lit.value())
             .into_iter()
             .filter_map(|placeholder| match placeholder.arg {
                 Parameter::Named(name) => Some(name),
                 _ => None,
             })
+            .collect::<Vec<_>>();
+
+        fields.fmt_args_idents().filter_map(move |field_name| {
+            (used_args.iter().any(|arg| field_name == arg)
+                && !self.args.iter().any(|arg| {
+                    arg.alias.as_ref().map_or(false, |(n, _)| n == &field_name)
+                }))
+            .then(|| quote! { #field_name = *#field_name })
+        })
     }
 
     /// Errors in case legacy syntax is encountered: `fmt = "...", (arg),*`.
@@ -534,6 +549,7 @@ where
     }
 }
 
+/// Extension of a [`syn::Type`] and a [`syn::Path`] allowing to travers its type parameters.
 trait ContainsGenericsExt {
     /// Checks whether this definition contains any of the provided `type_params`.
     fn contains_generics(&self, type_params: &[&syn::Ident]) -> bool;
@@ -646,6 +662,21 @@ impl ContainsGenericsExt for syn::Path {
                         }
                 }
             })
+    }
+}
+
+/// Extension of [`syn::Fields`] providing helpers for a [`FmtAttribute`].
+trait FieldsExt {
+    /// Returns an [`Iterator`] over [`syn::Ident`]s representing these [`syn::Fields`] in a
+    /// [`FmtAttribute`] as [`FmtArgument`]s or named [`Placeholder`]s.
+    fn fmt_args_idents(&self) -> impl Iterator<Item = syn::Ident> + '_;
+}
+
+impl FieldsExt for syn::Fields {
+    fn fmt_args_idents(&self) -> impl Iterator<Item = syn::Ident> + '_ {
+        self.iter()
+            .enumerate()
+            .map(|(i, f)| f.ident.clone().unwrap_or_else(|| format_ident!("_{i}")))
     }
 }
 

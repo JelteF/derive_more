@@ -5,13 +5,13 @@ use std::fmt;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _, Ident};
+use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _};
 
 use crate::utils::{attr::ParseMultiple as _, Spanning};
 
 use super::{
     trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FmtAttribute,
+    FieldsExt as _, FmtAttribute,
 };
 
 /// Expands a [`fmt::Display`]-like derive macro.
@@ -254,31 +254,6 @@ struct Expansion<'a> {
 }
 
 impl<'a> Expansion<'a> {
-    fn field_idents(&self) -> impl Iterator<Item = Ident> + '_ {
-        self.fields
-            .iter()
-            .enumerate()
-            .map(|(i, f)| f.ident.clone().unwrap_or_else(|| format_ident!("_{i}")))
-    }
-
-    fn field_params<'selff, 's>(
-        &'selff self,
-        fmt: &'a FmtAttribute,
-    ) -> impl Iterator<Item = TokenStream> + 's
-    where
-        'a: 's,
-        'selff: 's,
-    {
-        let used_arguments: Vec<String> = fmt.placeholder_names().collect();
-        self.field_idents().filter_map(move |var| {
-            if used_arguments.contains(&var.to_string()) {
-                Some(quote! { #var = *#var })
-            } else {
-                None
-            }
-        })
-    }
-
     /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
     /// # Errors
@@ -303,23 +278,27 @@ impl<'a> Expansion<'a> {
             body = match &self.attrs.fmt {
                 Some(fmt) => {
                     if has_shared_attr {
-                        let field_params = self.field_params(fmt);
-                        quote! { &derive_more::core::format_args!(#fmt, #(#field_params),*) }
+                        let deref_args = fmt.additional_deref_args(self.fields);
+
+                        quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
                     } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                        let expr = if self.field_idents().any(|var| {
-                            fmt.placeholder_names()
-                                .any(|arg| arg == var.to_string().as_str())
-                        }) {
-                            quote! { #expr }
-                        } else {
-                            quote! { &(#expr) }
-                        };
+                        let expr =
+                            if self.fields.fmt_args_idents().any(|field| expr == field)
+                            {
+                                quote! { #expr }
+                            } else {
+                                quote! { &(#expr) }
+                            };
+
                         quote! {
                             derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f)
                         }
                     } else {
-                        let field_params = self.field_params(fmt);
-                        quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#field_params),*) }
+                        let deref_args = fmt.additional_deref_args(self.fields);
+
+                        quote! {
+                            derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*)
+                        }
                     }
                 }
                 None if self.fields.is_empty() => {
@@ -367,9 +346,10 @@ impl<'a> Expansion<'a> {
 
         if has_shared_attr {
             if let Some(shared_fmt) = &self.shared_attr {
-                let field_params = self.field_params(shared_fmt);
+                let deref_args = shared_fmt.additional_deref_args(self.fields);
+
                 let shared_body = quote! {
-                    derive_more::core::write!(__derive_more_f, #shared_fmt, #(#field_params),*)
+                    derive_more::core::write!(__derive_more_f, #shared_fmt, #(#deref_args),*)
                 };
 
                 body = if body.is_empty() {

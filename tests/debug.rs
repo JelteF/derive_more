@@ -1323,7 +1323,7 @@ mod generic {
 
     #[derive(Debug)]
     struct AliasedFieldNamedGenericStruct<T> {
-        #[debug("{field3}", field3 = field2)]
+        #[debug("{field1}", field1 = field2)]
         field1: T,
         field2: i32,
     }
@@ -1441,7 +1441,7 @@ mod generic {
     }
 
     #[derive(Debug)]
-    struct AliasedFieldUnnamedGenericStruct<T>(#[debug("{_2}", _2 = _1)] T, i32);
+    struct AliasedFieldUnnamedGenericStruct<T>(#[debug("{_0}", _0 = _1)] T, i32);
     #[test]
     fn aliased_field_unnamed_generic_struct() {
         assert_eq!(

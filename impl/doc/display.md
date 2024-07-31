@@ -14,6 +14,9 @@ For enums, you can either specify it on each variant, or on the enum as a whole.
 For variants that don't have a format specified, it will simply defer to the format of the
 inner variable. If there is no such variable, or there is more than 1, an error is generated.
 
+
+
+
 ## The format of the format
 
 You supply a format by attaching an attribute of the syntax: `#[display("...", args...)]`.

@@ -13,7 +13,7 @@ use crate::utils::{
 
 use super::{
     trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FmtAttribute,
+    FieldsExt as _, FmtAttribute,
 };
 
 /// Expands a [`fmt::Debug`] derive macro.
@@ -244,49 +244,23 @@ impl<'a> Expansion<'a> {
         Ok(())
     }
 
-    fn field_idents(&self) -> impl Iterator<Item = Ident> + '_ {
-        self.fields
-            .iter()
-            .enumerate()
-            .map(|(i, f)| f.ident.clone().unwrap_or_else(|| format_ident!("_{i}")))
-    }
-
-    fn field_params<'selff, 's>(
-        &'selff self,
-        fmt: &'a FmtAttribute,
-    ) -> impl Iterator<Item = TokenStream> + 's
-    where
-        'a: 's,
-        'selff: 's,
-    {
-        let used_arguments: Vec<String> = fmt.placeholder_names().collect();
-        self.field_idents().filter_map(move |var| {
-            if used_arguments.contains(&var.to_string()) {
-                Some(quote! { #var = *#var })
-            } else {
-                None
-            }
-        })
-    }
-
     /// Generates [`Debug::fmt()`] implementation for a struct or an enum variant.
     ///
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
             return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                let expr = if self.field_idents().any(|var| {
-                    fmt.placeholder_names()
-                        .any(|arg| arg == var.to_string().as_str())
-                }) {
+                let expr = if self.fields.fmt_args_idents().any(|field| expr == field) {
                     quote! { #expr }
                 } else {
                     quote! { &(#expr) }
                 };
+
                 quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
             } else {
-                let field_params = self.field_params(fmt);
-                quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#field_params),*) }
+                let deref_args = fmt.additional_deref_args(self.fields);
+
+                quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*) }
             });
         };
 
@@ -323,13 +297,15 @@ impl<'a> Expansion<'a> {
                             Ok::<_, syn::Error>(out)
                         }
                         Some(FieldAttribute::Right(fmt_attr)) => {
-                            let field_params = self.field_params(&fmt_attr);
+                            let deref_args = fmt_attr.additional_deref_args(self.fields);
+
                             Ok(quote! {
                                 derive_more::__private::DebugTuple::field(
                                     #out,
-                                    &derive_more::core::format_args!(#fmt_attr, #(#field_params),*),
-                            )
-                        })},
+                                    &derive_more::core::format_args!(#fmt_attr, #(#deref_args),*),
+                                )
+                            })
+                        }
                         None => {
                             let ident = format_ident!("_{i}");
                             Ok(quote! {
@@ -355,31 +331,38 @@ impl<'a> Expansion<'a> {
                     )
                 };
                 let out = named.named.iter().try_fold(out, |out, field| {
-                        let field_ident = field.ident.as_ref().unwrap_or_else(|| {
-                            unreachable!("`syn::Fields::Named`");
-                        });
-                        let field_str = field_ident.to_string();
-                        match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
-                            .map(Spanning::into_inner)
-                        {
-                            Some(FieldAttribute::Left(_skip)) => {
-                                exhaustive = false;
-                                Ok::<_, syn::Error>(out)
-                            }
-                            Some(FieldAttribute::Right(fmt_attr)) => {
-                            let field_params = self.field_params(&fmt_attr);
+                    let field_ident = field.ident.as_ref().unwrap_or_else(|| {
+                        unreachable!("`syn::Fields::Named`");
+                    });
+                    let field_str = field_ident.to_string();
+                    match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
+                        .map(Spanning::into_inner)
+                    {
+                        Some(FieldAttribute::Left(_skip)) => {
+                            exhaustive = false;
+                            Ok::<_, syn::Error>(out)
+                        }
+                        Some(FieldAttribute::Right(fmt_attr)) => {
+                            let deref_args =
+                                fmt_attr.additional_deref_args(self.fields);
+
                             Ok(quote! {
                                 derive_more::core::fmt::DebugStruct::field(
                                     #out,
                                     #field_str,
-                                    &derive_more::core::format_args!(#fmt_attr, #(#field_params),*),
+                                    &derive_more::core::format_args!(
+                                        #fmt_attr, #(#deref_args),*
+                                    ),
                                 )
-                            })},
-                            None => Ok(quote! {
-                                derive_more::core::fmt::DebugStruct::field(#out, #field_str, &#field_ident)
-                            }),
+                            })
                         }
-                    })?;
+                        None => Ok(quote! {
+                            derive_more::core::fmt::DebugStruct::field(
+                                #out, #field_str, &#field_ident
+                            )
+                        }),
+                    }
+                })?;
                 Ok(if exhaustive {
                     quote! { derive_more::core::fmt::DebugStruct::finish(#out) }
                 } else {

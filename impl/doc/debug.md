@@ -25,7 +25,9 @@ once to get the address of the field itself, instead of the address of the
 reference to the field:
 
 ```rust
-#[derive(derive_more::Debug)]
+# use derive_more::Debug;
+#
+#[derive(Debug)]
 #[debug("{field:p} {:p}", *field)]
 struct RefInt<'a> {
     field: &'a i32,
@@ -43,8 +45,8 @@ are bound by respective formatting trait.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
-use derive_more::Debug;
-
+# use derive_more::Debug;
+#
 #[derive(Debug)]
 struct Foo<'a, T1, T2: Trait, T3, T4> {
     #[debug("{a}")]
@@ -82,9 +84,9 @@ possible. Our aim is to avoid imposing additional bounds, as they can be added w
 In the example below, we can infer only that `V: Display`, other bounds have to be supplied by the user:
 
 ```rust
-use std::fmt::Display;
-use derive_more::Debug;
-
+# use std::fmt::Display;
+# use derive_more::Debug;
+#
 #[derive(Debug)]
 #[debug(bound(T: MyTrait, U: Display))]
 struct MyStruct<T, U, V, F> {
@@ -155,9 +157,9 @@ assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ## Example usage
 
 ```rust
-use std::path::PathBuf;
-use derive_more::Debug;
-
+# use std::path::PathBuf;
+# use derive_more::Debug;
+#
 #[derive(Debug)]
 struct MyInt(i32);
 
