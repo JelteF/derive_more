@@ -25,8 +25,8 @@ once to get the address of the field itself, instead of the address of the
 reference to the field:
 
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug("{field:p} {:p}", *field)]
 struct RefInt<'a> {
@@ -45,8 +45,8 @@ are bound by respective formatting trait.
 
 E.g., for a structure `Foo` defined like this:
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 struct Foo<'a, T1, T2: Trait, T3, T4> {
     #[debug("{a}")]
@@ -84,9 +84,9 @@ possible. Our aim is to avoid imposing additional bounds, as they can be added w
 In the example below, we can infer only that `V: Display`, other bounds have to be supplied by the user:
 
 ```rust
-# use std::fmt::Display;
-# use derive_more::Debug;
-#
+use std::fmt::Display;
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug(bound(T: MyTrait, U: Display))]
 struct MyStruct<T, U, V, F> {
@@ -110,8 +110,8 @@ If the top-level `#[debug("...", args...)]` attribute (the one for a whole struc
 and can be trivially substituted with a transparent delegation call to the inner type, then all the additional
 [formatting parameters][1] do work as expected:
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug("{_0:o}")] // the same as calling `Octal::fmt()`
 struct MyOctalInt(i32);
@@ -130,8 +130,8 @@ assert_eq!(format!("{:07?}", MyBinaryInt(2)), "10");
 If, for some reason, transparency in trivial cases is not desired, it may be suppressed explicitly
 either with the [`format_args!()`] macro usage:
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug("{}", format_args!("{_0:o}"))] // `format_args!()` obscures the inner type
 struct MyOctalInt(i32);
@@ -141,8 +141,8 @@ assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ```
 Or by adding [formatting parameters][1] which cause no visual effects:
 ```rust
-# use derive_more::Debug;
-#
+use derive_more::Debug;
+
 #[derive(Debug)]
 #[debug("{_0:^o}")] // `^` is centering, but in absence of additional width has no effect
 struct MyOctalInt(i32);
@@ -157,9 +157,9 @@ assert_eq!(format!("{:07?}", MyOctalInt(9)), "11");
 ## Example usage
 
 ```rust
-# use std::path::PathBuf;
-# use derive_more::Debug;
-#
+use std::path::PathBuf;
+use derive_more::Debug;
+
 #[derive(Debug)]
 struct MyInt(i32);
 
