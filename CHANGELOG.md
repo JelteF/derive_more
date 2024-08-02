@@ -19,7 +19,7 @@ to call out, but there are many more changes that are documented below:
    `thiserror` provides, but it works for any type not just errors. And by
    combining the `Display` derive with the `Error` and `From` derives, there
    isn't really any need to use `thiserror` anymore.
-3. Traits that can return errors now return a type that implements `Error``
+3. Traits that can return errors now return a type that implements `Error`
    when an error occurs instead of a `&'static str`.
 
 
