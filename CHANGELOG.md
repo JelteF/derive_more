@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 1.0.0 - Unreleased
 
+More than 8 years after the first commit and almost 5 years after the 0.99.0
+release, `derive_more` has finally reached its 1.0.0 release. This release
+contains a lot of changes (including breaking ones) to make it easier to use
+the derives and make it possible to extend them without having to breaking
+backwards compatibility again. There are three major changes that I would like
+to call out, but there are many more changes that are documented below:
+1. A new `Debug` derive that can be used to easily customize `Debug` formatting.
+2. A greatly improved `Display` derive, which allows you to do anything that
+   `thiserror` provides, but it works for any type not just errors. And by
+   combining the `Display` derive with the `Error` and `From` derives, there
+   isn't really any need to use `thiserror` anymore.
+3. Traits that can return errors now return a type that implements `Error`
+   when an error occurs instead of a `&'static str`.
+
+
 ### Breaking changes
 
 - The minimum supported Rust version (MSRV) is now Rust 1.75.
