@@ -50,8 +50,8 @@ unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(nightly)"] }
 [features]
 default = ["std"]
 
-add_assign = ["derive_more-impl/add_assign"]
 add = ["derive_more-impl/add"]
+add_assign = ["derive_more-impl/add_assign"]
 as_ref = ["derive_more-impl/as_ref"]
 constructor = ["derive_more-impl/constructor"]
 debug = ["derive_more-impl/debug"]
@@ -65,15 +65,15 @@ index = ["derive_more-impl/index"]
 index_mut = ["derive_more-impl/index_mut"]
 into = ["derive_more-impl/into"]
 into_iterator = ["derive_more-impl/into_iterator"]
-mul_assign = ["derive_more-impl/mul_assign"]
+is_variant = ["derive_more-impl/is_variant"]
 mul = ["derive_more-impl/mul"]
+mul_assign = ["derive_more-impl/mul_assign"]
 not = ["derive_more-impl/not"]
 sum = ["derive_more-impl/sum"]
 try_from = ["derive_more-impl/try_from"]
 try_into = ["derive_more-impl/try_into"]
-is_variant = ["derive_more-impl/is_variant"]
-unwrap = ["derive_more-impl/unwrap"]
 try_unwrap = ["derive_more-impl/try_unwrap"]
+unwrap = ["derive_more-impl/unwrap"]
 
 std = []
 full = [
@@ -106,14 +106,14 @@ full = [
 testing-helpers = ["derive_more-impl/testing-helpers", "dep:rustc_version"]
 
 [[test]]
-name = "add_assign"
-path = "tests/add_assign.rs"
-required-features = ["add_assign"]
-
-[[test]]
 name = "add"
 path = "tests/add.rs"
 required-features = ["add"]
+
+[[test]]
+name = "add_assign"
+path = "tests/add_assign.rs"
+required-features = ["add_assign"]
 
 [[test]]
 name = "as_mut"
@@ -191,14 +191,19 @@ path = "tests/into_iterator.rs"
 required-features = ["into_iterator"]
 
 [[test]]
-name = "mul_assign"
-path = "tests/mul_assign.rs"
-required-features = ["mul_assign"]
+name = "is_variant"
+path = "tests/is_variant.rs"
+required-features = ["is_variant"]
 
 [[test]]
 name = "mul"
 path = "tests/mul.rs"
 required-features = ["mul"]
+
+[[test]]
+name = "mul_assign"
+path = "tests/mul_assign.rs"
+required-features = ["mul_assign"]
 
 [[test]]
 name = "not"
@@ -221,19 +226,14 @@ path = "tests/try_into.rs"
 required-features = ["try_into"]
 
 [[test]]
-name = "is_variant"
-path = "tests/is_variant.rs"
-required-features = ["is_variant"]
+name = "try_unwrap"
+path = "tests/try_unwrap.rs"
+required-features = ["try_unwrap"]
 
 [[test]]
 name = "unwrap"
 path = "tests/unwrap.rs"
 required-features = ["unwrap"]
-
-[[test]]
-name = "try_unwrap"
-path = "tests/try_unwrap.rs"
-required-features = ["try_unwrap"]
 
 [[test]]
 name = "compile_fail"
