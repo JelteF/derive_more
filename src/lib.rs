@@ -70,6 +70,9 @@ pub mod __private {
 ///
 /// Use it in your import paths, if you don't want to import traits, but only macros.
 pub mod derive {
+    // This can be unused if no feature is enabled. We already error in that case, but this warning
+    // distracts from that error. So we suppress the warning.
+    #[allow(unused_imports)]
     #[doc(inline)]
     pub use derive_more_impl::*;
 }
@@ -443,5 +446,5 @@ pub use derive_more_impl::*;
     feature = "unwrap",
 )))]
 compile_error!(
-    "at least one derive feature must be enabled (or the \"full\" one enabling all the derives)"
+    "at least one derive feature must be enabled (or the \"full\" feature enabling all the derives)"
 );

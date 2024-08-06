@@ -72,6 +72,10 @@ mod unwrap;
 // the derives. A derive can generally be infallible and
 // return a TokenStream, or it can be fallible and return
 // a Result<TokenStream, syn::parse::Error>.
+//
+// This trait can be unused if no feature is enabled. We already error in that case but this
+// warning distracts from the actual error.
+#[allow(dead_code)]
 trait Output {
     fn process(self) -> TokenStream;
 }
