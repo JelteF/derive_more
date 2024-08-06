@@ -5,23 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.0.1 - Unreleased
 
-## 1.0.0 - Unreleased
+
+
+## 1.0.0 - 2024-08-06
 
 More than 8 years after the first commit and almost 5 years after the 0.99.0
 release, `derive_more` has finally reached its 1.0.0 release. This release
-contains a lot of changes (including breaking ones) to make it easier to use
-the derives and make it possible to extend them without having to breaking
-backwards compatibility again. There are three major changes that I would like
+contains a lot of changes (including some breaking ones) to make it easier to
+use the derives and make it possible to extend them without having to breaking
+backwards compatibility again. There are five major changes that I would like
 to call out, but there are many more changes that are documented below:
-1. A new `Debug` derive that can be used to easily customize `Debug` formatting.
+1. There is a new `Debug` derive that can be used to easily customize `Debug`
+   formatting.
 2. A greatly improved `Display` derive, which allows you to do anything that
-   `thiserror` provides, but it works for any type not just errors. And by
-   combining the `Display` derive with the `Error` and `From` derives, there
-   shouldn't really be any need to use `thiserror` anymore (if you do have such
-   a need please report an issue).
+   [`thiserror`](https://github.com/dtolnay/thiserror) provides, but it works
+   for any type not just errors. And by combining the `Display` derive with the
+   `Error` and `From` derives, there shouldn't really be any need to use
+   `thiserror` anymore (if you are missing a feature/behaviour from `thiserror`
+   please report an issue).
 3. Traits that can return errors now return a type that implements `Error`
    when an error occurs instead of a `&'static str`.
+4. When using `use derive_more::SomeTrait` the actual trait is also imported
+   not just the derive macro. This is especially useful for `Error` and
+   `Display`
+5. The docs are now rendered on docs.rs and are much more readable.
 
 
 ### Breaking changes
@@ -57,14 +66,16 @@ to call out, but there are many more changes that are documented below:
   and ignores field type itself.
 - The `Into` derive now generates separate impls for each field whenever the `#[into(...)]`
   attribute is applied to it. ([#291](https://github.com/JelteF/derive_more/pull/291))
-- Importing a derive macro now also import its corresponding trait.
+- Importing a derive macro now also imports its corresponding trait.
 - The `Error` derive is updated with changes to the `error_generic_member_access`
   unstable feature for nightly users. ([#200](https://github.com/JelteF/derive_more/pull/200),
   [#294](https://github.com/JelteF/derive_more/pull/294))
 - The `as_mut` feature is removed, and the `AsMut` derive is now gated by the
   `as_ref` feature. ([#295](https://github.com/JelteF/derive_more/pull/295))
 - A top level `#[display("...")]` attribute on an enum now requires the usage
-  of `{_variant}` to include the variant instead of including it at `{}`. ([#377](https://github.com/JelteF/derive_more/pull/377))
+  of `{_variant}` to include the variant instead of including it at `{}`. The
+  reason is that `{}` now references the first argument to the format string,
+  just like in all other format strings. ([#377](https://github.com/JelteF/derive_more/pull/377))
 
 ### Added
 

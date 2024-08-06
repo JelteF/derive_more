@@ -182,13 +182,13 @@ You have to enable each type of derive as a feature in `Cargo.toml`:
 [dependencies]
 # You can specify the types of derives that you need for less time spent
 # compiling. For the full list of features see this crate its `Cargo.toml`.
-derive_more = { version = "=1.0.0-beta.6", features = ["from", "add", "iterator"] }
+derive_more = { version = "1", features = ["from", "add", "iterator"] }
 ```
 ```toml
 [dependencies]
 # If you don't care much about compilation times and simply want to have
 # support for all the possible derives, you can use the "full" feature.
-derive_more = { version = "=1.0.0-beta.6", features = ["full"] }
+derive_more = { version = "1", features = ["full"] }
 ```
 ```toml
 [dependencies]
@@ -196,7 +196,7 @@ derive_more = { version = "=1.0.0-beta.6", features = ["full"] }
 # because the only default feature is the "std" feature.
 # NOTE: You can combine this with "full" feature to get support for all the
 #       possible derives in a `no_std` environment.
-derive_more = { version = "=1.0.0-beta.6", default-features = false }
+derive_more = { version = "1", default-features = false }
 ```
 
 And this to the top of your Rust file:
@@ -223,7 +223,7 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
   [dependencies]
   derive_more = "1" # or "1.0", or "^1.0"
   ```
-- However, if [MSRV] changes are concerning for your project, then use the [tilde requirement] to **omit breaking code**:
+- However, if [MSRV] changes are concerning for your project, then use the [tilde requirement] to **pin to a specific minor version**:
   ```toml
   [dependencies]
   derive_more = "~1.0" # or "~1.0.0"
@@ -235,35 +235,35 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 [`cargo-expand`]: https://github.com/dtolnay/cargo-expand
 [`derive-new`]: https://github.com/nrc/derive-new
 
-[`From`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.From.html
-[`Into`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Into.html
-[`FromStr`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.FromStr.html
-[`TryFrom`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.TryFrom.html
-[`TryInto`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.TryInto.html
-[`IntoIterator`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.IntoIterator.html
-[`AsRef`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.AsRef.html
-[`AsMut`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.AsMut.html
+[`From`]: https://docs.rs/derive_more/latest/derive_more/derive.From.html
+[`Into`]: https://docs.rs/derive_more/latest/derive_more/derive.Into.html
+[`FromStr`]: https://docs.rs/derive_more/latest/derive_more/derive.FromStr.html
+[`TryFrom`]: https://docs.rs/derive_more/latest/derive_more/derive.TryFrom.html
+[`TryInto`]: https://docs.rs/derive_more/latest/derive_more/derive.TryInto.html
+[`IntoIterator`]: https://docs.rs/derive_more/latest/derive_more/derive.IntoIterator.html
+[`AsRef`]: https://docs.rs/derive_more/latest/derive_more/derive.AsRef.html
+[`AsMut`]: https://docs.rs/derive_more/latest/derive_more/derive.AsMut.html
 
-[`Debug`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Debug.html
-[`Display`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Display.html
+[`Debug`]: https://docs.rs/derive_more/latest/derive_more/derive.Debug.html
+[`Display`-like]: https://docs.rs/derive_more/latest/derive_more/derive.Display.html
 
-[`Error`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Error.html
+[`Error`]: https://docs.rs/derive_more/latest/derive_more/derive.Error.html
 
-[`Index`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Index.html
-[`Deref`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Deref.html
-[`Not`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Not.html
-[`Add`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Add.html
-[`Mul`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Mul.html
-[`Sum`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Sum.html
-[`IndexMut`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.IndexMut.html
-[`DerefMut`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.DerefMut.html
-[`AddAssign`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.AddAssign.html
-[`MulAssign`-like]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.MulAssign.html
+[`Index`]: https://docs.rs/derive_more/latest/derive_more/derive.Index.html
+[`Deref`]: https://docs.rs/derive_more/latest/derive_more/derive.Deref.html
+[`Not`-like]: https://docs.rs/derive_more/latest/derive_more/derive.Not.html
+[`Add`-like]: https://docs.rs/derive_more/latest/derive_more/derive.Add.html
+[`Mul`-like]: https://docs.rs/derive_more/latest/derive_more/derive.Mul.html
+[`Sum`-like]: https://docs.rs/derive_more/latest/derive_more/derive.Sum.html
+[`IndexMut`]: https://docs.rs/derive_more/latest/derive_more/derive.IndexMut.html
+[`DerefMut`]: https://docs.rs/derive_more/latest/derive_more/derive.DerefMut.html
+[`AddAssign`-like]: https://docs.rs/derive_more/latest/derive_more/derive.AddAssign.html
+[`MulAssign`-like]: https://docs.rs/derive_more/latest/derive_more/derive.MulAssign.html
 
-[`Constructor`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Constructor.html
-[`IsVariant`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.IsVariant.html
-[`Unwrap`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.Unwrap.html
-[`TryUnwrap`]: https://docs.rs/derive_more/1.0.0-beta.6/derive_more/derive.TryUnwrap.html
+[`Constructor`]: https://docs.rs/derive_more/latest/derive_more/derive.Constructor.html
+[`IsVariant`]: https://docs.rs/derive_more/latest/derive_more/derive.IsVariant.html
+[`Unwrap`]: https://docs.rs/derive_more/latest/derive_more/derive.Unwrap.html
+[`TryUnwrap`]: https://docs.rs/derive_more/latest/derive_more/derive.TryUnwrap.html
 
 [caret requirement]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
 [tilde requirement]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#tilde-requirements
