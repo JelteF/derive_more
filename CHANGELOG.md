@@ -30,7 +30,7 @@ to call out, but there are many more changes that are documented below:
 4. When using `use derive_more::SomeTrait` the actual trait is also imported
    not just the derive macro. This is especially useful for `Error` and
    `Display`
-5. The docs are now rendered on docs.rs and are much more readable.
+5. The docs are now rendered on docs.rs and are much better overall.
 
 
 ### Breaking changes
