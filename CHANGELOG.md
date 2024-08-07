@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 
-## 1.0.0 - 2024-08-06
+## 1.0.0 - 2024-08-07
 
 More than 8 years after the first commit and almost 5 years after the 0.99.0
 release, `derive_more` has finally reached its 1.0.0 release. This release
