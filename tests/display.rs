@@ -1445,6 +1445,28 @@ mod enums {
                 }
             }
 
+            mod only_field {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_0}")]
+                enum Enum<T> {
+                    #[display("A")]
+                    A(i32),
+                    #[display("B")]
+                    B(&'static str),
+                    #[display("C")]
+                    C(T),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::<u8>::A(1).to_string(), "1");
+                    assert_eq!(Enum::<u8>::B("abc").to_string(), "abc");
+                    assert_eq!(Enum::<u8>::C(9).to_string(), "9");
+                }
+            }
+
             mod use_field_and_variant {
                 use super::*;
 
@@ -1464,6 +1486,29 @@ mod enums {
                     assert_eq!(Enum::<u8>::A(1).to_string(), "Variant A 1");
                     assert_eq!(Enum::<u8>::B("abc").to_string(), "Variant B abc");
                     assert_eq!(Enum::<u8>::C(9).to_string(), "Variant C 9");
+                }
+            }
+
+            mod as_debug {
+                use super::*;
+
+                #[derive(Debug, Display)]
+                #[display("{self:?}")]
+                enum Enum {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::A(1).to_string(), "A(1)");
+                    assert_eq!(Enum::B { field: 2 }.to_string(), "B { field: 2 }");
+                    assert_eq!(Enum::C.to_string(), "C");
                 }
             }
 

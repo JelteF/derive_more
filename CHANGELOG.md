@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 1.0.1 - Unreleased
 
+### Fixed
+
+- A top level `#[display("...")]` attribute on an enum being incorrectly
+  treated as transparent.
+  ([#395](https://github.com/JelteF/derive_more/pull/395))
 
 
 ## 1.0.0 - 2024-08-07
