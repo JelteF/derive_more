@@ -265,20 +265,18 @@ impl<'a> Expansion<'a> {
     fn generate_body(&self) -> syn::Result<TokenStream> {
         let mut body = TokenStream::new();
 
-        // If `shared_attr` is a transparent call, then we consider it being absent.
-        //let has_shared_attr = self
-        //    .shared_attr
-        //    .map_or(false, |a| a.transparent_call().is_none());
-        let has_shared_attr = self.shared_attr.map_or(false, |a| {
-            a.transparent_call()
-                .map_or(true, |(_, called_trait)| &called_trait != self.trait_ident)
+        let shared_attr_contains_variant = self
+            .shared_attr
+            .map_or(true, |a| a.contains_arg("_variant"));
+
+        // If `shared_attr` is a transparent call to `_variant`, then we consider it being absent.
+        let has_shared_attr = self.shared_attr.map_or(false, |attr| {
+            attr.transparent_call().map_or(true, |(_, called_trait)| {
+                &called_trait != self.trait_ident || !shared_attr_contains_variant
+            })
         });
 
-        if !has_shared_attr
-            || self
-                .shared_attr
-                .map_or(true, |a| a.contains_arg("_variant"))
-        {
+        if !has_shared_attr || shared_attr_contains_variant {
             body = match &self.attrs.fmt {
                 Some(fmt) => {
                     if has_shared_attr {

@@ -1445,6 +1445,28 @@ mod enums {
                 }
             }
 
+            mod only_field {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_0}")]
+                enum Enum<T> {
+                    #[display("A")]
+                    A(i32),
+                    #[display("B")]
+                    B(&'static str),
+                    #[display("C")]
+                    C(T),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::<u8>::A(1).to_string(), "1");
+                    assert_eq!(Enum::<u8>::B("abc").to_string(), "abc");
+                    assert_eq!(Enum::<u8>::C(9).to_string(), "9");
+                }
+            }
+
             mod use_field_and_variant {
                 use super::*;
 
