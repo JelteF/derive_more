@@ -1467,6 +1467,29 @@ mod enums {
                 }
             }
 
+            mod as_debug {
+                use super::*;
+
+                #[derive(Debug, Display)]
+                #[display("{self:?}")]
+                enum Enum {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::A(1).to_string(), "A(1)");
+                    assert_eq!(Enum::B { field: 2 }.to_string(), "B { field: 2 }");
+                    assert_eq!(Enum::C.to_string(), "C");
+                }
+            }
+
             mod pointer {
                 use super::*;
 

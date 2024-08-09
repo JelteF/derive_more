@@ -266,9 +266,13 @@ impl<'a> Expansion<'a> {
         let mut body = TokenStream::new();
 
         // If `shared_attr` is a transparent call, then we consider it being absent.
-        let has_shared_attr = self
-            .shared_attr
-            .map_or(false, |a| a.transparent_call().is_none());
+        //let has_shared_attr = self
+        //    .shared_attr
+        //    .map_or(false, |a| a.transparent_call().is_none());
+        let has_shared_attr = self.shared_attr.map_or(false, |a| {
+            a.transparent_call()
+                .map_or(true, |(_, called_trait)| &called_trait != self.trait_ident)
+        });
 
         if !has_shared_attr
             || self
