@@ -2387,12 +2387,12 @@ mod generic {
 mod type_variables {
     mod our_alloc {
         #[cfg(not(feature = "std"))]
-        pub use alloc::{boxed::Box, format, vec::Vec};
+        pub use alloc::{boxed::Box, format, iter, vec::Vec};
         #[cfg(feature = "std")]
-        pub use std::{boxed::Box, format, vec::Vec};
+        pub use std::{boxed::Box, format, iter, vec::Vec};
     }
 
-    use our_alloc::{format, Box};
+    use our_alloc::{format, iter, Box};
 
     // We want `Vec` in scope to test that code generation works if it is there.
     #[allow(unused_imports)]
@@ -2512,6 +2512,13 @@ mod type_variables {
         t: Box<dyn MyTrait<T>>,
     }
 
+    #[derive(Display)]
+    #[display("{iter:?} with {elem:?}")]
+    struct AssocType<I: Iterator> {
+        iter: I,
+        elem: Option<I::Item>,
+    }
+
     #[test]
     fn assert() {
         assert_eq!(
@@ -2560,6 +2567,15 @@ mod type_variables {
         assert_eq!(
             format!("{item}"),
             "Some(Variant2 { next: OptionalBox { inner: None } })",
-        )
+        );
+
+        assert_eq!(
+            AssocType {
+                iter: iter::empty::<bool>(),
+                elem: None,
+            }
+            .to_string(),
+            "Empty with None",
+        );
     }
 }
