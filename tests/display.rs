@@ -2387,7 +2387,9 @@ mod generic {
 mod type_variables {
     mod our_alloc {
         #[cfg(not(feature = "std"))]
-        pub use alloc::{boxed::Box, format, iter, vec::Vec};
+        pub use alloc::{boxed::Box, format, vec::Vec};
+        #[cfg(not(feature = "std"))]
+        pub use core::iter;
         #[cfg(feature = "std")]
         pub use std::{boxed::Box, format, iter, vec::Vec};
     }

@@ -2018,7 +2018,9 @@ mod complex_enum_syntax {
 mod type_variables {
     mod our_alloc {
         #[cfg(not(feature = "std"))]
-        pub use alloc::{boxed::Box, format, iter, vec, vec::Vec};
+        pub use alloc::{boxed::Box, format, vec, vec::Vec};
+        #[cfg(not(feature = "std"))]
+        pub use core::iter;
         #[cfg(feature = "std")]
         pub use std::{boxed::Box, format, iter, vec, vec::Vec};
     }
