@@ -2116,6 +2116,19 @@ mod type_variables {
         elem: Option<I::Item>,
     }
 
+    #[derive(derive_more::Debug)]
+    struct CollidedPathName<Item> {
+        item: Item,
+        elem: Option<some_path::Item>,
+    }
+
+    mod some_path {
+        use super::Debug;
+
+        #[derive(Debug)]
+        pub struct Item;
+    }
+
     #[test]
     fn assert() {
         assert_eq!(
@@ -2165,6 +2178,17 @@ mod type_variables {
                 },
             ),
             "AssocType { iter: Empty, elem: None }",
+        );
+
+        assert_eq!(
+            format!(
+                "{:?}",
+                CollidedPathName {
+                    item: true,
+                    elem: None,
+                },
+            ),
+            "CollidedPathName { item: true, elem: None }",
         );
     }
 }

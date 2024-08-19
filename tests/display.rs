@@ -2519,6 +2519,18 @@ mod type_variables {
         elem: Option<I::Item>,
     }
 
+    #[derive(Display)]
+    #[display("{item:?} with {elem:?}")]
+    struct CollidedPathName<Item> {
+        item: Item,
+        elem: Option<some_path::Item>,
+    }
+
+    mod some_path {
+        #[derive(Debug)]
+        pub struct Item;
+    }
+
     #[test]
     fn assert() {
         assert_eq!(
@@ -2576,6 +2588,15 @@ mod type_variables {
             }
             .to_string(),
             "Empty with None",
+        );
+
+        assert_eq!(
+            CollidedPathName {
+                item: false,
+                elem: Some(some_path::Item),
+            }
+            .to_string(),
+            "false with Some(Item)",
         );
     }
 }
