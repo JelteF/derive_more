@@ -2023,7 +2023,7 @@ mod type_variables {
         pub use std::{boxed::Box, format, iter, vec, vec::Vec};
     }
 
-    use our_alloc::{format, vec, Box, Vec};
+    use our_alloc::{format, iter, vec, Box, Vec};
 
     use derive_more::Debug;
 

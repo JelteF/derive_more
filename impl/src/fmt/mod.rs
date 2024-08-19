@@ -633,7 +633,7 @@ impl ContainsGenericsExt for syn::Path {
         self.segments
             .iter()
             .any(|segment| match &segment.arguments {
-                syn::PathArguments::None => false,
+                syn::PathArguments::None => type_params.contains(&&segment.ident),
                 syn::PathArguments::AngleBracketed(
                     syn::AngleBracketedGenericArguments { args, .. },
                 ) => args.iter().any(|generic| match generic {
