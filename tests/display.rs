@@ -2584,20 +2584,24 @@ mod type_variables {
         );
 
         assert_eq!(
-            AssocType {
-                iter: iter::empty::<bool>(),
-                elem: None,
-            }
-            .to_string(),
+            format!(
+                "{}",
+                AssocType {
+                    iter: iter::empty::<bool>(),
+                    elem: None,
+                },
+            ),
             "Empty with None",
         );
 
         assert_eq!(
-            CollidedPathName {
-                item: false,
-                elem: Some(some_path::Item),
-            }
-            .to_string(),
+            format!(
+                "{}",
+                CollidedPathName {
+                    item: false,
+                    elem: Some(some_path::Item),
+                },
+            ),
             "false with Some(Item)",
         );
     }
