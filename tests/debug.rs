@@ -2023,6 +2023,7 @@ mod type_variables {
         pub use std::{boxed::Box, format, vec, vec::Vec};
     }
 
+    use core::iter;
     use our_alloc::{format, vec, Box, Vec};
 
     use derive_more::Debug;
@@ -2110,6 +2111,12 @@ mod type_variables {
         t: Box<dyn MyTrait<T>>,
     }
 
+    #[derive(Debug)]
+    struct AssocType<I: Iterator> {
+        iter: I,
+        elem: Option<I::Item>,
+    }
+
     #[test]
     fn assert() {
         assert_eq!(
@@ -2148,6 +2155,17 @@ mod type_variables {
         assert_eq!(
             format!("{item:?}"),
             "Node { children: [Node { children: [], inner: 0 }, Leaf { inner: 1 }], inner: 2 }",
-        )
+        );
+
+        assert_eq!(
+            format!(
+                "{:?}",
+                AssocType {
+                    iter: iter::empty::<bool>(),
+                    elem: None,
+                },
+            ),
+            "AssocType { iter: Empty, elem: None }",
+        );
     }
 }
