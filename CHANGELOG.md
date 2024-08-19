@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 1.0.1 - Unreleased
 
+### Fixed
+
+- Associated types of type parameters not being treated as generics in `Debug`
+  and `Display` expansions.
+  ([#399](https://github.com/JelteF/derive_more/pull/399))
 
 
 ## 1.0.0 - 2024-08-07
