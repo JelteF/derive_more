@@ -632,8 +632,12 @@ impl ContainsGenericsExt for syn::Path {
         }
         self.segments
             .iter()
-            .any(|segment| match &segment.arguments {
-                syn::PathArguments::None => false,
+            .enumerate()
+            .any(|(n, segment)| match &segment.arguments {
+                syn::PathArguments::None => {
+                    // `TypeParam::AssocType` case.
+                    (n == 0) && type_params.contains(&&segment.ident)
+                }
                 syn::PathArguments::AngleBracketed(
                     syn::AngleBracketedGenericArguments { args, .. },
                 ) => args.iter().any(|generic| match generic {

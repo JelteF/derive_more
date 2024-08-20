@@ -2019,11 +2019,13 @@ mod type_variables {
     mod our_alloc {
         #[cfg(not(feature = "std"))]
         pub use alloc::{boxed::Box, format, vec, vec::Vec};
+        #[cfg(not(feature = "std"))]
+        pub use core::iter;
         #[cfg(feature = "std")]
-        pub use std::{boxed::Box, format, vec, vec::Vec};
+        pub use std::{boxed::Box, format, iter, vec, vec::Vec};
     }
 
-    use our_alloc::{format, vec, Box, Vec};
+    use our_alloc::{format, iter, vec, Box, Vec};
 
     use derive_more::Debug;
 
@@ -2110,6 +2112,25 @@ mod type_variables {
         t: Box<dyn MyTrait<T>>,
     }
 
+    #[derive(Debug)]
+    struct AssocType<I: Iterator> {
+        iter: I,
+        elem: Option<I::Item>,
+    }
+
+    #[derive(derive_more::Debug)]
+    struct CollidedPathName<Item> {
+        item: Item,
+        elem: Option<some_path::Item>,
+    }
+
+    mod some_path {
+        use super::Debug;
+
+        #[derive(Debug)]
+        pub struct Item;
+    }
+
     #[test]
     fn assert() {
         assert_eq!(
@@ -2148,6 +2169,28 @@ mod type_variables {
         assert_eq!(
             format!("{item:?}"),
             "Node { children: [Node { children: [], inner: 0 }, Leaf { inner: 1 }], inner: 2 }",
-        )
+        );
+
+        assert_eq!(
+            format!(
+                "{:?}",
+                AssocType {
+                    iter: iter::empty::<bool>(),
+                    elem: None,
+                },
+            ),
+            "AssocType { iter: Empty, elem: None }",
+        );
+
+        assert_eq!(
+            format!(
+                "{:?}",
+                CollidedPathName {
+                    item: true,
+                    elem: None,
+                },
+            ),
+            "CollidedPathName { item: true, elem: None }",
+        );
     }
 }
