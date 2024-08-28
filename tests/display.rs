@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
@@ -528,6 +529,19 @@ mod structs {
                 }
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            struct Tuple(!);
+
+            #[derive(Display)]
+            struct Struct {
+                field: !,
+            }
+        }
     }
 
     mod multi_field {
@@ -680,6 +694,22 @@ mod structs {
                         format!("{:018p}", &b),
                     );
                 }
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("{_0}")]
+            struct Tuple(i32, !);
+
+            #[derive(Display)]
+            #[display("{field}")]
+            struct Struct {
+                field: !,
+                other: i32,
             }
         }
     }
@@ -1154,6 +1184,17 @@ mod enums {
                 }
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            enum Enum {
+                Unnamed(!),
+                Named { field: ! },
+            }
+        }
     }
 
     mod multi_field_variant {
@@ -1311,6 +1352,19 @@ mod enums {
                         format!("{:018p}", &b),
                     );
                 }
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            enum Enum {
+                #[display("{_0}")]
+                Unnamed(i32, !),
+                #[display("{field}")]
+                Named { field: !, other: i32 },
             }
         }
 
