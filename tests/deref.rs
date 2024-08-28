@@ -83,5 +83,7 @@ mod never {
     struct Tuple(!);
 
     #[derive(Deref)]
-    struct Struct { field: ! }
+    struct Struct {
+        field: !,
+    }
 }

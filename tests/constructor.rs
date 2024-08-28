@@ -40,12 +40,16 @@ mod never {
     struct Tuple(!);
 
     #[derive(Constructor)]
-    struct Struct { field: ! }
+    struct Struct {
+        field: !,
+    }
 
     #[derive(Constructor)]
     struct TupleMulti(i32, !);
 
     #[derive(Constructor)]
-    struct StructMulti { field: !, other: i32 }
+    struct StructMulti {
+        field: !,
+        other: i32,
+    }
 }
-
