@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(dead_code)] // some code is tested for type checking only
 
 use derive_more::IsVariant;
@@ -161,3 +162,16 @@ const _: () = {
     assert!(!ks.is_never_mind());
     assert!(ks.is_nothing_to_see_here());
 };
+
+#[cfg(nightly)]
+mod never {
+    use super::*;
+
+    #[derive(IsVariant)]
+    enum Enum {
+        Tuple(!),
+        Struct { field: ! },
+        TupleMulti(i32, !),
+        StructMulti { field: !, other: i32 },
+    }
+}
