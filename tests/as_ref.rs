@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
@@ -415,6 +416,14 @@ mod single_field {
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct Nothing(!);
         }
     }
 
@@ -874,6 +883,16 @@ mod single_field {
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct Nothing {
+                first: !,
+            }
+        }
     }
 }
 
@@ -1063,6 +1082,14 @@ mod multi_field {
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct Nothing(String, !);
         }
     }
 
@@ -1337,6 +1364,17 @@ mod multi_field {
                 };
 
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsRef)]
+            struct Nothing {
+                first: !,
+                second: i32,
             }
         }
     }
