@@ -35,6 +35,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     };
 
     quote! {
+        #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
         #[automatically_derived]
         impl #impl_generics derive_more::#trait_ident for #input_type #ty_generics #where_clause {
             type Output = #output_type;

@@ -224,9 +224,10 @@ impl<'a> Expansion<'a> {
                 let generics = {
                     let mut generics = self.generics.clone();
                     for (ty, ident) in field_tys.iter().zip(&gen_idents) {
-                        generics.make_where_clause().predicates.push(
-                            parse_quote! { #ty: derive_more::From<#ident> },
-                        );
+                        generics
+                            .make_where_clause()
+                            .predicates
+                            .push(parse_quote! { #ty: derive_more::From<#ident> });
                         generics
                             .params
                             .push(syn::TypeParam::from(ident.clone()).into());
