@@ -77,7 +77,8 @@ enum EnumWithUnit {
 
 #[rustversion::nightly]
 mod error {
-    use derive_more::{Display, Error, From};
+    use derive_more::with_trait::{Display, Error, From};
+
     #[derive(Default, Debug, Display, Error)]
     struct Simple;
 
