@@ -29,7 +29,8 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
 
     quote! {
         #[automatically_derived]
-        impl #impl_generics derive_more::#trait_ident for #input_type #ty_generics #where_clause {
+        impl #impl_generics derive_more::core::ops::#trait_ident
+         for #input_type #ty_generics #where_clause {
             #[inline]
             #[track_caller]
             fn #method_ident(&mut self, rhs: #input_type #ty_generics) {
