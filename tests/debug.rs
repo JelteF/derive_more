@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
@@ -417,6 +418,19 @@ mod structs {
                 }
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            struct Tuple(!);
+
+            #[derive(Debug)]
+            struct Struct {
+                field: !,
+            }
+        }
     }
 
     mod multi_field {
@@ -674,6 +688,20 @@ mod structs {
                     format!("{:.1?}", StructLowerExp { a: 7, b: 3.15 }),
                     "3.1e0",
                 );
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            struct Tuple(i32, !);
+
+            #[derive(Debug)]
+            struct Struct {
+                field: !,
+                other: i32,
             }
         }
     }
@@ -980,6 +1008,17 @@ mod enums {
                 }
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            enum Enum {
+                Unnamed(!),
+                Named { field: ! },
+            }
+        }
     }
 
     mod multi_field_variant {
@@ -1153,6 +1192,17 @@ mod enums {
                     format!("{:.1?}", Enum::StructLowerExp { a: 7, b: 3.15 }),
                     "3.1e0",
                 );
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            enum Enum {
+                Unnamed(i32, !),
+                Named { field: !, other: i32 },
             }
         }
     }

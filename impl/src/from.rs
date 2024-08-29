@@ -172,6 +172,7 @@ impl<'a> Expansion<'a> {
                     });
 
                     Ok(quote! {
+                        #[allow(unreachable_code)] // omit warnings for `!` and unreachable types
                         #[automatically_derived]
                         impl #impl_gens derive_more::From<#ty> for #ident #ty_gens #where_clause {
                             #[inline]
@@ -192,6 +193,7 @@ impl<'a> Expansion<'a> {
                 });
 
                 Ok(quote! {
+                    #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
                     #[automatically_derived]
                     impl #impl_gens derive_more::From<(#( #field_tys ),*)> for #ident #ty_gens #where_clause {
                         #[inline]
@@ -222,9 +224,10 @@ impl<'a> Expansion<'a> {
                 let generics = {
                     let mut generics = self.generics.clone();
                     for (ty, ident) in field_tys.iter().zip(&gen_idents) {
-                        generics.make_where_clause().predicates.push(
-                            parse_quote! { #ty: derive_more::From<#ident> },
-                        );
+                        generics
+                            .make_where_clause()
+                            .predicates
+                            .push(parse_quote! { #ty: derive_more::From<#ident> });
                         generics
                             .params
                             .push(syn::TypeParam::from(ident.clone()).into());
@@ -234,6 +237,7 @@ impl<'a> Expansion<'a> {
                 let (impl_gens, _, where_clause) = generics.split_for_impl();
 
                 Ok(quote! {
+                    #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
                     #[automatically_derived]
                     impl #impl_gens derive_more::From<(#( #gen_idents ),*)> for #ident #ty_gens #where_clause {
                         #[inline]

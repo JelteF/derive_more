@@ -60,6 +60,7 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
     };
 
     Ok(quote! {
+        #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
         #[automatically_derived]
         impl #impl_gens derive_more::Debug for #ident #ty_gens #where_clause {
             #[inline]

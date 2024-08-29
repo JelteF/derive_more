@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
@@ -134,4 +135,35 @@ fn deref_mut_generic_forward() {
     let mut boxed = GenericBox(Box::new(1i32));
     *boxed = 3;
     assert_eq!(*boxed, 3i32);
+}
+
+#[cfg(nightly)]
+mod never {
+    use super::*;
+
+    #[derive(DerefMut)]
+    struct Tuple(!);
+
+    // `Deref` implementation is required for `DerefMut`.
+    impl ::core::ops::Deref for Tuple {
+        type Target = !;
+        #[inline]
+        fn deref(&self) -> &Self::Target {
+            self.0
+        }
+    }
+
+    #[derive(DerefMut)]
+    struct Struct {
+        field: !,
+    }
+
+    // `Deref` implementation is required for `DerefMut`.
+    impl ::core::ops::Deref for Struct {
+        type Target = !;
+        #[inline]
+        fn deref(&self) -> &Self::Target {
+            self.field
+        }
+    }
 }

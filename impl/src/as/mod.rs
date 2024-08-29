@@ -280,6 +280,7 @@ impl<'a> ToTokens for Expansion<'a> {
             };
 
             quote! {
+                #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
                 #[automatically_derived]
                 impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {
                     #[inline]
