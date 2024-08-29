@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
@@ -127,4 +128,15 @@ pub fn test_try_unwrap_mut_2() {
     }
 
     assert_eq!(value, Tuple::Double(255, 256));
+}
+
+#[cfg(nightly)]
+mod never {
+    use super::*;
+
+    #[derive(TryUnwrap)]
+    enum Enum {
+        Tuple(!),
+        TupleMulti(i32, !),
+    }
 }

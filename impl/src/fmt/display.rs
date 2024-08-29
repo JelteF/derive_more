@@ -62,6 +62,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     };
 
     Ok(quote! {
+        #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
         #[automatically_derived]
         impl #impl_gens derive_more::#trait_ident for #ident #ty_gens #where_clause {
             fn fmt(

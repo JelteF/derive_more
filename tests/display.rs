@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(dead_code)] // some code is tested for type checking only
 
 #[cfg(not(feature = "std"))]
@@ -528,6 +529,19 @@ mod structs {
                 }
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            struct Tuple(!);
+
+            #[derive(Display)]
+            struct Struct {
+                field: !,
+            }
+        }
     }
 
     mod multi_field {
@@ -680,6 +694,22 @@ mod structs {
                         format!("{:018p}", &b),
                     );
                 }
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("{_0}")]
+            struct Tuple(i32, !);
+
+            #[derive(Display)]
+            #[display("{field}")]
+            struct Struct {
+                field: !,
+                other: i32,
             }
         }
     }
@@ -1154,6 +1184,17 @@ mod enums {
                 }
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            enum Enum {
+                Unnamed(!),
+                Named { field: ! },
+            }
+        }
     }
 
     mod multi_field_variant {
@@ -1311,6 +1352,19 @@ mod enums {
                         format!("{:018p}", &b),
                     );
                 }
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(Display)]
+            enum Enum {
+                #[display("{_0}")]
+                Unnamed(i32, !),
+                #[display("{field}")]
+                Named { field: !, other: i32 },
             }
         }
 
@@ -2433,11 +2487,13 @@ mod type_variables {
     mod our_alloc {
         #[cfg(not(feature = "std"))]
         pub use alloc::{boxed::Box, format, vec::Vec};
+        #[cfg(not(feature = "std"))]
+        pub use core::iter;
         #[cfg(feature = "std")]
-        pub use std::{boxed::Box, format, vec::Vec};
+        pub use std::{boxed::Box, format, iter, vec::Vec};
     }
 
-    use our_alloc::{format, Box};
+    use our_alloc::{format, iter, Box};
 
     // We want `Vec` in scope to test that code generation works if it is there.
     #[allow(unused_imports)]
@@ -2557,6 +2613,25 @@ mod type_variables {
         t: Box<dyn MyTrait<T>>,
     }
 
+    #[derive(Display)]
+    #[display("{iter:?} with {elem:?}")]
+    struct AssocType<I: Iterator> {
+        iter: I,
+        elem: Option<I::Item>,
+    }
+
+    #[derive(Display)]
+    #[display("{item:?} with {elem:?}")]
+    struct CollidedPathName<Item> {
+        item: Item,
+        elem: Option<some_path::Item>,
+    }
+
+    mod some_path {
+        #[derive(Debug)]
+        pub struct Item;
+    }
+
     #[test]
     fn assert() {
         assert_eq!(
@@ -2605,6 +2680,28 @@ mod type_variables {
         assert_eq!(
             format!("{item}"),
             "Some(Variant2 { next: OptionalBox { inner: None } })",
-        )
+        );
+
+        assert_eq!(
+            format!(
+                "{}",
+                AssocType {
+                    iter: iter::empty::<bool>(),
+                    elem: None,
+                },
+            ),
+            "Empty with None",
+        );
+
+        assert_eq!(
+            format!(
+                "{}",
+                CollidedPathName {
+                    item: false,
+                    elem: Some(some_path::Item),
+                },
+            ),
+            "false with Some(Item)",
+        );
     }
 }

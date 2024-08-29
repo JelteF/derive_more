@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(clippy::unnecessary_mut_passed)] // testing correct signatures rather than actual code
 #![allow(dead_code)] // some code is tested for type checking only
 
@@ -422,6 +423,14 @@ mod single_field {
 
                 assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsMut)]
+            struct Nothing(!);
         }
     }
 
@@ -881,6 +890,16 @@ mod single_field {
                 assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
             }
         }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsMut)]
+            struct Nothing {
+                first: !,
+            }
+        }
     }
 }
 
@@ -1070,6 +1089,14 @@ mod multi_field {
 
                 assert!(ptr::eq(item.as_mut(), item.0.as_mut()));
             }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsMut)]
+            struct Nothing(String, !);
         }
     }
 
@@ -1344,6 +1371,17 @@ mod multi_field {
                 };
 
                 assert!(ptr::eq(item.as_mut(), item.first.as_mut()));
+            }
+        }
+
+        #[cfg(nightly)]
+        mod never {
+            use super::*;
+
+            #[derive(AsMut)]
+            struct Nothing {
+                first: !,
+                second: i32,
             }
         }
     }
