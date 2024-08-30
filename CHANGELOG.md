@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 1.0.1 - Unreleased
+
+## 2.0.0 - Unreleased
+
+### Breaking changes
+
+- `use derive_more::SomeTrait` now imports macro only. Importing macro with
+  its trait along is possible now via `use derive_more::with_trait::SomeTrait`.
+  ([#406](https://github.com/JelteF/derive_more/pull/406))
 
 ### Fixed
 
