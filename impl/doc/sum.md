@@ -51,7 +51,7 @@ Code like this will be generated for the `Sum` implementation:
 #         MyInts(self.0.add(rhs.0), self.1.add(rhs.1))
 #     }
 # }
-impl derive_more::Sum for MyInts {
+impl derive_more::core::ops::Sum for MyInts {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(
