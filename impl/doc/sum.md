@@ -22,7 +22,7 @@ easiest to implement by adding `#[derive(MulSelf)]`.
 struct MyInts(i32, i64);
 
 let int_vec = vec![MyInts(2, 3), MyInts(4, 5), MyInts(6, 7)];
-assert!(MyInts(12, 15) == int_vec.into_iter().sum())
+assert!(MyInts(12, 15) == int_vec.into_iter().sum());
 ```
 
 
@@ -51,7 +51,7 @@ Code like this will be generated for the `Sum` implementation:
 #         MyInts(self.0.add(rhs.0), self.1.add(rhs.1))
 #     }
 # }
-impl derive_more::core::ops::Sum for MyInts {
+impl derive_more::core::iter::Sum for MyInts {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(
