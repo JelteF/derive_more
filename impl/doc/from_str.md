@@ -122,7 +122,7 @@ Code like this will be generated:
 # }
 #
 impl derive_more::core::str::FromStr for EnumNoFields {
-    type Err = derive_more::core::str::FromStrError;
+    type Err = derive_more::FromStrError;
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         Ok(match src.to_lowercase().as_str() {
             "foo" => EnumNoFields::Foo,
