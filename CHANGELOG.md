@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#399](https://github.com/JelteF/derive_more/pull/399))
 - `unreachable_code` warnings on generated code when `!` (never type) is used.
   ([#404](https://github.com/JelteF/derive_more/pull/404))
+- A top level `#[display("...")]` attribute on an enum being incorrectly
+  treated as transparent.
+  ([#395](https://github.com/JelteF/derive_more/pull/395))
 
 
 ## 1.0.0 - 2024-08-07
