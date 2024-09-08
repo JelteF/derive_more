@@ -97,7 +97,7 @@ Code like this will be generated:
 # }
 impl derive_more::TryFrom<MixedInts> for (i32) {
     type Error = &'static str;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, &'static str> {
         match value {
             MixedInts::SmallInt(__0) => Ok(__0),
             _ => Err("Only SmallInt can be converted to i32"),
@@ -106,7 +106,7 @@ impl derive_more::TryFrom<MixedInts> for (i32) {
 }
 impl derive_more::TryFrom<MixedInts> for (i64) {
     type Error = &'static str;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, &'static str> {
         match value {
             MixedInts::BigInt(__0) => Ok(__0),
             _ => Err("Only BigInt can be converted to i64"),
@@ -115,7 +115,7 @@ impl derive_more::TryFrom<MixedInts> for (i64) {
 }
 impl derive_more::TryFrom<MixedInts> for (i32, i32) {
     type Error = &'static str;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, &'static str> {
         match value {
             MixedInts::TwoSmallInts(__0, __1) => Ok((__0, __1)),
             _ => Err("Only TwoSmallInts can be converted to (i32, i32)"),
@@ -124,7 +124,7 @@ impl derive_more::TryFrom<MixedInts> for (i32, i32) {
 }
 impl derive_more::TryFrom<MixedInts> for (i64, i64) {
     type Error = &'static str;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, &'static str> {
         match value {
             MixedInts::NamedSmallInts { x: __0, y: __1 } => Ok((__0, __1)),
             _ => Err("Only NamedSmallInts can be converted to (i64, i64)"),
@@ -133,7 +133,7 @@ impl derive_more::TryFrom<MixedInts> for (i64, i64) {
 }
 impl derive_more::TryFrom<MixedInts> for (u32) {
     type Error = &'static str;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, &'static str> {
         match value {
             MixedInts::UnsignedOne(__0) | MixedInts::UnsignedTwo(__0) => Ok(__0),
             _ => Err("Only UnsignedOne, UnsignedTwo can be converted to u32"),
@@ -163,7 +163,7 @@ Code like this will be generated:
 # }
 impl derive_more::TryFrom<EnumWithUnit> for (i32) {
     type Error = &'static str;
-    fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
+    fn try_from(value: EnumWithUnit) -> Result<Self, &'static str> {
         match value {
             EnumWithUnit::SmallInt(__0) => Ok(__0),
             _ => Err("Only SmallInt can be converted to i32"),
@@ -172,7 +172,7 @@ impl derive_more::TryFrom<EnumWithUnit> for (i32) {
 }
 impl derive_more::TryFrom<EnumWithUnit> for () {
     type Error = &'static str;
-    fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
+    fn try_from(value: EnumWithUnit) -> Result<Self, &'static str> {
         match value {
             EnumWithUnit::Unit => Ok(()),
             _ => Err("Only Unit can be converted to ()"),
