@@ -114,9 +114,9 @@ pub use crate::try_unwrap::TryUnwrapError;
 #[doc(inline)]
 pub use derive_more_impl::*;
 
-/// Module containing macro definitions with their corresponding traits along.
+/// Module containing derive definitions with their corresponding traits along.
 ///
-/// Use it in your import paths, if you do want to import macros along with their traits.
+/// Use it in your import paths, if you do want to import derives along with their traits.
 pub mod with_trait {
     // When re-exporting traits from `std` we need to do a pretty crazy trick, because we ONLY want
     // to re-export the traits and not derives that are called the same in the `std` module, because
