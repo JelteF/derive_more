@@ -146,10 +146,11 @@ trait will be in scope when you add the following code:
 use derive_more::with_trait::Display; // also imports `core::fmt::Display`
 ```
 
-By default, derive macros only, without the corresponding traits, are import from
-the crate's root:
+By default, derive macros only, without the corresponding traits, are imported from
+the crate's root (or from the `derive` module):
 ```rust
-use derive_more::Display; // imports macro only
+use derive_more::Display;   // imports macro only
+use derive_more::derive::*; // imports all macros only
 ```
 
 #### Hygiene

@@ -114,6 +114,17 @@ pub use crate::try_unwrap::TryUnwrapError;
 #[doc(inline)]
 pub use derive_more_impl::*;
 
+/// Module containing derive definitions only, without their corresponding traits.
+///
+/// Use it in your import paths, if you don't want to import traits, but only macros.
+pub mod derive {
+    // This can be unused if no feature is enabled. We already error in that case, but this warning
+    // distracts from that error. So we suppress the warning.
+    #[allow(unused_imports)]
+    #[doc(inline)]
+    pub use derive_more_impl::*;
+}
+
 /// Module containing derive definitions with their corresponding traits along.
 ///
 /// Use it in your import paths, if you do want to import derives along with their traits.

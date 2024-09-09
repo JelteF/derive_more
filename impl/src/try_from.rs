@@ -123,7 +123,8 @@ impl ToTokens for Expansion {
 
         quote! {
             #[automatically_derived]
-            impl #impl_generics derive_more::core::convert::TryFrom<#repr_ty #ty_generics> for #ident #where_clause {
+            impl #impl_generics derive_more::core::convert::TryFrom<#repr_ty #ty_generics>
+             for #ident #where_clause {
                 type Error = #error;
 
                 #[allow(non_upper_case_globals)]
