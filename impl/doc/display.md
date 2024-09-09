@@ -33,7 +33,7 @@ once to get the address of the field itself, instead of the address of the
 reference to the field:
 
 ```rust
-# use derive_more::Display;
+# use derive_more::with_trait::Display;
 #
 #[derive(Display)]
 #[display("{field:p} {:p}", *field)]
@@ -107,7 +107,7 @@ Explicitly specified bounds are added to the inferred ones. Note how no `V: Disp
 because it's inferred already.
 
 ```rust
-# use derive_more::Display;
+# use derive_more::with_trait::Display;
 #
 # trait MyTrait { fn my_function(&self) -> i32; }
 #

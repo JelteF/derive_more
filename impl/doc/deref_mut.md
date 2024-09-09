@@ -85,7 +85,7 @@ Code like this will be generated:
 #         &self.vec
 #     }
 # }
-impl derive_more::DerefMut for CoolVec {
+impl derive_more::core::ops::DerefMut for CoolVec {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.vec
@@ -116,10 +116,10 @@ When deriving a forwarded `DerefMut` for a struct:
 #         <Box<i32> as Deref>::deref(&self.0)
 #     }
 # }
-impl derive_more::DerefMut for MyBoxedInt {
+impl derive_more::core::ops::DerefMut for MyBoxedInt {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        <Box<i32> as derive_more::DerefMut>::deref_mut(&mut self.0)
+        <Box<i32> as derive_more::core::ops::DerefMut>::deref_mut(&mut self.0)
     }
 }
 ```

@@ -372,7 +372,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { derive_more::#trait_ident };
+        let trait_path = quote! { derive_more::with_trait::#trait_ident };
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
                 Fields::Unnamed(ref fields) => {
@@ -513,7 +513,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { derive_more::#trait_ident };
+        let trait_path = quote! { derive_more::with_trait::#trait_ident };
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {
                 (DeriveType::Unnamed, unnamed_to_vec(fields))

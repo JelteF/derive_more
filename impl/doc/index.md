@@ -54,14 +54,14 @@ Code like this will be generated:
 #     numbers: Vec<i32>,
 #     useless: bool,
 # }
-impl<__IdxT> derive_more::Index<__IdxT> for Numbers
+impl<__IdxT> derive_more::core::ops::Index<__IdxT> for Numbers
 where
-    Vec<i32>: derive_more::Index<__IdxT>,
+    Vec<i32>: derive_more::core::ops::Index<__IdxT>,
 {
-    type Output = <Vec<i32> as derive_more::Index<__IdxT>>::Output;
+    type Output = <Vec<i32> as derive_more::core::ops::Index<__IdxT>>::Output;
     #[inline]
     fn index(&self, idx: __IdxT) -> &Self::Output {
-        <Vec<i32> as derive_more::Index<__IdxT>>::index(&self.numbers, idx)
+        <Vec<i32> as derive_more::core::ops::Index<__IdxT>>::index(&self.numbers, idx)
     }
 }
 ```
