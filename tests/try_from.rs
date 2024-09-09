@@ -3,6 +3,14 @@
 
 use derive_more::TryFrom;
 
+/// Making sure that `TryFrom` does not trigger an ambiguous associated item error for `Error`.
+#[derive(TryFrom)]
+#[try_from(repr)]
+#[repr(u8)]
+enum EnumWithError {
+    Error,
+}
+
 #[test]
 fn test_with_repr() {
     #[derive(TryFrom, Clone, Copy, Debug, Eq, PartialEq)]

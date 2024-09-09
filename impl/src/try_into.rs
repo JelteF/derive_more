@@ -99,17 +99,21 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             input.generics.split_for_impl()
         };
 
+        let error = quote! {
+            derive_more::TryIntoError<#reference_with_lifetime #input_type #ty_generics>
+        };
+
         let try_from = quote! {
             #[automatically_derived]
             impl #impl_generics derive_more::core::convert::TryFrom<
                 #reference_with_lifetime #input_type #ty_generics
             > for (#(#reference_with_lifetime #original_types),*) #where_clause {
-                type Error = derive_more::TryIntoError<#reference_with_lifetime #input_type #ty_generics>;
+                type Error = #error;
 
                 #[inline]
                 fn try_from(
                     value: #reference_with_lifetime #input_type #ty_generics,
-                ) -> derive_more::core::result::Result<Self, Self::Error> {
+                ) -> derive_more::core::result::Result<Self, #error> {
                     match value {
                         #(#matchers)|* => derive_more::core::result::Result::Ok(#vars),
                         _ => derive_more::core::result::Result::Err(

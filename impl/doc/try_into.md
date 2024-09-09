@@ -97,7 +97,7 @@ Code like this will be generated:
 # }
 impl TryFrom<MixedInts> for (i32) {
     type Error = derive_more::TryIntoError<MixedInts>;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, derive_more::TryIntoError<MixedInts>> {
         match value {
             MixedInts::SmallInt(__0) => Ok(__0),
             _ => Err(derive_more::TryIntoError::new(value, "SmallInt", "i32")),
@@ -106,7 +106,7 @@ impl TryFrom<MixedInts> for (i32) {
 }
 impl TryFrom<MixedInts> for (i64) {
     type Error = derive_more::TryIntoError<MixedInts>;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, derive_more::TryIntoError<MixedInts>> {
         match value {
             MixedInts::BigInt(__0) => Ok(__0),
             _ => Err(derive_more::TryIntoError::new(value, "BigInt", "i64")),
@@ -115,7 +115,7 @@ impl TryFrom<MixedInts> for (i64) {
 }
 impl TryFrom<MixedInts> for (i32, i32) {
     type Error = derive_more::TryIntoError<MixedInts>;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, derive_more::TryIntoError<MixedInts>> {
         match value {
             MixedInts::TwoSmallInts(__0, __1) => Ok((__0, __1)),
             _ => Err(derive_more::TryIntoError::new(value, "TwoSmallInts", "(i32, i32)")),
@@ -124,7 +124,7 @@ impl TryFrom<MixedInts> for (i32, i32) {
 }
 impl TryFrom<MixedInts> for (i64, i64) {
     type Error = derive_more::TryIntoError<MixedInts>;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, derive_more::TryIntoError<MixedInts>> {
         match value {
             MixedInts::NamedSmallInts { x: __0, y: __1 } => Ok((__0, __1)),
             _ => Err(derive_more::TryIntoError::new(value, "NamedSmallInts", "(i64, i64)")),
@@ -133,7 +133,7 @@ impl TryFrom<MixedInts> for (i64, i64) {
 }
 impl TryFrom<MixedInts> for (u32) {
     type Error = derive_more::TryIntoError<MixedInts>;
-    fn try_from(value: MixedInts) -> Result<Self, Self::Error> {
+    fn try_from(value: MixedInts) -> Result<Self, derive_more::TryIntoError<MixedInts>> {
         match value {
             MixedInts::UnsignedOne(__0) | MixedInts::UnsignedTwo(__0) => Ok(__0),
             _ => Err(derive_more::TryIntoError::new(value, "UnsignedOne", "u32")),
@@ -163,7 +163,7 @@ Code like this will be generated:
 # }
 impl TryFrom<EnumWithUnit> for (i32) {
     type Error = derive_more::TryIntoError<EnumWithUnit>;
-    fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
+    fn try_from(value: EnumWithUnit) -> Result<Self, derive_more::TryIntoError<EnumWithUnit>> {
         match value {
             EnumWithUnit::SmallInt(__0) => Ok(__0),
             _ => Err(derive_more::TryIntoError::new(value, "SmallInt", "i32")),
@@ -172,7 +172,7 @@ impl TryFrom<EnumWithUnit> for (i32) {
 }
 impl TryFrom<EnumWithUnit> for () {
     type Error = derive_more::TryIntoError<EnumWithUnit>;
-    fn try_from(value: EnumWithUnit) -> Result<Self, Self::Error> {
+    fn try_from(value: EnumWithUnit) -> Result<Self, derive_more::TryIntoError<EnumWithUnit>> {
         match value {
             EnumWithUnit::Unit => Ok(()),
             _ => Err(derive_more::TryIntoError::new(value, "Unit", "()")),

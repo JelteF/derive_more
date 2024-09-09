@@ -47,6 +47,16 @@ enum Foo<'lt: 'static, T: Clone, const X: usize> {
     X(Wrapper<'lt, X, T>),
 }
 
+enum EnumWithError {
+    Error,
+}
+
+/// Making sure that `TryInto` does not trigger an ambiguous associated item error for `Error`.
+#[derive(TryInto)]
+enum EnumIntoEnumWithError {
+    Foo(EnumWithError),
+}
+
 #[test]
 fn test_try_into() {
     let mut i = MixedInts::SmallInt(42);

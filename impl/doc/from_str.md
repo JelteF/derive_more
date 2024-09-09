@@ -46,7 +46,7 @@ Code like this will be generated:
 # struct MyInt(i32);
 impl derive_more::core::str::FromStr for MyInt {
     type Err = <i32 as derive_more::core::str::FromStr>::Err;
-    fn from_str(src: &str) -> Result<Self, Self::Err> {
+    fn from_str(src: &str) -> Result<Self, <i32 as derive_more::core::str::FromStr>::Err> {
         return Ok(MyInt(i32::from_str(src)?));
     }
 }
@@ -76,7 +76,7 @@ Code like this will be generated:
 # }
 impl derive_more::core::str::FromStr for Point1D {
     type Err = <i32 as derive_more::core::str::FromStr>::Err;
-    fn from_str(src: &str) -> Result<Self, Self::Err> {
+    fn from_str(src: &str) -> Result<Self, <i32 as derive_more::core::str::FromStr>::Err> {
         return Ok(Point1D {
             x: i32::from_str(src)?,
         });
@@ -123,7 +123,7 @@ Code like this will be generated:
 #
 impl derive_more::core::str::FromStr for EnumNoFields {
     type Err = derive_more::FromStrError;
-    fn from_str(src: &str) -> Result<Self, Self::Err> {
+    fn from_str(src: &str) -> Result<Self, derive_more::FromStrError> {
         Ok(match src.to_lowercase().as_str() {
             "foo" => EnumNoFields::Foo,
             "bar" => EnumNoFields::Bar,
