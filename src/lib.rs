@@ -436,6 +436,7 @@ pub mod with_trait {
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "as_variant",
     feature = "constructor",
     feature = "debug",
     feature = "deref",

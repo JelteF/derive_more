@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   its trait along is possible now via `use derive_more::with_trait::SomeTrait`.
   ([#406](https://github.com/JelteF/derive_more/pull/406))
 
+### Added
+
+- Derive for `AsVariant`.
+
 ### Fixed
 
 - Associated types of type parameters not being treated as generics in `Debug`
