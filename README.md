@@ -183,7 +183,7 @@ You have to enable each type of derive as a feature in `Cargo.toml`:
 [dependencies]
 # You can specify the types of derives that you need for less time spent
 # compiling. For the full list of features see this crate its `Cargo.toml`.
-derive_more = { version = "1", features = ["from", "add", "iterator"] }
+derive_more = { version = "1", features = ["from", "add", "into_iterator"] }
 ```
 ```toml
 [dependencies]
