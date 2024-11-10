@@ -8,7 +8,7 @@ use crate::UnitError;
 /// operation is invoked on mismatched enum variants.
 #[derive(Clone, Copy, Debug)]
 pub struct WrongVariantError {
-    operation_name: &'static str,
+    pub operation_name: &'static str,
 }
 
 impl WrongVariantError {

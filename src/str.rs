@@ -3,7 +3,7 @@ use core::fmt;
 /// Error of parsing an enum value its string representation.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct FromStrError {
-    type_name: &'static str,
+    pub type_name: &'static str,
 }
 
 impl FromStrError {

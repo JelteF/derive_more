@@ -61,8 +61,8 @@ mod try_into {
         ///
         /// [`TryInto`]: macro@crate::TryInto
         pub input: T,
-        variant_names: &'static str,
-        output_type: &'static str,
+        pub variant_names: &'static str,
+        pub output_type: &'static str,
     }
 
     impl<T> TryIntoError<T> {

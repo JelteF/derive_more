@@ -6,7 +6,7 @@ use core::fmt;
 /// operation is invoked on a unit-like variant of an enum.
 #[derive(Clone, Copy, Debug)]
 pub struct UnitError {
-    operation_name: &'static str,
+    pub operation_name: &'static str,
 }
 
 impl UnitError {

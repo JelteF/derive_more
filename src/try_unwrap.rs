@@ -8,9 +8,9 @@ pub struct TryUnwrapError<T> {
     ///
     /// [`TryUnwrap`]: macro@crate::TryUnwrap
     pub input: T,
-    enum_name: &'static str,
-    variant_name: &'static str,
-    func_name: &'static str,
+    pub enum_name: &'static str,
+    pub variant_name: &'static str,
+    pub func_name: &'static str,
 }
 
 impl<T> TryUnwrapError<T> {
