@@ -222,7 +222,7 @@ struct Expansion<'a> {
     attr_name: &'a syn::Ident,
 }
 
-impl<'a> Expansion<'a> {
+impl Expansion<'_> {
     /// Validates attributes of this [`Expansion`] to be consistent.
     fn validate_attrs(&self) -> syn::Result<()> {
         if self.attr.fmt.is_some() {
