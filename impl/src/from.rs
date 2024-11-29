@@ -143,7 +143,7 @@ struct Expansion<'a> {
     has_explicit_from: bool,
 }
 
-impl<'a> Expansion<'a> {
+impl Expansion<'_> {
     /// Expands [`From`] implementations for a struct or an enum variant.
     fn expand(&self) -> syn::Result<TokenStream> {
         use crate::utils::FieldsExt as _;

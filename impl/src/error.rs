@@ -203,7 +203,7 @@ impl<'input, 'state> ParsedFields<'input, 'state> {
     }
 }
 
-impl<'input, 'state> ParsedFields<'input, 'state> {
+impl ParsedFields<'_, '_> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
         let source = self.source?;
         let ident = &self.data.members[source];

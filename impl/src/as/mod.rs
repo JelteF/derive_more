@@ -176,7 +176,7 @@ struct Expansion<'a> {
     conversions: Option<attr::Conversion>,
 }
 
-impl<'a> ToTokens for Expansion<'a> {
+impl ToTokens for Expansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let field_ty = &self.field.ty;
         let field_ident = self.field.ident.as_ref().map_or_else(

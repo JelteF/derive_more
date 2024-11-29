@@ -254,7 +254,7 @@ struct Expansion<'a> {
     trait_ident: &'a syn::Ident,
 }
 
-impl<'a> Expansion<'a> {
+impl Expansion<'_> {
     /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
     /// # Errors
