@@ -64,7 +64,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     Ok(quote! {
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
         #[automatically_derived]
-        impl #impl_gens derive_more::#trait_ident for #ident #ty_gens #where_clause {
+        impl #impl_gens derive_more::core::fmt::#trait_ident for #ident #ty_gens #where_clause {
             fn fmt(
                 &self, __derive_more_f: &mut derive_more::core::fmt::Formatter<'_>
             ) -> derive_more::core::fmt::Result {
@@ -254,7 +254,7 @@ struct Expansion<'a> {
     trait_ident: &'a syn::Ident,
 }
 
-impl<'a> Expansion<'a> {
+impl Expansion<'_> {
     /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
     /// # Errors

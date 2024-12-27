@@ -139,17 +139,18 @@ These don't derive traits, but derive static methods instead.
 
 ### Re-exports
 
-This crate also re-exports all the standard library traits that it adds derives
-for. So, both the `Display` derive and the `Display` trait will be in scope when
-you add the following code:
+This crate also re-exports all the standard library traits, that it adds derives
+for, in the `with_trait` module. So, both the `Display` derive and the `Display`
+trait will be in scope when you add the following code:
 ```rust
-use derive_more::Display; // also imports `core::fmt::Display`
+use derive_more::with_trait::Display; // also imports `core::fmt::Display`
 ```
 
-For derive macros only, without the corresponding traits, do import them from
-the `derive` module:
+By default, derive macros only, without the corresponding traits, are imported from
+the crate's root (or from the `derive` module):
 ```rust
-use derive_more::derive::Display; // imports macro only
+use derive_more::Display;   // imports macro only
+use derive_more::derive::*; // imports all macros only
 ```
 
 #### Hygiene
@@ -182,7 +183,7 @@ You have to enable each type of derive as a feature in `Cargo.toml`:
 [dependencies]
 # You can specify the types of derives that you need for less time spent
 # compiling. For the full list of features see this crate its `Cargo.toml`.
-derive_more = { version = "1", features = ["from", "add", "iterator"] }
+derive_more = { version = "1", features = ["from", "add", "into_iterator"] }
 ```
 ```toml
 [dependencies]

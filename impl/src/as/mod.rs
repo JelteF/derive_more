@@ -176,7 +176,7 @@ struct Expansion<'a> {
     conversions: Option<attr::Conversion>,
 }
 
-impl<'a> ToTokens for Expansion<'a> {
+impl ToTokens for Expansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let field_ty = &self.field.ty;
         let field_ident = self.field.ident.as_ref().map_or_else(
@@ -240,7 +240,7 @@ impl<'a> ToTokens for Expansion<'a> {
             };
 
             let trait_ty = quote! {
-                derive_more::#trait_ident <#return_ty>
+                derive_more::core::convert::#trait_ident <#return_ty>
             };
 
             let generics = match &impl_kind {

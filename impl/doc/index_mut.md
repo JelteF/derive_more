@@ -73,13 +73,13 @@ Code like this will be generated to implement `IndexMut`:
 #         <Vec<i32> as Index<__IdxT>>::index(&self.numbers, idx)
 #     }
 # }
-impl<__IdxT> derive_more::IndexMut<__IdxT> for Numbers
+impl<__IdxT> derive_more::core::ops::IndexMut<__IdxT> for Numbers
 where
-    Vec<i32>: derive_more::IndexMut<__IdxT>,
+    Vec<i32>: derive_more::core::ops::IndexMut<__IdxT>,
 {
     #[inline]
     fn index_mut(&mut self, idx: __IdxT) -> &mut Self::Output {
-        <Vec<i32> as derive_more::IndexMut<__IdxT>>::index_mut(&mut self.numbers, idx)
+        <Vec<i32> as derive_more::core::ops::IndexMut<__IdxT>>::index_mut(&mut self.numbers, idx)
     }
 }
 ```

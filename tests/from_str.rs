@@ -17,6 +17,12 @@ struct Point1D {
     x: i32,
 }
 
+/// Making sure that `FromStr` does not trigger an ambiguous associated item error for `Err`.
+#[derive(FromStr)]
+enum EnumWithErr {
+    Err,
+}
+
 #[derive(Debug, FromStr, PartialEq, Eq)]
 enum EnumNoFields {
     Foo,

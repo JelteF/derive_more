@@ -372,7 +372,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { derive_more::#trait_ident };
+        let trait_path = quote! { derive_more::with_trait::#trait_ident };
         let (derive_type, fields, variants): (_, Vec<_>, Vec<_>) = match input.data {
             Data::Struct(ref data_struct) => match data_struct.fields {
                 Fields::Unnamed(ref fields) => {
@@ -513,7 +513,7 @@ impl<'input> State<'input> {
         let trait_name = trait_name.trim_end_matches("ToInner");
         let trait_ident = format_ident!("{trait_name}");
         let method_ident = format_ident!("{trait_attr}");
-        let trait_path = quote! { derive_more::#trait_ident };
+        let trait_path = quote! { derive_more::with_trait::#trait_ident };
         let (derive_type, fields): (_, Vec<_>) = match variant.fields {
             Fields::Unnamed(ref fields) => {
                 (DeriveType::Unnamed, unnamed_to_vec(fields))
@@ -770,7 +770,7 @@ pub struct MultiVariantData<'input, 'state> {
     pub infos: Vec<FullMetaInfo>,
 }
 
-impl<'input, 'state> MultiFieldData<'input, 'state> {
+impl MultiFieldData<'_, '_> {
     pub fn initializer<T: ToTokens>(&self, initializers: &[T]) -> TokenStream {
         let MultiFieldData {
             variant_type,
@@ -804,7 +804,7 @@ impl<'input, 'state> MultiFieldData<'input, 'state> {
     }
 }
 
-impl<'input, 'state> SingleFieldData<'input, 'state> {
+impl SingleFieldData<'_, '_> {
     pub fn initializer<T: ToTokens>(&self, initializers: &[T]) -> TokenStream {
         self.multi_field_data.initializer(initializers)
     }
@@ -2306,7 +2306,7 @@ mod generics_search {
         pub(crate) consts: HashSet<&'s syn::Ident>,
     }
 
-    impl<'s> GenericsSearch<'s> {
+    impl GenericsSearch<'_> {
         /// Checks the provided [`syn::Type`] to contain anything from this [`GenericsSearch`].
         pub(crate) fn any_in(&self, ty: &syn::Type) -> bool {
             let mut visitor = Visitor {
@@ -2327,7 +2327,7 @@ mod generics_search {
         found: bool,
     }
 
-    impl<'s, 'ast> Visit<'ast> for Visitor<'s> {
+    impl<'ast> Visit<'ast> for Visitor<'_> {
         fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
             self.found |= tp.path.get_ident().map_or(false, |ident| {
                 self.search.types.contains(ident) || self.search.consts.contains(ident)

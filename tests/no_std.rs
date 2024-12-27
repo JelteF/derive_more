@@ -1,7 +1,7 @@
 #![no_std]
 #![allow(dead_code)] // some code is tested for type checking only
 
-use derive_more::{
+use derive_more::with_trait::{
     Add, AddAssign, Constructor, Deref, DerefMut, Display, From, FromStr, Index,
     IndexMut, Into, IntoIterator, Mul, MulAssign, Not, Sum, TryInto,
 };
@@ -77,7 +77,8 @@ enum EnumWithUnit {
 
 #[rustversion::nightly]
 mod error {
-    use derive_more::{Display, Error, From};
+    use derive_more::with_trait::{Display, Error, From};
+
     #[derive(Default, Debug, Display, Error)]
     struct Simple;
 

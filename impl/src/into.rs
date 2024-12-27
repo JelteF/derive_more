@@ -123,7 +123,7 @@ struct Expansion<'a> {
     convs: ConversionsAttribute,
 }
 
-impl<'a> Expansion<'a> {
+impl Expansion<'_> {
     fn expand(self) -> syn::Result<TokenStream> {
         let Self {
             input_ident,

@@ -8,7 +8,7 @@ extern crate alloc;
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::ToString};
 
-use derive_more::{
+use derive_more::with_trait::{
     Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
 };
 
@@ -2499,7 +2499,7 @@ mod type_variables {
     #[allow(unused_imports)]
     use our_alloc::Vec;
 
-    use derive_more::Display;
+    use derive_more::with_trait::Display;
 
     #[derive(Display, Debug)]
     #[display("{inner:?}")]
