@@ -1518,7 +1518,7 @@ mod enums {
                 fn assert() {
                     assert_eq!(Enum::<NoDisplay, u8>::A(1).to_string(), "A");
                     assert_eq!(Enum::<NoDisplay, u8>::B("abc").to_string(), "B");
-                    assert_eq!(Enum::<NoDisplay, u8>::C(9).to_string(), "C");
+                    assert_eq!(Enum::<NoDisplay, u8>::C(NoDisplay).to_string(), "C");
                     assert_eq!(Enum::<NoDisplay, u8>::D(9).to_string(), "9");
                 }
             }

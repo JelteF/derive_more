@@ -336,14 +336,9 @@ impl Expansion<'_> {
         }
     }
 
-    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
-    ///
-    /// # Errors
-    ///
-    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is greater than 1.
-    ///
-    /// [`Display::fmt()`]: fmt::Display::fmt()
-    fn generate_body(&self) -> syn::Result<TokenStream> {
+    /// Checks and indicates whether a top-level shared [`FmtAttribute`] is present in this
+    /// [`Expansion`], and whether it has wrapping logic (e.g. uses `_variant` placeholder).
+    fn shared_attr_info(&self) -> (bool, bool) {
         let shared_attr_contains_variant = self
             .shared_attr
             .map_or(true, |attr| attr.contains_arg("_variant"));
@@ -353,8 +348,21 @@ impl Expansion<'_> {
                 &called_trait != self.trait_ident || !shared_attr_contains_variant
             })
         });
-        let shared_attr_is_wrapping = has_shared_attr && shared_attr_contains_variant;
+        (
+            has_shared_attr,
+            has_shared_attr && shared_attr_contains_variant,
+        )
+    }
 
+    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
+    ///
+    /// # Errors
+    ///
+    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is greater than 1.
+    ///
+    /// [`Display::fmt()`]: fmt::Display::fmt()
+    fn generate_body(&self) -> syn::Result<TokenStream> {
+        let (has_shared_attr, shared_attr_is_wrapping) = self.shared_attr_info();
         match &self.attrs.fmt {
             Some(attr) => {
                 let mut body = self.generate_body_with_fmt(attr, shared_attr_is_wrapping);
@@ -393,13 +401,11 @@ impl Expansion<'_> {
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
         let mut bounds = vec![];
 
-        if self
-            .shared_attr
-            .map_or(true, |attr| attr.contains_arg("_variant"))
-        {
-            if let Some(fmt) = &self.attrs.fmt {
+        let (has_shared_attr, shared_attr_is_wrapping) = self.shared_attr_info();
+        let mix_shared_attr_bounds = match &self.attrs.fmt {
+            Some(attr) => {
                 bounds.extend(
-                    fmt.bounded_types(self.fields)
+                    attr.bounded_types(self.fields)
                         .filter_map(|(ty, trait_name)| {
                             if !ty.contains_generics(self.type_params) {
                                 return None;
@@ -410,29 +416,39 @@ impl Expansion<'_> {
                         })
                         .chain(self.attrs.bounds.0.clone()),
                 );
-            } else {
-                bounds.extend(self.fields.iter().next().and_then(|f| {
-                    let ty = &f.ty;
-                    if !ty.contains_generics(self.type_params) {
-                        return None;
-                    }
-                    let trait_ident = &self.trait_ident;
-                    Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
-                }));
-            };
-        }
+                shared_attr_is_wrapping
+            }
+            None if self.fields.len() <= 1 => {
+                if shared_attr_is_wrapping || !has_shared_attr {
+                    bounds.extend(self.fields.iter().next().and_then(|f| {
+                        let ty = &f.ty;
+                        if !ty.contains_generics(self.type_params) {
+                            return None;
+                        }
+                        let trait_ident = &self.trait_ident;
+                        Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
+                    }));
+                }
+                has_shared_attr
+            }
+            _ => false,
+        };
 
-        if let Some(shared_fmt) = &self.shared_attr {
-            bounds.extend(shared_fmt.bounded_types(self.fields).filter_map(
-                |(ty, trait_name)| {
-                    if !ty.contains_generics(self.type_params) {
-                        return None;
-                    }
-                    let trait_ident = format_ident!("{trait_name}");
+        if mix_shared_attr_bounds {
+            bounds.extend(
+                self.shared_attr
+                    .as_ref()
+                    .unwrap()
+                    .bounded_types(self.fields)
+                    .filter_map(|(ty, trait_name)| {
+                        if !ty.contains_generics(self.type_params) {
+                            return None;
+                        }
+                        let trait_ident = format_ident!("{trait_name}");
 
-                    Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
-                },
-            ));
+                        Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
+                    }),
+            );
         }
 
         bounds
