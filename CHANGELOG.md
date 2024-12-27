@@ -24,8 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Ambiguous associated item error when deriving `TryFrom`, `TryInto` or `FromStr`
   with an associated item called `Error` or `Err` respectively.
   ([#410](https://github.com/JelteF/derive_more/pull/410))
-- A top level `#[display("...")]` attribute on an enum being incorrectly
-  treated as transparent.
+- Top level `#[display("...")]` attribute on an enum being incorrectly treated
+  as transparent or wrapping.
   ([#395](https://github.com/JelteF/derive_more/pull/395))
 
 
