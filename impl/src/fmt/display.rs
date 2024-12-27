@@ -255,115 +255,138 @@ struct Expansion<'a> {
 }
 
 impl Expansion<'_> {
+    /// Generates [`Display::fmt()`] implementation for a unit struct or a unit enum variant without
+    /// any [`FmtAttribute`].
+    fn generate_body_no_fmt_unit(&self, for_wrapping: bool) -> TokenStream {
+        let ident_str = self.ident.unraw().to_string();
+
+        if for_wrapping {
+            quote! { #ident_str }
+        } else {
+            quote! { __derive_more_f.write_str(#ident_str) }
+        }
+    }
+
+    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant with exactly one
+    /// field and without any [`FmtAttribute`].
+    fn generate_body_no_fmt_unit_single_field(
+        &self,
+        for_wrapping: bool,
+    ) -> TokenStream {
+        let field = self
+            .fields
+            .iter()
+            .next()
+            .unwrap_or_else(|| unreachable!("count() == 1"));
+        let ident = field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
+        let trait_ident = self.trait_ident;
+
+        if for_wrapping {
+            let placeholder = trait_name_to_default_placeholder_literal(trait_ident);
+
+            quote! { &derive_more::core::format_args!(#placeholder, #ident) }
+        } else {
+            quote! { derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f) }
+        }
+    }
+
+    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant with a
+    /// [`FmtAttribute`].
+    fn generate_body_with_fmt(
+        &self,
+        fmt: &FmtAttribute,
+        for_wrapping: bool,
+    ) -> TokenStream {
+        if for_wrapping {
+            let deref_args = fmt.additional_deref_args(self.fields);
+
+            quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
+        } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
+            let expr = if self.fields.fmt_args_idents().any(|field| expr == field) {
+                quote! { #expr }
+            } else {
+                quote! { &(#expr) }
+            };
+
+            quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
+        } else {
+            let deref_args = fmt.additional_deref_args(self.fields);
+
+            quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*) }
+        }
+    }
+
+    /// Generates [`Display::fmt()`] implementation for a struct or an enum variant considering the
+    /// top-level shared [`FmtAttribute`], wrapping the provided `inner` body, if it's not empty.
+    fn generated_body_shared(
+        &self,
+        shared_fmt: &FmtAttribute,
+        inner: TokenStream,
+    ) -> TokenStream {
+        let deref_args = shared_fmt.additional_deref_args(self.fields);
+
+        let shared_body = quote! {
+            derive_more::core::write!(__derive_more_f, #shared_fmt, #(#deref_args),*)
+        };
+
+        if inner.is_empty() {
+            shared_body
+        } else {
+            quote! { match #inner { _variant => #shared_body } }
+        }
+    }
+
     /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
     /// # Errors
     ///
-    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is
-    /// greater than 1.
+    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is greater than 1.
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
-        let mut body = TokenStream::new();
-
         let shared_attr_contains_variant = self
             .shared_attr
-            .map_or(true, |a| a.contains_arg("_variant"));
-
+            .map_or(true, |attr| attr.contains_arg("_variant"));
         // If `shared_attr` is a transparent call to `_variant`, then we consider it being absent.
         let has_shared_attr = self.shared_attr.map_or(false, |attr| {
             attr.transparent_call().map_or(true, |(_, called_trait)| {
                 &called_trait != self.trait_ident || !shared_attr_contains_variant
             })
         });
+        let shared_attr_is_wrapping = has_shared_attr && shared_attr_contains_variant;
 
-        if !has_shared_attr || shared_attr_contains_variant {
-            body = match &self.attrs.fmt {
-                Some(fmt) => {
-                    if has_shared_attr {
-                        let deref_args = fmt.additional_deref_args(self.fields);
-
-                        quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
-                    } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                        let expr =
-                            if self.fields.fmt_args_idents().any(|field| expr == field)
-                            {
-                                quote! { #expr }
-                            } else {
-                                quote! { &(#expr) }
-                            };
-
-                        quote! {
-                            derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f)
-                        }
-                    } else {
-                        let deref_args = fmt.additional_deref_args(self.fields);
-
-                        quote! {
-                            derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*)
-                        }
-                    }
+        match &self.attrs.fmt {
+            Some(attr) => {
+                let mut body = self.generate_body_with_fmt(attr, shared_attr_is_wrapping);
+                if shared_attr_is_wrapping {
+                    body = self.generated_body_shared(self.shared_attr.as_ref().unwrap(), body);
                 }
-                None if self.fields.is_empty() => {
-                    let ident_str = self.ident.unraw().to_string();
-
-                    if has_shared_attr {
-                        quote! { #ident_str }
-                    } else {
-                        quote! { __derive_more_f.write_str(#ident_str) }
-                    }
-                }
-                None if self.fields.len() == 1 => {
-                    let field = self
-                        .fields
-                        .iter()
-                        .next()
-                        .unwrap_or_else(|| unreachable!("count() == 1"));
-                    let ident =
-                        field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
-                    let trait_ident = self.trait_ident;
-
-                    if has_shared_attr {
-                        let placeholder =
-                            trait_name_to_default_placeholder_literal(trait_ident);
-
-                        quote! { &derive_more::core::format_args!(#placeholder, #ident) }
-                    } else {
-                        quote! {
-                            derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
-                        }
-                    }
-                }
-                _ => {
-                    return Err(syn::Error::new(
-                        self.fields.span(),
-                        format!(
-                            "struct or enum variant with more than 1 field must have \
-                     `#[{}(\"...\", ...)]` attribute",
-                            trait_name_to_attribute_name(self.trait_ident),
-                        ),
-                    ))
-                }
-            };
-        }
-
-        if has_shared_attr {
-            if let Some(shared_fmt) = &self.shared_attr {
-                let deref_args = shared_fmt.additional_deref_args(self.fields);
-
-                let shared_body = quote! {
-                    derive_more::core::write!(__derive_more_f, #shared_fmt, #(#deref_args),*)
-                };
-
-                body = if body.is_empty() {
-                    shared_body
-                } else {
-                    quote! { match #body { _variant => #shared_body } }
-                }
+                Ok(body)
             }
+            None if self.fields.len() <= 1 => {
+                let mut body = (shared_attr_is_wrapping || !has_shared_attr)
+                    .then(|| {
+                        if self.fields.is_empty() {
+                            self.generate_body_no_fmt_unit(shared_attr_is_wrapping)
+                        } else {
+                            self.generate_body_no_fmt_unit_single_field(shared_attr_is_wrapping)
+                        }
+                    })
+                    .unwrap_or_default();
+                if has_shared_attr {
+                    body = self.generated_body_shared(self.shared_attr.as_ref().unwrap(), body);
+                }
+                Ok(body)
+            }
+            _ => Err(syn::Error::new(
+                self.fields.span(),
+                format!(
+                    "struct or enum variant with more than 1 field must have `#[{}(\"...\", ...)]` \
+                     attribute",
+                    trait_name_to_attribute_name(self.trait_ident),
+                ),
+            )),
         }
-
-        Ok(body)
     }
 
     /// Generates trait bounds for a struct or an enum variant.
@@ -372,7 +395,7 @@ impl Expansion<'_> {
 
         if self
             .shared_attr
-            .map_or(true, |a| a.contains_arg("_variant"))
+            .map_or(true, |attr| attr.contains_arg("_variant"))
         {
             if let Some(fmt) = &self.attrs.fmt {
                 bounds.extend(

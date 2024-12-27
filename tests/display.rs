@@ -1471,10 +1471,7 @@ mod enums {
                 #[test]
                 fn assert() {
                     assert_eq!(Enum::<NoDisplay>::A(1).to_string(), "A 1");
-                    assert_eq!(
-                        Enum::<NoDisplay>::B { field: 2 }.to_string(),
-                        "B 2",
-                    );
+                    assert_eq!(Enum::<NoDisplay>::B { field: 2 }.to_string(), "B 2",);
                     assert_eq!(Enum::<NoDisplay>::C.to_string(), "Variant");
                     assert_eq!(Enum::<NoDisplay>::D(NoDisplay).to_string(), "Variant");
                 }
@@ -1502,24 +1499,27 @@ mod enums {
             mod only_field {
                 use super::*;
 
+                /// Make sure that top-level-specific bounds are not added if a field is not used.
+                struct NoDisplay;
+
                 #[derive(Display)]
                 #[display("{_0}")]
-                enum Enum<T> {
+                enum Enum<C, D> {
                     #[display("A")]
                     A(i32),
                     #[display("B")]
                     B(&'static str),
                     #[display("C")]
-                    C(T),
-                    D(T),
+                    C(C),
+                    D(D),
                 }
 
                 #[test]
                 fn assert() {
-                    assert_eq!(Enum::<u8>::A(1).to_string(), "A");
-                    assert_eq!(Enum::<u8>::B("abc").to_string(), "B");
-                    assert_eq!(Enum::<u8>::C(9).to_string(), "C");
-                    assert_eq!(Enum::<u8>::D(9).to_string(), "9");
+                    assert_eq!(Enum::<NoDisplay, u8>::A(1).to_string(), "A");
+                    assert_eq!(Enum::<NoDisplay, u8>::B("abc").to_string(), "B");
+                    assert_eq!(Enum::<NoDisplay, u8>::C(9).to_string(), "C");
+                    assert_eq!(Enum::<NoDisplay, u8>::D(9).to_string(), "9");
                 }
             }
 
