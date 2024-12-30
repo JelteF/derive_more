@@ -45,12 +45,6 @@ let a = &123;
 assert_eq!(format!("{}", RefInt{field: &a}), format!("{a:p} {:p}", a));
 ```
 
-For enums you can also specify a shared format on the enum itself instead of
-the variant. This format is used for each of the variants, and can be
-customized per variant by including the special `{_variant}` placeholder in
-this shared format, which is then replaced by the format string that's provided
-on the variant.
-
 
 ### Other formatting traits
 
@@ -177,6 +171,57 @@ struct MyOctalInt(i32);
 
 // and so, additional formatting parameters have no effect
 assert_eq!(format!("{:07}", MyOctalInt(9)), "11");
+```
+
+
+### Shared enum format
+
+Enums can have shared top-level `#[display("...", args...)]` attribute. Depending on its contents,
+it can act either as a default format or a wrapping one.
+
+#### Wrapping enum format
+
+To act as a wrapping format, the shared top-level `#[display("...", args...)]` attribute should
+contain at least one special `{_variant}` placeholder, which is then replaced by the format string
+that's provided (or inferred) on the variant.
+```rust
+# use derive_more::Display;
+#
+#[derive(Display)]
+#[display("Variant: {_variant} & {}", _variant)]
+enum Enum {
+    #[display("A {_0}")]
+    A(i32),
+    B { field: i32 },
+    #[display("c")]
+    C,
+}
+
+assert_eq!(Enum::A(1).to_string(), "Variant: A 1 & A 1");
+assert_eq!(Enum::B { field: 2 }.to_string(), "Variant: 2 & 2");
+assert_eq!(Enum::C.to_string(), "Variant: c & c");
+```
+
+#### Default enum format
+
+If the shared top-level `#[display("...", args...)]` attribute contains no `{_variant}` placeholders,
+then it acts as the default one for the variants without its own format.
+```rust
+# use derive_more::Display;
+#
+#[derive(Display)]
+#[display("Variant: {_0} & {}", _0)] // fields can be used too!
+enum Enum {
+    #[display("A {_0}")]
+    A(i32),
+    B { field: i32 },
+    #[display("c")]
+    C,
+}
+
+assert_eq!(Enum::A(1).to_string(), "A 1");
+assert_eq!(Enum::B { field: 2 }.to_string(), "Variant: 2 & 2");
+assert_eq!(Enum::C.to_string(), "c");
 ```
 
 
