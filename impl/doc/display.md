@@ -214,13 +214,13 @@ then it acts as the default one for the variants without its own format.
 enum Enum {
     #[display("A {_0}")]
     A(i32),
-    B { field: i32 },
+    B(u32),
     #[display("c")]
     C,
 }
 
 assert_eq!(Enum::A(1).to_string(), "A 1");
-assert_eq!(Enum::B { field: 2 }.to_string(), "Variant: 2 & 2");
+assert_eq!(Enum::B(2).to_string(), "Variant: 2 & 2");
 assert_eq!(Enum::C.to_string(), "c");
 ```
 
