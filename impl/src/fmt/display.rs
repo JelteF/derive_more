@@ -255,97 +255,103 @@ struct Expansion<'a> {
 }
 
 impl Expansion<'_> {
+    /// Checks and indicates whether a top-level shared [`FmtAttribute`] is present in this
+    /// [`Expansion`], and whether it has wrapping logic (e.g. uses `_variant` placeholder).
+    fn shared_attr_info(&self) -> (bool, bool) {
+        let shared_attr_contains_variant = self
+            .shared_attr
+            .map_or(true, |attr| attr.contains_arg("_variant"));
+        // If `shared_attr` is a transparent call to `_variant`, then we consider it being absent.
+        let has_shared_attr = self.shared_attr.map_or(false, |attr| {
+            attr.transparent_call().map_or(true, |(_, called_trait)| {
+                &called_trait != self.trait_ident || !shared_attr_contains_variant
+            })
+        });
+        (
+            has_shared_attr,
+            has_shared_attr && shared_attr_contains_variant,
+        )
+    }
+
     /// Generates [`Display::fmt()`] implementation for a struct or an enum variant.
     ///
     /// # Errors
     ///
-    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is
-    /// greater than 1.
+    /// In case [`FmtAttribute`] is [`None`] and [`syn::Fields`] length is greater than 1.
     ///
     /// [`Display::fmt()`]: fmt::Display::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         let mut body = TokenStream::new();
 
-        // If `shared_attr` is a transparent call, then we consider it being absent.
-        let has_shared_attr = self
-            .shared_attr
-            .map_or(false, |a| a.transparent_call().is_none());
+        let (has_shared_attr, shared_attr_is_wrapping) = self.shared_attr_info();
 
-        if !has_shared_attr
-            || self
-                .shared_attr
-                .map_or(true, |a| a.contains_arg("_variant"))
-        {
-            body = match &self.attrs.fmt {
-                Some(fmt) => {
-                    if has_shared_attr {
-                        let deref_args = fmt.additional_deref_args(self.fields);
+        let wrap_into_shared_attr = match &self.attrs.fmt {
+            Some(fmt) => {
+                body = if shared_attr_is_wrapping {
+                    let deref_args = fmt.additional_deref_args(self.fields);
 
-                        quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
-                    } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                        let expr =
-                            if self.fields.fmt_args_idents().any(|field| expr == field)
-                            {
-                                quote! { #expr }
-                            } else {
-                                quote! { &(#expr) }
-                            };
+                    quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
+                } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
+                    let expr =
+                        if self.fields.fmt_args_idents().any(|field| expr == field) {
+                            quote! { #expr }
+                        } else {
+                            quote! { &(#expr) }
+                        };
 
-                        quote! {
-                            derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f)
+                    quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
+                } else {
+                    let deref_args = fmt.additional_deref_args(self.fields);
+
+                    quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*) }
+                };
+                shared_attr_is_wrapping
+            }
+            None => {
+                if shared_attr_is_wrapping || !has_shared_attr {
+                    body = if self.fields.is_empty() {
+                        let ident_str = self.ident.unraw().to_string();
+
+                        if shared_attr_is_wrapping {
+                            quote! { #ident_str }
+                        } else {
+                            quote! { __derive_more_f.write_str(#ident_str) }
+                        }
+                    } else if self.fields.len() == 1 {
+                        let field = self
+                            .fields
+                            .iter()
+                            .next()
+                            .unwrap_or_else(|| unreachable!("count() == 1"));
+                        let ident =
+                            field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
+                        let trait_ident = self.trait_ident;
+
+                        if shared_attr_is_wrapping {
+                            let placeholder =
+                                trait_name_to_default_placeholder_literal(trait_ident);
+
+                            quote! { &derive_more::core::format_args!(#placeholder, #ident) }
+                        } else {
+                            quote! {
+                                derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
+                            }
                         }
                     } else {
-                        let deref_args = fmt.additional_deref_args(self.fields);
-
-                        quote! {
-                            derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*)
-                        }
-                    }
+                        return Err(syn::Error::new(
+                            self.fields.span(),
+                            format!(
+                                "struct or enum variant with more than 1 field must have \
+                                 `#[{}(\"...\", ...)]` attribute",
+                                trait_name_to_attribute_name(self.trait_ident),
+                            ),
+                        ));
+                    };
                 }
-                None if self.fields.is_empty() => {
-                    let ident_str = self.ident.unraw().to_string();
-
-                    if has_shared_attr {
-                        quote! { #ident_str }
-                    } else {
-                        quote! { __derive_more_f.write_str(#ident_str) }
-                    }
-                }
-                None if self.fields.len() == 1 => {
-                    let field = self
-                        .fields
-                        .iter()
-                        .next()
-                        .unwrap_or_else(|| unreachable!("count() == 1"));
-                    let ident =
-                        field.ident.clone().unwrap_or_else(|| format_ident!("_0"));
-                    let trait_ident = self.trait_ident;
-
-                    if has_shared_attr {
-                        let placeholder =
-                            trait_name_to_default_placeholder_literal(trait_ident);
-
-                        quote! { &derive_more::core::format_args!(#placeholder, #ident) }
-                    } else {
-                        quote! {
-                            derive_more::core::fmt::#trait_ident::fmt(#ident, __derive_more_f)
-                        }
-                    }
-                }
-                _ => {
-                    return Err(syn::Error::new(
-                        self.fields.span(),
-                        format!(
-                            "struct or enum variant with more than 1 field must have \
-                     `#[{}(\"...\", ...)]` attribute",
-                            trait_name_to_attribute_name(self.trait_ident),
-                        ),
-                    ))
-                }
-            };
-        }
-
-        if has_shared_attr {
+                has_shared_attr
+            }
+        };
+        if wrap_into_shared_attr {
             if let Some(shared_fmt) = &self.shared_attr {
                 let deref_args = shared_fmt.additional_deref_args(self.fields);
 
@@ -368,13 +374,12 @@ impl Expansion<'_> {
     fn generate_bounds(&self) -> Vec<syn::WherePredicate> {
         let mut bounds = vec![];
 
-        if self
-            .shared_attr
-            .map_or(true, |a| a.contains_arg("_variant"))
-        {
-            if let Some(fmt) = &self.attrs.fmt {
+        let (has_shared_attr, shared_attr_is_wrapping) = self.shared_attr_info();
+
+        let mix_shared_attr_bounds = match &self.attrs.fmt {
+            Some(attr) => {
                 bounds.extend(
-                    fmt.bounded_types(self.fields)
+                    attr.bounded_types(self.fields)
                         .filter_map(|(ty, trait_name)| {
                             if !ty.contains_generics(self.type_params) {
                                 return None;
@@ -385,29 +390,37 @@ impl Expansion<'_> {
                         })
                         .chain(self.attrs.bounds.0.clone()),
                 );
-            } else {
-                bounds.extend(self.fields.iter().next().and_then(|f| {
-                    let ty = &f.ty;
-                    if !ty.contains_generics(self.type_params) {
-                        return None;
-                    }
-                    let trait_ident = &self.trait_ident;
-                    Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
-                }));
-            };
-        }
+                shared_attr_is_wrapping
+            }
+            None => {
+                if shared_attr_is_wrapping || !has_shared_attr {
+                    bounds.extend(self.fields.iter().next().and_then(|f| {
+                        let ty = &f.ty;
+                        if !ty.contains_generics(self.type_params) {
+                            return None;
+                        }
+                        let trait_ident = &self.trait_ident;
+                        Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
+                    }));
+                }
+                has_shared_attr
+            }
+        };
+        if mix_shared_attr_bounds {
+            bounds.extend(
+                self.shared_attr
+                    .as_ref()
+                    .unwrap()
+                    .bounded_types(self.fields)
+                    .filter_map(|(ty, trait_name)| {
+                        if !ty.contains_generics(self.type_params) {
+                            return None;
+                        }
+                        let trait_ident = format_ident!("{trait_name}");
 
-        if let Some(shared_fmt) = &self.shared_attr {
-            bounds.extend(shared_fmt.bounded_types(self.fields).filter_map(
-                |(ty, trait_name)| {
-                    if !ty.contains_generics(self.type_params) {
-                        return None;
-                    }
-                    let trait_ident = format_ident!("{trait_name}");
-
-                    Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
-                },
-            ));
+                        Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
+                    }),
+            );
         }
 
         bounds

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `use derive_more::SomeTrait` now imports macro only. Importing macro with
   its trait along is possible now via `use derive_more::with_trait::SomeTrait`.
   ([#406](https://github.com/JelteF/derive_more/pull/406))
+- Top-level `#[display("...")]` attribute on an enum now has defaulting behavior
+  instead of replacing when no wrapping is possible (no `_variant` placeholder).
+  ([#395](https://github.com/JelteF/derive_more/pull/395))
 
 ### Fixed
 
@@ -24,6 +27,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Ambiguous associated item error when deriving `TryFrom`, `TryInto` or `FromStr`
   with an associated item called `Error` or `Err` respectively.
   ([#410](https://github.com/JelteF/derive_more/pull/410))
+- Top-level `#[display("...")]` attribute on an enum being incorrectly treated
+  as transparent or wrapping.
+  ([#395](https://github.com/JelteF/derive_more/pull/395))
 
 
 ## 1.0.0 - 2024-08-07

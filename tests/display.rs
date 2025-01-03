@@ -1384,6 +1384,8 @@ mod enums {
                         field: i32,
                     },
                     C,
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
                 }
 
                 #[test]
@@ -1391,6 +1393,7 @@ mod enums {
                     assert_eq!(Enum::A(1).to_string(), "Variant: A 1");
                     assert_eq!(Enum::B { field: 2 }.to_string(), "Variant: B 2");
                     assert_eq!(Enum::C.to_string(), "Variant: C");
+                    assert_eq!(Enum::D(1, 2).to_string(), "Variant: D 1 2");
                 }
             }
 
@@ -1407,6 +1410,8 @@ mod enums {
                         field: i32,
                     },
                     C,
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
                     #[display("{_0:b}")]
                     TransparentBinary(i32),
                 }
@@ -1416,6 +1421,7 @@ mod enums {
                     assert_eq!(Enum::A(1).to_string(), "A 1");
                     assert_eq!(Enum::B { field: 2 }.to_string(), "B 2");
                     assert_eq!(Enum::C.to_string(), "C");
+                    assert_eq!(Enum::D(1, 2).to_string(), "D 1 2");
                     assert_eq!(
                         format!("{:08}", Enum::TransparentBinary(4)),
                         "00000100",
@@ -1436,6 +1442,8 @@ mod enums {
                         field: i32,
                     },
                     C,
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
                 }
 
                 #[test]
@@ -1446,6 +1454,7 @@ mod enums {
                         "B 2 Variant: B 2 B 2",
                     );
                     assert_eq!(Enum::C.to_string(), "C Variant: C C");
+                    assert_eq!(Enum::D(1, 2).to_string(), "D 1 2 Variant: D 1 2 D 1 2",);
                 }
             }
 
@@ -1465,18 +1474,26 @@ mod enums {
                         field: i32,
                     },
                     C,
-                    D(T),
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
+                    E {
+                        a: u8,
+                        b: i8,
+                    },
+                    X(T),
                 }
 
                 #[test]
                 fn assert() {
-                    assert_eq!(Enum::<NoDisplay>::A(1).to_string(), "Variant");
-                    assert_eq!(
-                        Enum::<NoDisplay>::B { field: 2 }.to_string(),
-                        "Variant",
-                    );
+                    assert_eq!(Enum::<NoDisplay>::A(1).to_string(), "A 1");
+                    assert_eq!(Enum::<NoDisplay>::B { field: 2 }.to_string(), "B 2",);
                     assert_eq!(Enum::<NoDisplay>::C.to_string(), "Variant");
-                    assert_eq!(Enum::<NoDisplay>::D(NoDisplay).to_string(), "Variant");
+                    assert_eq!(Enum::<NoDisplay>::D(1, 2).to_string(), "D 1 2");
+                    assert_eq!(
+                        Enum::<NoDisplay>::E { a: 2, b: 1 }.to_string(),
+                        "Variant"
+                    );
+                    assert_eq!(Enum::<NoDisplay>::X(NoDisplay).to_string(), "Variant");
                 }
             }
 
@@ -1488,14 +1505,83 @@ mod enums {
                 enum Enum<T> {
                     A(i32),
                     B(&'static str),
-                    C(T),
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
+                    E(u8, i8),
+                    X(T),
                 }
 
                 #[test]
                 fn assert() {
                     assert_eq!(Enum::<u8>::A(1).to_string(), "Variant 1");
                     assert_eq!(Enum::<u8>::B("abc").to_string(), "Variant abc");
-                    assert_eq!(Enum::<u8>::C(9).to_string(), "Variant 9");
+                    assert_eq!(Enum::<u8>::D(1, 2).to_string(), "D 1 2");
+                    assert_eq!(Enum::<u8>::E(2, 1).to_string(), "Variant 2");
+                    assert_eq!(Enum::<u8>::X(9).to_string(), "Variant 9");
+                }
+            }
+
+            mod only_field {
+                use super::*;
+
+                /// Make sure that top-level-specific bounds are not added if a field is not used.
+                struct NoDisplay;
+
+                #[derive(Display)]
+                #[display("{_0}")]
+                enum Enum<X, Y> {
+                    #[display("A")]
+                    A(i32),
+                    #[display("B")]
+                    B(&'static str),
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
+                    E(u8, i8),
+                    #[display("X")]
+                    X(X),
+                    Y(Y),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::<NoDisplay, u8>::A(1).to_string(), "A");
+                    assert_eq!(Enum::<NoDisplay, u8>::B("abc").to_string(), "B");
+                    assert_eq!(Enum::<NoDisplay, u8>::D(1, 2).to_string(), "D 1 2");
+                    assert_eq!(Enum::<NoDisplay, u8>::E(2, 1).to_string(), "2");
+                    assert_eq!(Enum::<NoDisplay, u8>::X(NoDisplay).to_string(), "X");
+                    assert_eq!(Enum::<NoDisplay, u8>::Y(9).to_string(), "9");
+                }
+            }
+
+            mod only_multiple_field {
+                use super::*;
+
+                /// Make sure that top-level-specific bounds are not added if a field is not used.
+                struct NoDisplay;
+
+                #[derive(Display)]
+                #[display("{_0} & {_1}")]
+                enum Enum<X, Y> {
+                    #[display("A")]
+                    A(i32),
+                    #[display("B")]
+                    B(&'static str),
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
+                    E(u8, i8),
+                    #[display("X")]
+                    X(X),
+                    Y(Y, i8),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::<NoDisplay, u8>::A(1).to_string(), "A");
+                    assert_eq!(Enum::<NoDisplay, u8>::B("abc").to_string(), "B");
+                    assert_eq!(Enum::<NoDisplay, u8>::D(1, 2).to_string(), "D 1 2");
+                    assert_eq!(Enum::<NoDisplay, u8>::E(2, 1).to_string(), "2 & 1");
+                    assert_eq!(Enum::<NoDisplay, u8>::X(NoDisplay).to_string(), "X");
+                    assert_eq!(Enum::<NoDisplay, u8>::Y(9, 10).to_string(), "9 & 10");
                 }
             }
 
@@ -1509,15 +1595,51 @@ mod enums {
                     A(i32),
                     #[display("B")]
                     B(&'static str),
-                    #[display("C")]
-                    C(T),
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
+                    #[display("X")]
+                    X(T),
+                    Y(T),
                 }
 
                 #[test]
                 fn assert() {
                     assert_eq!(Enum::<u8>::A(1).to_string(), "Variant A 1");
                     assert_eq!(Enum::<u8>::B("abc").to_string(), "Variant B abc");
-                    assert_eq!(Enum::<u8>::C(9).to_string(), "Variant C 9");
+                    assert_eq!(Enum::<u8>::D(1, 2).to_string(), "Variant D 1 2 1");
+                    assert_eq!(Enum::<u8>::X(9).to_string(), "Variant X 9");
+                    assert_eq!(Enum::<u8>::Y(9).to_string(), "Variant 9 9");
+                }
+            }
+
+            mod as_debug {
+                use super::*;
+
+                #[derive(Debug, Display)]
+                #[display("{self:?}")]
+                enum Enum {
+                    #[display("A {_0}")]
+                    A(i32),
+                    #[display("B {}", field)]
+                    B {
+                        field: i32,
+                    },
+                    C,
+                    #[display("D {_0} {}", _1)]
+                    D(i8, u8),
+                    E {
+                        a: u8,
+                        b: i8,
+                    },
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(Enum::A(1).to_string(), "A 1");
+                    assert_eq!(Enum::B { field: 2 }.to_string(), "B 2");
+                    assert_eq!(Enum::C.to_string(), "C");
+                    assert_eq!(Enum::D(1, 2).to_string(), "D 1 2");
+                    assert_eq!(Enum::E { a: 2, b: 1 }.to_string(), "E { a: 2, b: 1 }");
                 }
             }
 
