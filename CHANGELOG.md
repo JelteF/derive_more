@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   as transparent or wrapping.
   ([#395](https://github.com/JelteF/derive_more/pull/395))
 
+### Added
+
+- Add support for custom types in `TryFrom`. So now you can use:
+  `#[try_from(T)]`, `#[try_from(T, E)]` and `#[try_from(T, E, ErrorValue)]`
+  alongside and not only `#[try_from(repr)]`.
 
 ## 1.0.0 - 2024-08-07
 
