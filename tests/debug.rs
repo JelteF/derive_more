@@ -1821,6 +1821,9 @@ mod generic {
     }
 
     mod raw {
+        #[cfg(not(feature = "std"))]
+        use alloc::format;
+
         use derive_more::Debug;
 
         #[derive(Debug)]
@@ -1846,6 +1849,9 @@ mod generic {
         }
 
         mod interpolated {
+            #[cfg(not(feature = "std"))]
+            use alloc::format;
+
             use derive_more::Debug;
 
             #[derive(Debug)]
