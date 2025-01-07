@@ -1820,6 +1820,75 @@ mod generic {
         }
     }
 
+    mod raw {
+        use derive_more::Debug;
+
+        #[derive(Debug)]
+        struct StructOne<T> {
+            r#thing: T,
+        }
+
+        #[derive(Debug)]
+        enum Enum<T> {
+            One { r#thing: T },
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(
+                format!("{:?}", StructOne::<u8> { r#thing: 8 }),
+                "StructOne { r#thing: 8 }"
+            );
+            assert_eq!(
+                format!("{:?}", Enum::<u8>::One { r#thing: 8 }),
+                "One { r#thing: 8 }"
+            );
+        }
+
+        mod interpolated {
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[debug("{thing}")]
+            struct StructOne<T> {
+                r#thing: T,
+            }
+
+            #[derive(Debug)]
+            enum Enum1<T> {
+                #[debug("{thing}")]
+                One { r#thing: T },
+            }
+
+            #[derive(Debug)]
+            #[debug("{a}:{b}")]
+            struct StructTwo<A, B> {
+                r#a: A,
+                b: B,
+            }
+
+            #[derive(Debug)]
+            enum Enum2<A, B> {
+                #[debug("{a}:{b}")]
+                Two { r#a: A, b: B },
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:?}", StructOne::<u8> { r#thing: 8 }), "8");
+                assert_eq!(format!("{:?}", Enum1::<u8>::One { r#thing: 8 }), "8");
+                assert_eq!(
+                    format!("{:?}", StructTwo::<u8, u16> { r#a: 8, b: 16 }),
+                    "8:16",
+                );
+                assert_eq!(
+                    format!("{:?}", Enum2::<u8, u16>::Two { r#a: 8, b: 16 }),
+                    "8:16",
+                );
+            }
+        }
+    }
+
     mod bound {
         #[cfg(not(feature = "std"))]
         use alloc::format;

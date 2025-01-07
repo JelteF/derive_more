@@ -4,7 +4,7 @@
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, spanned::Spanned as _, Ident};
+use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _};
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
@@ -78,7 +78,7 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
 /// [`fmt::Debug`]: std::fmt::Debug
 fn expand_struct(
     attrs: ContainerAttributes,
-    ident: &Ident,
+    ident: &syn::Ident,
     s: &syn::DataStruct,
     type_params: &[&syn::Ident],
     attr_name: &syn::Ident,
@@ -209,8 +209,8 @@ type FieldAttribute = Either<attr::Skip, FmtAttribute>;
 struct Expansion<'a> {
     attr: &'a ContainerAttributes,
 
-    /// Struct or enum [`Ident`](struct@Ident).
-    ident: &'a Ident,
+    /// Struct or enum [`Ident`](struct@syn::Ident).
+    ident: &'a syn::Ident,
 
     /// Struct or enum [`syn::Fields`].
     fields: &'a syn::Fields,
@@ -251,8 +251,12 @@ impl Expansion<'_> {
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
             return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                let expr = if self.fields.fmt_args_idents().any(|field| expr == field) {
-                    quote! { #expr }
+                let expr = if let Some(field) = self
+                    .fields
+                    .fmt_args_idents()
+                    .find(|field| expr == *field || expr == field.unraw())
+                {
+                    quote! { #field }
                 } else {
                     quote! { &(#expr) }
                 };

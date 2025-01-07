@@ -8,10 +8,6 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
-use crate::{
-    parsing::Expr,
-    utils::{attr, Either, Spanning},
-};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
@@ -20,6 +16,11 @@ use syn::{
     punctuated::Punctuated,
     spanned::Spanned as _,
     token,
+};
+
+use crate::{
+    parsing::Expr,
+    utils::{attr, Either, Spanning},
 };
 
 /// Representation of a `bound` macro attribute, expressing additional trait bounds.
