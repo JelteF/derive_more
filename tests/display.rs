@@ -2017,6 +2017,43 @@ mod generic {
         }
     }
 
+    mod raw {
+        use super::*;
+
+        #[derive(Display)]
+        struct One<T> {
+            r#thing: T,
+        }
+
+        #[test]
+        fn assert() {
+            assert_eq!(One::<u8> { r#thing: 8 }.to_string(), "8");
+        }
+
+        mod interpolated {
+            use super::*;
+
+            #[derive(Display)]
+            #[display("{thing}")]
+            struct One<T> {
+                r#thing: T,
+            }
+
+            #[derive(Display)]
+            #[display("{a}:{b}")]
+            struct Two<A, B> {
+                r#a: A,
+                b: B,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(One::<u8> { r#thing: 8 }.to_string(), "8");
+                assert_eq!(Two::<u8, u16> { r#a: 8, b: 16 }.to_string(), "8:16");
+            }
+        }
+    }
+
     mod bound {
         use super::*;
 
