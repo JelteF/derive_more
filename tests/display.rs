@@ -2021,13 +2021,19 @@ mod generic {
         use super::*;
 
         #[derive(Display)]
-        struct One<T> {
+        struct StructOne<T> {
             r#thing: T,
+        }
+
+        #[derive(Display)]
+        enum Enum<T> {
+            One { r#thing: T },
         }
 
         #[test]
         fn assert() {
-            assert_eq!(One::<u8> { r#thing: 8 }.to_string(), "8");
+            assert_eq!(StructOne::<u8> { r#thing: 8 }.to_string(), "8");
+            assert_eq!(Enum::<u8>::One { r#thing: 8 }.to_string(), "8");
         }
 
         mod interpolated {
@@ -2035,21 +2041,52 @@ mod generic {
 
             #[derive(Display)]
             #[display("{thing}")]
-            struct One<T> {
+            struct StructOne<T> {
                 r#thing: T,
             }
 
             #[derive(Display)]
+            enum Enum1<T> {
+                #[display("{thing}")]
+                One { r#thing: T },
+            }
+
+            #[derive(Display)]
+            #[display("{thing}")]
+            enum Enum1Top<T> {
+                One { r#thing: T },
+            }
+
+            #[derive(Display)]
             #[display("{a}:{b}")]
-            struct Two<A, B> {
+            struct StructTwo<A, B> {
                 r#a: A,
                 b: B,
             }
 
+            #[derive(Display)]
+            enum Enum2<A, B> {
+                #[display("{a}:{b}")]
+                Two { r#a: A, b: B },
+            }
+
+            #[derive(Display)]
+            #[display("{a}:{b}")]
+            enum Enum2Shared<A, B> {
+                Two { r#a: A, b: B },
+            }
+
             #[test]
             fn assert() {
-                assert_eq!(One::<u8> { r#thing: 8 }.to_string(), "8");
-                assert_eq!(Two::<u8, u16> { r#a: 8, b: 16 }.to_string(), "8:16");
+                assert_eq!(StructOne::<u8> { r#thing: 8 }.to_string(), "8");
+                assert_eq!(Enum1::<u8>::One { r#thing: 8 }.to_string(), "8");
+                assert_eq!(Enum1Top::<u8>::One { r#thing: 8 }.to_string(), "8");
+                assert_eq!(StructTwo::<u8, u16> { r#a: 8, b: 16 }.to_string(), "8:16");
+                assert_eq!(Enum2::<u8, u16>::Two { r#a: 8, b: 16 }.to_string(), "8:16");
+                assert_eq!(
+                    Enum2Shared::<u8, u16>::Two { r#a: 8, b: 16 }.to_string(),
+                    "8:16",
+                );
             }
         }
     }
