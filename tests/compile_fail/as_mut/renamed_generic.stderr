@@ -13,6 +13,9 @@ error[E0599]: the method `as_mut` exists for struct `Baz<i32>`, but its trait bo
    = note: trait bound `Foo<i32>: AsMut<Foo<i32>>` was not satisfied
 note: the trait `AsMut` must be implemented
   --> $RUST/core/src/convert/mod.rs
+   |
+   | pub trait AsMut<T: ?Sized> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `as_mut`, perhaps you need to implement it:
            candidate #1: `AsMut`
