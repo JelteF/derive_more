@@ -73,7 +73,7 @@ impl Parse for Expr {
 
 impl PartialEq<syn::Ident> for Expr {
     fn eq(&self, other: &syn::Ident) -> bool {
-        self.ident().map_or(false, |i| i == other)
+        self.ident().is_some_and(|i| i == other)
     }
 }
 
