@@ -576,7 +576,7 @@ where
             .filter(|(top_level, owned, ref_, ref_mut)| {
                 [top_level, owned, ref_, ref_mut]
                     .into_iter()
-                    .any(|l| l.as_ref().map_or(false, |l| !l.is_empty()))
+                    .any(|l| l.as_ref().is_some_and(|l| !l.is_empty()))
             })
         else {
             return Ok(());

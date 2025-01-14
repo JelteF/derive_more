@@ -1,8 +1,8 @@
-error: invalid format string: expected `'}'`, found `')'`
+error: invalid format string: expected `}`, found `)`
  --> tests/compile_fail/display/shared_format_unclosed_brace.rs:2:19
   |
 2 | #[display("Stuff({)")]
-  |                  -^ expected `'}'` in format string
+  |                  -^ expected `}` in format string
   |                  |
   |                  because of this opening brace
   |
