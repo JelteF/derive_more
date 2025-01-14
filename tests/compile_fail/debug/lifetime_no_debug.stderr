@@ -4,7 +4,7 @@ error[E0277]: `NoDebug<'_>` doesn't implement `Debug`
 5 | #[derive(derive_more::Debug)]
   |          ^^^^^^^^^^^^^^^^^^ `NoDebug<'_>` cannot be formatted using `{:?}`
   |
-  = help: the trait `Debug` is not implemented for `NoDebug<'_>`, which is required by `&NoDebug<'_>: Debug`
+  = help: the trait `Debug` is not implemented for `NoDebug<'_>`
   = note: add `#[derive(Debug)]` to `NoDebug<'_>` or manually `impl Debug for NoDebug<'_>`
   = note: required for `&NoDebug<'_>` to implement `Debug`
   = note: required for the cast from `&&NoDebug<'_>` to `&dyn Debug`

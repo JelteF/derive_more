@@ -297,7 +297,7 @@ impl FmtAttribute {
         fields.fmt_args_idents().filter_map(move |field_name| {
             (used_args.iter().any(|arg| field_name.unraw() == arg)
                 && !self.args.iter().any(|arg| {
-                    arg.alias.as_ref().map_or(false, |(n, _)| n == &field_name)
+                    arg.alias.as_ref().is_some_and(|(n, _)| n == &field_name)
                 }))
             .then(|| quote! { #field_name = *#field_name })
         })

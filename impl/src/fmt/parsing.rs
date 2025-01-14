@@ -522,7 +522,7 @@ fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
             ),
             &mut and_then(char('_'), take_while1(check_char(XID::is_xid_continue))),
         ]),
-        |(i, _)| (i, &input[..(input.as_bytes().len() - i.as_bytes().len())]),
+        |(i, _)| (i, &input[..(input.len() - i.len())]),
     )(input)
 }
 
@@ -614,10 +614,7 @@ fn take_while0(
         while let Some(step) = parser(cur) {
             cur = step;
         }
-        (
-            cur,
-            &input[..(input.as_bytes().len() - cur.as_bytes().len())],
-        )
+        (cur, &input[..(input.len() - cur.len())])
     }
 }
 
@@ -631,10 +628,7 @@ fn take_while1(
         while let Some(step) = parser(cur) {
             cur = step;
         }
-        Some((
-            cur,
-            &input[..(input.as_bytes().len() - cur.as_bytes().len())],
-        ))
+        Some((cur, &input[..(input.len() - cur.len())]))
     }
 }
 
@@ -662,16 +656,13 @@ fn take_until1(
             cur = b;
         }
 
-        Some((
-            cur,
-            &input[..(input.as_bytes().len() - cur.as_bytes().len())],
-        ))
+        Some((cur, &input[..(input.len() - cur.len())]))
     }
 }
 
 /// Checks whether `input` starts with `s`.
 fn str(s: &str) -> impl FnMut(&str) -> Option<LeftToParse<'_>> + '_ {
-    move |input| input.starts_with(s).then(|| &input[s.as_bytes().len()..])
+    move |input| input.starts_with(s).then(|| &input[s.len()..])
 }
 
 /// Checks whether `input` starts with `c`.
