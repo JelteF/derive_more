@@ -2329,7 +2329,7 @@ mod generics_search {
 
     impl<'ast> Visit<'ast> for Visitor<'_> {
         fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
-            self.found |= tp.path.get_ident().map_or(false, |ident| {
+            self.found |= tp.path.get_ident().is_some_and(|ident| {
                 self.search.types.contains(ident) || self.search.consts.contains(ident)
             });
 
@@ -2346,7 +2346,7 @@ mod generics_search {
             self.found |= ep
                 .path
                 .get_ident()
-                .map_or(false, |ident| self.search.consts.contains(ident));
+                .is_some_and(|ident| self.search.consts.contains(ident));
 
             syn::visit::visit_expr_path(self, ep)
         }
