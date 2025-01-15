@@ -2026,6 +2026,11 @@ mod generic {
         }
 
         #[derive(Display)]
+        struct StructOneKeyword<T> {
+            r#struct: T,
+        }
+
+        #[derive(Display)]
         enum Enum<T> {
             One { r#thing: T },
         }
@@ -2033,6 +2038,7 @@ mod generic {
         #[test]
         fn assert() {
             assert_eq!(StructOne::<u8> { r#thing: 8 }.to_string(), "8");
+            assert_eq!(StructOneKeyword::<u8> { r#struct: 8 }.to_string(), "8");
             assert_eq!(Enum::<u8>::One { r#thing: 8 }.to_string(), "8");
         }
 
@@ -2046,15 +2052,33 @@ mod generic {
             }
 
             #[derive(Display)]
+            #[display("{struct}")]
+            struct StructOneKeyword<T> {
+                r#struct: T,
+            }
+
+            #[derive(Display)]
             enum Enum1<T> {
                 #[display("{thing}")]
                 One { r#thing: T },
             }
 
             #[derive(Display)]
+            enum Enum1Keyword<T> {
+                #[display("{struct}")]
+                One { r#struct: T },
+            }
+
+            #[derive(Display)]
             #[display("{thing}")]
             enum Enum1Top<T> {
                 One { r#thing: T },
+            }
+
+            #[derive(Display)]
+            #[display("{struct}")]
+            enum Enum1TopKeyword<T> {
+                One { r#struct: T },
             }
 
             #[derive(Display)]
@@ -2065,9 +2089,22 @@ mod generic {
             }
 
             #[derive(Display)]
+            #[display("{pub}:{b}")]
+            struct StructTwoKeyword<A, B> {
+                r#pub: A,
+                b: B,
+            }
+
+            #[derive(Display)]
             enum Enum2<A, B> {
                 #[display("{a}:{b}")]
                 Two { r#a: A, b: B },
+            }
+
+            #[derive(Display)]
+            enum Enum2Keyword<A, B> {
+                #[display("{pub}:{b}")]
+                Two { r#pub: A, b: B },
             }
 
             #[derive(Display)]
@@ -2076,15 +2113,36 @@ mod generic {
                 Two { r#a: A, b: B },
             }
 
+            #[derive(Display)]
+            #[display("{pub}:{b}")]
+            enum Enum2SharedKeyword<A, B> {
+                Two { r#pub: A, b: B },
+            }
+
             #[test]
             fn assert() {
                 assert_eq!(StructOne::<u8> { r#thing: 8 }.to_string(), "8");
+                assert_eq!(StructOneKeyword::<u8> { r#struct: 8 }.to_string(), "8");
                 assert_eq!(Enum1::<u8>::One { r#thing: 8 }.to_string(), "8");
+                assert_eq!(Enum1Keyword::<u8>::One { r#struct: 8 }.to_string(), "8");
                 assert_eq!(Enum1Top::<u8>::One { r#thing: 8 }.to_string(), "8");
+                assert_eq!(Enum1TopKeyword::<u8>::One { r#struct: 8 }.to_string(), "8");
                 assert_eq!(StructTwo::<u8, u16> { r#a: 8, b: 16 }.to_string(), "8:16");
+                assert_eq!(
+                    StructTwoKeyword::<u8, u16> { r#pub: 8, b: 16 }.to_string(),
+                    "8:16",
+                );
                 assert_eq!(Enum2::<u8, u16>::Two { r#a: 8, b: 16 }.to_string(), "8:16");
                 assert_eq!(
+                    Enum2Keyword::<u8, u16>::Two { r#pub: 8, b: 16 }.to_string(),
+                    "8:16",
+                );
+                assert_eq!(
                     Enum2Shared::<u8, u16>::Two { r#a: 8, b: 16 }.to_string(),
+                    "8:16",
+                );
+                assert_eq!(
+                    Enum2SharedKeyword::<u8, u16>::Two { r#pub: 8, b: 16 }.to_string(),
                     "8:16",
                 );
             }

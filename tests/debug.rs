@@ -1832,19 +1832,37 @@ mod generic {
         }
 
         #[derive(Debug)]
+        struct StructOneKeyword<T> {
+            r#struct: T,
+        }
+
+        #[derive(Debug)]
         enum Enum<T> {
             One { r#thing: T },
+        }
+
+        #[derive(Debug)]
+        enum EnumKeyword<T> {
+            One { r#struct: T },
         }
 
         #[test]
         fn assert() {
             assert_eq!(
                 format!("{:?}", StructOne::<u8> { r#thing: 8 }),
-                "StructOne { thing: 8 }"
+                "StructOne { thing: 8 }",
+            );
+            assert_eq!(
+                format!("{:?}", StructOneKeyword::<u8> { r#struct: 8 }),
+                "StructOneKeyword { struct: 8 }",
             );
             assert_eq!(
                 format!("{:?}", Enum::<u8>::One { r#thing: 8 }),
-                "One { thing: 8 }"
+                "One { thing: 8 }",
+            );
+            assert_eq!(
+                format!("{:?}", EnumKeyword::<u8>::One { r#struct: 8 }),
+                "One { struct: 8 }",
             );
         }
 
@@ -1861,9 +1879,21 @@ mod generic {
             }
 
             #[derive(Debug)]
+            #[debug("{struct}")]
+            struct StructOneKeyword<T> {
+                r#struct: T,
+            }
+
+            #[derive(Debug)]
             enum Enum1<T> {
                 #[debug("{thing}")]
                 One { r#thing: T },
+            }
+
+            #[derive(Debug)]
+            enum Enum1Keyword<T> {
+                #[debug("{struct}")]
+                One { r#struct: T },
             }
 
             #[derive(Debug)]
@@ -1874,21 +1904,50 @@ mod generic {
             }
 
             #[derive(Debug)]
+            #[debug("{pub}:{b}")]
+            struct StructTwoKeyword<A, B> {
+                r#pub: A,
+                b: B,
+            }
+
+            #[derive(Debug)]
             enum Enum2<A, B> {
                 #[debug("{a}:{b}")]
                 Two { r#a: A, b: B },
             }
 
+            #[derive(Debug)]
+            enum Enum2Keyword<A, B> {
+                #[debug("{pub}:{b}")]
+                Two { r#pub: A, b: B },
+            }
+
             #[test]
             fn assert() {
                 assert_eq!(format!("{:?}", StructOne::<u8> { r#thing: 8 }), "8");
+                assert_eq!(
+                    format!("{:?}", StructOneKeyword::<u8> { r#struct: 8 }),
+                    "8",
+                );
                 assert_eq!(format!("{:?}", Enum1::<u8>::One { r#thing: 8 }), "8");
+                assert_eq!(
+                    format!("{:?}", Enum1Keyword::<u8>::One { r#struct: 8 }),
+                    "8",
+                );
                 assert_eq!(
                     format!("{:?}", StructTwo::<u8, u16> { r#a: 8, b: 16 }),
                     "8:16",
                 );
                 assert_eq!(
+                    format!("{:?}", StructTwoKeyword::<u8, u16> { r#pub: 8, b: 16 }),
+                    "8:16",
+                );
+                assert_eq!(
                     format!("{:?}", Enum2::<u8, u16>::Two { r#a: 8, b: 16 }),
+                    "8:16",
+                );
+                assert_eq!(
+                    format!("{:?}", Enum2Keyword::<u8, u16>::Two { r#pub: 8, b: 16 }),
                     "8:16",
                 );
             }
