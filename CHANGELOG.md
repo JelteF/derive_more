@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   instead of replacing when no wrapping is possible (no `_variant` placeholder).
   ([#395](https://github.com/JelteF/derive_more/pull/395))
 
+### Added
+
+- Derive for `AsVariant`.
+
 ### Fixed
 
 - Associated types of type parameters not being treated as generics in `Debug`
