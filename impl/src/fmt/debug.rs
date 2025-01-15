@@ -339,7 +339,7 @@ impl Expansion<'_> {
                     let field_ident = field.ident.as_ref().unwrap_or_else(|| {
                         unreachable!("`syn::Fields::Named`");
                     });
-                    let field_str = field_ident.to_string();
+                    let field_str = field_ident.unraw().to_string();
                     match FieldAttribute::parse_attrs(&field.attrs, self.attr_name)?
                         .map(Spanning::into_inner)
                     {

@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#395](https://github.com/JelteF/derive_more/pull/395))
 - Omitted raw identifiers in `Debug` and `Display` expansions.
   ([#431](https://github.com/JelteF/derive_more/pull/431))
+- Incorrect rendering of raw identifiers as field names in `Debug` expansions.
+  ([#431](https://github.com/JelteF/derive_more/pull/431))
 
 
 ## 1.0.0 - 2024-08-07

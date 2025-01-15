@@ -1840,11 +1840,11 @@ mod generic {
         fn assert() {
             assert_eq!(
                 format!("{:?}", StructOne::<u8> { r#thing: 8 }),
-                "StructOne { r#thing: 8 }"
+                "StructOne { thing: 8 }"
             );
             assert_eq!(
                 format!("{:?}", Enum::<u8>::One { r#thing: 8 }),
-                "One { r#thing: 8 }"
+                "One { thing: 8 }"
             );
         }
 
