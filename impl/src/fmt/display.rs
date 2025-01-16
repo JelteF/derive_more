@@ -292,7 +292,7 @@ impl Expansion<'_> {
 
                     quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
                 } else if let Some((expr, trait_ident)) =
-                    fmt.transparent_call_on_fields(&self.fields)
+                    fmt.transparent_call_on_fields(self.fields)
                 {
                     quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
                 } else {
@@ -351,7 +351,7 @@ impl Expansion<'_> {
                 let deref_args = shared_fmt.additional_deref_args(self.fields);
 
                 let shared_body = if let Some((expr, trait_ident)) =
-                    shared_fmt.transparent_call_on_fields(&self.fields)
+                    shared_fmt.transparent_call_on_fields(self.fields)
                 {
                     quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
                 } else {

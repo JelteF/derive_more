@@ -13,7 +13,7 @@ use crate::utils::{
 
 use super::{
     trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FieldsExt as _, FmtAttribute,
+    FmtAttribute,
 };
 
 /// Expands a [`fmt::Debug`] derive macro.
@@ -252,7 +252,7 @@ impl Expansion<'_> {
         if let Some(fmt) = &self.attr.fmt {
             return Ok(
                 if let Some((expr, trait_ident)) =
-                    fmt.transparent_call_on_fields(&self.fields)
+                    fmt.transparent_call_on_fields(self.fields)
                 {
                     quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
                 } else {
