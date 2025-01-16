@@ -250,23 +250,17 @@ impl Expansion<'_> {
     /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
     fn generate_body(&self) -> syn::Result<TokenStream> {
         if let Some(fmt) = &self.attr.fmt {
-            return Ok(if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                let expr = if let Some(field) = self
-                    .fields
-                    .fmt_args_idents()
-                    .find(|field| expr == *field || expr == field.unraw())
+            return Ok(
+                if let Some((expr, trait_ident)) =
+                    fmt.transparent_call_on_fields(&self.fields)
                 {
-                    quote! { #field }
+                    quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
                 } else {
-                    quote! { &(#expr) }
-                };
+                    let deref_args = fmt.additional_deref_args(self.fields);
 
-                quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
-            } else {
-                let deref_args = fmt.additional_deref_args(self.fields);
-
-                quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*) }
-            });
+                    quote! { derive_more::core::write!(__derive_more_f, #fmt, #(#deref_args),*) }
+                },
+            );
         };
 
         match self.fields {
