@@ -11,6 +11,7 @@ mod parsing;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
+    ext::IdentExt as _,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
@@ -140,7 +141,7 @@ impl FmtAttribute {
     /// Checks whether this [`FmtAttribute`] can be replaced with a transparent delegation (calling
     /// a formatting trait directly instead of interpolation syntax).
     ///
-    /// If such transparent call is possible, the returns an [`Ident`] of the delegated trait and
+    /// If such transparent call is possible, then returns an [`Ident`] of the delegated trait and
     /// the [`Expr`] to pass into the call, otherwise [`None`].
     ///
     /// [`Ident`]: struct@syn::Ident
@@ -228,7 +229,10 @@ impl FmtAttribute {
                     f.unnamed.iter().nth(i).map(|f| &f.ty)
                 }
                 (syn::Fields::Named(f), None) => f.named.iter().find_map(|f| {
-                    f.ident.as_ref().filter(|s| **s == name).map(|_| &f.ty)
+                    f.ident
+                        .as_ref()
+                        .filter(|s| s.unraw() == name)
+                        .map(|_| &f.ty)
                 }),
                 _ => None,
             }?;
@@ -291,7 +295,7 @@ impl FmtAttribute {
             .collect::<Vec<_>>();
 
         fields.fmt_args_idents().filter_map(move |field_name| {
-            (used_args.iter().any(|arg| field_name == arg)
+            (used_args.iter().any(|arg| field_name.unraw() == arg)
                 && !self.args.iter().any(|arg| {
                     arg.alias.as_ref().is_some_and(|(n, _)| n == &field_name)
                 }))

@@ -292,12 +292,15 @@ impl Expansion<'_> {
 
                     quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
                 } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                    let expr =
-                        if self.fields.fmt_args_idents().any(|field| expr == field) {
-                            quote! { #expr }
-                        } else {
-                            quote! { &(#expr) }
-                        };
+                    let expr = if let Some(field) = self
+                        .fields
+                        .fmt_args_idents()
+                        .find(|field| expr == *field || expr == field.unraw())
+                    {
+                        quote! { #field }
+                    } else {
+                        quote! { &(#expr) }
+                    };
 
                     quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
                 } else {
