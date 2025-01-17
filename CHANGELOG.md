@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Incorrect rendering of raw identifiers as field names in `Debug` expansions.
   ([#431](https://github.com/JelteF/derive_more/pull/431))
 
+### Added
+
+- Add support for custom types in `TryFrom`. So now you can use:
+  `#[try_from(T)]`, `#[try_from(T, E)]` and `#[try_from(T, E, ErrorValue)]`
+  alongside and not only `#[try_from(repr)]`.
 
 ## 1.0.0 - 2024-08-07
 
