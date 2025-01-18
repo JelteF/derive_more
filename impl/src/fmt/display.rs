@@ -11,7 +11,7 @@ use crate::utils::{attr::ParseMultiple as _, Spanning};
 
 use super::{
     trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FieldsExt as _, FmtAttribute,
+    FmtAttribute,
 };
 
 /// Expands a [`fmt::Display`]-like derive macro.
@@ -291,17 +291,9 @@ impl Expansion<'_> {
                     let deref_args = fmt.additional_deref_args(self.fields);
 
                     quote! { &derive_more::core::format_args!(#fmt, #(#deref_args),*) }
-                } else if let Some((expr, trait_ident)) = fmt.transparent_call() {
-                    let expr = if let Some(field) = self
-                        .fields
-                        .fmt_args_idents()
-                        .find(|field| expr == *field || expr == field.unraw())
-                    {
-                        quote! { #field }
-                    } else {
-                        quote! { &(#expr) }
-                    };
-
+                } else if let Some((expr, trait_ident)) =
+                    fmt.transparent_call_on_fields(self.fields)
+                {
                     quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
                 } else {
                     let deref_args = fmt.additional_deref_args(self.fields);
@@ -358,8 +350,14 @@ impl Expansion<'_> {
             if let Some(shared_fmt) = &self.shared_attr {
                 let deref_args = shared_fmt.additional_deref_args(self.fields);
 
-                let shared_body = quote! {
-                    derive_more::core::write!(__derive_more_f, #shared_fmt, #(#deref_args),*)
+                let shared_body = if let Some((expr, trait_ident)) =
+                    shared_fmt.transparent_call_on_fields(self.fields)
+                {
+                    quote! { derive_more::core::fmt::#trait_ident::fmt(#expr, __derive_more_f) }
+                } else {
+                    quote! {
+                        derive_more::core::write!(__derive_more_f, #shared_fmt, #(#deref_args),*)
+                    }
                 };
 
                 body = if body.is_empty() {

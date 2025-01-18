@@ -13,6 +13,7 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{
     ext::IdentExt as _,
     parse::{Parse, ParseStream},
+    parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
     token,
@@ -197,6 +198,30 @@ impl FmtAttribute {
             .trait_name();
 
         Some((expr, format_ident!("{trait_name}")))
+    }
+
+    /// Same as [`transparent_call()`], but additionally checks the returned [`Expr`] whether it's
+    /// one of the [`fmt_args_idents`] of the provided [`syn::Fields`], and makes it suitable for
+    /// passing directly into the transparent call of the delegated formatting trait.
+    ///
+    /// [`fmt_args_idents`]: FieldsExt::fmt_args_idents
+    /// [`transparent_call()`]: FmtAttribute::transparent_call
+    fn transparent_call_on_fields(
+        &self,
+        fields: &syn::Fields,
+    ) -> Option<(Expr, syn::Ident)> {
+        self.transparent_call().map(|(expr, trait_ident)| {
+            let expr = if let Some(field) = fields
+                .fmt_args_idents()
+                .find(|field| expr == *field || expr == field.unraw())
+            {
+                field.into()
+            } else {
+                parse_quote! { &(#expr) }
+            };
+
+            (expr, trait_ident)
+        })
     }
 
     /// Returns an [`Iterator`] over bounded [`syn::Type`]s (and correspondent trait names) by this

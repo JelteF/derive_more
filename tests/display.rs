@@ -2629,6 +2629,286 @@ mod generic {
                     format!("{:018p}", &a),
                 );
             }
+
+            mod shared_format {
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{_0}")]
+                enum EnumDisplay<A, B> {
+                    A(A),
+                    B(B),
+                }
+
+                #[derive(Display)]
+                #[display("{:b}", _0)]
+                enum EnumBinary<A, B, C, D> {
+                    A(A, C),
+                    B(B, D),
+                }
+
+                #[derive(Display)]
+                #[display("{:o}", d)]
+                enum EnumOctal<A, B, C, D> {
+                    A { b: A, d: C },
+                    B { b: B, d: D },
+                }
+
+                #[derive(Display)]
+                #[display("{field:x}")]
+                enum EnumLowerHex<A, B> {
+                    A { field: A },
+                    B { field: B },
+                }
+
+                #[derive(Display)]
+                #[display("{:X}", field)]
+                enum EnumUpperHex<A, B> {
+                    A { field: A },
+                    B { field: B },
+                }
+
+                #[derive(Display)]
+                #[display("{_0:e}")]
+                enum EnumLowerExp<A, B> {
+                    A(A),
+                    B(B),
+                }
+
+                #[derive(Display)]
+                #[display("{:E}", _0)]
+                enum EnumUpperExp<A, B> {
+                    A(A),
+                    B(B),
+                }
+
+                #[derive(Display)]
+                #[display("{_0:p}")]
+                enum EnumPointer<A, B> {
+                    A(A),
+                    B(B),
+                }
+
+                #[test]
+                fn assert() {
+                    assert_eq!(format!("{:03}", EnumDisplay::<i8, u8>::A(7)), "007");
+                    assert_eq!(format!("{:03}", EnumDisplay::<i8, u8>::B(8)), "008");
+                    assert_eq!(format!("{:07}", TupleBinary(7, ())), "0000111");
+                    assert_eq!(
+                        format!("{:07}", EnumBinary::<i8, u8, (), ()>::A(7, ())),
+                        "0000111",
+                    );
+                    assert_eq!(
+                        format!("{:07}", EnumBinary::<i8, u8, (), ()>::B(8, ())),
+                        "0001000",
+                    );
+                    assert_eq!(
+                        format!(
+                            "{:03}",
+                            EnumOctal::<(), (), i8, u8>::A { b: (), d: 9 },
+                        ),
+                        "011",
+                    );
+                    assert_eq!(
+                        format!(
+                            "{:03}",
+                            EnumOctal::<(), (), i8, u8>::B { b: (), d: 10 },
+                        ),
+                        "012",
+                    );
+                    assert_eq!(
+                        format!("{:03}", EnumLowerHex::<i8, u8>::A { field: 42 }),
+                        "02a",
+                    );
+                    assert_eq!(
+                        format!("{:03}", EnumLowerHex::<i8, u8>::B { field: 43 }),
+                        "02b",
+                    );
+                    assert_eq!(
+                        format!("{:03}", EnumUpperHex::<i8, u8>::A { field: 42 }),
+                        "02A",
+                    );
+                    assert_eq!(
+                        format!("{:03}", EnumUpperHex::<i8, u8>::B { field: 43 }),
+                        "02B",
+                    );
+                    assert_eq!(
+                        format!("{:07}", EnumLowerExp::<f32, f64>::A(42.0)),
+                        "004.2e1"
+                    );
+                    assert_eq!(
+                        format!("{:07}", EnumLowerExp::<f32, f64>::B(43.0)),
+                        "004.3e1"
+                    );
+                    assert_eq!(
+                        format!("{:07}", EnumUpperExp::<f32, f64>::A(42.0)),
+                        "004.2E1"
+                    );
+                    assert_eq!(
+                        format!("{:07}", EnumUpperExp::<f32, f64>::B(43.0)),
+                        "004.3E1",
+                    );
+                    let (a, b) = (42, 7);
+                    assert_eq!(
+                        format!("{:018}", EnumPointer::<&i8, &u8>::A(&b)),
+                        format!("{:018p}", &b),
+                    );
+                    assert_eq!(
+                        format!("{:018}", EnumPointer::<&i8, &u8>::B(&a)),
+                        format!("{:018p}", &a),
+                    );
+                }
+
+                mod mixed {
+                    use super::*;
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumDisplay<A, B> {
+                        A(A),
+                        #[display("{_0}")]
+                        B(B),
+                    }
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumBinary<A, B, C, D> {
+                        #[display("{_0:b}")]
+                        A(A, C),
+                        #[display("{:b}", b)]
+                        B { b: B, d: D },
+                    }
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumOctal<A, B, C, D> {
+                        #[display("{_1:o}")]
+                        A(A, C),
+                        #[display("{:o}", d)]
+                        B { b: B, d: D },
+                    }
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumLowerHex<A, B> {
+                        #[display("{_0:x}")]
+                        A(A),
+                        #[display("{:x}", field)]
+                        B { field: B },
+                    }
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumUpperHex<A, B> {
+                        #[display("{_0:X}")]
+                        A(A),
+                        #[display("{:X}", field)]
+                        B { field: B },
+                    }
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumLowerExp<A, B> {
+                        #[display("{:e}", _0)]
+                        A(A),
+                        #[display("{field:e}")]
+                        B { field: B },
+                    }
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumUpperExp<A, B> {
+                        #[display("{:E}", _0)]
+                        A(A),
+                        #[display("{field:E}")]
+                        B { field: B },
+                    }
+
+                    #[derive(Display)]
+                    #[display("{_variant}")]
+                    enum EnumPointer<A, B> {
+                        #[display("{_0:p}")]
+                        A(A),
+                        #[display("{field:p}")]
+                        B { field: B },
+                    }
+
+                    #[test]
+                    fn assert() {
+                        assert_eq!(
+                            format!("{:03}", EnumDisplay::<i8, u8>::A(7)),
+                            "007",
+                        );
+                        assert_eq!(
+                            format!("{:03}", EnumDisplay::<i8, u8>::B(8)),
+                            "008",
+                        );
+                        assert_eq!(
+                            format!("{:07}", EnumBinary::<_, i8, _, ()>::A(7, ())),
+                            "0000111",
+                        );
+                        assert_eq!(
+                            format!(
+                                "{:07}",
+                                EnumBinary::<i8, _, (), _>::B { b: 8, d: () },
+                            ),
+                            "0001000",
+                        );
+                        assert_eq!(
+                            format!("{:03}", EnumOctal::<_, (), _, i8>::A((), 9)),
+                            "011",
+                        );
+                        assert_eq!(
+                            format!(
+                                "{:03}",
+                                EnumOctal::<(), _, i8, _>::B { b: (), d: 10 }
+                            ),
+                            "012",
+                        );
+                        assert_eq!(
+                            format!("{:03}", EnumLowerHex::<_, i8>::A(42)),
+                            "02a",
+                        );
+                        assert_eq!(
+                            format!("{:03}", EnumLowerHex::<i8, _>::B { field: 43 }),
+                            "02b",
+                        );
+                        assert_eq!(
+                            format!("{:03}", EnumUpperHex::<_, i8>::A(42)),
+                            "02A",
+                        );
+                        assert_eq!(
+                            format!("{:03}", EnumUpperHex::<i8, _>::B { field: 43 }),
+                            "02B",
+                        );
+                        assert_eq!(
+                            format!("{:07}", EnumLowerExp::<_, i8>::A(42.0)),
+                            "004.2e1",
+                        );
+                        assert_eq!(
+                            format!("{:07}", EnumLowerExp::<i8, _>::B { field: 43.0 }),
+                            "004.3e1",
+                        );
+                        assert_eq!(
+                            format!("{:07}", EnumUpperExp::<_, i8>::A(42.0)),
+                            "004.2E1",
+                        );
+                        assert_eq!(
+                            format!("{:07}", EnumUpperExp::<i8, _>::B { field: 43.0 }),
+                            "004.3E1",
+                        );
+                        let (a, b) = (42, 7);
+                        assert_eq!(
+                            format!("{:018}", EnumPointer::<_, &i8>::A(&b)),
+                            format!("{:018p}", &b),
+                        );
+                        assert_eq!(
+                            format!("{:018}", EnumPointer::<&i8, _>::B { field: &a }),
+                            format!("{:018p}", &a),
+                        );
+                    }
+                }
+            }
         }
 
         mod omitted {

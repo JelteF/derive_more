@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#431](https://github.com/JelteF/derive_more/pull/431))
 - Incorrect rendering of raw identifiers as field names in `Debug` expansions.
   ([#431](https://github.com/JelteF/derive_more/pull/431))
+- Top-level `#[display("...")]` attribute on an enum not working transparently
+  for directly specified fields.
+  ([#438](https://github.com/JelteF/derive_more/pull/438))
 
 
 ## 1.0.0 - 2024-08-07
