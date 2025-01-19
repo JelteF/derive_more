@@ -530,6 +530,80 @@ mod structs {
             }
         }
 
+        mod r#unsized {
+            use core::ptr;
+
+            use super::*;
+
+            #[derive(Display)]
+            struct Tuple(str);
+
+            #[derive(Display)]
+            struct Struct {
+                tail: str,
+            }
+
+            #[test]
+            fn assert() {
+                let dat = "14";
+
+                let t =
+                    unsafe { &*(ptr::addr_of!(*dat) as *const [i32] as *const Tuple) };
+                assert_eq!(t.to_string(), "14");
+                let s =
+                    unsafe { &*(ptr::addr_of!(*dat) as *const [i32] as *const Struct) };
+                assert_eq!(s.to_string(), "14");
+            }
+
+            mod interpolated {
+                use core::ptr;
+
+                use super::*;
+
+                #[derive(Display)]
+                #[display("{}.", _0)]
+                struct Tuple1(str);
+
+                #[derive(Display)]
+                #[display("{_0}.")]
+                struct Tuple2(str);
+
+                #[derive(Display)]
+                #[display("{}.", tail)]
+                struct Struct1 {
+                    tail: str,
+                }
+
+                #[derive(Display)]
+                #[display("{tail}.")]
+                struct Struct2 {
+                    tail: str,
+                }
+
+                #[test]
+                fn assert() {
+                    let dat = "14";
+
+                    let t1 = unsafe {
+                        &*(ptr::addr_of!(*dat) as *const [i32] as *const Tuple1)
+                    };
+                    assert_eq!(t1.to_string(), "14.");
+                    let t2 = unsafe {
+                        &*(ptr::addr_of!(*dat) as *const [i32] as *const Tuple2)
+                    };
+                    assert_eq!(t2.to_string(), "14.");
+                    let s1 = unsafe {
+                        &*(ptr::addr_of!(*dat) as *const [i32] as *const Struct1)
+                    };
+                    assert_eq!(s1.to_string(), "14.");
+                    let s2 = unsafe {
+                        &*(ptr::addr_of!(*dat) as *const [i32] as *const Struct2)
+                    };
+                    assert_eq!(s2.to_string(), "14.");
+                }
+            }
+        }
+
         #[cfg(nightly)]
         mod never {
             use super::*;
@@ -3020,6 +3094,81 @@ mod generic {
                         "1.23457",
                     );
                 }
+            }
+        }
+    }
+
+    mod r#unsized {
+        use core::ptr;
+
+        use super::*;
+
+        #[derive(Display)]
+        struct Tuple<T: ?Sized>(T);
+
+        #[derive(Display)]
+        struct Struct<T: ?Sized> {
+            tail: T,
+        }
+
+        #[test]
+        fn assert() {
+            let dat = "14";
+
+            let t =
+                unsafe { &*(ptr::addr_of!(*dat) as *const [i32] as *const Tuple<str>) };
+            assert_eq!(t.to_string(), "14");
+            let s = unsafe {
+                &*(ptr::addr_of!(*dat) as *const [i32] as *const Struct<str>)
+            };
+            assert_eq!(s.to_string(), "14");
+        }
+
+        mod interpolated {
+            use core::ptr;
+
+            use super::*;
+
+            #[derive(Display)]
+            #[display("{}.", _0)]
+            struct Tuple1<T: ?Sized>(T);
+
+            #[derive(Display)]
+            #[display("{_0}.")]
+            struct Tuple2<T: ?Sized>(T);
+
+            #[derive(Display)]
+            #[display("{}.", tail)]
+            struct Struct1<T: ?Sized> {
+                tail: T,
+            }
+
+            #[derive(Display)]
+            #[display("{tail}.")]
+            struct Struct2<T: ?Sized> {
+                tail: T,
+            }
+
+            #[test]
+            fn assert() {
+                let dat = "14";
+
+                let t1 = unsafe {
+                    &*(ptr::addr_of!(*dat) as *const [i32] as *const Tuple1<str>)
+                };
+                assert_eq!(t1.to_string(), "14.");
+                let t2 = unsafe {
+                    &*(ptr::addr_of!(*dat) as *const [i32] as *const Tuple2<str>)
+                };
+                assert_eq!(t2.to_string(), "14.");
+                let s1 = unsafe {
+                    &*(ptr::addr_of!(*dat) as *const [i32] as *const Struct1<str>)
+                };
+                assert_eq!(s1.to_string(), "14.");
+                let s2 = unsafe {
+                    &*(ptr::addr_of!(*dat) as *const [i32] as *const Struct2<str>)
+                };
+                assert_eq!(s2.to_string(), "14.");
             }
         }
     }
