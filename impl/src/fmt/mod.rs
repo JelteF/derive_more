@@ -316,7 +316,9 @@ impl FmtAttribute {
         let used_args = Placeholder::parse_fmt_string(&self.lit.value())
             .into_iter()
             .filter_map(|placeholder| match placeholder.arg {
-                Parameter::Named(name) if placeholder.trait_name == "Pointer" => Some(name),
+                Parameter::Named(name) if placeholder.trait_name == "Pointer" => {
+                    Some(name)
+                }
                 _ => None,
             })
             .collect::<Vec<_>>();

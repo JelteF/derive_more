@@ -701,6 +701,8 @@ mod structs {
             use super::*;
 
             mod interpolated {
+                use core::ptr;
+
                 use super::*;
 
                 #[derive(Display)]
@@ -729,17 +731,21 @@ mod structs {
                 fn assert() {
                     let dat = [51i32, 3028017];
 
-                    let t1 =
-                        unsafe { &*(&raw const dat as *const [i32] as *const Tuple1) };
+                    let t1 = unsafe {
+                        &*(ptr::addr_of!(dat) as *const [i32] as *const Tuple1)
+                    };
                     assert_eq!(t1.to_string(), "3.14");
-                    let t2 =
-                        unsafe { &*(&raw const dat as *const [i32] as *const Tuple2) };
+                    let t2 = unsafe {
+                        &*(ptr::addr_of!(dat) as *const [i32] as *const Tuple2)
+                    };
                     assert_eq!(t2.to_string(), "3.14");
-                    let s1 =
-                        unsafe { &*(&raw const dat as *const [i32] as *const Struct1) };
+                    let s1 = unsafe {
+                        &*(ptr::addr_of!(dat) as *const [i32] as *const Struct1)
+                    };
                     assert_eq!(s1.to_string(), "3.14");
-                    let s2 =
-                        unsafe { &*(&raw const dat as *const [i32] as *const Struct2) };
+                    let s2 = unsafe {
+                        &*(ptr::addr_of!(dat) as *const [i32] as *const Struct2)
+                    };
                     assert_eq!(s2.to_string(), "3.14");
                 }
             }
