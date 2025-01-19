@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Top-level `#[display("...")]` attribute on an enum not working transparently
   for directly specified fields.
   ([#438](https://github.com/JelteF/derive_more/pull/438))
+- Incorrect dereferencing of unsized fields in `Debug` and `Display` expansions.
+  ([#440](https://github.com/JelteF/derive_more/pull/440))
 
 
 ## 1.0.0 - 2024-08-07

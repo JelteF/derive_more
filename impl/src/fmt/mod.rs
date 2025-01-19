@@ -306,7 +306,9 @@ impl FmtAttribute {
 
     /// Returns an [`Iterator`] over the additional formatting arguments doing the dereferencing
     /// replacement in this [`FmtAttribute`] for those [`Placeholder`] representing the provided
-    /// [`syn::Fields`] and requiring it
+    /// [`syn::Fields`] and requiring it ([`fmt::Pointer`] ones).
+    ///
+    /// [`fmt::Pointer`]: std::fmt::Pointer
     fn additional_deref_args<'fmt: 'ret, 'fields: 'ret, 'ret>(
         &'fmt self,
         fields: &'fields syn::Fields,
@@ -314,7 +316,9 @@ impl FmtAttribute {
         let used_args = Placeholder::parse_fmt_string(&self.lit.value())
             .into_iter()
             .filter_map(|placeholder| match placeholder.arg {
-                Parameter::Named(name) => Some(name),
+                Parameter::Named(name) if placeholder.trait_name == "Pointer" => {
+                    Some(name)
+                }
                 _ => None,
             })
             .collect::<Vec<_>>();
