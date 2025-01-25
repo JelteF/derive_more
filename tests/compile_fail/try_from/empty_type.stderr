@@ -1,0 +1,5 @@
+error: empty variant not supported when using non-repr `try_from`
+ --> tests/compile_fail/try_from/empty_type.rs:4:5
+  |
+4 |     Field,
+  |     ^^^^^

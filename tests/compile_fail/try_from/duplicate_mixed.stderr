@@ -1,0 +1,5 @@
+error: `F1` types collection is used for more than one variant (`Field`, `Field2`), non-repr `try_from` cannot be implemented (try changing the order of fields as a workaround)
+ --> tests/compile_fail/try_from/duplicate_mixed.rs:7:11
+  |
+7 |     Field2(F1),
+  |           ^^^^
