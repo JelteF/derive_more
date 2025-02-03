@@ -2,6 +2,8 @@
 //!
 //! [`fmt::Debug`]: std::fmt::Debug
 
+use std::convert::Infallible;
+
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _};
@@ -77,7 +79,7 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
 ///
 /// [`fmt::Debug`]: std::fmt::Debug
 fn expand_struct(
-    attrs: ContainerAttributes,
+    attrs: ContainerAttributes<Infallible>,
     ident: &syn::Ident,
     s: &syn::DataStruct,
     type_params: &[&syn::Ident],
@@ -115,7 +117,7 @@ fn expand_struct(
 ///
 /// [`fmt::Debug`]: std::fmt::Debug
 fn expand_enum(
-    mut attrs: ContainerAttributes,
+    mut attrs: ContainerAttributes<Infallible>,
     e: &syn::DataEnum,
     type_params: &[&syn::Ident],
     attr_name: &syn::Ident,
@@ -207,7 +209,7 @@ type FieldAttribute = Either<attr::Skip, FmtAttribute>;
 /// [`Debug::fmt()`]: std::fmt::Debug::fmt()
 #[derive(Debug)]
 struct Expansion<'a> {
-    attr: &'a ContainerAttributes,
+    attr: &'a ContainerAttributes<Infallible>,
 
     /// Struct or enum [`Ident`](struct@syn::Ident).
     ident: &'a syn::Ident,

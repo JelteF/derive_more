@@ -8,6 +8,8 @@ pub(crate) mod debug;
 pub(crate) mod display;
 mod parsing;
 
+#[cfg(feature = "display")]
+use convert_case::{Case, Casing as _};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
@@ -85,6 +87,65 @@ impl BoundsAttribute {
                 }),
             Ok(_) | Err(_) => Ok(()),
         }
+    }
+}
+
+/// Representation of a `rename_all` macro attribute.
+///
+/// ```rust,ignore
+/// #[<attribute>(rename_all = "...")]
+/// ```
+///
+/// Possible Cases:
+/// - `lowercase`
+/// - `UPPERCASE`
+/// - `PascalCase`
+/// - `camelCase`
+/// - `snake_case`
+/// - `SCREAMING_SNAKE_CASE`
+/// - `kebab-case`
+/// - `SCREAMING-KEBAB-CASE`
+#[cfg(feature = "display")]
+#[derive(Debug, Clone, Copy)]
+struct RenameAllAttribute(#[allow(unused)] Case);
+
+#[cfg(feature = "display")]
+impl RenameAllAttribute {
+    fn convert_case(&self, ident: &syn::Ident) -> String {
+        ident.unraw().to_string().to_case(self.0)
+    }
+}
+
+#[cfg(feature = "display")]
+impl Parse for RenameAllAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        let _ = input.parse::<syn::Path>().and_then(|p| {
+            if p.is_ident("rename_all") {
+                Ok(p)
+            } else {
+                Err(syn::Error::new(
+                    p.span(),
+                    "unknown attribute argument, expected `rename_all = \"...\"`",
+                ))
+            }
+        })?;
+
+        input.parse::<syn::Token![=]>()?;
+
+        let value: syn::LitStr = input.parse()?;
+
+        // TODO should we really do a case insensitive comparision here?
+        Ok(Self(match value.value().replace(['-', '_'], "").to_lowercase().as_str() {
+            "lowercase" => Case::Flat,
+            "uppercase" => Case::UpperFlat,
+            "pascalcase" => Case::Pascal,
+            "camelcase" => Case::Camel,
+            "snakecase" => Case::Snake,
+            "screamingsnakecase" => Case::UpperSnake,
+            "kebabcase" => Case::Kebab,
+            "screamingkebabcase" => Case::UpperKebab,
+            _ => return Err(syn::Error::new_spanned(value, "unexpected casing expected one of: \"lowercase\", \"UPPERCASE\", \"PascalCase\", \"camelCase\", \"snake_case\", \"SCREAMING_SNAKE_CASE\", \"kebab-case\", or \"SCREAMING-KEBAB-CASE\""))
+        }))
     }
 }
 
@@ -509,16 +570,47 @@ impl Placeholder {
 /// are allowed.
 ///
 /// [`fmt::Display`]: std::fmt::Display
-#[derive(Debug, Default)]
-struct ContainerAttributes {
+#[derive(Debug)]
+struct ContainerAttributes<T> {
     /// Interpolation [`FmtAttribute`].
     fmt: Option<FmtAttribute>,
 
     /// Addition trait bounds.
     bounds: BoundsAttribute,
+
+    /// Rename unit enum variants following a similar behavior as [`serde`](https://serde.rs/container-attrs.html#rename_all).
+    rename_all: Option<T>,
 }
 
-impl Parse for ContainerAttributes {
+impl<T> std::default::Default for ContainerAttributes<T> {
+    fn default() -> Self {
+        Self {
+            fmt: None,
+            bounds: BoundsAttribute::default(),
+            rename_all: None,
+        }
+    }
+}
+
+#[cfg(feature = "display")]
+impl<T> Spanning<ContainerAttributes<T>> {
+    fn validate_for_struct(
+        &self,
+        attr_name: impl std::fmt::Display,
+    ) -> syn::Result<()> {
+        if self.rename_all.is_some() {
+            Err(syn::Error::new(
+                self.span,
+                format_args!("`#[{attr_name}(rename_all=\"...\")]` can not be specified on structs or variants"),
+            ))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[cfg(feature = "debug")]
+impl Parse for ContainerAttributes<std::convert::Infallible> {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `Either` will swallow
         // any error of the `Either::Left` if the `Either::Right` succeeds.
@@ -527,13 +619,83 @@ impl Parse for ContainerAttributes {
             Either::Left(fmt) => Self {
                 bounds: BoundsAttribute::default(),
                 fmt: Some(fmt),
+                rename_all: None,
             },
-            Either::Right(bounds) => Self { bounds, fmt: None },
+            Either::Right(bounds) => Self {
+                bounds,
+                fmt: None,
+                rename_all: None,
+            },
         })
     }
 }
 
-impl attr::ParseMultiple for ContainerAttributes {
+#[cfg(feature = "display")]
+impl Parse for ContainerAttributes<RenameAllAttribute> {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        mod kw {
+            use syn::custom_keyword;
+
+            custom_keyword!(rename_all);
+            custom_keyword!(bounds);
+            custom_keyword!(bound);
+        }
+
+        // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `Either` will swallow
+        // any error of the `Either::Left` if the `Either::Right` succeeds.
+        FmtAttribute::check_legacy_fmt(input)?;
+        let lookahead = input.lookahead1();
+        Ok(if lookahead.peek(syn::LitStr) {
+            Self {
+                fmt: Some(input.parse()?),
+                bounds: BoundsAttribute::default(),
+                rename_all: None,
+            }
+        } else if lookahead.peek(kw::rename_all)
+            || lookahead.peek(kw::bounds)
+            || lookahead.peek(kw::bound)
+            || lookahead.peek(syn::Token![where])
+        {
+            let mut bounds = BoundsAttribute::default();
+            let mut rename_all = None;
+
+            while !input.is_empty() {
+                let lookahead = input.lookahead1();
+                if lookahead.peek(kw::rename_all) {
+                    if rename_all.is_some() {
+                        return Err(
+                            input.error("`rename_all` can only be specified once")
+                        );
+                    } else {
+                        rename_all = Some(input.parse()?);
+                    }
+                } else if lookahead.peek(kw::bounds)
+                    || lookahead.peek(kw::bound)
+                    || lookahead.peek(syn::Token![where])
+                {
+                    bounds.0.extend(input.parse::<BoundsAttribute>()?.0)
+                } else {
+                    return Err(lookahead.error());
+                }
+                if !input.is_empty() {
+                    input.parse::<syn::Token![,]>()?;
+                }
+            }
+            Self {
+                fmt: None,
+                bounds,
+                rename_all,
+            }
+        } else {
+            return Err(lookahead.error());
+        })
+    }
+}
+
+impl<T: 'static> attr::ParseMultiple for ContainerAttributes<T>
+where
+    ContainerAttributes<T>: Parse,
+{
     fn merge_attrs(
         prev: Spanning<Self>,
         new: Spanning<Self>,
@@ -552,6 +714,16 @@ impl attr::ParseMultiple for ContainerAttributes {
             return Err(syn::Error::new(
                 new_span,
                 format!("multiple `#[{name}(\"...\", ...)]` attributes aren't allowed"),
+            ));
+        }
+        if new
+            .rename_all
+            .and_then(|n| prev.rename_all.replace(n))
+            .is_some()
+        {
+            return Err(syn::Error::new(
+                new_span,
+                format!("multiple `#[{name}(rename_all=\"...\")]` attributes aren't allowed"),
             ));
         }
         prev.bounds.0.extend(new.bounds.0);
@@ -582,7 +754,7 @@ where
     }
 }
 
-/// Extension of a [`syn::Type`] and a [`syn::Path`] allowing to travers its type parameters.
+/// Extension of a [`syn::Type`] and a [`syn::Path`] allowing to traverse its type parameters.
 trait ContainsGenericsExt {
     /// Checks whether this definition contains any of the provided `type_params`.
     fn contains_generics(&self, type_params: &[&syn::Ident]) -> bool;

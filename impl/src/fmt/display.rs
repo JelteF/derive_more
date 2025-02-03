@@ -11,7 +11,7 @@ use crate::utils::{attr::ParseMultiple as _, Spanning};
 
 use super::{
     trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FmtAttribute,
+    FmtAttribute, RenameAllAttribute,
 };
 
 /// Expands a [`fmt::Display`]-like derive macro.
@@ -29,9 +29,13 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     let trait_name = normalize_trait_name(trait_name);
     let attr_name = format_ident!("{}", trait_name_to_attribute_name(trait_name));
 
-    let attrs = ContainerAttributes::parse_attrs(&input.attrs, &attr_name)?
-        .map(Spanning::into_inner)
-        .unwrap_or_default();
+    let attrs = ContainerAttributes::parse_attrs(&input.attrs, &attr_name)?;
+    if let Some(attrs) = &attrs {
+        if matches!(input.data, syn::Data::Struct(_)) {
+            attrs.validate_for_struct(&attr_name)?;
+        }
+    }
+    let attrs = attrs.map(Spanning::into_inner).unwrap_or_default();
     let trait_ident = format_ident!("{trait_name}");
     let ident = &input.ident;
 
@@ -83,7 +87,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 ///
 /// [`syn::Ident`]: struct@syn::Ident
 type ExpansionCtx<'a> = (
-    &'a ContainerAttributes,
+    &'a ContainerAttributes<RenameAllAttribute>,
     &'a [&'a syn::Ident],
     &'a syn::Ident,
     &'a syn::Ident,
@@ -97,6 +101,7 @@ fn expand_struct(
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
     let s = Expansion {
         shared_attr: None,
+        rename_all: None,
         attrs,
         fields: &s.fields,
         type_params,
@@ -148,14 +153,18 @@ fn expand_enum(
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
-            let attrs = ContainerAttributes::parse_attrs(&variant.attrs, attr_name)?
-                .map(Spanning::into_inner)
-                .unwrap_or_default();
+            let attrs = ContainerAttributes::parse_attrs(&variant.attrs, attr_name)?;
+            if let Some(attrs) = &attrs {
+                attrs.validate_for_struct(attr_name)?;
+            };
+            let attrs = attrs.map(Spanning::into_inner).unwrap_or_default();
+
             let ident = &variant.ident;
 
             if attrs.fmt.is_none()
                 && variant.fields.is_empty()
                 && attr_name != "display"
+                && container_attrs.rename_all.is_none()
             {
                 return Err(syn::Error::new(
                     e.variants.span(),
@@ -168,6 +177,7 @@ fn expand_enum(
 
             let v = Expansion {
                 shared_attr: container_attrs.fmt.as_ref(),
+                rename_all: container_attrs.rename_all,
                 attrs: &attrs,
                 fields: &variant.fields,
                 type_params,
@@ -234,8 +244,13 @@ struct Expansion<'a> {
     /// [`None`] for a struct.
     shared_attr: Option<&'a FmtAttribute>,
 
+    /// [`RenameAllAttribute`] placed on enum.
+    ///
+    /// [`None`] for a struct.
+    rename_all: Option<RenameAllAttribute>,
+
     /// Derive macro [`ContainerAttributes`].
-    attrs: &'a ContainerAttributes,
+    attrs: &'a ContainerAttributes<RenameAllAttribute>,
 
     /// Struct or enum [`syn::Ident`].
     ///
@@ -305,7 +320,11 @@ impl Expansion<'_> {
             None => {
                 if shared_attr_is_wrapping || !has_shared_attr {
                     body = if self.fields.is_empty() {
-                        let ident_str = self.ident.unraw().to_string();
+                        let ident_str = if let Some(rename_all) = &self.rename_all {
+                            rename_all.convert_case(self.ident)
+                        } else {
+                            self.ident.unraw().to_string()
+                        };
 
                         if shared_attr_is_wrapping {
                             quote! { #ident_str }
