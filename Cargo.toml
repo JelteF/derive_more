@@ -44,6 +44,9 @@ github = { repository = "JelteF/derive_more", workflow = "CI" }
 features = ["full"]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[package.metadata.playground]
+features = ["full", "std"]
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(nightly)"] }
 
