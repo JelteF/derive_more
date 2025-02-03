@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.1 - 2025-02-03
+
+### Added
+
+- Add crate metadata for the Rust Playground. This makes sure that the Rust
+Playground will have all `derive_more` features available once
+[`selectors`](https://docs.rs/selectors/latest/selectors) crate updates its
+`derive_more` version.
+([#445](https://github.com/JelteF/derive_more/pull/445))
 
 ## 2.0.0 - 2025-02-03
 
@@ -40,6 +49,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Incorrect dereferencing of unsized fields in `Debug` and `Display` expansions.
   ([#440](https://github.com/JelteF/derive_more/pull/440))
 
+## 0.99.19 - 2025-02-03
+
+- Add crate metadata for the Rust Playground.
 
 ## 1.0.0 - 2024-08-07
 
@@ -167,6 +179,11 @@ to call out, but there are many more changes that are documented below:
   `Debug`. Also document weirdness around `Pointer` formatting when using
   expressions, due to field variables being references.
   ([#381](https://github.com/JelteF/derive_more/pull/381))
+
+## 0.99.18 - 2024-06-15
+
+- Upgrade to `syn` 2.0.
+- The minimum supported Rust version (MSRV) is now Rust 1.65.
 
 ## 0.99.10 - 2020-09-11
 
