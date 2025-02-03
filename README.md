@@ -222,7 +222,7 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 - So, if [MSRV] changes are **NOT concerning** for your project, just use the default [caret requirement]:
   ```toml
   [dependencies]
-  derive_more = "2" # or "1.0", or "^1.0"
+  derive_more = "2" # or "2.0", or "^2.0"
   ```
 - However, if [MSRV] changes are concerning for your project, then use the [tilde requirement] to **pin to a specific minor version**:
   ```toml
