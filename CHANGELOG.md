@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Add crate metadata for the Rust Playground. This makes sure that the Rust
-Playground will have all derive_more features available once [selectors](https://docs.rs/selectors/latest/selectors/)
-updates their derive_more version.
+Playground will have all `derive_more` features available once
+[`selectors`](https://docs.rs/selectors/latest/selectors) crate updates its
+`derive_more` version.
 ([#445](https://github.com/JelteF/derive_more/pull/445))
 
 ## 2.0.0 - 2025-02-03
@@ -50,7 +51,7 @@ updates their derive_more version.
 
 ## 0.99.19 - 2025-02-03
 
-- Add Rust Playground metadata
+- Add crate metadata for the Rust Playground.
 
 ## 1.0.0 - 2024-08-07
 
@@ -181,8 +182,8 @@ to call out, but there are many more changes that are documented below:
 
 ## 0.99.18 - 2024-06-15
 
-- Update syn to version 2.x
-- Bump minimum supported rust version to 1.65
+- Upgrade to `syn` 2.0.
+- The minimum supported Rust version (MSRV) is now Rust 1.65.
 
 ## 0.99.10 - 2020-09-11
 
