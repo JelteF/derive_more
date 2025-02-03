@@ -1,6 +1,6 @@
 # `derive_more`
 
-[![Build Status](https://github.com/JelteF/derive_more/workflows/CI/badge.svg)](https://github.com/JelteF/derive_more/actions)
+[![Build Status](https://github.com/JelteF/derive_more/actions/workflows/ci.yml/badge.svg)](https://github.com/JelteF/derive_more/actions)
 [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
 [![Rust Documentation](https://docs.rs/derive_more/badge.svg)](https://docs.rs/derive_more)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
@@ -183,13 +183,13 @@ You have to enable each type of derive as a feature in `Cargo.toml`:
 [dependencies]
 # You can specify the types of derives that you need for less time spent
 # compiling. For the full list of features see this crate its `Cargo.toml`.
-derive_more = { version = "1", features = ["from", "add", "into_iterator"] }
+derive_more = { version = "2", features = ["from", "add", "into_iterator"] }
 ```
 ```toml
 [dependencies]
 # If you don't care much about compilation times and simply want to have
 # support for all the possible derives, you can use the "full" feature.
-derive_more = { version = "1", features = ["full"] }
+derive_more = { version = "2", features = ["full"] }
 ```
 ```toml
 [dependencies]
@@ -197,7 +197,7 @@ derive_more = { version = "1", features = ["full"] }
 # because the only default feature is the "std" feature.
 # NOTE: You can combine this with "full" feature to get support for all the
 #       possible derives in a `no_std` environment.
-derive_more = { version = "1", default-features = false }
+derive_more = { version = "2", default-features = false }
 ```
 
 And this to the top of your Rust file:
@@ -222,12 +222,12 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 - So, if [MSRV] changes are **NOT concerning** for your project, just use the default [caret requirement]:
   ```toml
   [dependencies]
-  derive_more = "1" # or "1.0", or "^1.0"
+  derive_more = "2" # or "2.0", or "^2.0"
   ```
 - However, if [MSRV] changes are concerning for your project, then use the [tilde requirement] to **pin to a specific minor version**:
   ```toml
   [dependencies]
-  derive_more = "~1.0" # or "~1.0.0"
+  derive_more = "~2.0" # or "~2.0.0"
   ```
 
 
