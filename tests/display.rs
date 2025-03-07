@@ -1803,17 +1803,49 @@ mod enums {
 
         macro_rules! casing_test {
             ($name:ident, $casing:literal, $VariantOne:literal, $Two:literal) => {
-                #[test]
-                fn $name() {
-                    #[derive(Display)]
-                    #[display(rename_all = $casing)]
-                    enum Enum {
-                        VariantOne,
-                        Two,
+                mod $name {
+                    use super::*;
+                    #[test]
+                    fn enum_() {
+                        #[derive(Display)]
+                        #[display(rename_all = $casing)]
+                        enum Enum {
+                            VariantOne,
+                            Two,
+                        }
+
+                        assert_eq!(Enum::VariantOne.to_string(), $VariantOne);
+                        assert_eq!(Enum::Two.to_string(), $Two);
                     }
 
-                    assert_eq!(Enum::VariantOne.to_string(), $VariantOne);
-                    assert_eq!(Enum::Two.to_string(), $Two);
+                    #[test]
+                    fn variant() {
+                        #[derive(Display)]
+                        // ignored
+                        #[display(rename_all = "lowercase")]
+                        enum Enum {
+                            #[display(rename_all = $casing)]
+                            VariantOne,
+                            #[display(rename_all = $casing)]
+                            Two,
+                        }
+
+                        assert_eq!(Enum::VariantOne.to_string(), $VariantOne);
+                        assert_eq!(Enum::Two.to_string(), $Two);
+                    }
+
+                    #[test]
+                    fn struct_() {
+                        #[derive(Display)]
+                        #[display(rename_all = $casing)]
+                        struct VariantOne;
+
+                        #[derive(Display)]
+                        #[display(rename_all = $casing)]
+                        struct Two;
+                        assert_eq!(VariantOne.to_string(), $VariantOne);
+                        assert_eq!(Two.to_string(), $Two);
+                    }
                 }
             };
         }

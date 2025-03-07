@@ -206,7 +206,7 @@ enum RenameAllAttribute {
 impl RenameAllAttribute {
     fn convert_case(&self, ident: &syn::Ident) -> String {
         let case = match self {
-            Self::Lower => convert_case::Case::Lower,
+            Self::Lower => convert_case::Case::Flat,
             Self::Upper => convert_case::Case::UpperFlat,
             Self::Pascal => convert_case::Case::Pascal,
             Self::Camel => convert_case::Case::Camel,
