@@ -1,4 +1,4 @@
-error: unknown attribute argument, expected `bound(...)`
+error: expected one of: string literal, `bounds`, `bound`, `where`, `rename_all`
  --> tests/compile_fail/display/unknown_attribute.rs:3:11
   |
 3 | #[display(unknown = "unknown")]

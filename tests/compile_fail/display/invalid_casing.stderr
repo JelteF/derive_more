@@ -1,0 +1,5 @@
+error: unexpected casing expected one of: "lowercase", "UPPERCASE", "PascalCase", "camelCase", "snake_case", "SCREAMING_SNAKE_CASE", "kebab-case", or "SCREAMING-KEBAB-CASE"
+ --> tests/compile_fail/display/invalid_casing.rs:2:24
+  |
+2 | #[display(rename_all = "Whatever")]
+  |                        ^^^^^^^^^^

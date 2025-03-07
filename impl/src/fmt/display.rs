@@ -3,16 +3,23 @@
 #[cfg(doc)]
 use std::fmt;
 
+use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{ext::IdentExt as _, parse_quote, spanned::Spanned as _};
-
-use crate::utils::{attr::ParseMultiple as _, Spanning};
-
-use super::{
-    trait_name_to_attribute_name, ContainerAttributes, ContainsGenericsExt as _,
-    FmtAttribute,
+use syn::{
+    ext::IdentExt as _,
+    parse::{Parse, ParseStream},
+    parse_quote,
+    spanned::Spanned as _,
+    LitStr, Token,
 };
+
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    Spanning,
+};
+
+use super::{trait_name_to_attribute_name, ContainsGenericsExt as _, FmtAttribute};
 
 /// Expands a [`fmt::Display`]-like derive macro.
 ///
@@ -74,6 +81,156 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     })
 }
 
+/// Representation of a [`fmt::Display`]-like derive macro attributes placed on a container (struct
+/// or enum variant).
+///
+/// ```rust,ignore
+/// #[<attribute>("<fmt-literal>", <fmt-args>)]
+/// #[<attribute>(bound(<where-predicates>))]
+/// #[<attribute>(rename_all = "<casing>")]
+/// ```
+///
+/// `#[<attribute>("...")]` and `#[<attribute>(rename_all = "...")]` can be specified only once,
+/// while multiple `#[<attribute>(bound(...))]` are allowed.
+///
+/// [`fmt::Display`]: std::fmt::Display
+#[derive(Debug, Default)]
+struct ContainerAttributes {
+    rename_all: Option<RenameAllAttribute>,
+    common: super::ContainerAttributes,
+}
+
+impl Parse for ContainerAttributes {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        mod kw {
+            use syn::custom_keyword;
+
+            custom_keyword!(bounds);
+            custom_keyword!(bound);
+            custom_keyword!(rename_all);
+        }
+
+        // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `Either` will swallow
+        // any error of the `Either::Left` if the `Either::Right` succeeds.
+        FmtAttribute::check_legacy_fmt(input)?;
+        let lookahead = input.lookahead1();
+        Ok(
+            // we use a lookahead here with all possible tokens so the error message is complete
+            if lookahead.peek(LitStr)
+                || lookahead.peek(kw::bounds)
+                || lookahead.peek(kw::bound)
+                || lookahead.peek(Token![where])
+            {
+                Self {
+                    common: input.parse()?,
+                    ..Default::default()
+                }
+            } else if lookahead.peek(kw::rename_all) {
+                Self {
+                    rename_all: Some(input.parse()?),
+                    ..Default::default()
+                }
+            } else {
+                return Err(lookahead.error());
+            },
+        )
+    }
+}
+
+impl attr::ParseMultiple for ContainerAttributes {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let Spanning {
+            span: prev_span,
+            item: mut prev,
+        } = prev;
+        let Spanning {
+            span: new_span,
+            item: new,
+        } = new;
+
+        if new
+            .rename_all
+            .and_then(|n| prev.rename_all.replace(n))
+            .is_some()
+        {
+            return Err(syn::Error::new(
+                new_span,
+                format!("multiple `#[{name}(rename_all=\"...\")]` attributes aren't allowed"),
+            ));
+        }
+        prev.common = super::ContainerAttributes::merge_attrs(
+            Spanning::new(prev.common, prev_span),
+            Spanning::new(new.common, new_span),
+            name,
+        )?
+        .into_inner();
+
+        Ok(Spanning::new(
+            prev,
+            prev_span.join(new_span).unwrap_or(prev_span),
+        ))
+    }
+}
+
+/// Representation of a `rename_all` macro attribute.
+///
+/// ```rust,ignore
+/// #[<attribute>(rename_all = "...")]
+/// ```
+///
+/// Possible Cases:
+/// - `lowercase`
+/// - `UPPERCASE`
+/// - `PascalCase`
+/// - `camelCase`
+/// - `snake_case`
+/// - `SCREAMING_SNAKE_CASE`
+/// - `kebab-case`
+/// - `SCREAMING-KEBAB-CASE`
+#[derive(Debug, Clone, Copy)]
+struct RenameAllAttribute(Case);
+
+impl RenameAllAttribute {
+    fn convert_case(&self, ident: &syn::Ident) -> String {
+        ident.unraw().to_string().to_case(self.0)
+    }
+}
+
+impl Parse for RenameAllAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        let _ = input.parse::<syn::Path>().and_then(|p| {
+            if p.is_ident("rename_all") {
+                Ok(p)
+            } else {
+                Err(syn::Error::new(
+                    p.span(),
+                    "unknown attribute argument, expected `rename_all = \"...\"`",
+                ))
+            }
+        })?;
+
+        input.parse::<Token![=]>()?;
+
+        let value: LitStr = input.parse()?;
+
+        Ok(Self(match value.value().replace(['-', '_'], "").to_lowercase().as_str() {
+            "lowercase" => Case::Flat,
+            "uppercase" => Case::UpperFlat,
+            "pascalcase" => Case::Pascal,
+            "camelcase" => Case::Camel,
+            "snakecase" => Case::Snake,
+            "screamingsnakecase" => Case::UpperSnake,
+            "kebabcase" => Case::Kebab,
+            "screamingkebabcase" => Case::UpperKebab,
+            _ => return Err(syn::Error::new_spanned(value, "unexpected casing expected one of: \"lowercase\", \"UPPERCASE\", \"PascalCase\", \"camelCase\", \"snake_case\", \"SCREAMING_SNAKE_CASE\", \"kebab-case\", or \"SCREAMING-KEBAB-CASE\""))
+        }))
+    }
+}
+
 /// Type alias for an expansion context:
 /// - [`ContainerAttributes`].
 /// - Type parameters. Slice of [`syn::Ident`].
@@ -130,7 +287,7 @@ fn expand_enum(
     e: &syn::DataEnum,
     (container_attrs, type_params, _, trait_ident, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    if let Some(shared_fmt) = &container_attrs.fmt {
+    if let Some(shared_fmt) = &container_attrs.common.fmt {
         if shared_fmt
             .placeholders_by_arg("_variant")
             .any(|p| p.has_modifiers || p.trait_name != "Display")
@@ -148,12 +305,12 @@ fn expand_enum(
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
-            let attrs = ContainerAttributes::parse_attrs(&variant.attrs, attr_name)?
+            let mut attrs = ContainerAttributes::parse_attrs(&variant.attrs, attr_name)?
                 .map(Spanning::into_inner)
                 .unwrap_or_default();
             let ident = &variant.ident;
 
-            if attrs.fmt.is_none()
+            if attrs.common.fmt.is_none()
                 && variant.fields.is_empty()
                 && attr_name != "display"
             {
@@ -166,8 +323,12 @@ fn expand_enum(
                 ));
             }
 
+            if let Some(rename_all) = container_attrs.rename_all {
+                attrs.rename_all.get_or_insert(rename_all);
+            }
+
             let v = Expansion {
-                shared_attr: container_attrs.fmt.as_ref(),
+                shared_attr: container_attrs.common.fmt.as_ref(),
                 attrs: &attrs,
                 fields: &variant.fields,
                 type_params,
@@ -210,7 +371,7 @@ fn expand_union(
     u: &syn::DataUnion,
     (attrs, _, _, _, attr_name): ExpansionCtx<'_>,
 ) -> syn::Result<(Vec<syn::WherePredicate>, TokenStream)> {
-    let fmt = &attrs.fmt.as_ref().ok_or_else(|| {
+    let fmt = &attrs.common.fmt.as_ref().ok_or_else(|| {
         syn::Error::new(
             u.fields.span(),
             format!("unions must have `#[{attr_name}(\"...\", ...)]` attribute"),
@@ -218,7 +379,7 @@ fn expand_union(
     })?;
 
     Ok((
-        attrs.bounds.0.clone().into_iter().collect(),
+        attrs.common.bounds.0.clone().into_iter().collect(),
         quote! { derive_more::core::write!(__derive_more_f, #fmt) },
     ))
 }
@@ -285,7 +446,7 @@ impl Expansion<'_> {
 
         let (has_shared_attr, shared_attr_is_wrapping) = self.shared_attr_info();
 
-        let wrap_into_shared_attr = match &self.attrs.fmt {
+        let wrap_into_shared_attr = match &self.attrs.common.fmt {
             Some(fmt) => {
                 body = if shared_attr_is_wrapping {
                     let deref_args = fmt.additional_deref_args(self.fields);
@@ -305,7 +466,12 @@ impl Expansion<'_> {
             None => {
                 if shared_attr_is_wrapping || !has_shared_attr {
                     body = if self.fields.is_empty() {
-                        let ident_str = self.ident.unraw().to_string();
+                        let ident_str = if let Some(rename_all) = &self.attrs.rename_all
+                        {
+                            rename_all.convert_case(self.ident)
+                        } else {
+                            self.ident.unraw().to_string()
+                        };
 
                         if shared_attr_is_wrapping {
                             quote! { #ident_str }
@@ -377,7 +543,7 @@ impl Expansion<'_> {
 
         let (has_shared_attr, shared_attr_is_wrapping) = self.shared_attr_info();
 
-        let mix_shared_attr_bounds = match &self.attrs.fmt {
+        let mix_shared_attr_bounds = match &self.attrs.common.fmt {
             Some(attr) => {
                 bounds.extend(
                     attr.bounded_types(self.fields)
@@ -389,7 +555,7 @@ impl Expansion<'_> {
 
                             Some(parse_quote! { #ty: derive_more::core::fmt::#trait_ident })
                         })
-                        .chain(self.attrs.bounds.0.clone()),
+                        .chain(self.attrs.common.bounds.0.clone()),
                 );
                 shared_attr_is_wrapping
             }
