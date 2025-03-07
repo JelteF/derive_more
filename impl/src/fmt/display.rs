@@ -3,7 +3,7 @@
 #[cfg(doc)]
 use std::fmt;
 
-use convert_case::{Case, Casing};
+use convert_case::Casing;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
@@ -192,11 +192,30 @@ impl attr::ParseMultiple for ContainerAttributes {
 /// - `kebab-case`
 /// - `SCREAMING-KEBAB-CASE`
 #[derive(Debug, Clone, Copy)]
-struct RenameAllAttribute(Case);
+enum RenameAllAttribute {
+    Lower,
+    Upper,
+    Pascal,
+    Camel,
+    Snake,
+    ScreamingSnake,
+    Kebab,
+    ScreamingKebab,
+}
 
 impl RenameAllAttribute {
     fn convert_case(&self, ident: &syn::Ident) -> String {
-        ident.unraw().to_string().to_case(self.0)
+        let case = match self {
+            Self::Lower => convert_case::Case::Lower,
+            Self::Upper => convert_case::Case::UpperFlat,
+            Self::Pascal => convert_case::Case::Pascal,
+            Self::Camel => convert_case::Case::Camel,
+            Self::Snake => convert_case::Case::Snake,
+            Self::ScreamingSnake => convert_case::Case::UpperSnake,
+            Self::Kebab => convert_case::Case::Kebab,
+            Self::ScreamingKebab => convert_case::Case::UpperKebab,
+        };
+        ident.unraw().to_string().to_case(case)
     }
 }
 
@@ -217,17 +236,17 @@ impl Parse for RenameAllAttribute {
 
         let value: LitStr = input.parse()?;
 
-        Ok(Self(match value.value().replace(['-', '_'], "").to_lowercase().as_str() {
-            "lowercase" => Case::Flat,
-            "uppercase" => Case::UpperFlat,
-            "pascalcase" => Case::Pascal,
-            "camelcase" => Case::Camel,
-            "snakecase" => Case::Snake,
-            "screamingsnakecase" => Case::UpperSnake,
-            "kebabcase" => Case::Kebab,
-            "screamingkebabcase" => Case::UpperKebab,
+        Ok(match value.value().replace(['-', '_'], "").to_lowercase().as_str() {
+            "lowercase" => Self::Lower,
+            "uppercase" => Self::Upper,
+            "pascalcase" => Self::Pascal,
+            "camelcase" => Self::Camel,
+            "snakecase" => Self::Snake,
+            "screamingsnakecase" => Self::ScreamingSnake,
+            "kebabcase" => Self::Kebab,
+            "screamingkebabcase" => Self::ScreamingKebab,
             _ => return Err(syn::Error::new_spanned(value, "unexpected casing expected one of: \"lowercase\", \"UPPERCASE\", \"PascalCase\", \"camelCase\", \"snake_case\", \"SCREAMING_SNAKE_CASE\", \"kebab-case\", or \"SCREAMING-KEBAB-CASE\""))
-        }))
+        })
     }
 }
 
