@@ -16,6 +16,7 @@ type in question deriving for this is not implemented.
 NOTE: In case you don't want this behaviour you can add `#[mul(forward)]` in
 addition to `#[derive(Mul)]`. This will instead generate a `Mul` implementation
 with the same semantics as `Add`.
+You can also add `#[mul(forward_and_scalar)]` to implement both, this especially useful for structs that need to be multiplicable by itself and a scalar.
 
 
 
