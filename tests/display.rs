@@ -1797,6 +1797,79 @@ mod enums {
             }
         }
     }
+
+    mod rename_all {
+        use super::*;
+
+        macro_rules! casing_test {
+            ($name:ident, $casing:literal, $VariantOne:literal, $Two:literal) => {
+                mod $name {
+                    use super::*;
+
+                    #[test]
+                    fn enum_top_level() {
+                        #[derive(Display)]
+                        #[display(rename_all = $casing)]
+                        enum Enum {
+                            VariantOne,
+                            Two,
+                        }
+
+                        assert_eq!(Enum::VariantOne.to_string(), $VariantOne);
+                        assert_eq!(Enum::Two.to_string(), $Two);
+                    }
+
+                    #[test]
+                    fn enum_variant_level() {
+                        #[derive(Display)]
+                        #[display(rename_all = "lowercase")] // ignored
+                        enum Enum {
+                            #[display(rename_all = $casing)]
+                            VariantOne,
+                            #[display(rename_all = $casing)]
+                            Two,
+                        }
+
+                        assert_eq!(Enum::VariantOne.to_string(), $VariantOne);
+                        assert_eq!(Enum::Two.to_string(), $Two);
+                    }
+
+                    #[test]
+                    fn struct_top_level() {
+                        #[derive(Display)]
+                        #[display(rename_all = $casing)]
+                        struct VariantOne;
+
+                        #[derive(Display)]
+                        #[display(rename_all = $casing)]
+                        struct Two;
+
+                        assert_eq!(VariantOne.to_string(), $VariantOne);
+                        assert_eq!(Two.to_string(), $Two);
+                    }
+                }
+            };
+        }
+
+        casing_test!(lower_case, "lowercase", "variantone", "two");
+        casing_test!(upper_case, "UPPERCASE", "VARIANTONE", "TWO");
+        casing_test!(pascal_case, "PascalCase", "VariantOne", "Two");
+        casing_test!(camel_case, "camelCase", "variantOne", "two");
+        casing_test!(snake_case, "snake_case", "variant_one", "two");
+        casing_test!(
+            screaming_snake_case,
+            "SCREAMING_SNAKE_CASE",
+            "VARIANT_ONE",
+            "TWO"
+        );
+        casing_test!(kebab_case, "kebab-case", "variant-one", "two");
+        casing_test!(
+            screaming_kebab_case,
+            "SCREAMING-KEBAB-CASE",
+            "VARIANT-ONE",
+            "TWO"
+        );
+    }
 }
 
 mod generic {
