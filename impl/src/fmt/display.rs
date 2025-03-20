@@ -11,7 +11,7 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_quote,
     spanned::Spanned as _,
-    LitStr, Token,
+    token, LitStr,
 };
 
 use crate::utils::{
@@ -81,8 +81,8 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     })
 }
 
-/// Representation of a [`fmt::Display`]-like derive macro attributes placed on a container (struct
-/// or enum variant).
+/// Representation of possible [`fmt::Display`]-like derive macro attributes placed on a container
+/// (struct or enum variant).
 ///
 /// ```rust,ignore
 /// #[<attribute>("<fmt-literal>", <fmt-args>)]
@@ -92,17 +92,20 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 ///
 /// `#[<attribute>("...")]` and `#[<attribute>(rename_all = "...")]` can be specified only once,
 /// while multiple `#[<attribute>(bound(...))]` are allowed.
-///
-/// [`fmt::Display`]: std::fmt::Display
 #[derive(Debug, Default)]
 struct ContainerAttributes {
+    /// [`RenameAllAttribute`] for case convertion.
     rename_all: Option<RenameAllAttribute>,
+
+    /// Common [`ContainerAttributes`].
+    ///
+    /// [`ContainerAttributes`]: [`ContainerAttributes`]
     common: super::ContainerAttributes,
 }
 
 impl Parse for ContainerAttributes {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        mod kw {
+        mod ident {
             use syn::custom_keyword;
 
             custom_keyword!(bounds);
@@ -110,30 +113,26 @@ impl Parse for ContainerAttributes {
             custom_keyword!(rename_all);
         }
 
-        // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `Either` will swallow
-        // any error of the `Either::Left` if the `Either::Right` succeeds.
-        FmtAttribute::check_legacy_fmt(input)?;
-        let lookahead = input.lookahead1();
-        Ok(
-            // we use a lookahead here with all possible tokens so the error message is complete
-            if lookahead.peek(LitStr)
-                || lookahead.peek(kw::bounds)
-                || lookahead.peek(kw::bound)
-                || lookahead.peek(Token![where])
-            {
-                Self {
-                    common: input.parse()?,
-                    ..Default::default()
-                }
-            } else if lookahead.peek(kw::rename_all) {
-                Self {
-                    rename_all: Some(input.parse()?),
-                    ..Default::default()
-                }
-            } else {
-                return Err(lookahead.error());
-            },
-        )
+        // We use `.lookahead1()` with all possible idents to form a nice error message including
+        // all the possible variants.
+        let ahead = input.lookahead1();
+        if ahead.peek(LitStr)
+            || ahead.peek(ident::bounds)
+            || ahead.peek(ident::bound)
+            || ahead.peek(token::Where)
+        {
+            Ok(Self {
+                common: input.parse()?,
+                ..Default::default()
+            })
+        } else if ahead.peek(ident::rename_all) {
+            Ok(Self {
+                rename_all: Some(input.parse()?),
+                ..Default::default()
+            })
+        } else {
+            return Err(ahead.error());
+        }
     }
 }
 
@@ -182,7 +181,7 @@ impl attr::ParseMultiple for ContainerAttributes {
 /// #[<attribute>(rename_all = "...")]
 /// ```
 ///
-/// Possible Cases:
+/// Possible cases:
 /// - `lowercase`
 /// - `UPPERCASE`
 /// - `PascalCase`
@@ -204,7 +203,8 @@ enum RenameAllAttribute {
 }
 
 impl RenameAllAttribute {
-    fn convert_case(&self, ident: &syn::Ident) -> String {
+    /// Converts the provided `name` into the case of this [`RenameAllAttribute`].
+    fn convert_case(&self, name: &str) -> String {
         let case = match self {
             Self::Lower => convert_case::Case::Flat,
             Self::Upper => convert_case::Case::UpperFlat,
@@ -215,7 +215,7 @@ impl RenameAllAttribute {
             Self::Kebab => convert_case::Case::Kebab,
             Self::ScreamingKebab => convert_case::Case::UpperKebab,
         };
-        ident.unraw().to_string().to_case(case)
+        name.to_case(case)
     }
 }
 
@@ -232,10 +232,9 @@ impl Parse for RenameAllAttribute {
             }
         })?;
 
-        input.parse::<Token![=]>()?;
+        input.parse::<token::Eq>()?;
 
         let value: LitStr = input.parse()?;
-
         Ok(match value.value().replace(['-', '_'], "").to_lowercase().as_str() {
             "lowercase" => Self::Lower,
             "uppercase" => Self::Upper,
@@ -485,12 +484,10 @@ impl Expansion<'_> {
             None => {
                 if shared_attr_is_wrapping || !has_shared_attr {
                     body = if self.fields.is_empty() {
-                        let ident_str = if let Some(rename_all) = &self.attrs.rename_all
-                        {
-                            rename_all.convert_case(self.ident)
-                        } else {
-                            self.ident.unraw().to_string()
-                        };
+                        let mut ident_str = self.ident.unraw().to_string();
+                        if let Some(rename_all) = &self.attrs.rename_all {
+                            ident_str = rename_all.convert_case(&ident_str);
+                        }
 
                         if shared_attr_is_wrapping {
                             quote! { #ident_str }

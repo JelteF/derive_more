@@ -1805,8 +1805,9 @@ mod enums {
             ($name:ident, $casing:literal, $VariantOne:literal, $Two:literal) => {
                 mod $name {
                     use super::*;
+
                     #[test]
-                    fn enum_() {
+                    fn enum_top_level() {
                         #[derive(Display)]
                         #[display(rename_all = $casing)]
                         enum Enum {
@@ -1819,10 +1820,9 @@ mod enums {
                     }
 
                     #[test]
-                    fn variant() {
+                    fn enum_variant_level() {
                         #[derive(Display)]
-                        // ignored
-                        #[display(rename_all = "lowercase")]
+                        #[display(rename_all = "lowercase")] // ignored
                         enum Enum {
                             #[display(rename_all = $casing)]
                             VariantOne,
@@ -1835,7 +1835,7 @@ mod enums {
                     }
 
                     #[test]
-                    fn struct_() {
+                    fn struct_top_level() {
                         #[derive(Display)]
                         #[display(rename_all = $casing)]
                         struct VariantOne;
@@ -1843,6 +1843,7 @@ mod enums {
                         #[derive(Display)]
                         #[display(rename_all = $casing)]
                         struct Two;
+
                         assert_eq!(VariantOne.to_string(), $VariantOne);
                         assert_eq!(Two.to_string(), $Two);
                     }

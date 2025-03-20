@@ -13,8 +13,9 @@ For enums, you can either specify it on each variant, or on the enum as a whole.
 
 For variants that don't have a format specified, it will simply defer to the format of the
 inner variable. If there is no such variable, or there is more than 1, an error is generated.
-The only exception are unit variants, for these the name of the variant will be used if no 
-format is specified. This can be controlled with the [`#[display(rename_all = "...")]`](#The-`rename_all`-attribute).
+The only exception are unit variants, for these the name of the variant will be used if no
+format is specified. This can be controlled with the
+[`#[display(rename_all = "...")]` attribute](#The-`rename_all`-attribute).
 
 
 
@@ -226,14 +227,14 @@ assert_eq!(Enum::B(2).to_string(), "Variant: 2 & 2");
 assert_eq!(Enum::C.to_string(), "c");
 ```
 
+
 ### The `rename_all` attribute
 
-When no format is specified, deriving `Display` uses the variant name verbatim as format.
-To control this the `#[display(rename_all)]` can be placed on structs, enums and variants.
+When no format is specified, deriving `Display` uses the variant name verbatim as its format.
+To control this the `#[display(rename_all = "...")]` attribute can be placed on structs, enums and variants.
 
-The availible casings are:
-
-- `lowercase` 
+The available casings are:
+- `lowercase`
 - `UPPERCASE`
 - `PascalCase`
 - `camelCase`
@@ -249,7 +250,7 @@ The availible casings are:
 #[display(rename_all = "lowercase")]
 enum Enum {
     VariantOne,
-    #[display(rename_all = "kebab-case")]
+    #[display(rename_all = "kebab-case")] // overrides the top-level one
     VariantTwo
 }
 

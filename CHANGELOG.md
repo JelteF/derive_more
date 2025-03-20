@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Support `#[display(rename_all = "<casing>")]` to change output for implicit
-  naming of enum variants whend deriving `Display`
-  ([#443](https://github.com/JelteF/derive_more/pull/443)).
+- Support `#[display(rename_all = "<casing>")]` attribute to change output for
+  implicit naming of unit enum variants or unit structs when deriving `Display`.
+  ([#443](https://github.com/JelteF/derive_more/pull/443))
 
 ## 2.0.1 - 2025-02-03
 
