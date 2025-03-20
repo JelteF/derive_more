@@ -99,7 +99,7 @@ struct ContainerAttributes {
 
     /// Common [`ContainerAttributes`].
     ///
-    /// [`ContainerAttributes`]: [`ContainerAttributes`]
+    /// [`ContainerAttributes`]: super::ContainerAttributes
     common: super::ContainerAttributes,
 }
 
@@ -112,6 +112,10 @@ impl Parse for ContainerAttributes {
             custom_keyword!(bound);
             custom_keyword!(rename_all);
         }
+
+        // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `.lookahead1()` won't
+        // check for the `fmt =` ident below, to omit including it into the `ahead.error()`.
+        FmtAttribute::check_legacy_fmt(input)?;
 
         // We use `.lookahead1()` with all possible idents to form a nice error message including
         // all the possible variants.
