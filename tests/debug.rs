@@ -769,6 +769,7 @@ mod structs {
             }
         }
 
+        #[cfg(target_endian = "little")]
         mod r#unsized {
             #[cfg(not(feature = "std"))]
             use alloc::format;
