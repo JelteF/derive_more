@@ -173,6 +173,7 @@ impl Expansion<'_> {
 
                     Ok(quote! {
                         #[allow(unreachable_code)] // omit warnings for `!` and unreachable types
+                        #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
                         #[automatically_derived]
                         impl #impl_gens derive_more::core::convert::From<#ty>
                          for #ident #ty_gens #where_clause {
@@ -195,6 +196,7 @@ impl Expansion<'_> {
 
                 Ok(quote! {
                     #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
+                    #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
                     #[automatically_derived]
                     impl #impl_gens derive_more::core::convert::From<(#( #field_tys ),*)>
                      for #ident #ty_gens #where_clause {
@@ -240,6 +242,7 @@ impl Expansion<'_> {
 
                 Ok(quote! {
                     #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
+                    #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
                     #[automatically_derived]
                     impl #impl_gens derive_more::core::convert::From<(#( #gen_idents ),*)>
                      for #ident #ty_gens #where_clause {

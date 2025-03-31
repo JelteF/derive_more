@@ -27,6 +27,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     quote! {
         #[allow(missing_docs)]
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
+        #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
         #[automatically_derived]
         impl #impl_generics #input_type #ty_generics #where_clause {
             #[inline]

@@ -43,6 +43,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 
     Ok(quote! {
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
+        #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
         #[automatically_derived]
         impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
             type Target = #target;

@@ -179,6 +179,7 @@ impl Expansion<'_> {
 
                 Ok(quote! {
                     #[allow(clippy::unused_unit)]
+                    #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
                     #[automatically_derived]
                     impl #impl_gens derive_more::core::convert::From<#r #lf #m #input_ident #ty_gens>
                      for ( #( #r #lf #m #tys ),* ) #where_clause

@@ -128,6 +128,7 @@ impl ToTokens for Expansion {
                 type Error = #error;
 
                 #[allow(non_upper_case_globals)]
+                #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
                 #[inline]
                 fn try_from(val: #repr_ty) -> derive_more::core::result::Result<Self, #error> {
                     #( const #consts: #repr_ty = #discriminants; )*

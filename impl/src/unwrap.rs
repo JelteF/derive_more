@@ -119,6 +119,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 
     let imp = quote! {
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
+        #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
         #[automatically_derived]
         impl #imp_generics #enum_name #type_generics #where_clause {
             #(#funcs)*
