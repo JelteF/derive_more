@@ -509,6 +509,21 @@ mod structs {
                 field: !,
             }
         }
+
+        mod deprecated {
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[deprecated(note = "reason")]
+            struct Tuple(i32);
+
+            #[derive(Debug)]
+            #[deprecated(note = "reason")]
+            struct Struct {
+                #[deprecated(note = "reason")]
+                field: i32,
+            }
+        }
     }
 
     mod multi_field {
@@ -1176,6 +1191,20 @@ mod enums {
             enum Enum {
                 Unnamed(!),
                 Named { field: ! },
+            }
+        }
+
+        mod deprecated {
+            use derive_more::Debug;
+
+            #[derive(Debug)]
+            #[deprecated(note = "reason")]
+            enum Enum {
+                #[deprecated(note = "reason")]
+                Variant {
+                    #[deprecated(note = "reason")]
+                    field: i32,
+                },
             }
         }
     }

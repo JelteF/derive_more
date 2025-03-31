@@ -58,3 +58,30 @@ mod never {
         StructMulti { field: !, other: i32 },
     }
 }
+
+mod deprecated {
+    use super::*;
+
+    #[derive(Not)]
+    #[deprecated(note = "reason")]
+    struct Tuple(i32);
+
+    #[derive(Not)]
+    #[deprecated(note = "reason")]
+    struct Struct {
+        #[deprecated(note = "reason")]
+        field: i32,
+    }
+
+    #[derive(Not)]
+    #[deprecated(note = "reason")]
+    enum Enum {
+        #[deprecated(note = "reason")]
+        Tuple(i32),
+        #[deprecated(note = "reason")]
+        Struct {
+            #[deprecated(note = "reason")]
+            field: i32,
+        },
+    }
+}

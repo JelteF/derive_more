@@ -53,3 +53,18 @@ mod never {
         other: i32,
     }
 }
+
+mod deprecated {
+    use super::*;
+
+    #[derive(Constructor)]
+    #[deprecated(note = "reason")]
+    struct Tuple(i32);
+
+    #[derive(Constructor)]
+    #[deprecated(note = "reason")]
+    struct Struct {
+        #[deprecated(note = "reason")]
+        field: i32,
+    }
+}

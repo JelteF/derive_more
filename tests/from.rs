@@ -470,6 +470,23 @@ mod structs {
                 field2: i16,
             }
         }
+
+        mod deprecated {
+            use super::*;
+
+            #[derive(From)]
+            #[deprecated(note = "reason")]
+            struct Tuple(i32, i16);
+
+            #[derive(From)]
+            #[deprecated(note = "reason")]
+            struct Struct {
+                #[deprecated(note = "reason")]
+                field1: i32,
+                #[deprecated(note = "reason")]
+                field2: i16,
+            }
+        }
     }
 }
 
@@ -1811,6 +1828,20 @@ mod enums {
             enum Enum {
                 Tuple(i8, !),
                 Struct { field1: !, field2: i16 },
+            }
+        }
+
+        mod deprecated {
+            use super::*;
+
+            #[derive(From)]
+            #[deprecated(note = "reason")]
+            enum Enum {
+                #[deprecated(note = "reason")]
+                Deprecated {
+                    #[deprecated(note = "reason")]
+                    field: i32,
+                },
             }
         }
     }

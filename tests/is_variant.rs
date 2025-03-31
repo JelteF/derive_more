@@ -175,3 +175,19 @@ mod never {
         StructMulti { field: !, other: i32 },
     }
 }
+
+mod deprecated {
+    use super::*;
+
+    #[derive(IsVariant)]
+    #[deprecated(note = "reason")]
+    enum Enum {
+        #[deprecated(note = "reason")]
+        Tuple(i32),
+        #[deprecated(note = "reason")]
+        Struct {
+            #[deprecated(note = "reason")]
+            field: i32,
+        },
+    }
+}

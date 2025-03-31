@@ -87,3 +87,18 @@ mod never {
         field: !,
     }
 }
+
+mod deprecated {
+    use super::*;
+
+    #[derive(Deref)]
+    #[deprecated(note = "reason")]
+    struct Tuple(i32);
+
+    #[derive(Deref)]
+    #[deprecated(note = "reason")]
+    struct Struct {
+        #[deprecated(note = "reason")]
+        field: i32,
+    }
+}

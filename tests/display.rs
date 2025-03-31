@@ -616,6 +616,21 @@ mod structs {
                 field: !,
             }
         }
+
+        mod deprecated {
+            use super::*;
+
+            #[derive(Display)]
+            #[deprecated(note = "reason")]
+            struct Tuple(i32);
+
+            #[derive(Display)]
+            #[deprecated(note = "reason")]
+            struct Struct {
+                #[deprecated(note = "reason")]
+                field: i32,
+            }
+        }
     }
 
     mod multi_field {
@@ -1321,6 +1336,20 @@ mod enums {
             enum Enum {
                 Unnamed(!),
                 Named { field: ! },
+            }
+        }
+
+        mod deprecated {
+            use super::*;
+
+            #[derive(Display)]
+            #[deprecated(note = "reason")]
+            enum Enum {
+                #[deprecated(note = "reason")]
+                Deprecated {
+                    #[deprecated(note = "reason")]
+                    field: i32,
+                },
             }
         }
     }

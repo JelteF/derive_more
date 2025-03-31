@@ -129,3 +129,16 @@ mod never {
         TupleMulti(i32, !),
     }
 }
+
+mod deprecated {
+    use super::*;
+
+    #[derive(Unwrap)]
+    #[deprecated(note = "reason")]
+    enum Enum {
+        #[deprecated(note = "reason")]
+        Tuple(i32),
+        #[deprecated(note = "reason")]
+        TupleMulti(i32, i32),
+    }
+}

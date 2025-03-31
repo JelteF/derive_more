@@ -167,3 +167,38 @@ mod never {
         }
     }
 }
+
+mod deprecated {
+    use super::*;
+
+    #[derive(DerefMut)]
+    #[deprecated(note = "reason")]
+    struct Tuple(i32);
+
+    // `Deref` implementation is required for `DerefMut`.
+    #[allow(deprecated)]
+    impl ::core::ops::Deref for Tuple {
+        type Target = i32;
+        #[inline]
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    #[derive(DerefMut)]
+    #[deprecated(note = "reason")]
+    struct Struct {
+        #[deprecated(note = "reason")]
+        field: i32,
+    }
+
+    // `Deref` implementation is required for `DerefMut`.
+    #[allow(deprecated)]
+    impl ::core::ops::Deref for Struct {
+        type Target = i32;
+        #[inline]
+        fn deref(&self) -> &Self::Target {
+            &self.field
+        }
+    }
+}

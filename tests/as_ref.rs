@@ -425,6 +425,14 @@ mod single_field {
             #[derive(AsRef)]
             struct Nothing(!);
         }
+
+        mod deprecated {
+            use super::*;
+
+            #[derive(AsRef)]
+            #[deprecated(note = "reason")]
+            struct Deprecated(i32);
+        }
     }
 
     mod named {
@@ -891,6 +899,17 @@ mod single_field {
             #[derive(AsRef)]
             struct Nothing {
                 first: !,
+            }
+        }
+
+        mod deprecated {
+            use super::*;
+
+            #[derive(AsRef)]
+            #[deprecated(note = "reason")]
+            struct Deprecated {
+                #[deprecated(note = "reason")]
+                field: i32,
             }
         }
     }
