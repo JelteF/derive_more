@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   implicit naming of unit enum variants or unit structs when deriving `Display`.
   ([#443](https://github.com/JelteF/derive_more/pull/443))
 
+### Fixed
+
+- Ignore deprecation warnings on generated code. ([#454](https://github.com/JelteF/derive_more/pull/454))
+
 ## 2.0.1 - 2025-02-03
 
 ### Added
