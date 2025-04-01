@@ -69,6 +69,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     };
 
     Ok(quote! {
+        #[allow(deprecated)] // omit warnings on deprecated fields/variants
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
         #[automatically_derived]
         impl #impl_gens derive_more::core::fmt::#trait_ident for #ident #ty_gens #where_clause {

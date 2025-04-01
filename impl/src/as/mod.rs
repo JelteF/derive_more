@@ -280,6 +280,7 @@ impl ToTokens for Expansion<'_> {
             };
 
             quote! {
+                #[allow(deprecated)] // omit warnings on deprecated fields/variants
                 #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
                 #[automatically_derived]
                 impl #impl_gens #trait_ty for #ty_ident #ty_gens #where_clause {

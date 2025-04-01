@@ -172,6 +172,7 @@ impl Expansion<'_> {
                     });
 
                     Ok(quote! {
+                        #[allow(deprecated)] // omit warnings on deprecated fields/variants
                         #[allow(unreachable_code)] // omit warnings for `!` and unreachable types
                         #[automatically_derived]
                         impl #impl_gens derive_more::core::convert::From<#ty>
@@ -194,6 +195,7 @@ impl Expansion<'_> {
                 });
 
                 Ok(quote! {
+                    #[allow(deprecated)] // omit warnings on deprecated fields/variants
                     #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
                     #[automatically_derived]
                     impl #impl_gens derive_more::core::convert::From<(#( #field_tys ),*)>
@@ -239,6 +241,7 @@ impl Expansion<'_> {
                 let (impl_gens, _, where_clause) = generics.split_for_impl();
 
                 Ok(quote! {
+                    #[allow(deprecated)] // omit warnings on deprecated fields/variants
                     #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
                     #[automatically_derived]
                     impl #impl_gens derive_more::core::convert::From<(#( #gen_idents ),*)>
