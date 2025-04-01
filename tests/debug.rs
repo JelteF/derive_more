@@ -514,13 +514,13 @@ mod structs {
             use derive_more::Debug;
 
             #[derive(Debug)]
-            #[deprecated(note = "reason")]
-            struct Tuple(i32);
+            #[deprecated(note = "struct")]
+            struct Tuple(#[deprecated(note = "field")] i32);
 
             #[derive(Debug)]
-            #[deprecated(note = "reason")]
+            #[deprecated(note = "struct")]
             struct Struct {
-                #[deprecated(note = "reason")]
+                #[deprecated(note = "field")]
                 field: i32,
             }
         }
@@ -1198,11 +1198,11 @@ mod enums {
             use derive_more::Debug;
 
             #[derive(Debug)]
-            #[deprecated(note = "reason")]
+            #[deprecated(note = "enum")]
             enum Enum {
-                #[deprecated(note = "reason")]
+                #[deprecated(note = "variant")]
                 Variant {
-                    #[deprecated(note = "reason")]
+                    #[deprecated(note = "field")]
                     field: i32,
                 },
             }

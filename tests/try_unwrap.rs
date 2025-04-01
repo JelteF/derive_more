@@ -145,11 +145,11 @@ mod deprecated {
     use super::*;
 
     #[derive(TryUnwrap)]
-    #[deprecated(note = "reason")]
+    #[deprecated(note = "enum")]
     enum Enum {
-        #[deprecated(note = "reason")]
-        Tuple(i32),
-        #[deprecated(note = "reason")]
-        TupleMulti(i32, i32),
+        #[deprecated(note = "variant")]
+        Tuple(#[deprecated(note = "field")] i32),
+        #[deprecated(note = "variant")]
+        TupleMulti(i32, #[deprecated(note = "field")] i32),
     }
 }

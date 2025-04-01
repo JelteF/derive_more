@@ -180,13 +180,13 @@ mod deprecated {
     use super::*;
 
     #[derive(IsVariant)]
-    #[deprecated(note = "reason")]
+    #[deprecated(note = "enum")]
     enum Enum {
-        #[deprecated(note = "reason")]
-        Tuple(i32),
-        #[deprecated(note = "reason")]
+        #[deprecated(note = "variant")]
+        Tuple(#[deprecated(note = "field")] i32),
+        #[deprecated(note = "variant")]
         Struct {
-            #[deprecated(note = "reason")]
+            #[deprecated(note = "field")]
             field: i32,
         },
     }

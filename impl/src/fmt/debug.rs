@@ -60,8 +60,8 @@ pub fn expand(input: &syn::DeriveInput, _: &str) -> syn::Result<TokenStream> {
     };
 
     Ok(quote! {
+        #[allow(deprecated)] // omit warnings on deprecated fields/variants
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
-        #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
         #[automatically_derived]
         impl #impl_gens derive_more::core::fmt::Debug for #ident #ty_gens #where_clause {
             #[inline]

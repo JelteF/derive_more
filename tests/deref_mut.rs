@@ -172,23 +172,23 @@ mod deprecated {
     use super::*;
 
     #[derive(DerefMut)]
-    #[deprecated(note = "reason")]
-    struct Tuple(i32);
+    #[deprecated(note = "struct")]
+    struct Tuple(#[deprecated(note = "field")] i32);
 
     // `Deref` implementation is required for `DerefMut`.
     #[allow(deprecated)]
     impl ::core::ops::Deref for Tuple {
         type Target = i32;
-        #[inline]
+
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
 
     #[derive(DerefMut)]
-    #[deprecated(note = "reason")]
+    #[deprecated(note = "struct")]
     struct Struct {
-        #[deprecated(note = "reason")]
+        #[deprecated(note = "field")]
         field: i32,
     }
 
@@ -196,7 +196,7 @@ mod deprecated {
     #[allow(deprecated)]
     impl ::core::ops::Deref for Struct {
         type Target = i32;
-        #[inline]
+
         fn deref(&self) -> &Self::Target {
             &self.field
         }

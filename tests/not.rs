@@ -63,24 +63,24 @@ mod deprecated {
     use super::*;
 
     #[derive(Not)]
-    #[deprecated(note = "reason")]
-    struct Tuple(i32);
+    #[deprecated(note = "struct")]
+    struct Tuple(#[deprecated(note = "field")] i32);
 
     #[derive(Not)]
-    #[deprecated(note = "reason")]
+    #[deprecated(note = "struct")]
     struct Struct {
-        #[deprecated(note = "reason")]
+        #[deprecated(note = "field")]
         field: i32,
     }
 
     #[derive(Not)]
-    #[deprecated(note = "reason")]
+    #[deprecated(note = "enum")]
     enum Enum {
-        #[deprecated(note = "reason")]
-        Tuple(i32),
-        #[deprecated(note = "reason")]
+        #[deprecated(note = "variant")]
+        Tuple(#[deprecated(note = "field")] i32),
+        #[deprecated(note = "variant")]
         Struct {
-            #[deprecated(note = "reason")]
+            #[deprecated(note = "field")]
             field: i32,
         },
     }

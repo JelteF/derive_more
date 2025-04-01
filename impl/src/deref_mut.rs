@@ -33,8 +33,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     let (impl_generics, _, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
+        #[allow(deprecated)] // omit warnings on deprecated fields/variants
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
-        #[allow(deprecated)] // Omit warnings on when a field or variant is deprecated
         #[automatically_derived]
         impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
             #[inline]

@@ -92,13 +92,13 @@ mod deprecated {
     use super::*;
 
     #[derive(Deref)]
-    #[deprecated(note = "reason")]
-    struct Tuple(i32);
+    #[deprecated(note = "struct")]
+    struct Tuple(#[deprecated(note = "field")] i32);
 
     #[derive(Deref)]
-    #[deprecated(note = "reason")]
+    #[deprecated(note = "struct")]
     struct Struct {
-        #[deprecated(note = "reason")]
+        #[deprecated(note = "field")]
         field: i32,
     }
 }

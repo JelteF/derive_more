@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- Ignore deprecation warnings on generated code. ([#454](https://github.com/JelteF/derive_more/pull/454))
+- Suppress deprecation warnings in generated code.
+  ([#454](https://github.com/JelteF/derive_more/pull/454))
 
 ## 2.0.1 - 2025-02-03
 

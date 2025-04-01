@@ -430,8 +430,8 @@ mod single_field {
             use super::*;
 
             #[derive(AsRef)]
-            #[deprecated(note = "reason")]
-            struct Deprecated(i32);
+            #[deprecated(note = "struct")]
+            struct Deprecated(#[deprecated(note = "field")] i32);
         }
     }
 
@@ -906,9 +906,9 @@ mod single_field {
             use super::*;
 
             #[derive(AsRef)]
-            #[deprecated(note = "reason")]
+            #[deprecated(note = "struct")]
             struct Deprecated {
-                #[deprecated(note = "reason")]
+                #[deprecated(note = "field")]
                 field: i32,
             }
         }

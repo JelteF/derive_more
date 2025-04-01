@@ -621,13 +621,13 @@ mod structs {
             use super::*;
 
             #[derive(Display)]
-            #[deprecated(note = "reason")]
-            struct Tuple(i32);
+            #[deprecated(note = "struct")]
+            struct Tuple(#[deprecated(note = "field")] i32);
 
             #[derive(Display)]
-            #[deprecated(note = "reason")]
+            #[deprecated(note = "struct")]
             struct Struct {
-                #[deprecated(note = "reason")]
+                #[deprecated(note = "field")]
                 field: i32,
             }
         }
@@ -1343,11 +1343,11 @@ mod enums {
             use super::*;
 
             #[derive(Display)]
-            #[deprecated(note = "reason")]
+            #[deprecated(note = "enum")]
             enum Enum {
-                #[deprecated(note = "reason")]
+                #[deprecated(note = "variant")]
                 Deprecated {
-                    #[deprecated(note = "reason")]
+                    #[deprecated(note = "field")]
                     field: i32,
                 },
             }
