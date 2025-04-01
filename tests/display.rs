@@ -786,6 +786,7 @@ mod structs {
             }
         }
 
+        #[cfg(target_endian = "little")]
         mod r#unsized {
             use super::*;
 
