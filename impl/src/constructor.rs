@@ -25,6 +25,7 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
     };
     let original_types = &get_field_types(&fields);
     quote! {
+        #[allow(deprecated)] // omit warnings on deprecated fields/variants
         #[allow(missing_docs)]
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
         #[automatically_derived]
