@@ -18,6 +18,7 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
     let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
+    // TODO(Matthias): do we add support for arrays here?
     let (output_type, block) = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Unnamed(ref fields) => (
@@ -49,13 +50,14 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
             #[inline]
             #[track_caller]
             fn #method_ident(self, rhs: #input_type #ty_generics) -> #output_type {
+                let lhs: Self = self;
                 #block
             }
         }
     }
 }
 
-fn tuple_content<T: ToTokens>(
+pub(crate) fn tuple_content<T: ToTokens>(
     input_type: &T,
     fields: &[&Field],
     method_ident: &Ident,
@@ -152,7 +154,7 @@ fn enum_content(
         });
     }
     quote! {
-        match (self, rhs) {
+        match (lhs, rhs) {
             #(#matches),*
         }
     }
