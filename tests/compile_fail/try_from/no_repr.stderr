@@ -1,0 +1,5 @@
+error: `#[try_from(repr)]` attribute is expected here
+ --> tests/compile_fail/try_from/no_repr.rs:2:6
+  |
+2 | enum Enum {
+  |      ^^^^

@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Suppress deprecation warnings in generated code.
   ([#454](https://github.com/JelteF/derive_more/pull/454))
+- Silent no-op when `#[try_from(repr)]` attribute is not specified for `TryFrom` derive.
+  ([#458](https://github.com/JelteF/derive_more/pull/458))
 
 ## 2.0.1 - 2025-02-03
 
