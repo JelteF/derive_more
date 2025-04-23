@@ -20,18 +20,26 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             repr: attr::ReprInt::parse_attrs(&input.attrs, &format_ident!("repr"))?
                 .map(Spanning::into_inner)
                 .unwrap_or_default(),
-            attr: ItemAttribute::parse_attrs(&input.attrs, &format_ident!("try_from"))?
-                .map(|attr| {
-                    if matches!(attr.item, ItemAttribute::Types(_)) {
-                        Err(syn::Error::new(
+            attr: Some(
+                ItemAttribute::parse_attrs(&input.attrs, &format_ident!("try_from"))?
+                    .map(|attr| {
+                        if matches!(attr.item, ItemAttribute::Types(_)) {
+                            Err(syn::Error::new(
                             attr.span,
                             "`#[try_from(repr(...))]` attribute is not supported yet",
                         ))
-                    } else {
-                        Ok(attr.item)
-                    }
-                })
-                .transpose()?,
+                        } else {
+                            Ok(attr.item)
+                        }
+                    })
+                    .transpose()?
+                    .ok_or_else(|| {
+                        syn::Error::new(
+                            input.ident.span(),
+                            "`#[try_from(repr)]` attribute is expected here",
+                        )
+                    })?,
+            ),
             ident: input.ident.clone(),
             generics: input.generics.clone(),
             variants: data.variants.clone().into_iter().collect(),

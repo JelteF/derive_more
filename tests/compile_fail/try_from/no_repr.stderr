@@ -1,11 +1,5 @@
-error: expected `,`
- --> tests/compile_fail/try_from/invalid_repr.rs:2:10
+error: `#[try_from(repr)]` attribute is expected here
+ --> tests/compile_fail/try_from/no_repr.rs:2:6
   |
-2 | #[repr(a + b)]
-  |          ^
-
-error: expected one of `(`, `,`, `::`, or `=`, found `+`
- --> tests/compile_fail/try_from/invalid_repr.rs:2:10
-  |
-2 | #[repr(a + b)]
-  |          ^ expected one of `(`, `,`, `::`, or `=`
+2 | enum Enum {
+  |      ^^^^
