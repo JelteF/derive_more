@@ -40,9 +40,6 @@ rustc_version = { version = "0.4", optional = true }
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
 
-[package.metadata.playground]
-features = ["full", "std"]
-
 [features]
 nightly = []
 add_assign = []
