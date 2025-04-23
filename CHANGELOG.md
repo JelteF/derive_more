@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Suppress deprecation warnings in generated code.
   ([#454](https://github.com/JelteF/derive_more/pull/454))
+- Added `#[mul(forward_and_scalar)]` to generate both Add-like and Mul-like semantics when deriving Mul-likes.
 
 ## 2.0.1 - 2025-02-03
 

@@ -8,6 +8,7 @@ You can add the `#[mul_assign(forward)]` attribute if you don't want the same
 semantics as `Mul`.
 This will instead generate a `MulAssign` implementation with the same semantics
 as `AddAssign`.
+You can add `#[mul_assign(forward_and_scalar)]` to generate both Mul-like and Add-like semantics.
 
 
 

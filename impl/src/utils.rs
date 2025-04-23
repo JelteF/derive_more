@@ -440,6 +440,7 @@ impl<'input> State<'input> {
         let defaults = struct_meta_info.into_full(FullMetaInfo {
             enabled: default_enabled,
             forward: false,
+            forward_and_scalar: false,
             // Default to owned true, except when first attribute has one of owned,
             // ref or ref_mut
             // - not a single attribute means default true
@@ -873,6 +874,13 @@ fn get_meta_info(
         None,
     )?;
 
+    if info.forward.is_some() && info.forward_and_scalar.is_some() {
+        return Err(Error::new(
+            list.span(),
+            "Attributes `forward` and `forward_and_scalar` are mutually exclusive",
+        ));
+    }
+
     Ok(info)
 }
 
@@ -1016,7 +1024,13 @@ fn parse_punctuated_nested_meta(
                 match (wrapper_name, attr_name.as_str()) {
                     (None, "ignore") => info.enabled = Some(false),
                     (None, "forward") => info.forward = Some(true),
+                    (None, "forward_and_scalar") => {
+                        info.forward_and_scalar = Some(true)
+                    }
                     (Some("not"), "forward") => info.forward = Some(false),
+                    (Some("not"), "forward_and_scalar") => {
+                        info.forward_and_scalar = Some(false)
+                    }
                     (None, "owned") => info.owned = Some(true),
                     (None, "ref") => info.ref_ = Some(true),
                     (None, "ref_mut") => info.ref_mut = Some(true),
@@ -1204,6 +1218,7 @@ pub(crate) mod polyfill {
 pub struct FullMetaInfo {
     pub enabled: bool,
     pub forward: bool,
+    pub forward_and_scalar: bool,
     pub owned: bool,
     pub ref_: bool,
     pub ref_mut: bool,
@@ -1214,6 +1229,7 @@ pub struct FullMetaInfo {
 pub struct MetaInfo {
     pub enabled: Option<bool>,
     pub forward: Option<bool>,
+    pub forward_and_scalar: Option<bool>,
     pub owned: Option<bool>,
     pub ref_: Option<bool>,
     pub ref_mut: Option<bool>,
@@ -1228,6 +1244,9 @@ impl MetaInfo {
         FullMetaInfo {
             enabled: self.enabled.unwrap_or(defaults.enabled),
             forward: self.forward.unwrap_or(defaults.forward),
+            forward_and_scalar: self
+                .forward_and_scalar
+                .unwrap_or(defaults.forward_and_scalar),
             owned: self.owned.unwrap_or(defaults.owned),
             ref_: self.ref_.unwrap_or(defaults.ref_),
             ref_mut: self.ref_mut.unwrap_or(defaults.ref_mut),
@@ -1727,6 +1746,7 @@ pub(crate) mod attr {
             fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
                 match input.parse::<syn::Path>()? {
                     p if p.is_ident("forward") => Ok(Self),
+                    p if p.is_ident("forward_and_scalar") => Ok(Self),
                     p => Err(syn::Error::new(p.span(), "only `forward` allowed here")),
                 }
             }
