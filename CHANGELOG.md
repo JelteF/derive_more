@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.99.20 - 2025-04-23
+
+- Revert adding of Rust Playground metadata
+
 ## 0.99.19 - 2025-02-03
 
 - Add Rust Playground metadata
