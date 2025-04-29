@@ -42,8 +42,10 @@ fn named_implicit_optional_source() {
         field: i32,
     }
 
-    let mut err = TestErr::default();
-    err.source = Some(SimpleErr::default());
+    let err = TestErr {
+        source: Some(SimpleErr),
+        ..TestErr::default()
+    };
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
@@ -88,8 +90,10 @@ fn named_explicit_optional_source() {
         field: i32,
     }
 
-    let mut err = TestErr::default();
-    err.explicit_source = Some(SimpleErr::default());
+    let err = TestErr {
+        explicit_source: Some(SimpleErr),
+        ..TestErr::default()
+    };
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
@@ -133,8 +137,10 @@ fn named_explicit_optional_source_redundant() {
         field: i32,
     }
 
-    let mut err = TestErr::default();
-    err.source = Some(SimpleErr::default());
+    let err = TestErr {
+        source: Some(SimpleErr),
+        ..TestErr::default()
+    };
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
@@ -166,8 +172,10 @@ fn named_explicit_optional_suppresses_implicit() {
         field: Option<SimpleErr>,
     }
 
-    let mut err = TestErr::default();
-    err.field = Some(SimpleErr::default());
+    let err = TestErr {
+        field: Some(SimpleErr),
+        ..TestErr::default()
+    };
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
@@ -200,8 +208,7 @@ fn unnamed_implicit_optional_source() {
     #[derive(Default, Debug, Error)]
     struct TestErr(Option<SimpleErr>);
 
-    let mut err = TestErr::default();
-    err.0 = Some(SimpleErr::default());
+    let err = TestErr(Some(SimpleErr));
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
@@ -234,8 +241,10 @@ fn unnamed_explicit_optional_source() {
     #[derive(Default, Debug, Error)]
     struct TestErr(#[error(source)] Option<SimpleErr>, i32);
 
-    let mut err = TestErr::default();
-    err.0 = Some(SimpleErr::default());
+    let err = TestErr {
+        0: Some(SimpleErr),
+        ..TestErr::default()
+    };
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
@@ -268,8 +277,7 @@ fn unnamed_explicit_optional_source_redundant() {
     #[derive(Default, Debug, Error)]
     struct TestErr(#[error(source)] Option<SimpleErr>);
 
-    let mut err = TestErr::default();
-    err.0 = Some(SimpleErr::default());
+    let err = TestErr(Some(SimpleErr));
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
