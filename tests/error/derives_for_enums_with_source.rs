@@ -61,7 +61,7 @@ enum TestErr {
         #[error(source)]
         field: SimpleErr,
     },
-    NamedExplicitSuppressesOptionalImplicit {
+    NamedExplicitOptionalSuppressesImplicit {
         source: i32,
         #[error(source)]
         field: Option<SimpleErr>,
@@ -235,8 +235,8 @@ fn named_explicit_suppresses_implicit() {
 }
 
 #[test]
-fn named_explicit_suppresses_optional_implicit() {
-    let err = TestErr::NamedExplicitSuppressesOptionalImplicit {
+fn named_explicit_optional_suppresses_implicit() {
+    let err = TestErr::NamedExplicitOptionalSuppressesImplicit {
         source: 0,
         field: Some(SimpleErr),
     };

@@ -504,7 +504,7 @@ fn add_bound_if_type_parameter_used_in_type(
     ty: &syn::Type,
 ) {
     if let Some(ty) = utils::get_if_type_parameter_used_in_type(type_params, ty) {
-        bounds.insert(ty);
+        bounds.insert(ty.get_option_inner().cloned().unwrap_or(ty));
     }
 }
 
@@ -512,20 +512,34 @@ fn add_bound_if_type_parameter_used_in_type(
 trait TypeExt {
     /// Checks syntactically whether this [`syn::Type`] represents an [`Option`].
     fn is_option(&self) -> bool;
+
+    /// Returns the inner [`syn::Type`] if this one represents an [`Option`].
+    fn get_option_inner(&self) -> Option<&Self>;
 }
 
 impl TypeExt for syn::Type {
     fn is_option(&self) -> bool {
+        self.get_option_inner().is_some()
+    }
+
+    fn get_option_inner(&self) -> Option<&Self> {
         match self {
-            Self::Group(g) => g.elem.is_option(),
-            Self::Paren(p) => p.elem.is_option(),
+            Self::Group(g) => g.elem.get_option_inner(),
+            Self::Paren(p) => p.elem.get_option_inner(),
             Self::Path(p) => p
                 .path
                 .segments
                 .last()
-                .map(|s| s.ident == "Option")
-                .unwrap_or_default(),
-            _ => false,
+                .filter(|s| s.ident == "Option")
+                .and_then(|s| {
+                    if let syn::PathArguments::AngleBracketed(a) = &s.arguments {
+                        if let Some(syn::GenericArgument::Type(ty)) = a.args.first() {
+                            return Some(ty);
+                        }
+                    }
+                    None
+                }),
+            _ => None,
         }
     }
 }
