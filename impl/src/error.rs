@@ -43,7 +43,7 @@ pub fn expand(
             // TODO: Use `derive_more::core::error::Error` once `error_in_core` Rust feature is
             //       stabilized.
             fn source(&self) -> Option<&(dyn derive_more::with_trait::Error + 'static)> {
-                use derive_more::__private::AsDynError;
+                use derive_more::__private::AsDynError as _;
                 #source
             }
         }
@@ -207,13 +207,17 @@ impl ParsedFields<'_, '_> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
         let source = self.source?;
         let ident = &self.data.members[source];
-        Some(render_some(quote! { #ident }))
+        Some(render_some(
+            quote! { (&#ident) },
+            self.data.field_types[source].is_option(),
+        ))
     }
 
     fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         let source = self.source?;
         let pattern = self.data.matcher(&[source], &[quote! { source }]);
-        let expr = render_some(quote! { source });
+        let expr =
+            render_some(quote! { source }, self.data.field_types[source].is_option());
         Some(quote! { #pattern => #expr })
     }
 
@@ -287,10 +291,10 @@ impl ParsedFields<'_, '_> {
     }
 }
 
-fn render_some<T>(expr: T) -> TokenStream
-where
-    T: quote::ToTokens,
-{
+fn render_some(mut expr: TokenStream, unpack: bool) -> TokenStream {
+    if unpack {
+        expr = quote! { derive_more::core::option::Option::as_ref(#expr)? }
+    }
     quote! { Some(#expr.as_dyn_error()) }
 }
 
@@ -501,5 +505,27 @@ fn add_bound_if_type_parameter_used_in_type(
 ) {
     if let Some(ty) = utils::get_if_type_parameter_used_in_type(type_params, ty) {
         bounds.insert(ty);
+    }
+}
+
+/// Extension of a [`syn::Type`] used by this expansion.
+trait TypeExt {
+    /// Checks syntactically whether this [`syn::Type`] represents an [`Option`].
+    fn is_option(&self) -> bool;
+}
+
+impl TypeExt for syn::Type {
+    fn is_option(&self) -> bool {
+        match self {
+            Self::Group(g) => g.elem.is_option(),
+            Self::Paren(p) => p.elem.is_option(),
+            Self::Path(p) => p
+                .path
+                .segments
+                .last()
+                .map(|s| s.ident == "Option")
+                .unwrap_or_default(),
+            _ => false,
+        }
     }
 }
