@@ -1,9 +1,9 @@
 # What `#[derive(Constructor)]` generates
 
 A common pattern in Rust is to create a static constructor method called
-`new`. This method is can then be used to create an instance of a struct. You
+`new`. This method can then be used to create an instance of a struct. You
 can now derive this method by using `#[derive(Constructor)]`, even though
-`Constructor` it is not an actual trait. The generated `new` method is very
+`Constructor` is not an actual trait. The generated `new` method is very
 similar to the `from` method when deriving `From`, except that it takes multiple
 arguments instead of a tuple.
 
@@ -12,7 +12,7 @@ arguments instead of a tuple.
 
 ## Tuple structs
 
-When deriving `Constructor` for a tuple struct with a two fields like this:
+When deriving `Constructor` for a tuple struct with two fields like this:
 
 ```rust
 # use derive_more::Constructor;
