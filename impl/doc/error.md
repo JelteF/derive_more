@@ -193,7 +193,7 @@ enum CompoundError {
         explicit_source: Option<WithSource>,
     },
     #[display("WithExplicitRenamedOptionalSource")]
-    WithExplicitOptionalSource {
+    WithExplicitRenamedOptionalSource {
         #[error(source(optional))]
         explicit_source: RenamedOption<WithExplicitRenamedOptionalSource>,
     },
