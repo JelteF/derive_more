@@ -325,6 +325,7 @@ fn unnamed_explicit_renamed_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn unnamed_explicit_renamed_optional_boxed_source() {
     let err = TestErr::UnnamedExplicitRenamedOptionalBoxedSource(
