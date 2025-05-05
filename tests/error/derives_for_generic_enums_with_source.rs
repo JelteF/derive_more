@@ -2,6 +2,8 @@
 
 use super::*;
 
+type RenamedOption<T> = Option<T>;
+
 derive_display!(TestErr, T, E);
 #[derive(Debug, Error)]
 enum TestErr<E, T> {
@@ -32,6 +34,11 @@ enum TestErr<E, T> {
         explicit_source: Option<E>,
         field: T,
     },
+    NamedExplicitRenamedOptionalSource {
+        #[error(source(optional))]
+        explicit_source: RenamedOption<E>,
+        field: T,
+    },
     NamedExplicitNoSourceRedundant {
         #[error(not(source))]
         field: T,
@@ -39,11 +46,6 @@ enum TestErr<E, T> {
     NamedExplicitSourceRedundant {
         #[error(source)]
         source: E,
-        field: T,
-    },
-    NamedExplicitOptionalSourceRedundant {
-        #[error(source)]
-        source: Option<E>,
         field: T,
     },
     NamedExplicitSuppressesImplicit {
@@ -62,9 +64,12 @@ enum TestErr<E, T> {
     UnnamedExplicitNoSource(#[error(not(source))] E),
     UnnamedExplicitSource(#[error(source)] E, T),
     UnnamedExplicitOptionalSource(#[error(source)] Option<E>, T),
+    UnnamedExplicitRenamedOptionalSource(
+        #[error(source(optional))] RenamedOption<E>,
+        T,
+    ),
     UnnamedExplicitNoSourceRedundant(#[error(not(source))] T, #[error(not(source))] T),
     UnnamedExplicitSourceRedundant(#[error(source)] E),
-    UnnamedExplicitOptionalSourceRedundant(#[error(source)] Option<E>),
     NamedIgnore {
         #[error(ignore)]
         source: E,
@@ -158,6 +163,17 @@ fn named_explicit_optional_source() {
 }
 
 #[test]
+fn named_explicit_renamed_optional_source() {
+    let err = TestErr::NamedExplicitRenamedOptionalSource {
+        explicit_source: Some(SimpleErr),
+        field: 0,
+    };
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
 fn named_explicit_no_source_redundant() {
     let err = TestErr::<SimpleErr, _>::NamedExplicitNoSourceRedundant { field: 0 };
 
@@ -168,17 +184,6 @@ fn named_explicit_no_source_redundant() {
 fn named_explicit_source_redundant() {
     let err = TestErr::NamedExplicitSourceRedundant {
         source: SimpleErr,
-        field: 0,
-    };
-
-    assert!(err.source().is_some());
-    assert!(err.source().unwrap().is::<SimpleErr>());
-}
-
-#[test]
-fn named_explicit_optional_source_redundant() {
-    let err = TestErr::NamedExplicitOptionalSourceRedundant {
-        source: Some(SimpleErr),
         field: 0,
     };
 
@@ -255,19 +260,18 @@ fn unnamed_explicit_optional_source() {
 }
 
 #[test]
+fn unnamed_explicit_renamed_optional_source() {
+    let err = TestErr::UnnamedExplicitRenamedOptionalSource(Some(SimpleErr), 0);
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
 fn unnamed_explicit_no_source_redundant() {
     let err = TestErr::<SimpleErr, _>::UnnamedExplicitNoSourceRedundant(0, 0);
 
     assert!(err.source().is_none());
-}
-
-#[test]
-fn unnamed_explicit_optional_source_redundant() {
-    let err =
-        TestErr::<_, i32>::UnnamedExplicitOptionalSourceRedundant(Some(SimpleErr));
-
-    assert!(err.source().is_some());
-    assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
 #[test]

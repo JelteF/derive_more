@@ -15,13 +15,13 @@ enum TestErr {
         source: SimpleErr,
         field: i32,
     },
-    NamedImplicitOptionalSource {
-        source: Option<SimpleErr>,
-        field: i32,
-    },
     #[cfg(feature = "std")]
     NamedImplicitBoxedSource {
         source: Box<dyn Error + Send + 'static>,
+        field: i32,
+    },
+    NamedImplicitOptionalSource {
+        source: Option<SimpleErr>,
         field: i32,
     },
     #[cfg(feature = "std")]
@@ -327,7 +327,10 @@ fn unnamed_explicit_renamed_optional_source() {
 
 #[test]
 fn unnamed_explicit_renamed_optional_boxed_source() {
-    let err = TestErr::UnnamedExplicitRenamedOptionalBoxedSource(Some(Box::new(SimpleErr)), 0);
+    let err = TestErr::UnnamedExplicitRenamedOptionalBoxedSource(
+        Some(Box::new(SimpleErr)),
+        0,
+    );
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());
