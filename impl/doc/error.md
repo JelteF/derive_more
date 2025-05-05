@@ -89,11 +89,11 @@ Deriving `source()` is supported naturally for `Option<_>`-typed fields.
 ## Example usage
 
 ```rust
-# #![cfg_attr(nightly, feature(error_generic_member_access))]
+# #![rustversion::attr(nightly, feature(error_generic_member_access))]
 // Nightly requires enabling this feature:
 // #![feature(error_generic_member_access)]
-# #[cfg(not(nightly))] fn main() {}
-# #[cfg(nightly)] fn main() {
+# #[rustversion::not(nightly)] fn main() {}
+# #[rustversion::nightly] fn main() {
 # use core::error::{request_ref, request_value, Error as __};
 # use std::backtrace::Backtrace;
 #
