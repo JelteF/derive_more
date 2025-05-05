@@ -346,10 +346,15 @@ fn parse_fields<'input, 'state>(
     }?;
 
     if let Some(source) = parsed_fields.source {
+        let is_optional = parsed_fields.data.infos[source].info.source_optional
+            == Some(true)
+            || state.fields[source].ty.is_option();
+
         add_bound_if_type_parameter_used_in_type(
             &mut parsed_fields.bounds,
             type_params,
             &state.fields[source].ty,
+            is_optional,
         );
     }
 
@@ -504,9 +509,16 @@ fn add_bound_if_type_parameter_used_in_type(
     bounds: &mut HashSet<syn::Type>,
     type_params: &HashSet<syn::Ident>,
     ty: &syn::Type,
+    unpack: bool,
 ) {
     if let Some(ty) = utils::get_if_type_parameter_used_in_type(type_params, ty) {
-        bounds.insert(ty.get_option_inner().cloned().unwrap_or(ty));
+        bounds.insert(
+            unpack
+                .then(|| ty.get_inner())
+                .flatten()
+                .cloned()
+                .unwrap_or(ty),
+        );
     }
 }
 
@@ -515,8 +527,20 @@ trait TypeExt {
     /// Checks syntactically whether this [`syn::Type`] represents an [`Option`].
     fn is_option(&self) -> bool;
 
+    /// Returns the inner [`syn::Type`] if this one represents a wrapper.
+    ///
+    /// `filter` filters out this [`syn::Type`] by its name.
+    fn get_inner_if(&self, filter: impl Fn(&syn::Ident) -> bool) -> Option<&Self>;
+
+    /// Returns the inner [`syn::Type`] if this one represents a wrapper.
+    fn get_inner(&self) -> Option<&Self> {
+        self.get_inner_if(|_| true)
+    }
+
     /// Returns the inner [`syn::Type`] if this one represents an [`Option`].
-    fn get_option_inner(&self) -> Option<&Self>;
+    fn get_option_inner(&self) -> Option<&Self> {
+        self.get_inner_if(|ident| ident == "Option")
+    }
 }
 
 impl TypeExt for syn::Type {
@@ -524,7 +548,7 @@ impl TypeExt for syn::Type {
         self.get_option_inner().is_some()
     }
 
-    fn get_option_inner(&self) -> Option<&Self> {
+    fn get_inner_if(&self, filter: impl Fn(&syn::Ident) -> bool) -> Option<&Self> {
         match self {
             Self::Group(g) => g.elem.get_option_inner(),
             Self::Paren(p) => p.elem.get_option_inner(),
@@ -532,7 +556,7 @@ impl TypeExt for syn::Type {
                 .path
                 .segments
                 .last()
-                .filter(|s| s.ident == "Option")
+                .filter(|s| filter(&s.ident))
                 .and_then(|s| {
                     if let syn::PathArguments::AngleBracketed(a) = &s.arguments {
                         if let Some(syn::GenericArgument::Type(ty)) = a.args.first() {

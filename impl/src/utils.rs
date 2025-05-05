@@ -920,7 +920,7 @@ fn parse_punctuated_nested_meta(
                     (None, "owned") => info.owned = Some(true),
                     (None, "ref") => info.ref_ = Some(true),
                     (None, "ref_mut") => info.ref_mut = Some(true),
-                    
+
                     (None, "source") => info.source = Some(true),
 
                     #[cfg(any(feature = "from", feature = "into"))]
