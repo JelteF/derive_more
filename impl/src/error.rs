@@ -181,7 +181,7 @@ fn allowed_attr_params() -> AttrParams {
         enum_: vec!["ignore"],
         struct_: vec!["ignore"],
         variant: vec!["ignore"],
-        field: vec!["ignore", "source", "backtrace"],
+        field: vec!["ignore", "source", "optional", "backtrace"],
     }
 }
 
@@ -207,17 +207,19 @@ impl ParsedFields<'_, '_> {
     fn render_source_as_struct(&self) -> Option<TokenStream> {
         let source = self.source?;
         let ident = &self.data.members[source];
-        Some(render_some(
-            quote! { (&#ident) },
-            self.data.field_types[source].is_option(),
-        ))
+        let is_optional = self.data.infos[source].info.source_optional == Some(true)
+            || self.data.field_types[source].is_option();
+
+        Some(render_some(quote! { (&#ident) }, is_optional))
     }
 
     fn render_source_as_enum_variant_match_arm(&self) -> Option<TokenStream> {
         let source = self.source?;
         let pattern = self.data.matcher(&[source], &[quote! { source }]);
-        let expr =
-            render_some(quote! { source }, self.data.field_types[source].is_option());
+        let is_optional = self.data.infos[source].info.source_optional == Some(true)
+            || self.data.field_types[source].is_option();
+
+        let expr = render_some(quote! { source }, is_optional);
         Some(quote! { #pattern => #expr })
     }
 
