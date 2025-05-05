@@ -83,6 +83,20 @@ Deriving `source()` is supported naturally for `Option<_>`-typed fields.
 >   struct Option<T>(T);
 >   ```
 
+> **TIP**: If `std::option::Option` for some reason needs to be renamed,
+> annotate the field with the `#[error(source(optional))]` attribute:
+> ```rust
+> # use derive_more::{Display, Error};
+> #
+> #[derive(Debug, Display, Error)]
+> struct Simple;
+>
+> #[derive(Debug, Display, Error)]
+> #[display("Oops!")]
+> struct Generic(#[error(source(optional))] RenamedOption<Simple>);
+> type RenamedOption<T> = Option<T>;
+>  ```
+
 
 
 
@@ -90,17 +104,19 @@ Deriving `source()` is supported naturally for `Option<_>`-typed fields.
 
 ```rust
 # #![cfg_attr(nightly, feature(error_generic_member_access))]
-// Nightly requires enabling this feature:
-// #![feature(error_generic_member_access)]
+# // Nightly requires enabling this feature:
+# // #![feature(error_generic_member_access)]
 # #[cfg(not(nightly))] fn main() {}
 # #[cfg(nightly)] fn main() {
 # use core::error::{request_ref, request_value, Error as __};
 # use std::backtrace::Backtrace;
 #
 # use derive_more::{Display, Error, From};
-
-// std::error::Error requires std::fmt::Debug and std::fmt::Display,
-// so we can also use derive_more::Display for fully declarative
+#
+# type RenamedOption<T> = Option<T>;
+#
+// `std::error::Error` requires `std::fmt::Debug` and `std::fmt::Display`,
+// so we can also use `derive_more::Display` for fully declarative
 // error-type definitions.
 
 #[derive(Default, Debug, Display, Error)]
@@ -125,6 +141,12 @@ struct WithExplicitSource {
 struct WithExplicitOptionalSource {
     #[error(source)]
     explicit_source: Option<Simple>,
+}
+#[derive(Default, Debug, Display, Error)]
+#[display("WithExplicitOptionalSource")]
+struct WithExplicitRenamedOptionalSource {
+    #[error(source(optional))]
+    explicit_source: RenamedOption<Simple>,
 }
 
 #[derive(Default, Debug, Display, Error)]
@@ -170,6 +192,11 @@ enum CompoundError {
         #[error(source)]
         explicit_source: Option<WithSource>,
     },
+    #[display("WithExplicitRenamedOptionalSource")]
+    WithExplicitRenamedOptionalSource {
+        #[error(source(optional))]
+        explicit_source: RenamedOption<WithExplicitRenamedOptionalSource>,
+    },
     #[from(ignore)]
     WithBacktraceFromExplicitSource {
         #[error(backtrace, source)]
@@ -189,6 +216,7 @@ assert!(WithOptionalSource { source: Some(Simple) }.source().is_some());
 
 assert!(WithExplicitSource::default().source().is_some());
 assert!(WithExplicitOptionalSource { explicit_source: Some(Simple) }.source().is_some());
+assert!(WithExplicitRenamedOptionalSource { explicit_source: Some(Simple) }.source().is_some());
 
 assert!(Tuple::default().source().is_some());
 
@@ -211,6 +239,7 @@ assert!(CompoundError::from(Some(WithSource::default())).source().is_some());
 
 assert!(CompoundError::from(WithExplicitSource::default()).source().is_some());
 assert!(CompoundError::from(Some(WithExplicitSource::default())).source().is_some());
+assert!(CompoundError::from(Some(WithExplicitRenamedOptionalSource { explicit_source: Some(Simple) })).source().is_some());
 
 assert!(CompoundError::from(Tuple::default()).source().is_none());
 # }

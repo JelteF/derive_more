@@ -921,6 +921,8 @@ fn parse_punctuated_nested_meta(
                     (None, "ref") => info.ref_ = Some(true),
                     (None, "ref_mut") => info.ref_mut = Some(true),
 
+                    (None, "source") => info.source = Some(true),
+
                     #[cfg(any(feature = "from", feature = "into"))]
                     (None, "types")
                     | (Some("owned"), "types")
@@ -1022,6 +1024,7 @@ fn parse_punctuated_nested_meta(
                     (None, "ref_mut") => info.ref_mut = Some(true),
                     (None, "source") => info.source = Some(true),
                     (Some("not"), "source") => info.source = Some(false),
+                    (Some("source"), "optional") => info.source_optional = Some(true),
                     (None, "backtrace") => info.backtrace = Some(true),
                     (Some("not"), "backtrace") => info.backtrace = Some(false),
                     _ => {
@@ -1218,6 +1221,7 @@ pub struct MetaInfo {
     pub ref_: Option<bool>,
     pub ref_mut: Option<bool>,
     pub source: Option<bool>,
+    pub source_optional: Option<bool>,
     pub backtrace: Option<bool>,
     #[cfg(any(feature = "from", feature = "into"))]
     pub types: HashMap<RefType, HashSet<syn::Type>>,
