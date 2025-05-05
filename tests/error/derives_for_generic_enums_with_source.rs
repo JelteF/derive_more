@@ -13,6 +13,10 @@ enum TestErr<E, T> {
         source: E,
         field: T,
     },
+    NamedImplicitOptionalSource {
+        source: Option<E>,
+        field: T,
+    },
     NamedExplicitNoSource {
         #[error(not(source))]
         source: E,
@@ -21,6 +25,11 @@ enum TestErr<E, T> {
     NamedExplicitSource {
         #[error(source)]
         explicit_source: E,
+        field: T,
+    },
+    NamedExplicitOptionalSource {
+        #[error(source)]
+        explicit_source: Option<E>,
         field: T,
     },
     NamedExplicitNoSourceRedundant {
@@ -32,17 +41,30 @@ enum TestErr<E, T> {
         source: E,
         field: T,
     },
+    NamedExplicitOptionalSourceRedundant {
+        #[error(source)]
+        source: Option<E>,
+        field: T,
+    },
     NamedExplicitSuppressesImplicit {
         source: T,
         #[error(source)]
         field: E,
     },
+    NamedExplicitOptionalSuppressesImplicit {
+        source: T,
+        #[error(source)]
+        field: Option<E>,
+    },
     UnnamedImplicitNoSource(T, T),
     UnnamedImplicitSource(E),
+    UnnamedImplicitOptionalSource(Option<E>),
     UnnamedExplicitNoSource(#[error(not(source))] E),
     UnnamedExplicitSource(#[error(source)] E, T),
+    UnnamedExplicitOptionalSource(#[error(source)] Option<E>, T),
     UnnamedExplicitNoSourceRedundant(#[error(not(source))] T, #[error(not(source))] T),
     UnnamedExplicitSourceRedundant(#[error(source)] E),
+    UnnamedExplicitOptionalSourceRedundant(#[error(source)] Option<E>),
     NamedIgnore {
         #[error(ignore)]
         source: E,
@@ -93,6 +115,17 @@ fn named_implicit_source() {
 }
 
 #[test]
+fn named_implicit_optional_source() {
+    let err = TestErr::NamedImplicitOptionalSource {
+        source: Some(SimpleErr),
+        field: 0,
+    };
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
 fn named_explicit_no_source() {
     let err = TestErr::NamedExplicitNoSource {
         source: SimpleErr,
@@ -106,6 +139,17 @@ fn named_explicit_no_source() {
 fn named_explicit_source() {
     let err = TestErr::NamedExplicitSource {
         explicit_source: SimpleErr,
+        field: 0,
+    };
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
+fn named_explicit_optional_source() {
+    let err = TestErr::NamedExplicitOptionalSource {
+        explicit_source: Some(SimpleErr),
         field: 0,
     };
 
@@ -132,10 +176,32 @@ fn named_explicit_source_redundant() {
 }
 
 #[test]
+fn named_explicit_optional_source_redundant() {
+    let err = TestErr::NamedExplicitOptionalSourceRedundant {
+        source: Some(SimpleErr),
+        field: 0,
+    };
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
 fn named_explicit_suppresses_implicit() {
     let err = TestErr::NamedExplicitSuppressesImplicit {
         source: 0,
         field: SimpleErr,
+    };
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
+fn named_explicit_optional_suppresses_implicit() {
+    let err = TestErr::NamedExplicitOptionalSuppressesImplicit {
+        source: 0,
+        field: Some(SimpleErr),
     };
 
     assert!(err.source().is_some());
@@ -158,6 +224,14 @@ fn unnamed_implicit_source() {
 }
 
 #[test]
+fn unnamed_implicit_optional_source() {
+    let err = TestErr::<_, i32>::UnnamedImplicitOptionalSource(Some(SimpleErr));
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
 fn unnamed_explicit_no_source() {
     let err = TestErr::<_, i32>::UnnamedExplicitNoSource(SimpleErr);
 
@@ -173,6 +247,14 @@ fn unnamed_explicit_source() {
 }
 
 #[test]
+fn unnamed_explicit_optional_source() {
+    let err = TestErr::UnnamedExplicitOptionalSource(Some(SimpleErr), 0);
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
 fn unnamed_explicit_no_source_redundant() {
     let err = TestErr::<SimpleErr, _>::UnnamedExplicitNoSourceRedundant(0, 0);
 
@@ -180,8 +262,9 @@ fn unnamed_explicit_no_source_redundant() {
 }
 
 #[test]
-fn unnamed_explicit_source_redundant() {
-    let err = TestErr::<_, i32>::UnnamedExplicitSourceRedundant(SimpleErr);
+fn unnamed_explicit_optional_source_redundant() {
+    let err =
+        TestErr::<_, i32>::UnnamedExplicitOptionalSourceRedundant(Some(SimpleErr));
 
     assert!(err.source().is_some());
     assert!(err.source().unwrap().is::<SimpleErr>());

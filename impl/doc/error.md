@@ -52,6 +52,38 @@ Backtraces don't work though, because the `Backtrace` type is only available in
 `std`.
 
 
+### `Option`al fields
+
+Deriving `source()` is supported naturally for `Option<_>`-typed fields.
+
+> **WARNING**: Field type is **considered as `Option<_>` only syntactically**,
+> meaning that:
+> - Neither renaming `std::option::Option` would work:
+>   ```rust,compile_fail
+>   # use derive_more::{Display, Error};
+>   #
+>   #[derive(Debug, Display, Error)]
+>   struct Simple;
+>
+>   #[derive(Debug, Display, Error)]
+>   #[display("Oops!")]
+>   struct Generic(RenamedOption<Simple>); // not recognized as `Option`
+>   type RenamedOption<T> = Option<T>;
+>   ```
+> - Nor using any custom type named as `Option` would:
+>   ```rust,compile_fail
+>   # use derive_more::{Display, Error};
+>   #
+>   # #[derive(Debug, Display, Error)]
+>   # struct Simple;
+>   #
+>   #[derive(Debug, Display, Error)]
+>   #[display("No way!")]
+>   struct Generic(Option<Simple>);        // cannot use `?` syntax
+>   struct Option<T>(T);
+>   ```
+
+
 
 
 ## Example usage
@@ -79,9 +111,20 @@ struct WithSource {
     source: Simple,
 }
 #[derive(Default, Debug, Display, Error)]
+#[display("WithOptionalSource")]
+struct WithOptionalSource {
+    source: Option<Simple>,
+}
+#[derive(Default, Debug, Display, Error)]
 struct WithExplicitSource {
     #[error(source)]
     explicit_source: Simple,
+}
+#[derive(Default, Debug, Display, Error)]
+#[display("WithExplicitOptionalSource")]
+struct WithExplicitOptionalSource {
+    #[error(source)]
+    explicit_source: Option<Simple>,
 }
 
 #[derive(Default, Debug, Display, Error)]
@@ -104,6 +147,10 @@ enum CompoundError {
     WithSource {
         source: Simple,
     },
+    #[display("WithOptionalSource")]
+    WithOptionalSource {
+        source: Option<Simple>,
+    },
     #[from(ignore)]
     WithBacktraceFromSource {
         #[error(backtrace)]
@@ -118,21 +165,35 @@ enum CompoundError {
         #[error(source)]
         explicit_source: WithSource,
     },
+    #[display("WithExplicitOptionalSource")]
+    WithExplicitOptionalSource {
+        #[error(source)]
+        explicit_source: Option<WithSource>,
+    },
     #[from(ignore)]
     WithBacktraceFromExplicitSource {
         #[error(backtrace, source)]
         explicit_source: WithSource,
     },
     Tuple(WithExplicitSource),
+    #[display("TupleOptional")]
+    TupleOptional(Option<WithExplicitSource>),
     WithoutSource(#[error(not(source))] Tuple),
 }
 
 assert!(Simple.source().is_none());
 assert!(request_ref::<Backtrace>(&Simple).is_none());
+
 assert!(WithSource::default().source().is_some());
+assert!(WithOptionalSource { source: Some(Simple) }.source().is_some());
+
 assert!(WithExplicitSource::default().source().is_some());
+assert!(WithExplicitOptionalSource { explicit_source: Some(Simple) }.source().is_some());
+
 assert!(Tuple::default().source().is_some());
+
 assert!(WithoutSource::default().source().is_none());
+
 let with_source_and_backtrace = WithSourceAndBacktrace {
     source: Simple,
     backtrace: Backtrace::capture(),
@@ -141,9 +202,16 @@ assert!(with_source_and_backtrace.source().is_some());
 assert!(request_ref::<Backtrace>(&with_source_and_backtrace).is_some());
 
 assert!(CompoundError::Simple.source().is_none());
+
 assert!(CompoundError::from(Simple).source().is_some());
+assert!(CompoundError::from(Some(Simple)).source().is_some());
+
 assert!(CompoundError::from(WithSource::default()).source().is_some());
+assert!(CompoundError::from(Some(WithSource::default())).source().is_some());
+
 assert!(CompoundError::from(WithExplicitSource::default()).source().is_some());
+assert!(CompoundError::from(Some(WithExplicitSource::default())).source().is_some());
+
 assert!(CompoundError::from(Tuple::default()).source().is_none());
 # }
 ```
