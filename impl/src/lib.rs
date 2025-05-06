@@ -37,8 +37,6 @@ mod fmt;
 mod from;
 #[cfg(feature = "from_str")]
 mod from_str;
-#[cfg(feature = "from_str")]
-mod from_str2;
 #[cfg(feature = "index")]
 mod index;
 #[cfg(feature = "index_mut")]

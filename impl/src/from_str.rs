@@ -176,7 +176,6 @@ impl ToTokens for EnumFlatExpansion<'_> {
             impl #impl_generics derive_more::core::str::FromStr for #ty #ty_generics #where_clause {
                 type Err = derive_more::FromStrError;
 
-                #[inline]
                 fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
                     derive_more::core::result::Result::Ok(match s.to_lowercase().as_str() {
                         #( #match_arms )*
