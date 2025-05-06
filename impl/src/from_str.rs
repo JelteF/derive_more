@@ -53,6 +53,13 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
                 "expected a struct for forward `FromStr` derive",
             ));
         };
+        if let Some(attr) = input
+            .attrs
+            .iter()
+            .find(|attr| attr.path().is_ident("from_str"))
+        {
+            return Err(syn::Error::new(attr.path().span(), "no attribute is allowed here"));
+        }
 
         // TODO: Unite these two conditions via `&&` once MSRV is bumped to 1.88 or above.
         if data.fields.len() != 1 {
