@@ -1,4 +1,4 @@
-use core::{fmt, error::Error};
+use core::{error::Error, fmt};
 
 /// Error returned by the derived [`TryUnwrap`] implementation.
 ///

@@ -1,4 +1,4 @@
-use core::{panic::UnwindSafe, error::Error};
+use core::{error::Error, panic::UnwindSafe};
 
 #[doc(hidden)]
 pub trait AsDynError<'a>: Sealed {

@@ -1,6 +1,6 @@
 //! Definitions used in derived implementations of [`core::ops::Add`]-like traits.
 
-use core::{fmt, error::Error};
+use core::{error::Error, fmt};
 
 use crate::UnitError;
 

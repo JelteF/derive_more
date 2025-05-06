@@ -7,7 +7,7 @@ pub use self::try_into::TryIntoError;
 
 #[cfg(feature = "try_from")]
 mod try_from {
-    use core::{fmt, error::Error};
+    use core::{error::Error, fmt};
 
     /// Error returned by the derived [`TryFrom`] implementation on enums to
     /// convert from their repr.
@@ -48,7 +48,7 @@ mod try_from {
 
 #[cfg(feature = "try_into")]
 mod try_into {
-    use core::{fmt, error::Error};
+    use core::{error::Error, fmt};
 
     /// Error returned by the derived [`TryInto`] implementation.
     ///
@@ -90,6 +90,6 @@ mod try_into {
             )
         }
     }
-    
+
     impl<T: fmt::Debug> Error for TryIntoError<T> {}
 }

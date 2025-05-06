@@ -1,4 +1,4 @@
-use core::{fmt, error::Error};
+use core::{error::Error, fmt};
 
 /// Error of parsing an enum value its string representation.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
