@@ -1,6 +1,6 @@
 //! Definitions used in derived implementations of [`core::ops::Add`]-like traits.
 
-use core::fmt;
+use core::{error::Error, fmt};
 
 use crate::UnitError;
 
@@ -30,8 +30,7 @@ impl fmt::Display for WrongVariantError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for WrongVariantError {}
+impl Error for WrongVariantError {}
 
 /// Possible errors returned by the derived implementations of binary
 /// arithmetic or logic operations.
@@ -53,9 +52,8 @@ impl fmt::Display for BinaryError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for BinaryError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl Error for BinaryError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Mismatch(e) => e.source(),
             Self::Unit(e) => e.source(),

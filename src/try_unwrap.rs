@@ -1,3 +1,5 @@
+use core::{error::Error, fmt};
+
 /// Error returned by the derived [`TryUnwrap`] implementation.
 ///
 /// [`TryUnwrap`]: macro@crate::TryUnwrap
@@ -32,8 +34,8 @@ impl<T> TryUnwrapError<T> {
     }
 }
 
-impl<T> core::fmt::Display for TryUnwrapError<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl<T> fmt::Display for TryUnwrapError<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Attempt to call `{enum_name}::{func_name}()` on a `{enum_name}::{variant_name}` value",
@@ -44,5 +46,4 @@ impl<T> core::fmt::Display for TryUnwrapError<T> {
     }
 }
 
-#[cfg(feature = "std")]
-impl<T: core::fmt::Debug> std::error::Error for TryUnwrapError<T> {}
+impl<T: fmt::Debug> Error for TryUnwrapError<T> {}

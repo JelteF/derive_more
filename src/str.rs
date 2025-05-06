@@ -1,4 +1,4 @@
-use core::fmt;
+use core::{error::Error, fmt};
 
 /// Error of parsing an enum value its string representation.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -21,5 +21,4 @@ impl fmt::Display for FromStrError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for FromStrError {}
+impl Error for FromStrError {}

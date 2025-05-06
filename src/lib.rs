@@ -192,10 +192,7 @@ pub mod with_trait {
             UpperHex,
         );
 
-        #[cfg(not(feature = "std"))]
         re_export_traits!("error", error_traits, core::error, Error);
-        #[cfg(feature = "std")]
-        re_export_traits!("error", error_traits, std::error, Error);
 
         re_export_traits!("from", from_traits, core::convert, From);
 

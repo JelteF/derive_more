@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support `Option` fields for `Error::source()` in `Error` derive.
   ([#459](https://github.com/JelteF/derive_more/pull/459))
 
+### Changed
+
+- The minimum supported Rust version (MSRV) is now Rust 1.81.
+  ([#466](https://github.com/JelteF/derive_more/pull/466))
+
 ### Fixed
 
 - Suppress deprecation warnings in generated code.

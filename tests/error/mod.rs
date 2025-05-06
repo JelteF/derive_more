@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
 use derive_more::with_trait::Error;
 
 /// Derives `std::fmt::Display` for structs/enums.

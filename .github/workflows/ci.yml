@@ -54,7 +54,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        msrv: ["1.75.0"]
         os:
           - ubuntu
           - macOS
@@ -62,12 +61,19 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: SebRollen/toml-action@v1.2.0
+        id: msrv
+        with:
+          file: Cargo.toml
+          field: package.rust-version
+
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
       - uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: ${{ matrix.msrv }}
+          toolchain: ${{ steps.msrv.outputs.value }}
 
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions

@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/crates/v/derive_more.svg)](https://crates.io/crates/derive_more)
 [![Rust Documentation](https://docs.rs/derive_more/badge.svg)](https://docs.rs/derive_more)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/JelteF/derive_more/master/LICENSE)
-[![Rust 1.75+](https://img.shields.io/badge/rustc-1.75+-lightgray.svg)](https://blog.rust-lang.org/2023/12/28/Rust-1.75.0.html)
+[![Rust 1.81+](https://img.shields.io/badge/rustc-1.81+-lightgray.svg)](https://blog.rust-lang.org/2024/09/05/Rust-1.81.0)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
 Rust has lots of builtin traits that are implemented for its basic types, such
@@ -216,7 +216,7 @@ extern crate derive_more;
 
 ## [MSRV] policy
 
-This library requires Rust 1.75 or higher.
+This library requires Rust 1.81 or higher.
 
 Changing [MSRV] (minimum supported Rust version) of this crate is treated as a **minor version change** in terms of [Semantic Versioning].
 - So, if [MSRV] changes are **NOT concerning** for your project, just use the default [caret requirement]:
