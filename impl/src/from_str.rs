@@ -5,8 +5,13 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{parse_quote, spanned::Spanned as _};
+
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    Spanning,
+};
 
 /// Expands a [`FromStr`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -119,6 +124,10 @@ struct EnumFlatExpansion<'i> {
     ///
     /// [`syn::Ident`]: struct@syn::Ident
     variants: Vec<&'i syn::Ident>,
+
+    /// Optional [`attr::RenameAll`] indicating the case convertion to be applied to all the enum
+    /// variants.
+    rename_all: Option<attr::RenameAll>,
 }
 
 impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
@@ -150,6 +159,11 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
             ident: &input.ident,
             generics: &input.generics,
             variants,
+            rename_all: attr::RenameAll::parse_attrs(
+                &input.attrs,
+                &format_ident!("from_str"),
+            )?
+            .map(Spanning::into_inner),
         })
     }
 }
@@ -161,24 +175,38 @@ impl ToTokens for EnumFlatExpansion<'_> {
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
         let ty_name = ty.to_string();
 
-        let similar_lowercased = self
-            .variants
-            .iter()
-            .map(|v| v.to_string().to_lowercase())
-            .fold(<HashMap<_, u8>>::new(), |mut counts, v| {
-                *counts.entry(v).or_default() += 1;
-                counts
-            });
+        let match_arms = if let Some(rename_all) = self.rename_all {
+            self.variants
+                .iter()
+                .map(|variant| {
+                    let converted = rename_all.convert_case(&variant.to_string());
 
-        let match_arms = self.variants.iter().map(|variant| {
-            let name = variant.to_string();
-            let lowercased = name.to_lowercase();
+                    quote! { #converted => Self::#variant, }
+                })
+                .collect::<Vec<_>>()
+        } else {
+            let similar_lowercased = self
+                .variants
+                .iter()
+                .map(|v| v.to_string().to_lowercase())
+                .fold(<HashMap<_, u8>>::new(), |mut counts, v| {
+                    *counts.entry(v).or_default() += 1;
+                    counts
+                });
 
-            let exact_guard =
-                (similar_lowercased[&lowercased] > 1).then(|| quote! { if s == #name });
+            self.variants
+                .iter()
+                .map(|variant| {
+                    let name = variant.to_string();
+                    let lowercased = name.to_lowercase();
 
-            quote! { #lowercased #exact_guard => Self::#variant, }
-        });
+                    let exact_guard = (similar_lowercased[&lowercased] > 1)
+                        .then(|| quote! { if s == #name });
+
+                    quote! { #lowercased #exact_guard => Self::#variant, }
+                })
+                .collect()
+        };
 
         quote! {
             #[automatically_derived]
