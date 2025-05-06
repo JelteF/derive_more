@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Breaking changes
 
 - The minimum supported Rust version (MSRV) is now Rust 1.81.
+  ([#466](https://github.com/JelteF/derive_more/pull/466))
 
 ### Added
 

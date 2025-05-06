@@ -44,7 +44,7 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 
 ### What works in `no_std`?
 
-`Error` derive fully work on `no_std` environments except the `provide()`
+`Error` derive fully works on `no_std` environments, except the `provide()`
 method usage, because the `Backtrace` type is only available in `std`.
 
 
