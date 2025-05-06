@@ -58,7 +58,10 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
             .iter()
             .find(|attr| attr.path().is_ident("from_str"))
         {
-            return Err(syn::Error::new(attr.path().span(), "no attribute is allowed here"));
+            return Err(syn::Error::new(
+                attr.path().span(),
+                "no attribute is allowed here",
+            ));
         }
 
         // TODO: Unite these two conditions via `&&` once MSRV is bumped to 1.88 or above.
@@ -130,7 +133,7 @@ struct EnumFlatExpansion<'i> {
     /// [`syn::Ident`]s of the enum variants.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    variants: Vec<&'i syn::Ident>,
+    variants: Vec<(&'i syn::Ident, Option<attr::RenameAll>)>,
 
     /// Optional [`attr::RenameAll`] indicating the case convertion to be applied to all the enum
     /// variants.
@@ -147,6 +150,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
                 "expected an enum for flat `FromStr` derive",
             ));
         };
+        let attr_ident = &format_ident!("from_str");
 
         let variants = data
             .variants
@@ -158,7 +162,9 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
                         "only enums with no fields can derive `FromStr`",
                     ));
                 }
-                Ok(&variant.ident)
+                let attr = attr::RenameAll::parse_attrs(&variant.attrs, attr_ident)?
+                    .map(Spanning::into_inner);
+                Ok((&variant.ident, attr))
             })
             .collect::<syn::Result<_>>()?;
 
@@ -166,11 +172,8 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
             ident: &input.ident,
             generics: &input.generics,
             variants,
-            rename_all: attr::RenameAll::parse_attrs(
-                &input.attrs,
-                &format_ident!("from_str"),
-            )?
-            .map(Spanning::into_inner),
+            rename_all: attr::RenameAll::parse_attrs(&input.attrs, attr_ident)?
+                .map(Spanning::into_inner),
         })
     }
 }
@@ -185,36 +188,47 @@ impl ToTokens for EnumFlatExpansion<'_> {
         let scrutinee_lowercased = self
             .rename_all
             .is_none()
-            .then(|| quote! {.to_lowercase().as_str()});
-        let match_arms = if let Some(rename_all) = self.rename_all {
+            .then(|| quote! { .to_lowercase().as_str() });
+        let match_arms = if let Some(enum_rename) = self.rename_all {
             self.variants
                 .iter()
-                .map(|variant| {
-                    let converted = rename_all.convert_case(&variant.to_string());
+                .map(|(variant, variant_rename)| {
+                    let converted = variant_rename
+                        .unwrap_or(enum_rename)
+                        .convert_case(&variant.to_string());
 
                     quote! { #converted => Self::#variant, }
                 })
                 .collect::<Vec<_>>()
         } else {
-            let similar_lowercased = self
-                .variants
-                .iter()
-                .map(|v| v.to_string().to_lowercase())
-                .fold(<HashMap<_, u8>>::new(), |mut counts, v| {
-                    *counts.entry(v).or_default() += 1;
-                    counts
-                });
+            let mut similar_lowercased = <HashMap<_, u8>>::new();
+            for (variant, variant_rename) in &self.variants {
+                let name = variant.to_string();
+                let lowercased = name.to_lowercase();
+                if let Some(rename) = variant_rename {
+                    let renamed_lowercased = rename.convert_case(&name);
+                    if renamed_lowercased != lowercased {
+                        *similar_lowercased.entry(renamed_lowercased).or_default() += 1;
+                    }
+                }
+                *similar_lowercased.entry(lowercased).or_default() += 1;
+            }
 
             self.variants
                 .iter()
-                .map(|variant| {
+                .map(|(variant, variant_rename)| {
                     let name = variant.to_string();
-                    let lowercased = name.to_lowercase();
+                    if let Some(rename) = variant_rename {
+                        let exact_name = rename.convert_case(&name);
 
-                    let exact_guard = (similar_lowercased[&lowercased] > 1)
-                        .then(|| quote! { if s == #name });
+                        quote! { _ if s == #exact_name => Self::#variant, }
+                    } else {
+                        let lowercased = name.to_lowercase();
+                        let exact_guard = (similar_lowercased[&lowercased] > 1)
+                            .then(|| quote! { if s == #name });
 
-                    quote! { #lowercased #exact_guard => Self::#variant, }
+                        quote! { #lowercased #exact_guard => Self::#variant, }
+                    }
                 })
                 .collect()
         };
