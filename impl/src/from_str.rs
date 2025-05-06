@@ -91,7 +91,7 @@ impl ToTokens for ForwardExpansion<'_> {
 
                 #[inline]
                 fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
-                    derive_more::core::str::FromStr::from_str(s).map(|v| #constructor);
+                    derive_more::core::str::FromStr::from_str(s).map(|v| #constructor)
                 }
             }
         }.to_tokens(tokens);
@@ -165,10 +165,10 @@ impl ToTokens for EnumFlatExpansion<'_> {
             let name = variant.to_string();
             let lowercased = name.to_lowercase();
 
-            let guard =
+            let exact_guard =
                 (similar_lowercased[&lowercased] > 1).then(|| quote! { if s == #name });
-            
-            quote! { #lowercased #guard=> Self::#variant, }
+
+            quote! { #lowercased #exact_guard => Self::#variant, }
         });
 
         quote! {
@@ -176,7 +176,9 @@ impl ToTokens for EnumFlatExpansion<'_> {
             impl #impl_generics derive_more::core::str::FromStr for #ty #ty_generics #where_clause {
                 type Err = derive_more::FromStrError;
 
-                fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
+                fn from_str(
+                    s: &str,
+                ) -> derive_more::core::result::Result<Self, derive_more::FromStrError> {
                     derive_more::core::result::Result::Ok(match s.to_lowercase().as_str() {
                         #( #match_arms )*
                         _ => return derive_more::core::result::Result::Err(
