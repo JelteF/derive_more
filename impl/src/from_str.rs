@@ -1,113 +1,97 @@
-use crate::utils::{DeriveType, HashMap};
-use crate::utils::{SingleFieldData, State};
+//! Implementation of a [`FromStr`] derive macro.
+
+#[cfg(doc)]
+use std::str::FromStr;
+
 use proc_macro2::TokenStream;
-use quote::quote;
-use syn::{parse::Result, DeriveInput};
+use quote::{quote, ToTokens};
+use syn::spanned::Spanned as _;
 
-/// Provides the hook to expand `#[derive(FromStr)]` into an implementation of `FromStr`
-pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::new(input, trait_name, trait_name.to_lowercase())?;
-
-    if state.derive_type == DeriveType::Enum {
-        Ok(enum_from(input, state, trait_name))
-    } else {
-        Ok(struct_from(&state, trait_name))
+/// Expands a [`FromStr`] derive macro.
+pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
+    match &input.data {
+        syn::Data::Struct(_) => {
+            Ok(ForwardExpansion::try_from(input)?.into_token_stream())
+        }
+        syn::Data::Enum(_data) => todo!(),
+        syn::Data::Union(data) => Err(syn::Error::new(
+            data.union_token.span(),
+            "`FromStr` cannot be derived for unions",
+        )),
     }
 }
 
-pub fn struct_from(state: &State, trait_name: &'static str) -> TokenStream {
-    // We cannot set defaults for fields, once we do we can remove this check
-    if state.fields.len() != 1 || state.enabled_fields().len() != 1 {
-        panic_one_field(trait_name);
-    }
+/// Expansion of a macro for generating a forwarding [`FromStr`] implementation of a struct.
+struct ForwardExpansion<'i> {
+    /// [`syn::Ident`] of the struct.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
+    ident: &'i syn::Ident,
 
-    let single_field_data = state.assert_single_enabled_field();
-    let SingleFieldData {
-        input_type,
-        field_type,
-        trait_path,
-        casted_trait,
-        impl_generics,
-        ty_generics,
-        where_clause,
-        ..
-    } = single_field_data.clone();
+    /// [`syn::Generics`] of the struct.
+    generics: &'i syn::Generics,
 
-    let initializers = [quote! { #casted_trait::from_str(src)? }];
-    let body = single_field_data.initializer(&initializers);
-    let error = quote! { <#field_type as #trait_path>::Err };
+    /// [`syn::Field`] of the value wrapped by the struct to forward implementation on.
+    inner: &'i syn::Field,
+}
 
-    quote! {
-        #[automatically_derived]
-        impl #impl_generics #trait_path for #input_type #ty_generics #where_clause {
-            type Err = #error;
+impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
+    type Error = syn::Error;
 
-            #[inline]
-            fn from_str(src: &str) -> derive_more::core::result::Result<Self, #error> {
-                derive_more::core::result::Result::Ok(#body)
-            }
+    fn try_from(input: &'i syn::DeriveInput) -> syn::Result<Self> {
+        let syn::Data::Struct(data) = &input.data else {
+            return Err(syn::Error::new(
+                input.span(),
+                "expected a struct for forward `FromStr` derive",
+            ));
+        };
+
+        // TODO: Unite these two conditions via `&&` once MSRV is bumped to 1.88 or above.
+        if data.fields.len() != 1 {
+            return Err(syn::Error::new(
+                data.fields.span(),
+                "only structs with single field can derive `FromStr`",
+            ));
         }
+        let Some(inner) = data.fields.iter().next() else {
+            return Err(syn::Error::new(
+                data.fields.span(),
+                "only structs with single field can derive `FromStr`",
+            ));
+        };
+
+        Ok(Self {
+            inner,
+            ident: &input.ident,
+            generics: &input.generics,
+        })
     }
 }
 
-fn enum_from(
-    input: &DeriveInput,
-    state: State,
-    trait_name: &'static str,
-) -> TokenStream {
-    let mut variants_caseinsensitive = HashMap::default();
-    for variant_state in state.enabled_variant_data().variant_states {
-        let variant = variant_state.variant.unwrap();
-        if !variant.fields.is_empty() {
-            panic!("Only enums with no fields can derive({trait_name})")
-        }
-
-        variants_caseinsensitive
-            .entry(variant.ident.to_string().to_lowercase())
-            .or_insert_with(Vec::new)
-            .push(variant.ident.clone());
-    }
-
-    let input_type = &input.ident;
-    let input_type_name = input_type.to_string();
-
-    let mut cases = vec![];
-
-    // if a case insensitive match is unique match do that
-    // otherwise do a case sensitive match
-    for (ref canonical, ref variants) in variants_caseinsensitive {
-        if variants.len() == 1 {
-            let variant = &variants[0];
-            cases.push(quote! {
-                #canonical => #input_type::#variant,
-            })
+impl ToTokens for ForwardExpansion<'_> {
+    /// Expands [`TryFrom`] implementations for a struct.
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let ty = self.ident;
+        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        
+        let inner_ty = &self.inner.ty;
+        let constructor = if let Some(name) = &self.inner.ident {
+            quote! { Self { #name: v } }
         } else {
-            for variant in variants {
-                let variant_str = variant.to_string();
-                cases.push(quote! {
-                    #canonical if(src == #variant_str) => #input_type::#variant,
-                })
+            quote! { Self(v) }
+        };
+
+        quote! {
+            #[automatically_derived]
+            impl #impl_generics derive_more::core::str::FromStr for #ty #ty_generics #where_clause {
+                type Err = <#inner_ty as derive_more::core::str::FromStr>::Err;
+
+                #[inline]
+                fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
+                    derive_more::core::str::FromStr::from_str(s).map(|v| #constructor);
+                }
             }
-        }
-    }
-
-    let trait_path = state.trait_path;
-
-    quote! {
-        impl #trait_path for #input_type {
-            type Err = derive_more::FromStrError;
-
-            #[inline]
-            fn from_str(src: &str) -> derive_more::core::result::Result<Self, derive_more::FromStrError> {
-                Ok(match src.to_lowercase().as_str() {
-                    #(#cases)*
-                    _ => return Err(derive_more::FromStrError::new(#input_type_name)),
-                })
-            }
-        }
+        }.to_tokens(tokens);
     }
 }
 
-fn panic_one_field(trait_name: &str) -> ! {
-    panic!("Only structs with one field can derive({trait_name})")
-}
