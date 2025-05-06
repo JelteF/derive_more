@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::spanned::Spanned as _;
+use syn::{parse_quote, spanned::Spanned as _};
 
 /// Expands a [`FromStr`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -74,10 +74,17 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
 impl ToTokens for ForwardExpansion<'_> {
     /// Expands a forwarding [`FromStr`] implementations for a struct.
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let ty = self.ident;
-        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
-
         let inner_ty = &self.inner.ty;
+        let ty = self.ident;
+
+        let mut generics = self.generics.clone();
+        if !generics.params.is_empty() {
+            generics.make_where_clause().predicates.push(parse_quote! {
+                #inner_ty: derive_more::core::str::FromStr
+            });
+        }
+        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
         let constructor = if let Some(name) = &self.inner.ident {
             quote! { Self { #name: v } }
         } else {
