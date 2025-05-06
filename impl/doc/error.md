@@ -2,7 +2,7 @@
 
 Deriving `Error` will generate an `Error` implementation, that contains
 (depending on the type) a `source()` and a `provide()` method. Please note,
-at the time of writing `provide()` is only supported on nightly rust. So you
+at the time of writing `provide()` is only supported on nightly Rust. So you
 have to use that to make use of it.
 
 For a struct, these methods always do the same. For an `enum` they have separate
@@ -44,12 +44,8 @@ ignored for one of these methods by using `#[error(not(backtrace))]` or
 
 ### What works in `no_std`?
 
-If you want to use the `Error` derive on `no_std` environments, then
-you need to compile with nightly, or wait until Rust 1.81 when `Error`
-in `core` is expected to be stabilized.
-
-Backtraces don't work though, because the `Backtrace` type is only available in
-`std`.
+`Error` derive fully work on `no_std` environments except the `provide()`
+method usage, because the `Backtrace` type is only available in `std`.
 
 
 ### `Option`al fields
