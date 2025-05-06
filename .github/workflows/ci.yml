@@ -54,7 +54,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        msrv: ["1.81.0"]
         os:
           - ubuntu
           - macOS
@@ -62,12 +61,18 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Parse MSRV
+        id: msrv
+        run: echo "version=$(grep -m1 'rust-version = "' Cargo.toml | cut -d '"' -f2)"
+             >> $GITHUB_OUTPUT
+
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
       - uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: ${{ matrix.msrv }}
+          toolchain: ${{ steps.msrv.outputs.version }}
 
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
