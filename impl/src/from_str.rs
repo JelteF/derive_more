@@ -116,6 +116,8 @@ struct EnumFlatExpansion<'i> {
     generics: &'i syn::Generics,
 
     /// [`syn::Ident`]s of the enum variants.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     variants: Vec<&'i syn::Ident>,
 }
 
