@@ -51,3 +51,56 @@ fn enum_test_case_sensitive() {
         "Invalid `EnumNoFields` string representation",
     );
 }
+
+#[derive(Debug, FromStr, PartialEq, Eq)]
+#[from_str(rename_all = "snake_case")]
+enum EnumRenamedFields {
+    Foo,
+    Bar,
+    Baz,
+    BaZ,
+}
+
+#[test]
+fn enum_renamed_fields_test() {
+    assert_eq!(
+        "foo".parse::<EnumRenamedFields>().unwrap(),
+        EnumRenamedFields::Foo
+    );
+    assert_eq!(
+        "bar".parse::<EnumRenamedFields>().unwrap(),
+        EnumRenamedFields::Bar
+    );
+    assert_eq!(
+        "baz".parse::<EnumRenamedFields>().unwrap(),
+        EnumRenamedFields::Baz
+    );
+    assert_eq!(
+        "ba_z".parse::<EnumRenamedFields>().unwrap(),
+        EnumRenamedFields::BaZ
+    );
+
+    assert_eq!(
+        "Foo".parse::<EnumRenamedFields>().unwrap_err().to_string(),
+        "Invalid `EnumRenamedFields` string representation",
+    );
+    assert_eq!(
+        "Bar".parse::<EnumRenamedFields>().unwrap_err().to_string(),
+        "Invalid `EnumRenamedFields` string representation",
+    );
+    assert_eq!(
+        "Baz".parse::<EnumRenamedFields>().unwrap_err().to_string(),
+        "Invalid `EnumRenamedFields` string representation",
+    );
+    assert_eq!(
+        "BaZ".parse::<EnumRenamedFields>().unwrap_err().to_string(),
+        "Invalid `EnumRenamedFields` string representation",
+    );
+    assert_eq!(
+        "other"
+            .parse::<EnumRenamedFields>()
+            .unwrap_err()
+            .to_string(),
+        "Invalid `EnumRenamedFields` string representation",
+    );
+}

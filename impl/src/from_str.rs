@@ -175,6 +175,10 @@ impl ToTokens for EnumFlatExpansion<'_> {
         let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
         let ty_name = ty.to_string();
 
+        let scrutinee_lowercased = self
+            .rename_all
+            .is_none()
+            .then(|| quote! {.to_lowercase().as_str()});
         let match_arms = if let Some(rename_all) = self.rename_all {
             self.variants
                 .iter()
@@ -216,7 +220,7 @@ impl ToTokens for EnumFlatExpansion<'_> {
                 fn from_str(
                     s: &str,
                 ) -> derive_more::core::result::Result<Self, derive_more::FromStrError> {
-                    derive_more::core::result::Result::Ok(match s.to_lowercase().as_str() {
+                    derive_more::core::result::Result::Ok(match s #scrutinee_lowercased {
                         #( #match_arms )*
                         _ => return derive_more::core::result::Result::Err(
                             derive_more::FromStrError::new(#ty_name),
