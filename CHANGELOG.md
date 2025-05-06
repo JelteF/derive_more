@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Breaking changes
+
+- The minimum supported Rust version (MSRV) is now Rust 1.81.
+
 ### Added
 
 - Support `#[display(rename_all = "<casing>")]` attribute to change output for
