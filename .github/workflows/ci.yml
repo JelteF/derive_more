@@ -62,17 +62,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Parse MSRV
+      - uses: SebRollen/toml-action@v1.2.0
         id: msrv
-        run: echo "version=$(grep -m1 'rust-version = "' Cargo.toml | cut -d '"' -f2)"
-             >> $GITHUB_OUTPUT
+        with:
+          file: Cargo.toml
+          field: package.rust-version
 
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
       - uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: ${{ steps.msrv.outputs.version }}
+          toolchain: ${{ steps.msrv.outputs.value }}
 
       - name: Install minimal dependencies versions
         run: cargo +nightly update -Z minimal-versions
