@@ -5,7 +5,7 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::string::ToString;
+use alloc::string::ToString as _;
 
 use derive_more::TryInto;
 

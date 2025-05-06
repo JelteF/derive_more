@@ -1,6 +1,6 @@
 //! Definitions used in derived implementations of [`core::ops`] traits.
 
-use core::fmt;
+use core::{fmt, error::Error};
 
 /// Error returned by the derived implementations when an arithmetic or logic
 /// operation is invoked on a unit-like variant of an enum.
@@ -24,5 +24,4 @@ impl fmt::Display for UnitError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for UnitError {}
+impl Error for UnitError {}

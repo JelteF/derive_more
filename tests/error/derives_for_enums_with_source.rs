@@ -15,7 +15,6 @@ enum TestErr {
         source: SimpleErr,
         field: i32,
     },
-    #[cfg(feature = "std")]
     NamedImplicitBoxedSource {
         source: Box<dyn Error + Send + 'static>,
         field: i32,
@@ -24,7 +23,6 @@ enum TestErr {
         source: Option<SimpleErr>,
         field: i32,
     },
-    #[cfg(feature = "std")]
     NamedImplicitOptionalBoxedSource {
         source: Option<Box<dyn Error + Send + 'static>>,
         field: i32,
@@ -49,7 +47,6 @@ enum TestErr {
         explicit_source: RenamedOption<SimpleErr>,
         field: i32,
     },
-    #[cfg(feature = "std")]
     NamedExplicitRenamedOptionalBoxedSource {
         #[error(source(optional))]
         explicit_source: RenamedOption<Box<dyn Error + Send + 'static>>,
@@ -84,7 +81,6 @@ enum TestErr {
         #[error(source(optional))] RenamedOption<SimpleErr>,
         i32,
     ),
-    #[cfg(feature = "std")]
     UnnamedExplicitRenamedOptionalBoxedSource(
         #[error(source(optional))] RenamedOption<Box<dyn Error + Send + 'static>>,
         i32,
@@ -154,7 +150,6 @@ fn named_implicit_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_implicit_boxed_source() {
     let err = TestErr::NamedImplicitBoxedSource {
@@ -166,7 +161,6 @@ fn named_implicit_boxed_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_implicit_optional_boxed_source() {
     let err = TestErr::NamedImplicitOptionalBoxedSource {
@@ -221,7 +215,6 @@ fn named_explicit_renamed_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_explicit_renamed_optional_boxed_source() {
     let err = TestErr::NamedExplicitRenamedOptionalBoxedSource {
@@ -325,7 +318,6 @@ fn unnamed_explicit_renamed_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn unnamed_explicit_renamed_optional_boxed_source() {
     let err = TestErr::UnnamedExplicitRenamedOptionalBoxedSource(

@@ -35,7 +35,6 @@ fn named_implicit_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_implicit_boxed_source() {
     derive_display!(TestErr);
@@ -72,7 +71,6 @@ fn named_implicit_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_implicit_optional_boxed_source() {
     derive_display!(TestErr);
@@ -120,7 +118,6 @@ fn named_explicit_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_explicit_boxed_source() {
     derive_display!(TestErr);
@@ -159,7 +156,6 @@ fn named_explicit_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_explicit_optional_boxed_source() {
     derive_display!(TestErr);
@@ -198,7 +194,6 @@ fn named_explicit_renamed_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn named_explicit_renamed_optional_boxed_source() {
     derive_display!(TestErr);
@@ -365,7 +360,6 @@ fn unnamed_explicit_renamed_optional_source() {
     assert!(err.source().unwrap().is::<SimpleErr>());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn unnamed_explicit_renamed_optional_boxed_source() {
     derive_display!(TestErr);
