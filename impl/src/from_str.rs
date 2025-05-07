@@ -186,6 +186,7 @@ impl ToTokens for FlatExpansion<'_> {
         });
 
         quote! {
+            #[allow(unreachable_code)] // for empty enums
             #[automatically_derived]
             impl #impl_generics derive_more::core::str::FromStr for #ty #ty_generics #where_clause {
                 type Err = derive_more::FromStrError;

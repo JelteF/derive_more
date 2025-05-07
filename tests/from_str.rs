@@ -199,6 +199,80 @@ mod enums {
         }
 
         #[test]
+        fn empty() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {}
+            
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn unit() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {
+                Foo,
+            }
+
+            assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+            assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
+            assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn empty_tuple() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {
+                Foo(),
+            }
+
+            assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo());
+            assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo());
+            assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo());
+
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn empty_struct() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {
+                Foo {},
+            }
+
+            assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo {});
+            assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo {});
+            assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo {});
+
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
         fn case_insensitive() {
             #[derive(Debug, Eq, FromStr, PartialEq)]
             enum Enum {
