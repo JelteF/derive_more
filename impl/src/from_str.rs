@@ -237,9 +237,9 @@ trait FieldsExt {
     ///
     /// # Panics
     ///
-    /// If these [`syn::Fields`] are not [`empty`].
+    /// If these [`syn::Fields`] are not [empty].
     ///
-    /// [`empty`]: syn::Fields::empty
+    /// [`empty`]: syn::Fields::is_empty
     fn self_constructor_empty(&self) -> TokenStream {
         self.self_constructor(iter::empty())
     }

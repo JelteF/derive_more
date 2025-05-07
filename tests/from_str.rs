@@ -202,7 +202,7 @@ mod enums {
         fn empty() {
             #[derive(Debug, Eq, FromStr, PartialEq)]
             enum Enum {}
-            
+
             assert_eq!(
                 "other".parse::<Enum>().unwrap_err().to_string(),
                 "Invalid `Enum` string representation",
