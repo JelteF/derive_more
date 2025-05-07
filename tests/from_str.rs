@@ -160,7 +160,7 @@ mod structs {
         #[test]
         fn empty_struct() {
             #[derive(Debug, Eq, FromStr, PartialEq)]
-            struct Baz {};
+            struct Baz {}
 
             assert_eq!("Baz".parse::<Baz>().unwrap(), Baz {});
         }

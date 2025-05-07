@@ -1,12 +1,14 @@
 //! Implementation of a [`FromStr`] derive macro.
 
-use std::collections::HashMap;
 #[cfg(doc)]
 use std::str::FromStr;
+use std::{collections::HashMap, iter};
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse_quote, spanned::Spanned as _};
+
+use crate::utils::Either;
 
 /// Expands a [`FromStr`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -81,11 +83,7 @@ impl ToTokens for ForwardExpansion<'_> {
         }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-        let constructor = if let Some(name) = &self.inner.ident {
-            quote! { Self { #name: v } }
-        } else {
-            quote! { Self(v) }
-        };
+        let constructor = self.inner.self_constructor([parse_quote! { v }]);
 
         quote! {
             #[automatically_derived]
@@ -108,13 +106,13 @@ struct FlatExpansion<'i> {
     /// [`syn::Ident`]: struct@syn::Ident
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
-    /// Indicator that this [`FlatExpansion`] is for an enum.
-    is_enum: bool,
-
-    /// [`syn::Ident`]s and [`syn::Path`]s of the matched values (enum variants or struct itself).
+    /// [`syn::Ident`]s along with the matched values (enum variants or struct itself).
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    matches: Vec<&'i syn::Ident>,
+    matches: Vec<(
+        &'i syn::Ident,
+        Either<&'i syn::DataStruct, &'i syn::Variant>,
+    )>,
 }
 
 impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
@@ -129,7 +127,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
                         "only structs with no fields can derive `FromStr`",
                     ));
                 }
-                vec![&input.ident]
+                vec![(&input.ident, Either::Left(data))]
             }
             syn::Data::Enum(data) => data
                 .variants
@@ -141,7 +139,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
                             "only enums with no fields can derive `FromStr`",
                         ));
                     }
-                    Ok(&variant.ident)
+                    Ok((&variant.ident, Either::Right(variant)))
                 })
                 .collect::<syn::Result<_>>()?,
             syn::Data::Union(_) => {
@@ -154,7 +152,6 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
 
         Ok(Self {
             self_ty: (&input.ident, &input.generics),
-            is_enum: matches!(input.data, syn::Data::Enum(_)),
             matches,
         })
     }
@@ -171,25 +168,21 @@ impl ToTokens for FlatExpansion<'_> {
         let similar_lowercased = self
             .matches
             .iter()
-            .map(|v| v.to_string().to_lowercase())
+            .map(|(v, _)| v.to_string().to_lowercase())
             .fold(<HashMap<_, u8>>::new(), |mut counts, v| {
                 *counts.entry(v).or_default() += 1;
                 counts
             });
 
-        let match_arms = self.matches.iter().map(|variant| {
-            let name = variant.to_string();
+        let match_arms = self.matches.iter().map(|(ident, value)| {
+            let name = ident.to_string();
             let lowercased = name.to_lowercase();
 
             let exact_guard =
                 (similar_lowercased[&lowercased] > 1).then(|| quote! { if s == #name });
-            let value = if self.is_enum {
-                quote! { Self::#variant }
-            } else {
-                quote! { Self }
-            };
+            let constructor = value.self_constructor_empty();
 
-            quote! { #lowercased #exact_guard => #value, }
+            quote! { #lowercased #exact_guard => #constructor, }
         });
 
         quote! {
@@ -209,5 +202,137 @@ impl ToTokens for FlatExpansion<'_> {
                 }
             }
         }.to_tokens(tokens);
+    }
+}
+
+/// Extension of [`syn::Fields`] used by this expansion.
+trait FieldsExt {
+    /// Generates a `name`d constructor with the provided `values` assigned to these
+    /// [`syn::Fields`].
+    ///
+    /// # Panics
+    ///
+    /// If number of provided `values` doesn't match number of these [`syn::Fields`].
+    fn constructor(
+        &self,
+        name: &syn::Path,
+        values: impl IntoIterator<Item = syn::Ident>,
+    ) -> TokenStream;
+
+    /// Generates a `Self` type constructor with the provided `values` assigned to these
+    /// [`syn::Fields`].
+    ///
+    /// # Panics
+    ///
+    /// If number of provided `values` doesn't match number of these [`syn::Fields`].
+    fn self_constructor(
+        &self,
+        values: impl IntoIterator<Item = syn::Ident>,
+    ) -> TokenStream {
+        self.constructor(&self.self_ty(), values)
+    }
+
+    /// Generates a `Self` type constructor with no fields.
+    ///
+    /// # Panics
+    ///
+    /// If these [`syn::Fields`] are not [`empty`].
+    ///
+    /// [`empty`]: syn::Fields::empty
+    fn self_constructor_empty(&self) -> TokenStream {
+        self.self_constructor(iter::empty())
+    }
+
+    /// Returns a [`syn::Path`] representing a `Self` type of these [`syn::Fields`].
+    fn self_ty(&self) -> syn::Path {
+        parse_quote! { Self }
+    }
+}
+
+impl FieldsExt for syn::Fields {
+    fn constructor(
+        &self,
+        name: &syn::Path,
+        values: impl IntoIterator<Item = syn::Ident>,
+    ) -> TokenStream {
+        let values = values.into_iter();
+        let fields = match self {
+            Self::Named(fields) => {
+                let initializers = fields.named.iter().zip(values).map(|(f, value)| {
+                    let ident = &f.ident;
+                    quote! { #ident: #value }
+                });
+                Some(quote! { { #( #initializers, )*} })
+            }
+            Self::Unnamed(_) => Some(quote! { ( #( #values, )* ) }),
+            Self::Unit => None,
+        };
+        quote! { #name #fields }
+    }
+}
+
+impl FieldsExt for syn::Field {
+    fn constructor(
+        &self,
+        name: &syn::Path,
+        values: impl IntoIterator<Item = syn::Ident>,
+    ) -> TokenStream {
+        let mut values = values.into_iter();
+        let value = values.next().expect("expected a single value");
+        if values.next().is_some() {
+            panic!("expected a single value");
+        }
+
+        if let Some(ident) = &self.ident {
+            quote! { #name { #ident: #value } }
+        } else {
+            quote! { #name(#value) }
+        }
+    }
+}
+
+impl FieldsExt for syn::Variant {
+    fn constructor(
+        &self,
+        name: &syn::Path,
+        values: impl IntoIterator<Item = syn::Ident>,
+    ) -> TokenStream {
+        self.fields.constructor(name, values)
+    }
+
+    fn self_ty(&self) -> syn::Path {
+        let variant = &self.ident;
+
+        parse_quote! { Self::#variant }
+    }
+}
+
+impl FieldsExt for syn::DataStruct {
+    fn constructor(
+        &self,
+        name: &syn::Path,
+        values: impl IntoIterator<Item = syn::Ident>,
+    ) -> TokenStream {
+        self.fields.constructor(name, values)
+    }
+}
+
+impl<L: FieldsExt, R: FieldsExt> FieldsExt for Either<&L, &R> {
+    fn constructor(
+        &self,
+        name: &syn::Path,
+        values: impl IntoIterator<Item = syn::Ident>,
+    ) -> TokenStream {
+        match self {
+            Self::Left(l) => l.constructor(name, values),
+            Self::Right(r) => r.constructor(name, values),
+        }
+    }
+
+    fn self_ty(&self) -> syn::Path {
+        match self {
+            Self::Left(l) => l.self_ty(),
+            Self::Right(r) => r.self_ty(),
+        }
     }
 }
