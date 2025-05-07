@@ -77,7 +77,7 @@ Deriving flat string representation is only supported for empty enums and
 structs (with no fields).
 
 
-### Enums
+### Empty enums
 
 When deriving `FromStr` for enums with empty variants, it will generate a
 `from_str()` method converting strings matching the variant name to the variant.
@@ -115,7 +115,7 @@ assert_eq!(
 );
 ```
 
-Code like this will be generated:
+Code like this is generated:
 ```rust
 # enum EnumNoFields {
 #     Foo,
@@ -133,6 +133,39 @@ impl derive_more::core::str::FromStr for EnumNoFields {
             "baz" if s == "Baz" => Self::Baz,
             "baz" if s == "BaZ" => Self::BaZ,
             _ => return Err(derive_more::FromStrError::new("EnumNoFields")),
+        })
+    }
+}
+```
+
+
+### Empty structs
+
+Deriving `FromStr` for structs with no fields is similar to enums,
+but involves only case-insensitive matching by now.
+
+Given the following struct:
+```rust
+# use derive_more::FromStr;
+#
+#[derive(FromStr, Debug, Eq, PartialEq)]
+struct Foo;
+
+assert_eq!("foo".parse::<Foo>().unwrap(), Foo);
+assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
+assert_eq!("FOO".parse::<Foo>().unwrap(), Foo);
+```
+
+Code like this is generated:
+```rust
+# struct Foo;
+#
+impl derive_more::core::str::FromStr for Foo {
+    type Err = derive_more::FromStrError;
+    fn from_str(s: &str) -> Result<Self, derive_more::FromStrError> {
+        Ok(match s.to_lowercase().as_str() {
+            "foo" => Self,
+            _ => return Err(derive_more::FromStrError::new("Foo")),
         })
     }
 }
