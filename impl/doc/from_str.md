@@ -1,85 +1,69 @@
 # What `#[derive(FromStr)]` generates
 
-Deriving `FromStr` only works for enums with no fields
-or newtypes, i.e structs with only a single
-field. The result is that you will be able to call the `parse()` method on a
-string to convert it to your newtype. This only works when the type that is
-contained in the type implements `FromStr`.
+Deriving `FromStr` only works for enums/structs with no fields
+or newtypes (structs with only a single field). The result is
+that you will be able to call the `parse()` method on a string
+to convert it to your newtype. This only works when the wrapped
+type implements `FromStr` itself.
 
 
 
 
-## Example usage
+## Forwarding
 
-```rust
-# use derive_more::FromStr;
-#
-#[derive(FromStr, Debug, Eq, PartialEq)]
-struct MyInt(i32);
-
-#[derive(FromStr, Debug, Eq, PartialEq)]
-struct Point1D{
-    x: i32,
-}
-
-assert_eq!(MyInt(5), "5".parse().unwrap());
-assert_eq!(Point1D{x: 100}, "100".parse().unwrap());
-```
+Deriving forwarding implementation is only supported for newtypes
+(structs with only a single field).
 
 
-
-
-## Tuple structs
+### Tuple structs
 
 When deriving `FromStr` for a tuple struct with one field:
-
 ```rust
 # use derive_more::FromStr;
 #
-#[derive(FromStr)]
+#[derive(FromStr, Debug, Eq, PartialEq)]
 struct MyInt(i32);
+
+assert_eq!("5".parse().unwrap(), MyInt(5));
 ```
 
-Code like this will be generated:
-
+Code like this is generated:
 ```rust
 # struct MyInt(i32);
 impl derive_more::core::str::FromStr for MyInt {
     type Err = <i32 as derive_more::core::str::FromStr>::Err;
-    fn from_str(src: &str) -> Result<Self, <i32 as derive_more::core::str::FromStr>::Err> {
-        return Ok(MyInt(i32::from_str(src)?));
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(i32::from_str(s)?))
     }
 }
 ```
 
 
-
-
-## Regular structs
+### Regular structs
 
 When deriving `FromStr` for a regular struct with one field:
-
 ```rust
 # use derive_more::FromStr;
 #
-#[derive(FromStr)]
+#[derive(FromStr, Debug, Eq, PartialEq)]
 struct Point1D {
     x: i32,
 }
+
+assert_eq!("100".parse().unwrap(), Point1D { x: 100 });
 ```
 
-Code like this will be generated:
-
+Code like this is generated:
 ```rust
 # struct Point1D {
 #     x: i32,
 # }
 impl derive_more::core::str::FromStr for Point1D {
     type Err = <i32 as derive_more::core::str::FromStr>::Err;
-    fn from_str(src: &str) -> Result<Self, <i32 as derive_more::core::str::FromStr>::Err> {
-        return Ok(Point1D {
-            x: i32::from_str(src)?,
-        });
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            x: i32::from_str(s)?,
+        })
     }
 }
 ```
@@ -87,33 +71,51 @@ impl derive_more::core::str::FromStr for Point1D {
 
 
 
-## Enums
+## Flat representation
 
-When deriving `FromStr` for an enums with variants with no fields it will
-generate a `from_str` method that converts strings that match the variant name
-to the variant. If using a case insensitive match would give a unique variant
-(i.e you dont have both a `MyEnum::Foo` and a `MyEnum::foo` variant) then case
-insensitive matching will be used, otherwise it will fall back to exact string
-matching.
+Deriving flat string representation is only supported for empty enums and
+structs (with no fields).
+
+
+### Enums
+
+When deriving `FromStr` for enums with empty variants, it will generate a
+`from_str()` method converting strings matching the variant name to the variant.
+If using a case-insensitive match would give a unique variant (i.e. you don't have
+both `MyEnum::Foo` and `MyEnum::foo` variants), then case-insensitive matching will
+be used, otherwise it will fall back to exact string matching.
 
 Since the string may not match any variants an error type is needed, so the
-`derive_more::FromStrError` will be used for that purpose.
+`derive_more::FromStrError` is used for that purpose.
 
-e.g. Given the following enum:
-
+Given the following enum:
 ```rust
 # use derive_more::FromStr;
 #
-#[derive(FromStr)]
+#[derive(FromStr, Debug, Eq, PartialEq)]
 enum EnumNoFields {
     Foo,
     Bar,
     Baz,
+    BaZ,
 }
+
+assert_eq!("foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+assert_eq!("Foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+assert_eq!("FOO".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+
+assert_eq!("Bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
+assert_eq!("bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
+
+assert_eq!("Baz".parse::<EnumNoFields>().unwrap(), EnumNoFields::Baz);
+assert_eq!("BaZ".parse::<EnumNoFields>().unwrap(), EnumNoFields::BaZ);
+assert_eq!(
+    "other".parse::<EnumNoFields>().unwrap_err().to_string(),
+    "Invalid `EnumNoFields` string representation",
+);
 ```
 
 Code like this will be generated:
-
 ```rust
 # enum EnumNoFields {
 #     Foo,
@@ -123,11 +125,12 @@ Code like this will be generated:
 #
 impl derive_more::core::str::FromStr for EnumNoFields {
     type Err = derive_more::FromStrError;
-    fn from_str(src: &str) -> Result<Self, derive_more::FromStrError> {
-        Ok(match src.to_lowercase().as_str() {
-            "foo" => EnumNoFields::Foo,
-            "bar" => EnumNoFields::Bar,
-            "baz" => EnumNoFields::Baz,
+    fn from_str(s: &str) -> Result<Self, derive_more::FromStrError> {
+        Ok(match s.to_lowercase().as_str() {
+            "foo" => Self::Foo,
+            "bar" => Self::Bar,
+            "baz" if s == "Baz" => Self::Baz,
+            "baz" if s == "BaZ" => Self::BaZ,
             _ => return Err(derive_more::FromStrError::new("EnumNoFields")),
         })
     }
