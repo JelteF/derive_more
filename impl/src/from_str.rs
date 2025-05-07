@@ -26,15 +26,12 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 
 /// Expansion of a macro for generating a forwarding [`FromStr`] implementation of a struct.
 struct ForwardExpansion<'i> {
-    /// [`syn::Ident`] of the struct.
+    /// [`syn::Ident`] and [`syn::Generics`] of the struct.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    ident: &'i syn::Ident,
+    self_ty: (&'i syn::Ident, &'i syn::Generics),
 
-    /// [`syn::Generics`] of the struct.
-    generics: &'i syn::Generics,
-
-    /// [`syn::Field`] of the value wrapped by the struct to forward implementation on.
+    /// [`syn::Field`] representing the wrapped type to forward implementation on.
     inner: &'i syn::Field,
 }
 
@@ -64,8 +61,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
         };
 
         Ok(Self {
-            ident: &input.ident,
-            generics: &input.generics,
+            self_ty: (&input.ident, &input.generics),
             inner,
         })
     }
@@ -75,9 +71,9 @@ impl ToTokens for ForwardExpansion<'_> {
     /// Expands a forwarding [`FromStr`] implementations for a struct.
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let inner_ty = &self.inner.ty;
-        let ty = self.ident;
+        let ty = self.self_ty.0;
 
-        let mut generics = self.generics.clone();
+        let mut generics = self.self_ty.1.clone();
         if !generics.params.is_empty() {
             generics.make_where_clause().predicates.push(parse_quote! {
                 #inner_ty: derive_more::core::str::FromStr
@@ -105,15 +101,12 @@ impl ToTokens for ForwardExpansion<'_> {
     }
 }
 
-/// Expansion of a macro for generating a flats [`FromStr`] implementation of an enum.
+/// Expansion of a macro for generating a flat [`FromStr`] implementation of an enum.
 struct EnumFlatExpansion<'i> {
-    /// [`syn::Ident`] of the enum.
+    /// [`syn::Ident`] and [`syn::Generics`] of the enum.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    ident: &'i syn::Ident,
-
-    /// [`syn::Generics`] of the enum.
-    generics: &'i syn::Generics,
+    self_ty: (&'i syn::Ident, &'i syn::Generics),
 
     /// [`syn::Ident`]s of the enum variants.
     ///
@@ -147,8 +140,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
             .collect::<syn::Result<_>>()?;
 
         Ok(Self {
-            ident: &input.ident,
-            generics: &input.generics,
+            self_ty: (&input.ident, &input.generics),
             variants,
         })
     }
@@ -157,8 +149,9 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
 impl ToTokens for EnumFlatExpansion<'_> {
     /// Expands a flat [`FromStr`] implementations for an enum.
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let ty = self.ident;
-        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        let ty = self.self_ty.0;
+        let (impl_generics, ty_generics, where_clause) =
+            self.self_ty.1.split_for_impl();
         let ty_name = ty.to_string();
 
         let similar_lowercased = self
@@ -173,7 +166,6 @@ impl ToTokens for EnumFlatExpansion<'_> {
         let match_arms = self.variants.iter().map(|variant| {
             let name = variant.to_string();
             let lowercased = name.to_lowercase();
-
             let exact_guard =
                 (similar_lowercased[&lowercased] > 1).then(|| quote! { if s == #name });
 
