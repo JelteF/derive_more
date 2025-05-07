@@ -70,6 +70,72 @@ mod structs {
                 "invalid digit found in string",
             );
         }
+
+        mod generic {
+            use super::*;
+
+            #[test]
+            fn unnamed() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                struct Int<I>(I);
+
+                assert_eq!("3".parse::<Int<i32>>().unwrap(), Int(3));
+                assert_eq!("0".parse::<Int<i32>>().unwrap(), Int(0));
+                assert_eq!("2147483647".parse::<Int<i32>>().unwrap(), Int(i32::MAX));
+                assert_eq!("-2147483648".parse::<Int<i32>>().unwrap(), Int(i32::MIN));
+
+                assert_eq!(
+                    "2147483648".parse::<Int<i32>>().unwrap_err().to_string(),
+                    "number too large to fit in target type",
+                );
+                assert_eq!(
+                    "-2147483649".parse::<Int<i32>>().unwrap_err().to_string(),
+                    "number too small to fit in target type",
+                );
+                assert_eq!(
+                    "wow".parse::<Int<i32>>().unwrap_err().to_string(),
+                    "invalid digit found in string",
+                );
+            }
+
+            #[test]
+            fn named() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                struct Point1D<I> {
+                    x: I,
+                }
+
+                assert_eq!("3".parse::<Point1D<i32>>().unwrap(), Point1D { x: 3 });
+                assert_eq!("0".parse::<Point1D<i32>>().unwrap(), Point1D { x: 0 });
+                assert_eq!(
+                    "2147483647".parse::<Point1D<i32>>().unwrap(),
+                    Point1D { x: i32::MAX },
+                );
+                assert_eq!(
+                    "-2147483648".parse::<Point1D<i32>>().unwrap(),
+                    Point1D { x: i32::MIN },
+                );
+
+                assert_eq!(
+                    "2147483648"
+                        .parse::<Point1D<i32>>()
+                        .unwrap_err()
+                        .to_string(),
+                    "number too large to fit in target type",
+                );
+                assert_eq!(
+                    "-2147483649"
+                        .parse::<Point1D<i32>>()
+                        .unwrap_err()
+                        .to_string(),
+                    "number too small to fit in target type",
+                );
+                assert_eq!(
+                    "wow".parse::<Point1D<i32>>().unwrap_err().to_string(),
+                    "invalid digit found in string",
+                );
+            }
+        }
     }
 }
 
