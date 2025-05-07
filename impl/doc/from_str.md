@@ -24,7 +24,7 @@ When deriving `FromStr` for a tuple struct with one field:
 #[derive(FromStr, Debug, Eq, PartialEq)]
 struct MyInt(i32);
 
-assert_eq!("5".parse().unwrap(), MyInt(5));
+assert_eq!("5".parse::<MyInt>().unwrap(), MyInt(5));
 ```
 
 Code like this is generated:
@@ -50,7 +50,7 @@ struct Point1D {
     x: i32,
 }
 
-assert_eq!("100".parse().unwrap(), Point1D { x: 100 });
+assert_eq!("100".parse::<Point1D>().unwrap(), Point1D { x: 100 });
 ```
 
 Code like this is generated:

@@ -239,7 +239,7 @@ trait FieldsExt {
     ///
     /// If these [`syn::Fields`] are not [empty].
     ///
-    /// [`empty`]: syn::Fields::is_empty
+    /// [empty]: syn::Fields::is_empty
     fn self_constructor_empty(&self) -> TokenStream {
         self.self_constructor(iter::empty())
     }
