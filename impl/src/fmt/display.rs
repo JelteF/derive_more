@@ -3,6 +3,7 @@
 #[cfg(doc)]
 use std::fmt;
 
+use convert_case::Casing;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
@@ -94,8 +95,8 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 /// while multiple `#[<attribute>(bound(...))]` are allowed.
 #[derive(Debug, Default)]
 struct ContainerAttributes {
-    /// [`attr::RenameAll`] for case convertion.
-    rename_all: Option<attr::RenameAll>,
+    /// [`RenameAllAttribute`] for case convertion.
+    rename_all: Option<RenameAllAttribute>,
 
     /// Common [`ContainerAttributes`].
     ///
@@ -176,6 +177,80 @@ impl attr::ParseMultiple for ContainerAttributes {
             prev,
             prev_span.join(new_span).unwrap_or(prev_span),
         ))
+    }
+}
+
+/// Representation of a `rename_all` macro attribute.
+///
+/// ```rust,ignore
+/// #[<attribute>(rename_all = "...")]
+/// ```
+///
+/// Possible cases:
+/// - `lowercase`
+/// - `UPPERCASE`
+/// - `PascalCase`
+/// - `camelCase`
+/// - `snake_case`
+/// - `SCREAMING_SNAKE_CASE`
+/// - `kebab-case`
+/// - `SCREAMING-KEBAB-CASE`
+#[derive(Debug, Clone, Copy)]
+enum RenameAllAttribute {
+    Lower,
+    Upper,
+    Pascal,
+    Camel,
+    Snake,
+    ScreamingSnake,
+    Kebab,
+    ScreamingKebab,
+}
+
+impl RenameAllAttribute {
+    /// Converts the provided `name` into the case of this [`RenameAllAttribute`].
+    fn convert_case(&self, name: &str) -> String {
+        let case = match self {
+            Self::Lower => convert_case::Case::Flat,
+            Self::Upper => convert_case::Case::UpperFlat,
+            Self::Pascal => convert_case::Case::Pascal,
+            Self::Camel => convert_case::Case::Camel,
+            Self::Snake => convert_case::Case::Snake,
+            Self::ScreamingSnake => convert_case::Case::UpperSnake,
+            Self::Kebab => convert_case::Case::Kebab,
+            Self::ScreamingKebab => convert_case::Case::UpperKebab,
+        };
+        name.to_case(case)
+    }
+}
+
+impl Parse for RenameAllAttribute {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        let _ = input.parse::<syn::Path>().and_then(|p| {
+            if p.is_ident("rename_all") {
+                Ok(p)
+            } else {
+                Err(syn::Error::new(
+                    p.span(),
+                    "unknown attribute argument, expected `rename_all = \"...\"`",
+                ))
+            }
+        })?;
+
+        input.parse::<token::Eq>()?;
+
+        let value: LitStr = input.parse()?;
+        Ok(match value.value().replace(['-', '_'], "").to_lowercase().as_str() {
+            "lowercase" => Self::Lower,
+            "uppercase" => Self::Upper,
+            "pascalcase" => Self::Pascal,
+            "camelcase" => Self::Camel,
+            "snakecase" => Self::Snake,
+            "screamingsnakecase" => Self::ScreamingSnake,
+            "kebabcase" => Self::Kebab,
+            "screamingkebabcase" => Self::ScreamingKebab,
+            _ => return Err(syn::Error::new_spanned(value, "unexpected casing expected one of: \"lowercase\", \"UPPERCASE\", \"PascalCase\", \"camelCase\", \"snake_case\", \"SCREAMING_SNAKE_CASE\", \"kebab-case\", or \"SCREAMING-KEBAB-CASE\""))
+        })
     }
 }
 
