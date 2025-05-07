@@ -121,6 +121,7 @@ Code like this will be generated:
 #     Foo,
 #     Bar,
 #     Baz,
+#     BaZ,
 # }
 #
 impl derive_more::core::str::FromStr for EnumNoFields {
