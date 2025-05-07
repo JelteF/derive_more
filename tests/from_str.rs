@@ -75,7 +75,7 @@ mod structs {
 
 mod enums {
     use super::*;
-    
+
     mod flat {
         use super::*;
 
