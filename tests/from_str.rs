@@ -137,6 +137,53 @@ mod structs {
             }
         }
     }
+
+    mod flat {
+        use super::*;
+
+        #[test]
+        fn unit() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Foo;
+
+            assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
+        }
+
+        #[test]
+        fn empty_tuple() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Bar();
+
+            assert_eq!("Bar".parse::<Bar>().unwrap(), Bar());
+        }
+
+        #[test]
+        fn empty_struct() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Baz {};
+
+            assert_eq!("Baz".parse::<Baz>().unwrap(), Baz {});
+        }
+
+        #[test]
+        fn case_insensitive() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Foo;
+
+            assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
+            assert_eq!("FOO".parse::<Foo>().unwrap(), Foo);
+            assert_eq!("foo".parse::<Foo>().unwrap(), Foo);
+
+            assert_eq!(
+                "baz".parse::<Foo>().unwrap_err().to_string(),
+                "Invalid `Foo` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Foo>().unwrap_err().to_string(),
+                "Invalid `Foo` string representation",
+            );
+        }
+    }
 }
 
 mod enums {
