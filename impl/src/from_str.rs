@@ -11,12 +11,12 @@ use syn::{parse_quote, spanned::Spanned as _};
 /// Expands a [`FromStr`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     match &input.data {
-        syn::Data::Struct(_) => {
-            Ok(ForwardExpansion::try_from(input)?.into_token_stream())
-        }
-        syn::Data::Enum(_) => {
-            Ok(EnumFlatExpansion::try_from(input)?.into_token_stream())
-        }
+        syn::Data::Struct(data) => Ok(if data.fields.is_empty() {
+            FlatExpansion::try_from(input)?.into_token_stream()
+        } else {
+            ForwardExpansion::try_from(input)?.into_token_stream()
+        }),
+        syn::Data::Enum(_) => Ok(FlatExpansion::try_from(input)?.into_token_stream()),
         syn::Data::Union(data) => Err(syn::Error::new(
             data.union_token.span(),
             "`FromStr` cannot be derived for unions",
@@ -101,52 +101,66 @@ impl ToTokens for ForwardExpansion<'_> {
     }
 }
 
-/// Expansion of a macro for generating a flat [`FromStr`] implementation of an enum.
-struct EnumFlatExpansion<'i> {
-    /// [`syn::Ident`] and [`syn::Generics`] of the enum.
+/// Expansion of a macro for generating a flat [`FromStr`] implementation of an enum or a struct.
+struct FlatExpansion<'i> {
+    /// [`syn::Ident`] and [`syn::Generics`] of the enum/struct.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
-    /// [`syn::Ident`]s of the enum variants.
+    /// Indicator that this [`FlatExpansion`] is for an enum.
+    is_enum: bool,
+
+    /// [`syn::Ident`]s and [`syn::Path`]s of the matched values (enum variants or struct itself).
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    variants: Vec<&'i syn::Ident>,
+    matches: Vec<&'i syn::Ident>,
 }
 
-impl<'i> TryFrom<&'i syn::DeriveInput> for EnumFlatExpansion<'i> {
+impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
     type Error = syn::Error;
 
     fn try_from(input: &'i syn::DeriveInput) -> syn::Result<Self> {
-        let syn::Data::Enum(data) = &input.data else {
-            return Err(syn::Error::new(
-                input.span(),
-                "expected an enum for flat `FromStr` derive",
-            ));
-        };
-
-        let variants = data
-            .variants
-            .iter()
-            .map(|variant| {
-                if !variant.fields.is_empty() {
+        let matches = match &input.data {
+            syn::Data::Struct(data) => {
+                if !data.fields.is_empty() {
                     return Err(syn::Error::new(
-                        variant.fields.span(),
-                        "only enums with no fields can derive `FromStr`",
+                        data.fields.span(),
+                        "only structs with no fields can derive `FromStr`",
                     ));
                 }
-                Ok(&variant.ident)
-            })
-            .collect::<syn::Result<_>>()?;
+                vec![&input.ident]
+            }
+            syn::Data::Enum(data) => data
+                .variants
+                .iter()
+                .map(|variant| {
+                    if !variant.fields.is_empty() {
+                        return Err(syn::Error::new(
+                            variant.fields.span(),
+                            "only enums with no fields can derive `FromStr`",
+                        ));
+                    }
+                    Ok(&variant.ident)
+                })
+                .collect::<syn::Result<_>>()?,
+            syn::Data::Union(_) => {
+                return Err(syn::Error::new(
+                    input.span(),
+                    "expected an enum or a struct for flat `FromStr` derive",
+                ))
+            }
+        };
 
         Ok(Self {
             self_ty: (&input.ident, &input.generics),
-            variants,
+            is_enum: matches!(input.data, syn::Data::Enum(_)),
+            matches,
         })
     }
 }
 
-impl ToTokens for EnumFlatExpansion<'_> {
+impl ToTokens for FlatExpansion<'_> {
     /// Expands a flat [`FromStr`] implementations for an enum.
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let ty = self.self_ty.0;
@@ -155,7 +169,7 @@ impl ToTokens for EnumFlatExpansion<'_> {
         let ty_name = ty.to_string();
 
         let similar_lowercased = self
-            .variants
+            .matches
             .iter()
             .map(|v| v.to_string().to_lowercase())
             .fold(<HashMap<_, u8>>::new(), |mut counts, v| {
@@ -163,13 +177,19 @@ impl ToTokens for EnumFlatExpansion<'_> {
                 counts
             });
 
-        let match_arms = self.variants.iter().map(|variant| {
+        let match_arms = self.matches.iter().map(|variant| {
             let name = variant.to_string();
             let lowercased = name.to_lowercase();
+
             let exact_guard =
                 (similar_lowercased[&lowercased] > 1).then(|| quote! { if s == #name });
+            let value = if self.is_enum {
+                quote! { Self::#variant }
+            } else {
+                quote! { Self }
+            };
 
-            quote! { #lowercased #exact_guard => Self::#variant, }
+            quote! { #lowercased #exact_guard => #value, }
         });
 
         quote! {
