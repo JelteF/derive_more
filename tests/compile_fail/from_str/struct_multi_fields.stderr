@@ -1,0 +1,9 @@
+error: only structs with single field can derive `FromStr`
+ --> tests/compile_fail/from_str/struct_multi_fields.rs:2:16
+  |
+2 |   pub struct Foo {
+  |  ________________^
+3 | |     foo: i32,
+4 | |     bar: i32,
+5 | | }
+  | |_^

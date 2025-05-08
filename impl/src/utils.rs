@@ -8,8 +8,8 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
     DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    Generics, Ident, ImplGenerics, Index, Result, Token, Type, TypeGenerics,
-    TypeParamBound, Variant, WhereClause,
+    Generics, Ident, Index, Result, Token, Type, TypeGenerics, TypeParamBound, Variant,
+    WhereClause,
 };
 
 #[cfg(any(
@@ -577,10 +577,7 @@ impl<'input> State<'input> {
             trait_path: data.trait_path,
             trait_path_with_params: data.trait_path_with_params.clone(),
             casted_trait: data.casted_traits[0].clone(),
-            impl_generics: data.impl_generics.clone(),
             ty_generics: data.ty_generics.clone(),
-            where_clause: data.where_clause,
-            multi_field_data: data,
         }
     }
 
@@ -608,7 +605,7 @@ impl<'input> State<'input> {
             .iter()
             .map(|field_type| quote! { <#field_type as #trait_path_with_params> })
             .collect();
-        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        let (_, ty_generics, _) = self.generics.split_for_impl();
         let input_type = &self.input.ident;
         let (variant_name, variant_type) = self.variant.map_or_else(
             || (None, quote! { #input_type }),
@@ -632,9 +629,7 @@ impl<'input> State<'input> {
             trait_path,
             trait_path_with_params,
             casted_traits,
-            impl_generics,
             ty_generics,
-            where_clause,
             state: self,
         }
     }
@@ -736,10 +731,7 @@ pub struct SingleFieldData<'input, 'state> {
     pub trait_path: &'state TokenStream,
     pub trait_path_with_params: TokenStream,
     pub casted_trait: TokenStream,
-    pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
-    pub where_clause: Option<&'state WhereClause>,
-    multi_field_data: MultiFieldData<'input, 'state>,
 }
 
 #[derive(Clone)]
@@ -758,9 +750,7 @@ pub struct MultiFieldData<'input, 'state> {
     pub trait_path: &'state TokenStream,
     pub trait_path_with_params: TokenStream,
     pub casted_traits: Vec<TokenStream>,
-    pub impl_generics: ImplGenerics<'state>,
     pub ty_generics: TypeGenerics<'state>,
-    pub where_clause: Option<&'state WhereClause>,
     pub state: &'state State<'input>,
 }
 
@@ -801,12 +791,6 @@ impl MultiFieldData<'_, '_> {
         } else {
             quote! { #variant_type(#(#full_bindings),*) }
         }
-    }
-}
-
-impl SingleFieldData<'_, '_> {
-    pub fn initializer<T: ToTokens>(&self, initializers: &[T]) -> TokenStream {
-        self.multi_field_data.initializer(initializers)
     }
 }
 
