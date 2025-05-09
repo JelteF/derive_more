@@ -9,155 +9,361 @@ use alloc::string::ToString;
 
 use derive_more::FromStr;
 
-#[derive(FromStr)]
-struct MyInt(i32);
+mod structs {
+    use super::*;
 
-#[derive(FromStr)]
-struct Point1D {
-    x: i32,
-}
+    mod forward {
+        use super::*;
 
-/// Making sure that `FromStr` does not trigger an ambiguous associated item error for `Err`.
-#[derive(FromStr)]
-enum EnumWithErr {
-    Err,
-}
+        #[test]
+        fn unnamed() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Int(i32);
 
-#[derive(Debug, FromStr, PartialEq, Eq)]
-enum EnumNoFields {
-    Foo,
-    Bar,
-    Baz,
-    BaZ,
-}
+            assert_eq!("3".parse::<Int>().unwrap(), Int(3));
+            assert_eq!("0".parse::<Int>().unwrap(), Int(0));
+            assert_eq!("2147483647".parse::<Int>().unwrap(), Int(i32::MAX));
+            assert_eq!("-2147483648".parse::<Int>().unwrap(), Int(i32::MIN));
 
-#[test]
-fn enum_test() {
-    assert_eq!("Foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
-    assert_eq!("FOO".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
-    assert_eq!("foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
-    assert_eq!(
-        "other".parse::<EnumNoFields>().unwrap_err().to_string(),
-        "Invalid `EnumNoFields` string representation",
-    );
-}
+            assert_eq!(
+                "2147483648".parse::<Int>().unwrap_err().to_string(),
+                "number too large to fit in target type",
+            );
+            assert_eq!(
+                "-2147483649".parse::<Int>().unwrap_err().to_string(),
+                "number too small to fit in target type",
+            );
+            assert_eq!(
+                "wow".parse::<Int>().unwrap_err().to_string(),
+                "invalid digit found in string",
+            );
+        }
 
-#[test]
-fn enum_test_case_sensitive() {
-    assert_eq!("Baz".parse::<EnumNoFields>().unwrap(), EnumNoFields::Baz);
-    assert_eq!("BaZ".parse::<EnumNoFields>().unwrap(), EnumNoFields::BaZ);
-    assert_eq!(
-        "baz".parse::<EnumNoFields>().unwrap_err().to_string(),
-        "Invalid `EnumNoFields` string representation",
-    );
+        #[test]
+        fn named() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Point1D {
+                x: i32,
+            }
+
+            assert_eq!("3".parse::<Point1D>().unwrap(), Point1D { x: 3 });
+            assert_eq!("0".parse::<Point1D>().unwrap(), Point1D { x: 0 });
+            assert_eq!(
+                "2147483647".parse::<Point1D>().unwrap(),
+                Point1D { x: i32::MAX },
+            );
+            assert_eq!(
+                "-2147483648".parse::<Point1D>().unwrap(),
+                Point1D { x: i32::MIN },
+            );
+
+            assert_eq!(
+                "2147483648".parse::<Point1D>().unwrap_err().to_string(),
+                "number too large to fit in target type",
+            );
+            assert_eq!(
+                "-2147483649".parse::<Point1D>().unwrap_err().to_string(),
+                "number too small to fit in target type",
+            );
+            assert_eq!(
+                "wow".parse::<Point1D>().unwrap_err().to_string(),
+                "invalid digit found in string",
+            );
+        }
+
+        mod generic {
+            use super::*;
+
+            #[test]
+            fn unnamed() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                struct Int<I>(I);
+
+                assert_eq!("3".parse::<Int<i32>>().unwrap(), Int(3));
+                assert_eq!("0".parse::<Int<i32>>().unwrap(), Int(0));
+                assert_eq!("2147483647".parse::<Int<i32>>().unwrap(), Int(i32::MAX));
+                assert_eq!("-2147483648".parse::<Int<i32>>().unwrap(), Int(i32::MIN));
+
+                assert_eq!(
+                    "2147483648".parse::<Int<i32>>().unwrap_err().to_string(),
+                    "number too large to fit in target type",
+                );
+                assert_eq!(
+                    "-2147483649".parse::<Int<i32>>().unwrap_err().to_string(),
+                    "number too small to fit in target type",
+                );
+                assert_eq!(
+                    "wow".parse::<Int<i32>>().unwrap_err().to_string(),
+                    "invalid digit found in string",
+                );
+            }
+
+            #[test]
+            fn named() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                struct Point1D<I> {
+                    x: I,
+                }
+
+                assert_eq!("3".parse::<Point1D<i32>>().unwrap(), Point1D { x: 3 });
+                assert_eq!("0".parse::<Point1D<i32>>().unwrap(), Point1D { x: 0 });
+                assert_eq!(
+                    "2147483647".parse::<Point1D<i32>>().unwrap(),
+                    Point1D { x: i32::MAX },
+                );
+                assert_eq!(
+                    "-2147483648".parse::<Point1D<i32>>().unwrap(),
+                    Point1D { x: i32::MIN },
+                );
+
+                assert_eq!(
+                    "2147483648"
+                        .parse::<Point1D<i32>>()
+                        .unwrap_err()
+                        .to_string(),
+                    "number too large to fit in target type",
+                );
+                assert_eq!(
+                    "-2147483649"
+                        .parse::<Point1D<i32>>()
+                        .unwrap_err()
+                        .to_string(),
+                    "number too small to fit in target type",
+                );
+                assert_eq!(
+                    "wow".parse::<Point1D<i32>>().unwrap_err().to_string(),
+                    "invalid digit found in string",
+                );
+            }
+        }
+    }
+
+    mod flat {
+        use super::*;
+
+        #[test]
+        fn unit() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Foo;
+
+            assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
+        }
+
+        #[test]
+        fn empty_tuple() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Bar();
+
+            assert_eq!("Bar".parse::<Bar>().unwrap(), Bar());
+        }
+
+        #[test]
+        fn empty_struct() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Baz {}
+
+            assert_eq!("Baz".parse::<Baz>().unwrap(), Baz {});
+        }
+
+        #[test]
+        fn case_insensitive() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            struct Foo;
+
+            assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
+            assert_eq!("FOO".parse::<Foo>().unwrap(), Foo);
+            assert_eq!("foo".parse::<Foo>().unwrap(), Foo);
+
+            assert_eq!(
+                "baz".parse::<Foo>().unwrap_err().to_string(),
+                "Invalid `Foo` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Foo>().unwrap_err().to_string(),
+                "Invalid `Foo` string representation",
+            );
+        }
+    }
 }
 
 mod enums {
     use super::*;
 
-    mod rename_all {
+    mod flat {
         use super::*;
 
-        mod smoke {
-            use super::*;
+        /// Assertion that `FromStr` does not trigger an ambiguous associated item error for `Err`.
+        #[derive(FromStr)]
+        enum EnumWithErr {
+            Err,
+        }
 
-            #[allow(non_camel_case_types)]
+        #[test]
+        fn empty() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {}
+
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn unit() {
             #[derive(Debug, Eq, FromStr, PartialEq)]
             enum Enum {
                 Foo,
-                #[from_str(rename_all = "UPPERCASE")]
+            }
+
+            assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+            assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
+            assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn empty_tuple() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {
+                Foo(),
+            }
+
+            assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo());
+            assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo());
+            assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo());
+
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn empty_struct() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {
+                Foo {},
+            }
+
+            assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo {});
+            assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo {});
+            assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo {});
+
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn case_insensitive() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {
+                Foo,
                 Bar,
+            }
+
+            assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+            assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
+            assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+
+            assert_eq!("Bar".parse::<Enum>().unwrap(), Enum::Bar);
+            assert_eq!("baR".parse::<Enum>().unwrap(), Enum::Bar);
+            assert_eq!("bar".parse::<Enum>().unwrap(), Enum::Bar);
+            assert_eq!("BAR".parse::<Enum>().unwrap(), Enum::Bar);
+
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        #[test]
+        fn case_sensitive() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            enum Enum {
                 Baz,
                 BaZ,
-                Xyz,
-                #[from_str(rename_all = "kebab-case")]
-                XyZ,
-                Abc,
-                #[from_str(rename_all = "lowercase")]
-                AB_C,
+                Bar,
             }
 
-            #[test]
-            fn works() {
-                assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
-                assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
-                assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
-                assert_eq!("BAR".parse::<Enum>().unwrap(), Enum::Bar);
-                assert_eq!("Baz".parse::<Enum>().unwrap(), Enum::Baz);
-                assert_eq!("BaZ".parse::<Enum>().unwrap(), Enum::BaZ);
-                assert_eq!("Xyz".parse::<Enum>().unwrap(), Enum::Xyz);
-                assert_eq!("xy-z".parse::<Enum>().unwrap(), Enum::XyZ);
-                assert_eq!("Abc".parse::<Enum>().unwrap(), Enum::Abc);
-                assert_eq!("abc".parse::<Enum>().unwrap(), Enum::AB_C);
-            }
+            assert_eq!("Baz".parse::<Enum>().unwrap(), Enum::Baz);
+            assert_eq!("BaZ".parse::<Enum>().unwrap(), Enum::BaZ);
 
-            #[test]
-            fn errors() {
-                assert_eq!(
-                    "Bar".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "bar".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "baz".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "BAZ".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "xyz".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "XyZ".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "ABC".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "AB_C".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-                assert_eq!(
-                    "other".parse::<Enum>().unwrap_err().to_string(),
-                    "Invalid `Enum` string representation",
-                );
-            }
+            assert_eq!("Bar".parse::<Enum>().unwrap(), Enum::Bar);
+            assert_eq!("baR".parse::<Enum>().unwrap(), Enum::Bar);
+            assert_eq!("bar".parse::<Enum>().unwrap(), Enum::Bar);
+            assert_eq!("BAR".parse::<Enum>().unwrap(), Enum::Bar);
 
-            mod top_level {
+            assert_eq!(
+                "baz".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+            assert_eq!(
+                "other".parse::<Enum>().unwrap_err().to_string(),
+                "Invalid `Enum` string representation",
+            );
+        }
+
+        mod rename_all {
+            use super::*;
+
+            mod smoke {
                 use super::*;
 
+                #[allow(non_camel_case_types)]
                 #[derive(Debug, Eq, FromStr, PartialEq)]
-                #[from_str(rename_all = "snake_case")]
                 enum Enum {
                     Foo,
                     #[from_str(rename_all = "UPPERCASE")]
                     Bar,
                     Baz,
                     BaZ,
+                    Xyz,
+                    #[from_str(rename_all = "kebab-case")]
+                    XyZ,
+                    Abc,
+                    #[from_str(rename_all = "lowercase")]
+                    AB_C,
                 }
 
                 #[test]
                 fn works() {
                     assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+                    assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+                    assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
                     assert_eq!("BAR".parse::<Enum>().unwrap(), Enum::Bar);
-                    assert_eq!("baz".parse::<Enum>().unwrap(), Enum::Baz);
-                    assert_eq!("ba_z".parse::<Enum>().unwrap(), Enum::BaZ);
+                    assert_eq!("Baz".parse::<Enum>().unwrap(), Enum::Baz);
+                    assert_eq!("BaZ".parse::<Enum>().unwrap(), Enum::BaZ);
+                    assert_eq!("Xyz".parse::<Enum>().unwrap(), Enum::Xyz);
+                    assert_eq!("xy-z".parse::<Enum>().unwrap(), Enum::XyZ);
+                    assert_eq!("Abc".parse::<Enum>().unwrap(), Enum::Abc);
+                    assert_eq!("abc".parse::<Enum>().unwrap(), Enum::AB_C);
                 }
 
                 #[test]
                 fn errors() {
-                    assert_eq!(
-                        "Foo".parse::<Enum>().unwrap_err().to_string(),
-                        "Invalid `Enum` string representation",
-                    );
                     assert_eq!(
                         "Bar".parse::<Enum>().unwrap_err().to_string(),
                         "Invalid `Enum` string representation",
@@ -167,11 +373,27 @@ mod enums {
                         "Invalid `Enum` string representation",
                     );
                     assert_eq!(
-                        "Baz".parse::<Enum>().unwrap_err().to_string(),
+                        "baz".parse::<Enum>().unwrap_err().to_string(),
                         "Invalid `Enum` string representation",
                     );
                     assert_eq!(
-                        "BaZ".parse::<Enum>().unwrap_err().to_string(),
+                        "BAZ".parse::<Enum>().unwrap_err().to_string(),
+                        "Invalid `Enum` string representation",
+                    );
+                    assert_eq!(
+                        "xyz".parse::<Enum>().unwrap_err().to_string(),
+                        "Invalid `Enum` string representation",
+                    );
+                    assert_eq!(
+                        "XyZ".parse::<Enum>().unwrap_err().to_string(),
+                        "Invalid `Enum` string representation",
+                    );
+                    assert_eq!(
+                        "ABC".parse::<Enum>().unwrap_err().to_string(),
+                        "Invalid `Enum` string representation",
+                    );
+                    assert_eq!(
+                        "AB_C".parse::<Enum>().unwrap_err().to_string(),
                         "Invalid `Enum` string representation",
                     );
                     assert_eq!(
@@ -179,85 +401,135 @@ mod enums {
                         "Invalid `Enum` string representation",
                     );
                 }
-            }
-        }
 
-        macro_rules! casing_test {
-            ($name:ident, $casing:literal, $VariantOne:literal, $Two:literal) => {
-                mod $name {
+                mod top_level {
                     use super::*;
 
-                    #[test]
-                    fn top_level() {
-                        #[derive(Debug, Eq, FromStr, PartialEq)]
-                        #[from_str(rename_all = $casing)]
-                        enum Enum {
-                            VariantOne,
-                            Two,
-                        }
-
-                        assert_eq!(
-                            $VariantOne.parse::<Enum>().unwrap(),
-                            Enum::VariantOne,
-                        );
-                        assert_eq!($Two.parse::<Enum>().unwrap(), Enum::Two);
+                    #[derive(Debug, Eq, FromStr, PartialEq)]
+                    #[from_str(rename_all = "snake_case")]
+                    enum Enum {
+                        Foo,
+                        #[from_str(rename_all = "UPPERCASE")]
+                        Bar,
+                        Baz,
+                        BaZ,
                     }
 
                     #[test]
-                    fn variant_level() {
-                        #[derive(Debug, Eq, FromStr, PartialEq)]
-                        #[from_str(rename_all = "lowercase")] // ignored
-                        enum Enum {
-                            #[from_str(rename_all = $casing)]
-                            VariantOne,
-                            #[from_str(rename_all = $casing)]
-                            Two,
-                        }
-
-                        assert_eq!(
-                            $VariantOne.parse::<Enum>().unwrap(),
-                            Enum::VariantOne,
-                        );
-                        assert_eq!($Two.parse::<Enum>().unwrap(), Enum::Two);
+                    fn works() {
+                        assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+                        assert_eq!("BAR".parse::<Enum>().unwrap(), Enum::Bar);
+                        assert_eq!("baz".parse::<Enum>().unwrap(), Enum::Baz);
+                        assert_eq!("ba_z".parse::<Enum>().unwrap(), Enum::BaZ);
                     }
 
                     #[test]
-                    fn only_variant_level() {
-                        #[derive(Debug, Eq, FromStr, PartialEq)]
-                        enum Enum {
-                            #[from_str(rename_all = $casing)]
-                            VariantOne,
-                            #[from_str(rename_all = $casing)]
-                            Two,
-                        }
-
+                    fn errors() {
                         assert_eq!(
-                            $VariantOne.parse::<Enum>().unwrap(),
-                            Enum::VariantOne,
+                            "Foo".parse::<Enum>().unwrap_err().to_string(),
+                            "Invalid `Enum` string representation",
                         );
-                        assert_eq!($Two.parse::<Enum>().unwrap(), Enum::Two);
+                        assert_eq!(
+                            "Bar".parse::<Enum>().unwrap_err().to_string(),
+                            "Invalid `Enum` string representation",
+                        );
+                        assert_eq!(
+                            "bar".parse::<Enum>().unwrap_err().to_string(),
+                            "Invalid `Enum` string representation",
+                        );
+                        assert_eq!(
+                            "Baz".parse::<Enum>().unwrap_err().to_string(),
+                            "Invalid `Enum` string representation",
+                        );
+                        assert_eq!(
+                            "BaZ".parse::<Enum>().unwrap_err().to_string(),
+                            "Invalid `Enum` string representation",
+                        );
+                        assert_eq!(
+                            "other".parse::<Enum>().unwrap_err().to_string(),
+                            "Invalid `Enum` string representation",
+                        );
                     }
                 }
-            };
-        }
+            }
 
-        casing_test!(lower_case, "lowercase", "variantone", "two");
-        casing_test!(upper_case, "UPPERCASE", "VARIANTONE", "TWO");
-        casing_test!(pascal_case, "PascalCase", "VariantOne", "Two");
-        casing_test!(camel_case, "camelCase", "variantOne", "two");
-        casing_test!(snake_case, "snake_case", "variant_one", "two");
-        casing_test!(
-            screaming_snake_case,
-            "SCREAMING_SNAKE_CASE",
-            "VARIANT_ONE",
-            "TWO"
-        );
-        casing_test!(kebab_case, "kebab-case", "variant-one", "two");
-        casing_test!(
-            screaming_kebab_case,
-            "SCREAMING-KEBAB-CASE",
-            "VARIANT-ONE",
-            "TWO"
-        );
+            macro_rules! casing_test {
+                ($name:ident, $casing:literal, $VariantOne:literal, $Two:literal) => {
+                    mod $name {
+                        use super::*;
+
+                        #[test]
+                        fn top_level() {
+                            #[derive(Debug, Eq, FromStr, PartialEq)]
+                            #[from_str(rename_all = $casing)]
+                            enum Enum {
+                                VariantOne,
+                                Two,
+                            }
+
+                            assert_eq!(
+                                $VariantOne.parse::<Enum>().unwrap(),
+                                Enum::VariantOne,
+                            );
+                            assert_eq!($Two.parse::<Enum>().unwrap(), Enum::Two);
+                        }
+
+                        #[test]
+                        fn variant_level() {
+                            #[derive(Debug, Eq, FromStr, PartialEq)]
+                            #[from_str(rename_all = "lowercase")] // ignored
+                            enum Enum {
+                                #[from_str(rename_all = $casing)]
+                                VariantOne,
+                                #[from_str(rename_all = $casing)]
+                                Two,
+                            }
+
+                            assert_eq!(
+                                $VariantOne.parse::<Enum>().unwrap(),
+                                Enum::VariantOne,
+                            );
+                            assert_eq!($Two.parse::<Enum>().unwrap(), Enum::Two);
+                        }
+
+                        #[test]
+                        fn only_variant_level() {
+                            #[derive(Debug, Eq, FromStr, PartialEq)]
+                            enum Enum {
+                                #[from_str(rename_all = $casing)]
+                                VariantOne,
+                                #[from_str(rename_all = $casing)]
+                                Two,
+                            }
+
+                            assert_eq!(
+                                $VariantOne.parse::<Enum>().unwrap(),
+                                Enum::VariantOne,
+                            );
+                            assert_eq!($Two.parse::<Enum>().unwrap(), Enum::Two);
+                        }
+                    }
+                };
+            }
+
+            casing_test!(lower_case, "lowercase", "variantone", "two");
+            casing_test!(upper_case, "UPPERCASE", "VARIANTONE", "TWO");
+            casing_test!(pascal_case, "PascalCase", "VariantOne", "Two");
+            casing_test!(camel_case, "camelCase", "variantOne", "two");
+            casing_test!(snake_case, "snake_case", "variant_one", "two");
+            casing_test!(
+                screaming_snake_case,
+                "SCREAMING_SNAKE_CASE",
+                "VARIANT_ONE",
+                "TWO"
+            );
+            casing_test!(kebab_case, "kebab-case", "variant-one", "two");
+            casing_test!(
+                screaming_kebab_case,
+                "SCREAMING-KEBAB-CASE",
+                "VARIANT-ONE",
+                "TWO"
+            );
+        }
     }
 }
