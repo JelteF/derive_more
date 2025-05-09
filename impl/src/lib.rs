@@ -188,7 +188,7 @@ create_derive!("error", error, Error, error_derive, error);
 
 create_derive!("from", from, From, from_derive, from);
 
-create_derive!("from_str", from_str, FromStr, from_str_derive);
+create_derive!("from_str", from_str, FromStr, from_str_derive, from_str);
 
 create_derive!("index", index, Index, index_derive, index);
 
