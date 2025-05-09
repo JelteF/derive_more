@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#443](https://github.com/JelteF/derive_more/pull/443))
 - Support `Option` fields for `Error::source()` in `Error` derive.
   ([#459](https://github.com/JelteF/derive_more/pull/459))
+- Support structs with no fields in `FromStr` derive.
+  ([#469](https://github.com/JelteF/derive_more/pull/469))
 
 ### Changed
 

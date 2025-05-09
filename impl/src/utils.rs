@@ -17,6 +17,7 @@ use syn::{
     feature = "debug",
     feature = "display",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "try_from",
 ))]
@@ -1300,6 +1301,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "debug",
     feature = "display",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "try_from",
 ))]
