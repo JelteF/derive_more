@@ -129,6 +129,10 @@ struct FlatExpansion<'i> {
         Option<attr::RenameAll>,
     )>,
 
+    /// [`FlatExpansion::matches`] grouped by its similar representation for detecting whether their
+    /// case-insensitivity should be disabled.
+    similar_matches: HashMap<String, Vec<&'i syn::Ident>>,
+
     /// Optional [`attr::RenameAll`] indicating the case convertion to be applied to all the matched
     /// values (enum variants or struct itself).
     rename_all: Option<attr::RenameAll>,
@@ -174,11 +178,64 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             }
         };
 
+        let rename_all = attr::RenameAll::parse_attrs(&input.attrs, attr_ident)?
+            .map(Spanning::into_inner);
+
+        let mut similar_matches = <HashMap<_, Vec<_>>>::new();
+        if rename_all.is_none() {
+            for (ident, _, renaming) in &matches {
+                let name = ident.to_string();
+                let lowercased = name.to_lowercase();
+                if let Some(rename) = renaming {
+                    let renamed_lowercased = rename.convert_case(&name);
+                    if renamed_lowercased != lowercased {
+                        similar_matches
+                            .entry(renamed_lowercased)
+                            .or_default()
+                            .push(*ident);
+                    }
+                }
+                similar_matches.entry(lowercased).or_default().push(*ident);
+            }
+        }
+
+        let mut exact_matches = <HashMap<String, Vec<String>>>::new();
+        for (ident, _, renaming) in &matches {
+            let name = ident.to_string();
+            let exact = if let Some(default_renaming) = &rename_all {
+                renaming
+                    .as_ref()
+                    .unwrap_or(default_renaming)
+                    .convert_case(&name)
+            } else if let Some(renaming) = renaming {
+                renaming.convert_case(&name)
+            } else {
+                let lowercased = name.to_lowercase();
+                if similar_matches[&lowercased].len() > 1 {
+                    name.clone()
+                } else {
+                    lowercased
+                }
+            };
+            exact_matches.entry(exact).or_default().push(name);
+        }
+        if let Some((string, variants)) =
+            exact_matches.into_iter().find(|(_, vs)| vs.len() > 1)
+        {
+            return Err(syn::Error::new(
+                input.ident.span(),
+                format!(
+                    "`{}` variants cannot have the same \"{string}\" string representation",
+                    variants.join("`, `"),
+                ),
+            ));
+        }
+
         Ok(Self {
             self_ty: (&input.ident, &input.generics),
             matches,
-            rename_all: attr::RenameAll::parse_attrs(&input.attrs, attr_ident)?
-                .map(Spanning::into_inner),
+            similar_matches,
+            rename_all,
         })
     }
 }
@@ -208,19 +265,6 @@ impl ToTokens for FlatExpansion<'_> {
                 })
                 .collect::<Vec<_>>()
         } else {
-            let mut similar_lowercased = <HashMap<_, u8>>::new();
-            for (ident, _, renaming) in &self.matches {
-                let name = ident.to_string();
-                let lowercased = name.to_lowercase();
-                if let Some(rename) = renaming {
-                    let renamed_lowercased = rename.convert_case(&name);
-                    if renamed_lowercased != lowercased {
-                        *similar_lowercased.entry(renamed_lowercased).or_default() += 1;
-                    }
-                }
-                *similar_lowercased.entry(lowercased).or_default() += 1;
-            }
-
             self.matches
                 .iter()
                 .map(|(ident, value, renaming)| {
@@ -232,7 +276,7 @@ impl ToTokens for FlatExpansion<'_> {
                         quote! { _ if s == #exact_name => #constructor, }
                     } else {
                         let lowercased = name.to_lowercase();
-                        let exact_guard = (similar_lowercased[&lowercased] > 1)
+                        let exact_guard = (self.similar_matches[&lowercased].len() > 1)
                             .then(|| quote! { if s == #name });
 
                         quote! { #lowercased #exact_guard => #constructor, }
