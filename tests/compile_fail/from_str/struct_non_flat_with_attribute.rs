@@ -1,5 +1,5 @@
 #[derive(derive_more::FromStr)]
-#[from_str(unknown = "unknown")]
+#[from_str(rename_all = "lowercase")]
 pub struct Foo {
     bar: i32,
 }
