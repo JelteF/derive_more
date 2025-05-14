@@ -119,7 +119,8 @@ struct FlatExpansion<'i> {
     /// [`syn::Ident`]: struct@syn::Ident
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
-    /// [`syn::Ident`]s along with the matched values (enum variants or struct itself).
+    /// [`syn::Ident`]s along with the matched values (enum variants or struct itself), and
+    /// a value-specific [`attr::RenameAll`] overriding [`FlatExpansion::rename_all`], if any.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
     matches: Vec<(
@@ -128,8 +129,8 @@ struct FlatExpansion<'i> {
         Option<attr::RenameAll>,
     )>,
 
-    /// Optional [`attr::RenameAll`] indicating the case convertion to be applied to all the enum
-    /// variants.
+    /// Optional [`attr::RenameAll`] indicating the case convertion to be applied to all the matched
+    /// values (enum variants or struct itself).
     rename_all: Option<attr::RenameAll>,
 }
 
