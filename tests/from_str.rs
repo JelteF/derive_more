@@ -183,6 +183,66 @@ mod structs {
                 "Invalid `Foo` string representation",
             );
         }
+
+        mod rename_all {
+            use super::*;
+
+            #[test]
+            fn case_sensitive() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(rename_all = "PascalCase")]
+                struct Foo;
+
+                assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
+
+                assert_eq!(
+                    "foo".parse::<Foo>().unwrap_err().to_string(),
+                    "Invalid `Foo` string representation",
+                );
+                assert_eq!(
+                    "FOO".parse::<Foo>().unwrap_err().to_string(),
+                    "Invalid `Foo` string representation",
+                );
+                assert_eq!(
+                    "FoO".parse::<Foo>().unwrap_err().to_string(),
+                    "Invalid `Foo` string representation",
+                );
+                assert_eq!(
+                    "other".parse::<Foo>().unwrap_err().to_string(),
+                    "Invalid `Foo` string representation",
+                );
+            }
+
+            mod casing {
+                use super::*;
+
+                macro_rules! casing_test {
+                    ($name:ident, $casing:literal, $input:literal) => {
+                        mod $name {
+                            use super::*;
+
+                            #[test]
+                            fn top_level() {
+                                #[derive(Debug, Eq, FromStr, PartialEq)]
+                                #[from_str(rename_all = $casing)]
+                                struct FooBar;
+
+                                assert_eq!($input.parse::<FooBar>().unwrap(), FooBar);
+                            }
+                        }
+                    };
+                }
+
+                casing_test!(lower_case, "lowercase", "foobar");
+                casing_test!(upper_case, "UPPERCASE", "FOOBAR");
+                casing_test!(pascal_case, "PascalCase", "FooBar");
+                casing_test!(camel_case, "camelCase", "fooBar");
+                casing_test!(snake_case, "snake_case", "foo_bar");
+                casing_test!(screaming_snake_case, "SCREAMING_SNAKE_CASE", "FOO_BAR");
+                casing_test!(kebab_case, "kebab-case", "foo-bar");
+                casing_test!(screaming_kebab_case, "SCREAMING-KEBAB-CASE", "FOO-BAR");
+            }
+        }
     }
 }
 
