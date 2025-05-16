@@ -602,7 +602,7 @@ impl ContainsGenericsExt for syn::Type {
                 }
 
                 if let Some(ident) = path.get_ident() {
-                    type_params.iter().any(|param| *param == ident)
+                    type_params.contains(&ident)
                 } else {
                     path.contains_generics(type_params)
                 }
