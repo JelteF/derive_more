@@ -184,10 +184,11 @@ fn expand_enum(
         },
     )?;
 
-    let body = match_arms
-        .is_empty()
-        .then(|| quote! { match *self {} })
-        .unwrap_or_else(|| quote! { match self { #match_arms } });
+    let body = if match_arms.is_empty() {
+        quote! { match *self {} }
+    } else {
+        quote! { match self { #match_arms } }
+    };
 
     Ok((bounds, body))
 }
