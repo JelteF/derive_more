@@ -1,0 +1,5 @@
+error: unexpected casing expected one of: "lowercase", "UPPERCASE", "PascalCase", "camelCase", "snake_case", "SCREAMING_SNAKE_CASE", "kebab-case", or "SCREAMING-KEBAB-CASE"
+ --> tests/compile_fail/from_str/struct_invalid_casing.rs:2:25
+  |
+2 | #[from_str(rename_all = "Whatever")]
+  |                         ^^^^^^^^^^

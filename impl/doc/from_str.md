@@ -170,3 +170,61 @@ impl derive_more::core::str::FromStr for Foo {
     }
 }
 ```
+
+
+### The `rename_all` attribute
+
+To control the concrete string representation of the name verbatim,
+the `#[from_str(rename_all = "...")]` attribute can be placed on structs,
+enums and variants.
+
+The available casings are:
+- `lowercase`
+- `UPPERCASE`
+- `PascalCase`
+- `camelCase`
+- `snake_case`
+- `SCREAMING_SNAKE_CASE`
+- `kebab-case`
+- `SCREAMING-KEBAB-CASE`
+
+```rust
+# use derive_more::FromStr;
+#
+#[derive(FromStr, Debug, Eq, PartialEq)]
+#[from_str(rename_all = "lowercase")]
+enum Enum {
+    VariantOne,
+    #[from_str(rename_all = "kebab-case")] // overrides the top-level one
+    VariantTwo
+}
+
+assert_eq!("variantone".parse::<Enum>().unwrap(), Enum::VariantOne);
+assert_eq!("variant-two".parse::<Enum>().unwrap(), Enum::VariantTwo);
+```
+
+> **NOTE**: Using `#[from_str(rename_all = "...")]` attribute disables
+> any case-insensitivity where applied. This is also true for any enum
+> variant whose name or string representation is similar to the variant
+> being marked:
+> ```rust
+> # use derive_more::FromStr;
+> #
+> # #[allow(non_camel_case_types)]
+> #[derive(FromStr, Debug, Eq, PartialEq)]
+> enum Enum {
+>    Foo,  // case-insensitive
+>    #[from_str(rename_all = "SCREAMING_SNAKE_CASE")]
+>    BaR,  // case-sensitive (marked with attribute)
+>    Bar,  // case-sensitive (name is similar to the marked `BaR` variant)
+>    Ba_R, // case-sensitive (string representation is similar to the marked `BaR` variant)
+> }
+> #
+> # assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+> # assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
+> # assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+> #
+> # assert_eq!("BA_R".parse::<Enum>().unwrap(), Enum::BaR);
+> # assert_eq!("Bar".parse::<Enum>().unwrap(), Enum::Bar);
+> # assert_eq!("Ba_R".parse::<Enum>().unwrap(), Enum::Ba_R);
+> ```

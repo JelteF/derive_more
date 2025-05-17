@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support `#[display(rename_all = "<casing>")]` attribute to change output for
   implicit naming of unit enum variants or unit structs when deriving `Display`.
   ([#443](https://github.com/JelteF/derive_more/pull/443))
+- Support `#[from_str(rename_all = "<casing>")]` attribute for unit enum variants
+  and unit structs when deriving `FromStr`.
+  ([#467](https://github.com/JelteF/derive_more/pull/467))
 - Support `Option` fields for `Error::source()` in `Error` derive.
   ([#459](https://github.com/JelteF/derive_more/pull/459))
 - Support structs with no fields in `FromStr` derive.

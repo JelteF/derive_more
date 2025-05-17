@@ -1,0 +1,5 @@
+error: unexpected casing expected one of: "lowercase", "UPPERCASE", "PascalCase", "camelCase", "snake_case", "SCREAMING_SNAKE_CASE", "kebab-case", or "SCREAMING-KEBAB-CASE"
+ --> tests/compile_fail/from_str/enum_invalid_variant_casing.rs:3:29
+  |
+3 |     #[from_str(rename_all = "Whatever")]
+  |                             ^^^^^^^^^^
