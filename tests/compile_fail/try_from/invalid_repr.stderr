@@ -9,3 +9,19 @@ error: expected one of `(`, `,`, `::`, or `=`, found `+`
   |
 3 | #[repr(a + b)]
   |          ^ expected one of `(`, `,`, `::`, or `=`
+
+error[E0552]: unrecognized representation hint
+ --> tests/compile_fail/try_from/invalid_repr.rs:3:8
+  |
+3 | #[repr(a + b)]
+  |        ^
+  |
+  = help: valid reprs are `Rust` (default), `C`, `align`, `packed`, `transparent`, `simd`, `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`, `u64`, `i128`, `u128`, `isize`, `usize`
+
+error[E0552]: unrecognized representation hint
+ --> tests/compile_fail/try_from/invalid_repr.rs:3:12
+  |
+3 | #[repr(a + b)]
+  |            ^
+  |
+  = help: valid reprs are `Rust` (default), `C`, `align`, `packed`, `transparent`, `simd`, `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`, `u64`, `i128`, `u128`, `isize`, `usize`
