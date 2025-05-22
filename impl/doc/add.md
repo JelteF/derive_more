@@ -76,6 +76,26 @@ The behaviour is similar for more or less fields.
 
 
 
+## Skipping fields
+Sometimes the struct needs to hold a zero sized field, most commonly
+`PhantomData`. A field containing a ZST can be skipped using the `#[skip]`
+attribute like this:
+
+```rust
+#[derive(Add)]
+struct TupleWithZst<T>(i32, #[skip] PhantomData<T>);
+
+#[derive(Add)]
+struct StructWithZst<T> {
+    x: i32,
+    #[skip]
+    _marker: PhantomData<T>,
+}
+```
+
+
+
+
 ## Enums
 
 There's a big difference between the code that is generated for the two struct

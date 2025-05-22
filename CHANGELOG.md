@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#459](https://github.com/JelteF/derive_more/pull/459))
 - Support structs with no fields in `FromStr` derive.
   ([#469](https://github.com/JelteF/derive_more/pull/469))
+- Support `#[skip]` attribute for the `Add` derive to allow skipping zero sized
+  fields. ([#472](https://github.com/JelteF/derive_more/pull/472))
 
 ### Changed
 

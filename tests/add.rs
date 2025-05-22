@@ -1,6 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)] // some code is tested for type checking only
 
+use core::marker::PhantomData;
+
 use derive_more::Add;
 
 #[derive(Add)]
@@ -10,6 +12,16 @@ struct MyInts(i32, i32);
 struct Point2D {
     x: i32,
     y: i32,
+}
+
+#[derive(Add)]
+struct TupleWithZst<T>(i32, #[skip] PhantomData<T>);
+
+#[derive(Add)]
+struct StructWithZst<T> {
+    x: i32,
+    #[skip]
+    _marker: PhantomData<T>,
 }
 
 #[derive(Add)]
