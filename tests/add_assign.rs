@@ -29,19 +29,19 @@ mod skip {
 
     #[test]
     fn tuple_non_add_generic() {
-        let mut a: TupleWithZst<(String,)> = TupleWithZst(12, PhantomData);
+        let mut a: TupleWithZst<()> = TupleWithZst(12, PhantomData);
         a += TupleWithZst(2, PhantomData);
         assert_eq!(a.0, 14);
     }
 
     #[test]
     fn struct_non_add_generic() {
-        let mut a: StructWithZst<(String,)> = StructWithZst {
+        let mut a: StructWithZst<()> = StructWithZst {
             x: 12,
             _marker: PhantomData,
         };
 
-        let b: StructWithZst<(String,)> = StructWithZst {
+        let b: StructWithZst<()> = StructWithZst {
             x: 2,
             _marker: PhantomData,
         };

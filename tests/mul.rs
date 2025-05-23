@@ -39,19 +39,19 @@ mod forward {
 
     #[test]
     fn tuple_non_add_generic() {
-        let a: TupleWithZst<(String,)> = TupleWithZst(12, PhantomData);
-        let b: TupleWithZst<(String,)> = TupleWithZst(2, PhantomData);
+        let a: TupleWithZst<()> = TupleWithZst(12, PhantomData);
+        let b: TupleWithZst<()> = TupleWithZst(2, PhantomData);
         assert_eq!((a * b).0, 24);
     }
 
     #[test]
     fn struct_non_add_generic() {
-        let a: StructWithZst<(String,)> = StructWithZst {
+        let a: StructWithZst<()> = StructWithZst {
             x: 12,
             _marker: PhantomData,
         };
 
-        let b: StructWithZst<(String,)> = StructWithZst {
+        let b: StructWithZst<()> = StructWithZst {
             x: 2,
             _marker: PhantomData,
         };
