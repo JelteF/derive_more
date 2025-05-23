@@ -1,46 +1,53 @@
 use crate::add_helpers::{struct_exprs, tuple_exprs};
 use crate::utils::{
-    add_extra_type_param_bound_op_output, field_idents, named_to_vec, numbered_vars,
-    unnamed_to_vec,
+    add_extra_type_param_bound_op_output_except, field_idents, named_to_vec,
+    numbered_vars, unnamed_to_vec, HashSet,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use std::iter;
 use syn::{Data, DataEnum, DeriveInput, Field, Fields, Ident};
 
-pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
+pub fn expand(input: &DeriveInput, trait_name: &str) -> syn::Result<TokenStream> {
     let trait_name = trait_name.trim_end_matches("Self");
     let trait_ident = format_ident!("{trait_name}");
     let method_name = trait_name.to_lowercase();
     let method_ident = format_ident!("{method_name}");
     let input_type = &input.ident;
 
-    let generics = add_extra_type_param_bound_op_output(&input.generics, &trait_ident);
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-    let (output_type, block) = match input.data {
-        Data::Struct(ref data_struct) => match data_struct.fields {
-            Fields::Unnamed(ref fields) => (
-                quote! { #input_type #ty_generics },
-                tuple_content(input_type, &unnamed_to_vec(fields), &method_ident),
-            ),
-            Fields::Named(ref fields) => (
-                quote! { #input_type #ty_generics },
-                struct_content(input_type, &named_to_vec(fields), &method_ident),
-            ),
+    let (block, zst_generics) = match &input.data {
+        Data::Struct(data_struct) => match &data_struct.fields {
+            Fields::Unnamed(ref fields) => {
+                tuple_content(input_type, &unnamed_to_vec(fields), &method_ident)?
+            }
+            Fields::Named(ref fields) => {
+                struct_content(input_type, &named_to_vec(fields), &method_ident)?
+            }
             _ => panic!("Unit structs cannot use derive({trait_name})"),
         },
-        Data::Enum(ref data_enum) => (
-            quote! {
-                derive_more::core::result::Result<#input_type #ty_generics, derive_more::BinaryError>
-            },
+        Data::Enum(data_enum) => (
             enum_content(input_type, data_enum, &method_ident),
+            Default::default(),
         ),
+        Data::Union(_) => panic!("Only structs and enums can use derive({trait_name})"),
+    };
 
+    let generics = add_extra_type_param_bound_op_output_except(
+        &input.generics,
+        &trait_ident,
+        zst_generics,
+    );
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let output_type = match input.data {
+        Data::Struct(_) => quote! { #input_type #ty_generics },
+        Data::Enum(_) => quote! {
+            derive_more::core::result::Result<#input_type #ty_generics, derive_more::BinaryError>
+        },
         _ => panic!("Only structs and enums can use derive({trait_name})"),
     };
 
-    quote! {
+    Ok(quote! {
         #[automatically_derived]
         impl #impl_generics derive_more::core::ops::#trait_ident
          for #input_type #ty_generics #where_clause {
@@ -52,28 +59,31 @@ pub fn expand(input: &DeriveInput, trait_name: &str) -> TokenStream {
                 #block
             }
         }
-    }
+    })
 }
 
 fn tuple_content<T: ToTokens>(
     input_type: &T,
     fields: &[&Field],
     method_ident: &Ident,
-) -> TokenStream {
-    let exprs = tuple_exprs(fields, method_ident);
-    quote! { #input_type(#(#exprs),*) }
+) -> syn::Result<(TokenStream, HashSet<Ident>)> {
+    let (exprs, zst_generics) = tuple_exprs(fields, method_ident)?;
+    Ok((quote! { #input_type(#(#exprs),*) }, zst_generics))
 }
 
 fn struct_content(
     input_type: &Ident,
     fields: &[&Field],
     method_ident: &Ident,
-) -> TokenStream {
+) -> syn::Result<(TokenStream, HashSet<Ident>)> {
     // It's safe to unwrap because struct fields always have an identifier
-    let exprs = struct_exprs(fields, method_ident);
+    let (exprs, zst_generics) = struct_exprs(fields, method_ident)?;
     let field_names = field_idents(fields);
 
-    quote! { #input_type{#(#field_names: #exprs),*} }
+    Ok((
+        quote! { #input_type{#(#field_names: #exprs),*} },
+        zst_generics,
+    ))
 }
 
 #[allow(clippy::cognitive_complexity)]

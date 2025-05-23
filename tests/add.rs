@@ -15,12 +15,12 @@ struct Point2D {
 }
 
 #[derive(Add)]
-struct TupleWithZst<T>(i32, #[skip] PhantomData<T>);
+struct TupleWithZst<T>(i32, #[add(skip)] PhantomData<T>);
 
 #[derive(Add)]
 struct StructWithZst<T> {
     x: i32,
-    #[skip]
+    #[add(skip)]
     _marker: PhantomData<T>,
 }
 
@@ -33,4 +33,30 @@ enum MixedInts {
     UnsignedOne(u32),
     UnsignedTwo(u32),
     Unit,
+}
+
+mod skip {
+    use super::*;
+
+    #[test]
+    fn tuple_non_add_generic() {
+        let a: TupleWithZst<(String,)> = TupleWithZst(12, PhantomData);
+        let b: TupleWithZst<(String,)> = TupleWithZst(2, PhantomData);
+        assert_eq!((a + b).0, 14);
+    }
+
+    #[test]
+    fn struct_non_add_generic() {
+        let a: StructWithZst<(String,)> = StructWithZst {
+            x: 12,
+            _marker: PhantomData,
+        };
+
+        let b: StructWithZst<(String,)> = StructWithZst {
+            x: 2,
+            _marker: PhantomData,
+        };
+
+        assert_eq!((a + b).x, 14);
+    }
 }

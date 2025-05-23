@@ -7,18 +7,22 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
-    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
-    Generics, Ident, Index, Result, Token, Type, TypeGenerics, TypeParamBound, Variant,
-    WhereClause,
+    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericArgument,
+    GenericParam, Generics, Ident, Index, Result, ReturnType, Token, Type,
+    TypeGenerics, TypeParamBound, Variant, WhereClause,
 };
 
 #[cfg(any(
     feature = "as_ref",
+    feature = "add",
+    feature = "add_assign",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "from_str",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
 ))]
 pub(crate) use self::either::Either;
@@ -28,10 +32,14 @@ pub(crate) use self::fields_ext::FieldsExt;
 pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
+    feature = "add",
+    feature = "add_assign",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
 ))]
 pub(crate) use self::spanning::Spanning;
@@ -136,12 +144,74 @@ pub fn get_field_types<'a>(fields: &'a [&'a Field]) -> Vec<&'a Type> {
     get_field_types_iter(fields).collect()
 }
 
+pub fn extract_idents_from_generic_arguments<'a>(
+    args: impl IntoIterator<Item = &'a GenericArgument>,
+) -> HashSet<Ident> {
+    fn extract_from_type(set: &mut HashSet<Ident>, ty: &syn::Type) {
+        match ty {
+            Type::Array(type_array) => extract_from_type(set, &type_array.elem),
+            Type::BareFn(type_bare_fn) => {
+                for arg in &type_bare_fn.inputs {
+                    extract_from_type(set, &arg.ty)
+                }
+                if let ReturnType::Type(_, ty) = &type_bare_fn.output {
+                    extract_from_type(set, ty)
+                }
+            }
+            Type::Group(type_group) => extract_from_type(set, &type_group.elem),
+            Type::Paren(type_paren) => extract_from_type(set, &type_paren.elem),
+            Type::Path(type_path) => {
+                if type_path.qself.is_none()
+                    && type_path.path.leading_colon.is_none()
+                    && type_path.path.segments.len() == 1
+                {
+                    set.insert(type_path.path.segments[0].ident.clone());
+                }
+            }
+            Type::Ptr(type_ptr) => extract_from_type(set, &type_ptr.elem),
+            Type::Reference(type_reference) => {
+                extract_from_type(set, &type_reference.elem)
+            }
+            Type::Slice(type_slice) => extract_from_type(set, &type_slice.elem),
+            Type::Tuple(type_tuple) => {
+                for ty in &type_tuple.elems {
+                    extract_from_type(set, ty);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut type_params = HashSet::default();
+    for arg in args {
+        if let GenericArgument::Type(ty) = arg {
+            extract_from_type(&mut type_params, ty);
+        }
+    }
+    type_params
+}
+
 pub fn add_extra_type_param_bound_op_output<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
 ) -> Generics {
+    add_extra_type_param_bound_op_output_except(
+        generics,
+        trait_ident,
+        HashSet::default(),
+    )
+}
+
+pub fn add_extra_type_param_bound_op_output_except<'a>(
+    generics: &'a Generics,
+    trait_ident: &'a Ident,
+    except: HashSet<Ident>,
+) -> Generics {
     let mut generics = generics.clone();
-    for type_param in &mut generics.type_params_mut() {
+    for type_param in &mut generics
+        .type_params_mut()
+        .skip_while(|t| except.contains(&t.ident))
+    {
         let type_ident = &type_param.ident;
         let bound: TypeParamBound = parse_quote! {
             derive_more::core::ops::#trait_ident<Output = #type_ident>
@@ -152,20 +222,43 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     generics
 }
 
-pub fn add_extra_ty_param_bound_op<'a>(
+// pub fn add_extra_ty_param_bound_op<'a>(
+//     generics: &'a Generics,
+//     trait_ident: &'a Ident,
+// ) -> Generics {
+//     add_extra_ty_param_bound_op_except(generics, trait_ident, HashSet::default())
+// }
+
+pub fn add_extra_ty_param_bound_op_except<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
+    except: HashSet<Ident>,
 ) -> Generics {
-    add_extra_ty_param_bound(generics, &quote! { derive_more::core::ops::#trait_ident })
+    add_extra_ty_param_bound_except(
+        generics,
+        &quote! { derive_more::core::ops::#trait_ident },
+        except,
+    )
 }
 
 pub fn add_extra_ty_param_bound<'a>(
     generics: &'a Generics,
     bound: &'a TokenStream,
 ) -> Generics {
+    add_extra_ty_param_bound_except(generics, bound, HashSet::default())
+}
+
+pub fn add_extra_ty_param_bound_except<'a>(
+    generics: &'a Generics,
+    bound: &'a TokenStream,
+    except: HashSet<Ident>,
+) -> Generics {
     let mut generics = generics.clone();
     let bound: TypeParamBound = parse_quote! { #bound };
-    for type_param in &mut generics.type_params_mut() {
+    for type_param in &mut generics
+        .type_params_mut()
+        .skip_while(|t| except.contains(&t.ident))
+    {
         type_param.bounds.push(bound.clone())
     }
 
@@ -1007,6 +1100,7 @@ fn parse_punctuated_nested_meta(
                     (None, "owned") => info.owned = Some(true),
                     (None, "ref") => info.ref_ = Some(true),
                     (None, "ref_mut") => info.ref_mut = Some(true),
+                    (None, "skip") => info.skip = Some(true),
                     (None, "source") => info.source = Some(true),
                     (Some("not"), "source") => info.source = Some(false),
                     (Some("source"), "optional") => info.source_optional = Some(true),
@@ -1205,6 +1299,7 @@ pub struct MetaInfo {
     pub owned: Option<bool>,
     pub ref_: Option<bool>,
     pub ref_mut: Option<bool>,
+    pub skip: Option<bool>,
     pub source: Option<bool>,
     pub source_optional: Option<bool>,
     pub backtrace: Option<bool>,
@@ -1298,11 +1393,15 @@ pub fn is_type_parameter_used_in_type(
 
 #[cfg(any(
     feature = "as_ref",
+    feature = "add",
+    feature = "add_assign",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "from_str",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
 ))]
 mod either {
@@ -1370,10 +1469,14 @@ mod either {
 
 #[cfg(any(
     feature = "as_ref",
+    feature = "add",
+    feature = "add_assign",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
 ))]
 mod spanning {
@@ -1465,10 +1568,14 @@ mod spanning {
 
 #[cfg(any(
     feature = "as_ref",
+    feature = "add",
+    feature = "add_assign",
     feature = "debug",
     feature = "display",
     feature = "from",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
 ))]
 pub(crate) mod attr {
@@ -1490,9 +1597,13 @@ pub(crate) mod attr {
     pub(crate) use self::empty::Empty;
     #[cfg(any(
         feature = "as_ref",
+        feature = "add",
+        feature = "add_assign",
         feature = "debug",
         feature = "from",
         feature = "into",
+        feature = "mul",
+        feature = "mul_assign",
     ))]
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
@@ -1821,10 +1932,14 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "as_ref",
+        feature = "add",
+        feature = "add_assign",
         feature = "debug",
         feature = "display",
         feature = "from",
         feature = "into",
+        feature = "mul",
+        feature = "mul_assign",
     ))]
     mod skip {
         use syn::{

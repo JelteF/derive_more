@@ -107,31 +107,46 @@ macro_rules! create_derive(
     }
 );
 
-create_derive!("add", add_like, Add, add_derive, skip);
-create_derive!("add", add_like, Sub, sub_derive, skip);
-create_derive!("add", add_like, BitAnd, bit_and_derive, skip);
-create_derive!("add", add_like, BitOr, bit_or_derive, skip);
-create_derive!("add", add_like, BitXor, bit_xor_derive, skip);
+create_derive!("add", add_like, Add, add_derive, add);
+create_derive!("add", add_like, Sub, sub_derive, sub);
+create_derive!("add", add_like, BitAnd, bit_and_derive, bitand);
+create_derive!("add", add_like, BitOr, bit_or_derive, bitor);
+create_derive!("add", add_like, BitXor, bit_xor_derive, bitxor);
 
-create_derive!("add_assign", add_assign_like, AddAssign, add_assign_derive,);
-create_derive!("add_assign", add_assign_like, SubAssign, sub_assign_derive,);
+create_derive!(
+    "add_assign",
+    add_assign_like,
+    AddAssign,
+    add_assign_derive,
+    add_assign,
+);
+create_derive!(
+    "add_assign",
+    add_assign_like,
+    SubAssign,
+    sub_assign_derive,
+    sub_assign,
+);
 create_derive!(
     "add_assign",
     add_assign_like,
     BitAndAssign,
     bit_and_assign_derive,
+    bitand_assign,
 );
 create_derive!(
     "add_assign",
     add_assign_like,
     BitOrAssign,
     bit_or_assign_derive,
+    bitor_assign,
 );
 create_derive!(
     "add_assign",
     add_assign_like,
     BitXorAssign,
     bit_xor_assign_derive,
+    bitxor_assign,
 );
 
 create_derive!("as_ref", r#as::r#mut, AsMut, as_mut_derive, as_mut);
