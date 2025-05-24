@@ -31,6 +31,7 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "debug",
     feature = "display",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "try_from",
 ))]
@@ -1373,6 +1374,7 @@ mod either {
     feature = "debug",
     feature = "display",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "try_from",
 ))]
@@ -1468,6 +1470,7 @@ mod spanning {
     feature = "debug",
     feature = "display",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "try_from",
 ))]
@@ -1488,6 +1491,8 @@ pub(crate) mod attr {
         feature = "try_from"
     ))]
     pub(crate) use self::empty::Empty;
+    #[cfg(any(feature = "display", feature = "from_str"))]
+    pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
         feature = "as_ref",
         feature = "debug",
@@ -2156,6 +2161,105 @@ pub(crate) mod attr {
                 })
             }
         }
+    }
+
+    #[cfg(any(feature = "display", feature = "from_str"))]
+    mod rename_all {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+            token,
+        };
+
+        use super::ParseMultiple;
+
+        /// Representation of a `rename_all` macro attribute.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(rename_all = "...")]
+        /// ```
+        ///
+        /// Possible cases:
+        /// - `lowercase`
+        /// - `UPPERCASE`
+        /// - `PascalCase`
+        /// - `camelCase`
+        /// - `snake_case`
+        /// - `SCREAMING_SNAKE_CASE`
+        /// - `kebab-case`
+        /// - `SCREAMING-KEBAB-CASE`
+        #[derive(Clone, Copy, Debug)]
+        pub(crate) enum RenameAll {
+            Lower,
+            Upper,
+            Pascal,
+            Camel,
+            Snake,
+            ScreamingSnake,
+            Kebab,
+            ScreamingKebab,
+        }
+
+        impl RenameAll {
+            /// Converts the provided `name` into the case of this [`RenameAll`].
+            pub(crate) fn convert_case(&self, name: &str) -> String {
+                use convert_case::Casing as _;
+
+                let case = match self {
+                    Self::Lower => convert_case::Case::Flat,
+                    Self::Upper => convert_case::Case::UpperFlat,
+                    Self::Pascal => convert_case::Case::Pascal,
+                    Self::Camel => convert_case::Case::Camel,
+                    Self::Snake => convert_case::Case::Snake,
+                    Self::ScreamingSnake => convert_case::Case::UpperSnake,
+                    Self::Kebab => convert_case::Case::Kebab,
+                    Self::ScreamingKebab => convert_case::Case::UpperKebab,
+                };
+                name.to_case(case)
+            }
+        }
+
+        impl Parse for RenameAll {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let _ = input.parse::<syn::Path>().and_then(|p| {
+                    if p.is_ident("rename_all") {
+                        Ok(p)
+                    } else {
+                        Err(syn::Error::new(
+                            p.span(),
+                            "unknown attribute argument, expected `rename_all = \"...\"`",
+                        ))
+                    }
+                })?;
+
+                input.parse::<token::Eq>()?;
+
+                let lit: syn::LitStr = input.parse()?;
+                Ok(
+                    match lit.value().replace(['-', '_'], "").to_lowercase().as_str() {
+                        "lowercase" => Self::Lower,
+                        "uppercase" => Self::Upper,
+                        "pascalcase" => Self::Pascal,
+                        "camelcase" => Self::Camel,
+                        "snakecase" => Self::Snake,
+                        "screamingsnakecase" => Self::ScreamingSnake,
+                        "kebabcase" => Self::Kebab,
+                        "screamingkebabcase" => Self::ScreamingKebab,
+                        _ => {
+                            return Err(syn::Error::new_spanned(
+                                lit,
+                                "unexpected casing expected one of: \
+                         \"lowercase\", \"UPPERCASE\", \"PascalCase\", \"camelCase\", \
+                         \"snake_case\", \"SCREAMING_SNAKE_CASE\", \"kebab-case\", or \
+                         \"SCREAMING-KEBAB-CASE\"",
+                            ))
+                        }
+                    },
+                )
+            }
+        }
+
+        impl ParseMultiple for RenameAll {}
     }
 }
 

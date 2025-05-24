@@ -1,0 +1,11 @@
+error: `abc`, `AB_C` variants cannot have the same "abc" string representation
+ --> tests/compile_fail/from_str/enum_same_string_representation.rs:4:6
+  |
+4 | enum Enum {
+  |      ^^^^
+
+error: `BaR`, `BA_R` variants cannot have the same "BA_R" string representation
+  --> tests/compile_fail/from_str/enum_same_string_representation.rs:12:6
+   |
+12 | enum EnumTop {
+   |      ^^^^^^^
