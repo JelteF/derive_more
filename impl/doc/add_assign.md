@@ -69,6 +69,29 @@ The behaviour is similar with more or less fields.
 
 
 
+## Skipping fields
+
+Sometimes the struct needs to hold a zero sized field, most commonly
+`PhantomData`. A field containing a ZST can be skipped using the
+`#[add_assign(skip)]` attribute like this:
+
+```rust
+# use core::marker::PhantomData;
+# 
+#[derive(AddAssign)]
+struct TupleWithZst<T>(i32, #[add_assign(skip)] PhantomData<T>);
+
+#[derive(AddAssign)]
+struct StructWithZst<T> {
+    x: i32,
+    #[add_assign(skip)]
+    _marker: PhantomData<T>,
+}
+```
+
+
+
+
 ## Enums
 
 Deriving `AddAssign` is not (yet) supported for enums.

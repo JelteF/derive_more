@@ -13,14 +13,12 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         .to_string()
         + "_assign";
 
-    let mut state = State::with_attr_params(
-        input,
-        trait_name,
-        method_name,
-        AttrParams::struct_(vec!["forward"]),
-    )?;
+    let mut allowed_attr_params = AttrParams::struct_(vec!["forward"]);
+    allowed_attr_params.field = vec!["skip"];
+    let mut state =
+        State::with_attr_params(input, trait_name, method_name, allowed_attr_params)?;
     if state.default_info.forward {
-        return Ok(add_assign_like::expand(input, trait_name));
+        return add_assign_like::expand(input, trait_name);
     }
     let scalar_ident = format_ident!("__RhsT");
     state.add_trait_path_type_param(quote! { #scalar_ident });

@@ -81,6 +81,31 @@ field.
 
 
 
+## Skipping fields
+
+Struct marked with `#[mul_assign(forward)]` can hold zero sized fields, most
+commonly `PhantomData`. A field containing a ZST can be skipped using the
+`#[mul_assign(skip)]` attribute like this
+
+```rust
+# use core::marker::PhantomData;
+# 
+#[derive(MulAssign)]
+#[mul_assign(forward)]
+struct TupleWithZst<T>(i32, #[mul_assign(skip)] PhantomData<T>);
+
+#[derive(MulAssign)]
+#[mul_assign(forward)]
+struct StructWithZst<T> {
+    x: i32,
+    #[mul_assign(skip)]
+    _marker: PhantomData<T>,
+}
+```
+
+
+
+
 ## Enums
 
 Deriving `MulAssign` for enums is not (yet) supported.

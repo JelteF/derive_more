@@ -7,14 +7,16 @@ use std::iter;
 use syn::{DeriveInput, Result};
 
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    let mut allowed_attr_params = AttrParams::struct_(vec!["forward"]);
+    allowed_attr_params.field = vec!["skip"];
     let mut state = State::with_attr_params(
         input,
         trait_name,
         trait_name.to_lowercase(),
-        AttrParams::struct_(vec!["forward"]),
+        allowed_attr_params,
     )?;
     if state.default_info.forward {
-        return Ok(add_like::expand(input, trait_name));
+        return add_like::expand(input, trait_name);
     }
 
     let scalar_ident = format_ident!("__RhsT");

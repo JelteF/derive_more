@@ -141,6 +141,31 @@ impl<__RhsT: Copy> derive_more::core::ops::Mul<__RhsT> for Point2D
 
 
 
+## Skipping fields
+
+Struct marked with `#[mul(forward)]` can hold zero sized fields, most commonly
+`PhantomData`. A field containing a ZST can be skipped using the
+`#[mul(skip)]` attribute like this
+
+```rust
+# use core::marker::PhantomData;
+# 
+#[derive(Mul)]
+#[mul(forward)]
+struct TupleWithZst<T>(i32, #[mul(skip)] PhantomData<T>);
+
+#[derive(Mul)]
+#[mul(forward)]
+struct StructWithZst<T> {
+    x: i32,
+    #[mul(skip)]
+    _marker: PhantomData<T>,
+}
+```
+
+
+
+
 ## Enums
 
 Deriving `Mul` for enums is not (yet) supported, except when you use
