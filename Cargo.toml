@@ -216,6 +216,11 @@ path = "tests/not.rs"
 required-features = ["not"]
 
 [[test]]
+name = "partial_eq"
+path = "tests/partial_eq.rs"
+required-features = ["eq"]
+
+[[test]]
 name = "sum"
 path = "tests/sum.rs"
 required-features = ["sum"]
