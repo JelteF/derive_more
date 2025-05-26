@@ -57,6 +57,8 @@ mod mul_like;
 mod not_like;
 #[cfg(any(feature = "debug", feature = "display"))]
 pub(crate) mod parsing;
+#[cfg(feature = "eq")]
+mod partial_eq;
 #[cfg(feature = "sum")]
 mod sum_like;
 #[cfg(feature = "try_from")]
@@ -183,6 +185,8 @@ create_derive!(
     upper_exp,
 );
 create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
+
+create_derive!("eq", partial_eq, PartialEq, partial_eq_derive, partial_eq);
 
 create_derive!("error", error, Error, error_derive, error);
 
