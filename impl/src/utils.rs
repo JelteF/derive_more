@@ -2422,27 +2422,41 @@ mod generics_search {
     }
 
     impl<'ast> Visit<'ast> for Visitor<'_> {
-        fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
-            self.found |= tp.path.get_ident().is_some_and(|ident| {
-                self.search.types.contains(ident) || self.search.consts.contains(ident)
-            });
-
-            syn::visit::visit_type_path(self, tp)
-        }
-
-        fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
-            self.found |= self.search.lifetimes.contains(&lf.ident);
-
-            syn::visit::visit_lifetime(self, lf)
-        }
-
         fn visit_expr_path(&mut self, ep: &'ast syn::ExprPath) {
             self.found |= ep
                 .path
                 .get_ident()
                 .is_some_and(|ident| self.search.consts.contains(ident));
 
-            syn::visit::visit_expr_path(self, ep)
+            if !self.found {
+                syn::visit::visit_expr_path(self, ep);
+            }
+        }
+
+        fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
+            self.found |= self.search.lifetimes.contains(&lf.ident);
+
+            if !self.found {
+                syn::visit::visit_lifetime(self, lf);
+            }
+        }
+
+        fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
+            self.found |= tp.path.get_ident().is_some_and(|ident| {
+                self.search.types.contains(ident) || self.search.consts.contains(ident)
+            });
+
+            if !self.found {
+                // `TypeParam::AssocType` case.
+                self.found |= tp.path.segments.first().is_some_and(|segment| {
+                    matches!(segment.arguments, syn::PathArguments::None)
+                        && self.search.types.contains(&segment.ident)
+                });
+            }
+
+            if !self.found {
+                syn::visit::visit_type_path(self, tp)
+            }
         }
     }
 }

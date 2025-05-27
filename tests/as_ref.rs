@@ -51,6 +51,26 @@ impl AsRef<[i32]> for ConstParamHelper<0> {
     }
 }
 
+trait Some {
+    type Assoc;
+}
+
+impl Some for () {
+    type Assoc = Helper;
+}
+
+impl Some for bool {
+    type Assoc = String;
+}
+
+impl Some for u8 {
+    type Assoc = i32;
+}
+
+impl Some for str {
+    type Assoc = u8;
+}
+
 mod single_field {
     use super::*;
 
@@ -275,12 +295,34 @@ mod single_field {
             }
 
             #[test]
+            fn nothing_assoc() {
+                #[derive(AsRef)]
+                struct Nothing<T: Some>(T::Assoc);
+
+                let item = Nothing::<bool>("test".to_owned());
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+            }
+
+            #[test]
             fn forward() {
                 #[derive(AsRef)]
                 #[as_ref(forward)]
                 struct Forward<T>(T);
 
                 let item = Forward("test".to_owned());
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[test]
+            fn forward_assoc() {
+                #[derive(AsRef)]
+                #[as_ref(forward)]
+                struct Forward<T: Some>(T::Assoc);
+
+                let item = Forward::<bool>("test".to_owned());
 
                 let rf: &str = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
@@ -302,6 +344,17 @@ mod single_field {
                 struct FieldForward<T>(#[as_ref(forward)] T);
 
                 let item = FieldForward("test".to_owned());
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[test]
+            fn field_forward_assoc() {
+                #[derive(AsRef)]
+                struct FieldForward<T: Some>(#[as_ref(forward)] T::Assoc);
+
+                let item = FieldForward::<bool>("test".to_owned());
 
                 let rf: &str = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
@@ -332,12 +385,50 @@ mod single_field {
             }
 
             #[test]
+            fn types_assoc() {
+                #[derive(AsRef)]
+                #[as_ref(i32, f64)]
+                struct Types<T: Some>(T::Assoc);
+
+                // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl
+                // forwarding to the field type, by producing a trait implementations conflict error
+                // during compilation, if it does.
+                impl<T: Some> AsRef<bool> for Types<T>
+                where
+                    T::Assoc: AsRef<bool>,
+                {
+                    fn as_ref(&self) -> &bool {
+                        self.0.as_ref()
+                    }
+                }
+
+                let item = Types::<()>(Helper(1, 2.0, false));
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &f64 = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[test]
             fn types_inner() {
                 #[derive(AsRef)]
                 #[as_ref(Vec<T>)]
                 struct TypesInner<T>(Vec<T>);
 
                 let item = TypesInner(vec![1i32]);
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+            }
+
+            #[test]
+            fn types_inner_assoc() {
+                #[derive(AsRef)]
+                #[as_ref(Vec<T::Assoc>)]
+                struct TypesInner<T: Some>(Vec<T::Assoc>);
+
+                let item = TypesInner::<u8>(vec![1i32]);
 
                 assert!(ptr::eq(item.as_ref(), &item.0));
             }
@@ -366,11 +457,49 @@ mod single_field {
             }
 
             #[test]
+            fn field_types_assoc() {
+                #[derive(AsRef)]
+                struct FieldTypes<T: Some>(#[as_ref(i32, f64)] T::Assoc);
+
+                // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl
+                // forwarding to the field type, by producing a trait implementations conflict error
+                // during compilation, if it does.
+                impl<T: Some> AsRef<bool> for FieldTypes<T>
+                where
+                    T::Assoc: AsRef<bool>,
+                {
+                    fn as_ref(&self) -> &bool {
+                        self.0.as_ref()
+                    }
+                }
+
+                let item = FieldTypes::<()>(Helper(1, 2.0, false));
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &f64 = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[test]
             fn field_types_inner() {
                 #[derive(AsRef)]
                 struct FieldTypesInner<T>(#[as_ref(Vec<T>)] Vec<T>);
 
                 let item = FieldTypesInner(vec![1i32]);
+
+                assert!(ptr::eq(item.as_ref(), &item.0));
+            }
+
+            #[test]
+            fn field_types_inner_assoc() {
+                #[derive(AsRef)]
+                struct FieldTypesInner<T: Some>(
+                    #[as_ref(Vec<<T as Some>::Assoc>)] Vec<<T as Some>::Assoc>,
+                );
+
+                let item = FieldTypesInner::<u8>(vec![1i32]);
 
                 assert!(ptr::eq(item.as_ref(), &item.0));
             }
@@ -707,6 +836,20 @@ mod single_field {
             }
 
             #[test]
+            fn nothing_assoc() {
+                #[derive(AsRef)]
+                struct Nothing<T: Some> {
+                    first: <T as Some>::Assoc,
+                }
+
+                let item = Nothing::<bool> {
+                    first: "test".to_owned(),
+                };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+            }
+
+            #[test]
             fn forward() {
                 #[derive(AsRef)]
                 #[as_ref(forward)]
@@ -715,6 +858,22 @@ mod single_field {
                 }
 
                 let item = Forward {
+                    first: "test".to_owned(),
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[test]
+            fn forward_assoc() {
+                #[derive(AsRef)]
+                #[as_ref(forward)]
+                struct Forward<T: Some> {
+                    first: T::Assoc,
+                }
+
+                let item = Forward::<bool> {
                     first: "test".to_owned(),
                 };
 
@@ -754,6 +913,22 @@ mod single_field {
             }
 
             #[test]
+            fn field_forward_assoc() {
+                #[derive(AsRef)]
+                struct FieldForward<T: Some> {
+                    #[as_ref(forward)]
+                    first: T::Assoc,
+                }
+
+                let item = FieldForward::<bool> {
+                    first: "test".to_owned(),
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[test]
             fn types() {
                 #[derive(AsRef)]
                 #[as_ref(i32, f64)]
@@ -782,6 +957,37 @@ mod single_field {
             }
 
             #[test]
+            fn types_assoc() {
+                #[derive(AsRef)]
+                #[as_ref(i32, f64)]
+                struct Types<T: Some> {
+                    first: T::Assoc,
+                }
+
+                // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl
+                // forwarding to the field type, by producing a trait implementations conflict error
+                // during compilation, if it does.
+                impl<T: Some> AsRef<bool> for Types<T>
+                where
+                    T::Assoc: AsRef<bool>,
+                {
+                    fn as_ref(&self) -> &bool {
+                        self.first.as_ref()
+                    }
+                }
+
+                let item = Types::<()> {
+                    first: Helper(1, 2.0, false),
+                };
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &f64 = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[test]
             fn types_inner() {
                 #[derive(AsRef)]
                 #[as_ref(Vec<T>)]
@@ -790,6 +996,19 @@ mod single_field {
                 }
 
                 let item = TypesInner { first: vec![1i32] };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+            }
+
+            #[test]
+            fn types_inner_assoc() {
+                #[derive(AsRef)]
+                #[as_ref(Vec<T::Assoc>)]
+                struct TypesInner<T: Some> {
+                    first: Vec<T::Assoc>,
+                }
+
+                let item = TypesInner::<u8> { first: vec![1i32] };
 
                 assert!(ptr::eq(item.as_ref(), &item.first));
             }
@@ -823,6 +1042,37 @@ mod single_field {
             }
 
             #[test]
+            fn field_types_assoc() {
+                #[derive(AsRef)]
+                struct FieldTypes<T: Some> {
+                    #[as_ref(i32, f64)]
+                    first: T::Assoc,
+                }
+
+                // Asserts that the macro expansion doesn't generate a blanket `AsRef` impl
+                // forwarding to the field type, by producing a trait implementations conflict error
+                // during compilation, if it does.
+                impl<T: Some> AsRef<bool> for FieldTypes<T>
+                where
+                    T::Assoc: AsRef<bool>,
+                {
+                    fn as_ref(&self) -> &bool {
+                        self.first.as_ref()
+                    }
+                }
+
+                let item = FieldTypes::<()> {
+                    first: Helper(1, 2.0, false),
+                };
+
+                let rf: &i32 = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &f64 = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[test]
             fn field_types_inner() {
                 #[derive(AsRef)]
                 struct FieldTypesInner<T> {
@@ -831,6 +1081,19 @@ mod single_field {
                 }
 
                 let item = FieldTypesInner { first: vec![1i32] };
+
+                assert!(ptr::eq(item.as_ref(), &item.first));
+            }
+
+            #[test]
+            fn field_types_inner_assoc() {
+                #[derive(AsRef)]
+                struct FieldTypesInner<T: Some> {
+                    #[as_ref(Vec<<T as Some>::Assoc>)]
+                    first: Vec<<T as Some>::Assoc>,
+                }
+
+                let item = FieldTypesInner::<u8> { first: vec![1i32] };
 
                 assert!(ptr::eq(item.as_ref(), &item.first));
             }
@@ -1063,11 +1326,39 @@ mod multi_field {
             }
 
             #[test]
+            fn field_forward_assoc() {
+                #[derive(AsRef)]
+                struct FieldForward<T: Some, U>(#[as_ref(forward)] T::Assoc, U);
+
+                let item = FieldForward::<bool, _>("test".to_owned(), 0);
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+            }
+
+            #[test]
             fn types() {
                 #[derive(AsRef)]
                 struct Types<T, U>(#[as_ref(str)] T, #[as_ref([u8])] U);
 
                 let item = Types("test".to_owned(), vec![0u8]);
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &[u8] = item.as_ref();
+                assert!(ptr::eq(rf, item.1.as_ref()));
+            }
+
+            #[test]
+            fn types_assoc() {
+                #[derive(AsRef)]
+                struct Types<T: Some, U: Some + ?Sized>(
+                    #[as_ref(str)] <T as Some>::Assoc,
+                    #[as_ref([u8])] Vec<U::Assoc>,
+                );
+
+                let item = Types::<bool, str>("test".to_owned(), vec![0u8]);
 
                 let rf: &str = item.as_ref();
                 assert!(ptr::eq(rf, item.0.as_ref()));
@@ -1097,11 +1388,41 @@ mod multi_field {
             }
 
             #[test]
+            fn types_with_inner_assoc() {
+                #[derive(AsRef)]
+                struct TypesWithInner<T: Some, U: Some>(
+                    #[as_ref(Vec<T::Assoc>, [T::Assoc])] Vec<T::Assoc>,
+                    #[as_ref(str)] U::Assoc,
+                );
+
+                let item = TypesWithInner::<u8, bool>(vec![1i32], "a".to_owned());
+
+                let rf: &Vec<i32> = item.as_ref();
+                assert!(ptr::eq(rf, &item.0));
+
+                let rf: &[i32] = item.as_ref();
+                assert!(ptr::eq(rf, item.0.as_ref()));
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.1.as_ref()));
+            }
+
+            #[test]
             fn field_non_generic() {
                 #[derive(AsRef)]
                 struct FieldNonGeneric<T>(#[as_ref([T])] Vec<i32>, T);
 
                 let item = FieldNonGeneric(vec![], 2i32);
+
+                assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
+            }
+
+            #[test]
+            fn field_non_generic_assoc() {
+                #[derive(AsRef)]
+                struct FieldNonGeneric<T: Some>(#[as_ref([T::Assoc])] Vec<i32>, T);
+
+                let item = FieldNonGeneric::<u8>(vec![], 2u8);
 
                 assert!(ptr::eq(item.as_ref(), item.0.as_ref()));
             }
@@ -1211,10 +1532,10 @@ mod multi_field {
             assert!(ptr::eq(rf, item.first.as_ref()));
         }
 
-        type RenamedString = String;
-
         #[test]
         fn types() {
+            type RenamedString = String;
+
             #[derive(AsRef)]
             struct Types {
                 #[as_ref(str, RenamedString)]
@@ -1326,6 +1647,24 @@ mod multi_field {
             }
 
             #[test]
+            fn field_forward_assoc() {
+                #[derive(AsRef)]
+                struct FieldForward<T: Some, U> {
+                    #[as_ref(forward)]
+                    first: T::Assoc,
+                    second: U,
+                }
+
+                let item = FieldForward::<bool, _> {
+                    first: "test".to_owned(),
+                    second: 0,
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+            }
+
+            #[test]
             fn types() {
                 #[derive(AsRef)]
                 struct Types<T, U> {
@@ -1336,6 +1675,28 @@ mod multi_field {
                 }
 
                 let item = Types {
+                    first: "test".to_owned(),
+                    second: vec![0u8],
+                };
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &[u8] = item.as_ref();
+                assert!(ptr::eq(rf, item.second.as_ref()));
+            }
+
+            #[test]
+            fn types_assoc() {
+                #[derive(AsRef)]
+                struct Types<T: Some, U: Some + ?Sized> {
+                    #[as_ref(str)]
+                    first: T::Assoc,
+                    #[as_ref([u8])]
+                    second: Vec<<U as Some>::Assoc>,
+                }
+
+                let item = Types::<bool, str> {
                     first: "test".to_owned(),
                     second: vec![0u8],
                 };
@@ -1373,6 +1734,31 @@ mod multi_field {
             }
 
             #[test]
+            fn types_with_inner_assoc() {
+                #[derive(AsRef)]
+                struct TypesWithInner<T: Some, U: Some> {
+                    #[as_ref(Vec<<T as Some>::Assoc>, [<T as Some>::Assoc])]
+                    first: Vec<<T as Some>::Assoc>,
+                    #[as_ref(str)]
+                    second: U::Assoc,
+                }
+
+                let item = TypesWithInner::<u8, bool> {
+                    first: vec![1i32],
+                    second: "a".to_owned(),
+                };
+
+                let rf: &Vec<i32> = item.as_ref();
+                assert!(ptr::eq(rf, &item.first));
+
+                let rf: &[i32] = item.as_ref();
+                assert!(ptr::eq(rf, item.first.as_ref()));
+
+                let rf: &str = item.as_ref();
+                assert!(ptr::eq(rf, item.second.as_ref()));
+            }
+
+            #[test]
             fn field_non_generic() {
                 #[derive(AsRef)]
                 struct FieldNonGeneric<T> {
@@ -1384,6 +1770,23 @@ mod multi_field {
                 let item = FieldNonGeneric {
                     first: vec![],
                     second: 2i32,
+                };
+
+                assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
+            }
+
+            #[test]
+            fn field_non_generic_assoc() {
+                #[derive(AsRef)]
+                struct FieldNonGeneric<T: Some> {
+                    #[as_ref([<T as Some>::Assoc])]
+                    first: Vec<i32>,
+                    second: T,
+                }
+
+                let item = FieldNonGeneric::<u8> {
+                    first: vec![],
+                    second: 2u8,
                 };
 
                 assert!(ptr::eq(item.as_ref(), item.first.as_ref()));
