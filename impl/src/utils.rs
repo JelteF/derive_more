@@ -2399,6 +2399,19 @@ mod generics_search {
         /// Const parameters to look for.
         pub(crate) consts: HashSet<&'s syn::Ident>,
     }
+    
+    impl<'s> From<&'s syn::Generics> for GenericsSearch<'s> {
+        fn from(value: &'s syn::Generics) -> Self {
+            Self {
+                types: value.type_params().map(|p| &p.ident).collect(),
+                lifetimes: value
+                    .lifetimes()
+                    .map(|p| &p.lifetime.ident)
+                    .collect(),
+                consts: value.const_params().map(|p| &p.ident).collect(),
+            }
+        }
+    }
 
     impl GenericsSearch<'_> {
         /// Checks the provided [`syn::Type`] to contain anything from this [`GenericsSearch`].
