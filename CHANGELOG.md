@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#459](https://github.com/JelteF/derive_more/pull/459))
 - Support structs with no fields in `FromStr` derive.
   ([#469](https://github.com/JelteF/derive_more/pull/469))
+- Add `PartialEq` derive similar to `std`'s one, but considering generics correctly.
+  ([#473](https://github.com/JelteF/derive_more/pull/473))
 
 ### Changed
 
