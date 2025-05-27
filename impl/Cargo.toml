@@ -101,4 +101,4 @@ full = [
     "unwrap",
 ]
 
-testing-helpers = ["dep:rustc_version"]
+testing-helpers = ["syn/full", "dep:rustc_version"]

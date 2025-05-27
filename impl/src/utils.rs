@@ -2399,15 +2399,12 @@ mod generics_search {
         /// Const parameters to look for.
         pub(crate) consts: HashSet<&'s syn::Ident>,
     }
-    
+
     impl<'s> From<&'s syn::Generics> for GenericsSearch<'s> {
         fn from(value: &'s syn::Generics) -> Self {
             Self {
                 types: value.type_params().map(|p| &p.ident).collect(),
-                lifetimes: value
-                    .lifetimes()
-                    .map(|p| &p.lifetime.ident)
-                    .collect(),
+                lifetimes: value.lifetimes().map(|p| &p.lifetime.ident).collect(),
                 consts: value.const_params().map(|p| &p.ident).collect(),
             }
         }
@@ -2469,6 +2466,104 @@ mod generics_search {
 
             if !self.found {
                 syn::visit::visit_type_path(self, tp)
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod spec {
+        use quote::ToTokens as _;
+        use syn::parse_quote;
+
+        use super::GenericsSearch;
+        
+        #[test]
+        fn types() {
+            let generics: syn::Generics = parse_quote! { <T> };
+            let search = GenericsSearch::from(&generics);
+
+            for input in [
+                parse_quote! { T },
+                parse_quote! { &T },
+                parse_quote! { &'a T },
+                parse_quote! { &&'a T },
+                parse_quote! { Type<'a, T> },
+                parse_quote! { path::Type<T, 'a> },
+                parse_quote! { path::<'a, T>::Type },
+                parse_quote! { <Self as Trait<'a, T>>::Type },
+                parse_quote! { <Self as Trait>::Type<T, 'a> },
+                parse_quote! { T::Type },
+                parse_quote! { <T as Trait>::Type },
+                parse_quote! { [T] },
+                parse_quote! { [T; 3] },
+                parse_quote! { [T; _] },
+                parse_quote! { (T) },
+                parse_quote! { (T,) },
+                parse_quote! { (T, u8) },
+                parse_quote! { (u8, T) },
+                parse_quote! { fn(T) },
+                parse_quote! { fn(u8, T) },
+                parse_quote! { fn(_) -> T },
+                parse_quote! { fn(_) -> (u8, T) },
+            ] {
+                assert!(
+                    search.any_in(&input),
+                    "cannot find type parameter `T` in type `{}`",
+                    input.into_token_stream(),
+                );
+            }
+        }
+
+        #[test]
+        fn lifetimes() {
+            let generics: syn::Generics = parse_quote! { <'a> };
+            let search = GenericsSearch::from(&generics);
+
+            for input in [
+                parse_quote! { &'a T },
+                parse_quote! { &&'a T },
+                parse_quote! { Type<'a> },
+                parse_quote! { path::Type<'a> },
+                parse_quote! { path::<'a>::Type },
+                parse_quote! { <Self as Trait<'a>>::Type },
+                parse_quote! { <Self as Trait>::Type<'a> },
+            ] {
+                assert!(
+                    search.any_in(&input),
+                    "cannot find lifetime parameter `'a` in type `{}`",
+                    input.into_token_stream(),
+                );
+            }
+        }
+
+        #[test]
+        fn consts() {
+            let generics: syn::Generics = parse_quote! { <const N: usize> };
+            let search = GenericsSearch::from(&generics);
+
+            for input in [
+                parse_quote! { [_; N] },
+                parse_quote! { Type<N> },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { Type<{ N }> },
+                parse_quote! { path::Type<N> },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { path::Type<{ N }> },
+                parse_quote! { path::<N>::Type },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { path::<{ N }>::Type },
+                parse_quote! { <Self as Trait<N>>::Type },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { <Self as Trait<{ N }>>::Type },
+                parse_quote! { <Self as Trait>::Type<N> },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { <Self as Trait>::Type<{ N }> },
+            ] {
+                assert!(
+                    search.any_in(&input),
+                    "cannot find const parameter `N` in type `{}`",
+                    input.into_token_stream(),
+                );
             }
         }
     }
