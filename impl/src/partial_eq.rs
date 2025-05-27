@@ -109,7 +109,7 @@ impl StructuralExpansion<'_> {
             });
 
             quote! {
-                match (self, other) {
+                match (self, __other) {
                     #( #matched_variants , )*
                     #always_true_arm
                     #unreachable_arm
@@ -151,7 +151,7 @@ impl ToTokens for StructuralExpansion<'_> {
                  #where_clause
             {
                 #[inline]
-                fn eq(&self, other: &Self) -> bool {
+                fn eq(&self, __other: &Self) -> bool {
                     #eq_body
                 }
             }
