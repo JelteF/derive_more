@@ -129,17 +129,8 @@ impl ToTokens for StructuralExpansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let ty = self.self_ty.0;
 
+        let generics_search = GenericsSearch::from(self.self_ty.1);
         let mut generics = self.self_ty.1.clone();
-        let generics_search = GenericsSearch {
-            types: self.self_ty.1.type_params().map(|p| &p.ident).collect(),
-            lifetimes: self
-                .self_ty
-                .1
-                .lifetimes()
-                .map(|p| &p.lifetime.ident)
-                .collect(),
-            consts: self.self_ty.1.const_params().map(|p| &p.ident).collect(),
-        };
         for variant in &self.variants {
             for field_ty in variant.1.iter().map(|field| &field.ty) {
                 if generics_search.any_in(field_ty) {
