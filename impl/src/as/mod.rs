@@ -189,15 +189,7 @@ impl ToTokens for Expansion<'_> {
 
         let field_ref = quote! { & #mut_ self.#field_ident };
 
-        let generics_search = GenericsSearch {
-            types: self.generics.type_params().map(|p| &p.ident).collect(),
-            lifetimes: self
-                .generics
-                .lifetimes()
-                .map(|p| &p.lifetime.ident)
-                .collect(),
-            consts: self.generics.const_params().map(|p| &p.ident).collect(),
-        };
+        let generics_search = GenericsSearch::from(self.generics);
         let field_contains_generics = generics_search.any_in(field_ty);
 
         let is_blanket =
