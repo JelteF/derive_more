@@ -162,8 +162,7 @@ impl ToTokens for StructuralExpansion<'_> {
 
 /// Extension of [`syn::Fields`] used by this expansion.
 trait FieldsExt {
-    /// Generates a [`syn::Pat`] for matching these [`syn::Fields`] in an arm of a `match`
-    /// expression.
+    /// Generates a pattern for matching these [`syn::Fields`] in an arm of a `match` expression.
     ///
     /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
     fn arm_pattern(&self, prefix: &str) -> TokenStream;
