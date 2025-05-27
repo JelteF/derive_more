@@ -2476,7 +2476,7 @@ mod generics_search {
         use syn::parse_quote;
 
         use super::GenericsSearch;
-        
+
         #[test]
         fn types() {
             let generics: syn::Generics = parse_quote! { <T> };
