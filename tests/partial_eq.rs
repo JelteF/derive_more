@@ -185,5 +185,106 @@ mod enums {
             assert_ne!(E::Foo(true, 0), E::Baz);
             assert_ne!(E::Baz, E::Foo(false, 1));
         }
+
+        mod generic {
+            use derive_more::PartialEq;
+            
+            trait Some {
+                type Assoc;
+            }
+            impl<T> Some for T {
+                type Assoc = bool;
+            }
+
+            #[test]
+            fn single_variant_multi_field_tuple() {
+                #[derive(Debug, derive_more::PartialEq)]
+                enum E<A: Some, B> {
+                    Foo(A::Assoc, B),
+                }
+
+                assert_eq!(E::<u8, _>::Foo(true, 0), E::<u8, _>::Foo(true, 0));
+                assert_ne!(E::<u8, _>::Foo(true, 0), E::<u8, _>::Foo(false, 0));
+                assert_ne!(E::<u8, _>::Foo(true, 0), E::<u8, _>::Foo(true, 1));
+                assert_ne!(E::<u8, _>::Foo(true, 0), E::<u8, _>::Foo(false, 1));
+            }
+
+            #[test]
+            fn single_variant_multi_field_struct() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Bar { b: bool, i: i32 },
+                }
+
+                assert_eq!(E::Bar { b: true, i: 0 }, E::Bar { b: true, i: 0 });
+                assert_ne!(E::Bar { b: true, i: 0 }, E::Bar { b: false, i: 0 });
+                assert_ne!(E::Bar { b: true, i: 0 }, E::Bar { b: true, i: 1 });
+                assert_ne!(E::Bar { b: true, i: 0 }, E::Bar { b: false, i: 1 });
+            }
+
+            #[test]
+            fn multi_variant_empty_field() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(),
+                    Bar {},
+                    Baz,
+                }
+
+                assert_eq!(E::Foo(), E::Foo());
+
+                assert_eq!(E::Bar {}, E::Bar {});
+
+                assert_eq!(E::Baz, E::Baz);
+
+                assert_ne!(E::Foo(), E::Bar {});
+                assert_ne!(E::Bar {}, E::Foo());
+                assert_ne!(E::Foo(), E::Baz);
+                assert_ne!(E::Baz, E::Foo());
+                assert_ne!(E::Bar {}, E::Baz);
+                assert_ne!(E::Baz, E::Bar {});
+            }
+
+            #[test]
+            fn multi_variant_multi_field() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(bool, i32),
+                    Bar { b: bool, i: i32 },
+                }
+
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 0));
+                assert_ne!(E::Foo(true, 0), E::Foo(false, 0));
+                assert_ne!(E::Foo(true, 0), E::Foo(true, 1));
+                assert_ne!(E::Foo(true, 0), E::Foo(false, 1));
+
+                assert_eq!(E::Bar { b: true, i: 0 }, E::Bar { b: true, i: 0 });
+                assert_ne!(E::Bar { b: true, i: 0 }, E::Bar { b: false, i: 0 });
+                assert_ne!(E::Bar { b: true, i: 0 }, E::Bar { b: true, i: 1 });
+                assert_ne!(E::Bar { b: true, i: 0 }, E::Bar { b: false, i: 1 });
+
+                assert_ne!(E::Foo(true, 0), E::Bar { b: true, i: 0 });
+                assert_ne!(E::Bar { b: false, i: 1 }, E::Foo(false, 1));
+            }
+
+            #[test]
+            fn multi_variant_empty_and_multi_field() {
+                #[derive(Debug, derive_more::PartialEq)]
+                enum E {
+                    Foo(bool, i32),
+                    Baz,
+                }
+
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 0));
+                assert_ne!(E::Foo(true, 0), E::Foo(false, 0));
+                assert_ne!(E::Foo(true, 0), E::Foo(true, 1));
+                assert_ne!(E::Foo(true, 0), E::Foo(false, 1));
+
+                assert_eq!(E::Baz, E::Baz);
+
+                assert_ne!(E::Foo(true, 0), E::Baz);
+                assert_ne!(E::Baz, E::Foo(false, 1));
+            }
+        }
     }
 }
