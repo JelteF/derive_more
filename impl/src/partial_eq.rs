@@ -52,7 +52,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for StructuralExpansion<'i> {
 }
 
 impl StructuralExpansion<'_> {
-    /// Generates body of the [`PartialEq::eq()] method implementation for this
+    /// Generates body of the [`PartialEq::eq()`] method implementation for this
     /// [`StructuralExpansion`].
     fn eq_body(&self) -> TokenStream {
         // Special case: empty enum.
