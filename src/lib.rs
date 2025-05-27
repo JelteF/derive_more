@@ -23,6 +23,7 @@
 //! [`DerefMut`]: macro@crate::DerefMut
 //! [`AddAssign`-like]: macro@crate::AddAssign
 //! [`MulAssign`-like]: macro@crate::MulAssign
+//! [`PartialEq`]: macro@crate::PartialEq
 //!
 //! [`Constructor`]: macro@crate::Constructor
 //! [`IsVariant`]: macro@crate::IsVariant
