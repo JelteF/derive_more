@@ -52,7 +52,8 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for StructuralExpansion<'i> {
 }
 
 impl StructuralExpansion<'_> {
-    /// Generates body of the [`PartialEq::eq()] method implementation.
+    /// Generates body of the [`PartialEq::eq()] method implementation for this
+    /// [`StructuralExpansion`].
     fn eq_body(&self) -> TokenStream {
         // Special case: empty enum.
         if self.variants.is_empty() {
@@ -78,8 +79,8 @@ impl StructuralExpansion<'_> {
                     return None;
                 }
                 let variant = variant.map(|variant| quote! { :: #variant });
-                let self_pattern = fields.pattern("__self_");
-                let other_pattern = fields.pattern("__other_");
+                let self_pattern = fields.arm_pattern("__self_");
+                let other_pattern = fields.arm_pattern("__other_");
                 let val_eqs = (0..fields.len()).map(|num| {
                     let self_val = format_ident!("__self_{num}");
                     let other_val = format_ident!("__other_{num}");
@@ -159,12 +160,17 @@ impl ToTokens for StructuralExpansion<'_> {
     }
 }
 
+/// Extension of [`syn::Fields`] used by this expansion.
 trait FieldsExt {
-    fn pattern(&self, prefix: &str) -> TokenStream;
+    /// Generates a [`syn::Pat`] for matching these [`syn::Fields`] in a [`syn::ExprMatch`]'s
+    /// [`syn::Arm`].
+    ///
+    /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
+    fn arm_pattern(&self, prefix: &str) -> TokenStream;
 }
 
 impl FieldsExt for syn::Fields {
-    fn pattern(&self, prefix: &str) -> TokenStream {
+    fn arm_pattern(&self, prefix: &str) -> TokenStream {
         match self {
             Self::Named(fields) => {
                 let fields = fields.named.iter().enumerate().map(|(num, field)| {
@@ -181,7 +187,7 @@ impl FieldsExt for syn::Fields {
                 });
                 quote! {( #( #fields , )* )}
             }
-            Self::Unit => unreachable!("empty fields should not be matched"),
+            Self::Unit => quote! {},
         }
     }
 }

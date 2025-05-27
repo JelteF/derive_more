@@ -53,7 +53,7 @@ mod structs {
             assert_ne!(Bar { b: true, i: 0 }, Bar { b: true, i: 1 });
             assert_ne!(Bar { b: true, i: 0 }, Bar { b: false, i: 1 });
         }
-        
+
         mod generic {
             use derive_more::PartialEq;
 
@@ -64,7 +64,7 @@ mod structs {
             impl<T> Some for T {
                 type Assoc = bool;
             }
-            
+
             #[test]
             fn multi_field_tuple() {
                 #[derive(Debug, PartialEq)]
@@ -229,7 +229,7 @@ mod enums {
             trait Some {
                 type Assoc;
             }
-            
+
             impl<T> Some for T {
                 type Assoc = bool;
             }
