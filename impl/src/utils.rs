@@ -2385,19 +2385,17 @@ mod fields_ext {
 mod generics_search {
     use syn::visit::Visit;
 
-    use super::HashSet;
-
     /// Search of whether some generics (type parameters, lifetime parameters or const parameters)
     /// are present in some [`syn::Type`].
     pub(crate) struct GenericsSearch<'s> {
         /// Type parameters to look for.
-        pub(crate) types: HashSet<&'s syn::Ident>,
+        pub(crate) types: Vec<&'s syn::Ident>,
 
         /// Lifetime parameters to look for.
-        pub(crate) lifetimes: HashSet<&'s syn::Ident>,
+        pub(crate) lifetimes: Vec<&'s syn::Ident>,
 
         /// Const parameters to look for.
-        pub(crate) consts: HashSet<&'s syn::Ident>,
+        pub(crate) consts: Vec<&'s syn::Ident>,
     }
 
     impl<'s> From<&'s syn::Generics> for GenericsSearch<'s> {
@@ -2436,7 +2434,7 @@ mod generics_search {
             self.found |= ep
                 .path
                 .get_ident()
-                .is_some_and(|ident| self.search.consts.contains(ident));
+                .is_some_and(|ident| self.search.consts.contains(&ident));
 
             if !self.found {
                 syn::visit::visit_expr_path(self, ep);
@@ -2444,7 +2442,7 @@ mod generics_search {
         }
 
         fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
-            self.found |= self.search.lifetimes.contains(&lf.ident);
+            self.found |= self.search.lifetimes.contains(&&lf.ident);
 
             if !self.found {
                 syn::visit::visit_lifetime(self, lf);
@@ -2453,14 +2451,14 @@ mod generics_search {
 
         fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
             self.found |= tp.path.get_ident().is_some_and(|ident| {
-                self.search.types.contains(ident) || self.search.consts.contains(ident)
+                self.search.types.contains(&ident) || self.search.consts.contains(&ident)
             });
 
             if !self.found {
                 // `TypeParam::AssocType` case.
                 self.found |= tp.path.segments.first().is_some_and(|segment| {
                     matches!(segment.arguments, syn::PathArguments::None)
-                        && self.search.types.contains(&segment.ident)
+                        && self.search.types.contains(&&segment.ident)
                 });
             }
 
