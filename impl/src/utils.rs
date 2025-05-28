@@ -2451,7 +2451,8 @@ mod generics_search {
 
         fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
             self.found |= tp.path.get_ident().is_some_and(|ident| {
-                self.search.types.contains(&ident) || self.search.consts.contains(&ident)
+                self.search.types.contains(&ident)
+                    || self.search.consts.contains(&ident)
             });
 
             if !self.found {
