@@ -13,6 +13,7 @@ use derive_more::with_trait::FromStr;
 trait Some {
     type Assoc;
 }
+
 impl<T> Some for T {
     type Assoc = i32;
 }
@@ -197,7 +198,7 @@ mod structs {
 
                 assert_eq!(
                     "3".parse::<Wrapper>().unwrap(),
-                    Wrapper(Empty(PhantomData))
+                    Wrapper(Empty(PhantomData)),
                 );
             }
 
