@@ -2,7 +2,11 @@
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::{parse_quote, spanned::Spanned as _, token};
+use syn::{
+    parse_quote,
+    punctuated::{self, Punctuated},
+    spanned::Spanned as _,
+};
 
 use crate::utils::GenericsSearch;
 
@@ -52,54 +56,69 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for StructuralExpansion<'i> {
 }
 
 impl StructuralExpansion<'_> {
-    /// Generates body of the [`PartialEq::eq()`] method implementation for this
+    /// Generates body of the [`PartialEq::eq()`]/[`PartialEq::ne()`] method implementation for this
     /// [`StructuralExpansion`].
-    fn eq_body(&self) -> TokenStream {
+    fn body(&self, eq: bool) -> TokenStream {
         // Special case: empty enum.
         if self.variants.is_empty() {
             return quote! { match *self {} };
         }
+
+        let no_fields_result = quote! { #eq };
+
         // Special case: no fields to compare.
         if self.variants.len() == 1 && self.variants[0].1.is_empty() {
-            return quote! { true };
+            return no_fields_result;
         }
 
-        let discriminants_eq = (self.variants.len() > 1).then(|| {
+        let (cmp, sep) = if eq {
+            (quote! { == }, quote! { && })
+        } else {
+            (quote! { != }, quote! { || })
+        };
+
+        let discriminants_cmp = (self.variants.len() > 1).then(|| {
             quote! {
-                derive_more::core::mem::discriminant(self) ==
+                derive_more::core::mem::discriminant(self) #cmp
                     derive_more::core::mem::discriminant(__other)
             }
         });
 
-        let matched_variants = self
+        let match_arms = self
             .variants
             .iter()
             .filter_map(|(variant, fields)| {
                 if fields.is_empty() {
                     return None;
                 }
+
                 let variant = variant.map(|variant| quote! { :: #variant });
                 let self_pattern = fields.arm_pattern("__self_");
                 let other_pattern = fields.arm_pattern("__other_");
-                let val_eqs = (0..fields.len()).map(|num| {
-                    let self_val = format_ident!("__self_{num}");
-                    let other_val = format_ident!("__other_{num}");
-                    quote! { #self_val == #other_val }
-                });
+
+                let mut val_eqs = (0..fields.len())
+                    .map(|num| {
+                        let self_val = format_ident!("__self_{num}");
+                        let other_val = format_ident!("__other_{num}");
+                        punctuated::Pair::Punctuated(
+                            quote! { #self_val #cmp #other_val },
+                            &sep,
+                        )
+                    })
+                    .collect::<Punctuated<TokenStream, _>>();
+                _ = val_eqs.pop_punct();
+
                 Some(quote! {
-                    (Self #variant #self_pattern, Self #variant #other_pattern) => {
-                        #( #val_eqs )&&*
-                    }
+                    (Self #variant #self_pattern, Self #variant #other_pattern) => { #val_eqs }
                 })
             })
             .collect::<Vec<_>>();
-        let match_expr = (!matched_variants.is_empty()).then(|| {
-            let always_true_arm =
-                (matched_variants.len() != self.variants.len()).then(|| {
-                    quote! { _ => true }
-                });
+        let match_expr = (!match_arms.is_empty()).then(|| {
+            let no_fields_arm = (match_arms.len() != self.variants.len()).then(|| {
+                quote! { _ => #no_fields_result }
+            });
             let unreachable_arm = (self.variants.len() > 1
-                && always_true_arm.is_none())
+                && no_fields_arm.is_none())
             .then(|| {
                 quote! {
                     // SAFETY: This arm is never reachable, but is required by the expanded
@@ -110,18 +129,17 @@ impl StructuralExpansion<'_> {
 
             quote! {
                 match (self, __other) {
-                    #( #matched_variants , )*
-                    #always_true_arm
+                    #( #match_arms , )*
+                    #no_fields_arm
                     #unreachable_arm
                 }
             }
         });
 
-        let and = (discriminants_eq.is_some() && match_expr.is_some())
-            .then_some(token::AndAnd::default());
+        let sep = (discriminants_cmp.is_some() && match_expr.is_some()).then_some(sep);
 
         quote! {
-            #discriminants_eq #and #match_expr
+            #discriminants_cmp #sep #match_expr
         }
     }
 }
@@ -143,7 +161,8 @@ impl ToTokens for StructuralExpansion<'_> {
         }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-        let eq_body = self.eq_body();
+        let eq_body = self.body(true);
+        let ne_body = self.body(false);
 
         quote! {
             #[automatically_derived]
@@ -153,6 +172,11 @@ impl ToTokens for StructuralExpansion<'_> {
                 #[inline]
                 fn eq(&self, __other: &Self) -> bool {
                     #eq_body
+                }
+
+                #[inline]
+                fn ne(&self, __other: &Self) -> bool {
+                    #ne_body
                 }
             }
         }
