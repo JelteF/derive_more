@@ -381,7 +381,7 @@ mod enums {
 
             #[test]
             fn multi_variant_empty_and_multi_field() {
-                #[derive(Debug, derive_more::PartialEq)]
+                #[derive(Debug, PartialEq)]
                 enum E<A, B: Some> {
                     Foo(B::Assoc, A),
                     Bar { b: B::Assoc, i: A },

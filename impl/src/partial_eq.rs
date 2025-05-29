@@ -71,7 +71,7 @@ impl StructuralExpansion<'_> {
             return no_fields_result;
         }
 
-        let (cmp, sep) = if eq {
+        let (cmp, chain) = if eq {
             (quote! { == }, quote! { && })
         } else {
             (quote! { != }, quote! { || })
@@ -102,7 +102,7 @@ impl StructuralExpansion<'_> {
                         let other_val = format_ident!("__other_{num}");
                         punctuated::Pair::Punctuated(
                             quote! { #self_val #cmp #other_val },
-                            &sep,
+                            &chain,
                         )
                     })
                     .collect::<Punctuated<TokenStream, _>>();
@@ -136,10 +136,11 @@ impl StructuralExpansion<'_> {
             }
         });
 
-        let sep = (discriminants_cmp.is_some() && match_expr.is_some()).then_some(sep);
+        let chain =
+            (discriminants_cmp.is_some() && match_expr.is_some()).then_some(chain);
 
         quote! {
-            #discriminants_cmp #sep #match_expr
+            #discriminants_cmp #chain #match_expr
         }
     }
 }
