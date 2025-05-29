@@ -57,18 +57,18 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for StructuralExpansion<'i> {
 
 impl StructuralExpansion<'_> {
     /// Generates body of the [`PartialEq::eq()`]/[`PartialEq::ne()`] method implementation for this
-    /// [`StructuralExpansion`].
-    fn body(&self, eq: bool) -> TokenStream {
-        // Special case: empty enum.
+    /// [`StructuralExpansion`], if it's required.
+    fn body(&self, eq: bool) -> Option<TokenStream> {
+        // Special case: empty enum (also, no need for `ne()` method in this case).
         if self.variants.is_empty() {
-            return quote! { match *self {} };
+            return eq.then(|| quote! { match *self {} });
         }
 
         let no_fields_result = quote! { #eq };
 
-        // Special case: no fields to compare.
+        // Special case: no fields to compare (also, no need for `ne()` method in this case).
         if self.variants.len() == 1 && self.variants[0].1.is_empty() {
-            return no_fields_result;
+            return eq.then_some(no_fields_result);
         }
 
         let (cmp, chain) = if eq {
@@ -136,12 +136,18 @@ impl StructuralExpansion<'_> {
             }
         });
 
+        // If there is only `mem::discriminant()` comparison, there is no need to generate `ne()`
+        // method in the expansion, as its default implementation will do just fine.
+        if !eq && discriminants_cmp.is_some() && match_expr.is_none() {
+            return None;
+        }
+
         let chain =
             (discriminants_cmp.is_some() && match_expr.is_some()).then_some(chain);
 
-        quote! {
+        Some(quote! {
             #discriminants_cmp #chain #match_expr
-        }
+        })
     }
 }
 
