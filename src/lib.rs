@@ -23,6 +23,7 @@
 //! [`DerefMut`]: macro@crate::DerefMut
 //! [`AddAssign`-like]: macro@crate::AddAssign
 //! [`MulAssign`-like]: macro@crate::MulAssign
+//! [`PartialEq`]: macro@crate::PartialEq
 //!
 //! [`Constructor`]: macro@crate::Constructor
 //! [`IsVariant`]: macro@crate::IsVariant
@@ -192,6 +193,8 @@ pub mod with_trait {
             UpperHex,
         );
 
+        re_export_traits!("eq", eq_traits, core::cmp, PartialEq);
+
         re_export_traits!("error", error_traits, core::error, Error);
 
         re_export_traits!("from", from_traits, core::convert, From);
@@ -355,6 +358,10 @@ pub mod with_trait {
         Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
     };
 
+    #[cfg(feature = "eq")]
+    #[doc(hidden)]
+    pub use all_traits_and_derives::PartialEq;
+
     #[cfg(feature = "error")]
     #[doc(hidden)]
     pub use all_traits_and_derives::Error;
@@ -438,6 +445,7 @@ pub mod with_trait {
     feature = "deref",
     feature = "deref_mut",
     feature = "display",
+    feature = "eq",
     feature = "error",
     feature = "from",
     feature = "from_str",

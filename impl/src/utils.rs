@@ -24,7 +24,7 @@ use syn::{
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
-#[cfg(feature = "as_ref")]
+#[cfg(any(feature = "as_ref", feature = "eq"))]
 pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
@@ -2381,7 +2381,7 @@ mod fields_ext {
     impl<T: Len + ?Sized> FieldsExt for T {}
 }
 
-#[cfg(feature = "as_ref")]
+#[cfg(any(feature = "as_ref", feature = "eq"))]
 mod generics_search {
     use syn::visit::Visit;
 

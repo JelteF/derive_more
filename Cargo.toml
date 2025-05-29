@@ -61,6 +61,7 @@ debug = ["derive_more-impl/debug"]
 deref = ["derive_more-impl/deref"]
 deref_mut = ["derive_more-impl/deref_mut"]
 display = ["derive_more-impl/display"]
+eq = ["derive_more-impl/eq"]
 error = ["derive_more-impl/error"]
 from = ["derive_more-impl/from"]
 from_str = ["derive_more-impl/from_str"]
@@ -88,6 +89,7 @@ full = [
     "deref",
     "deref_mut",
     "display",
+    "eq",
     "error",
     "from",
     "from_str",
@@ -212,6 +214,11 @@ required-features = ["mul_assign"]
 name = "not"
 path = "tests/not.rs"
 required-features = ["not"]
+
+[[test]]
+name = "partial_eq"
+path = "tests/partial_eq.rs"
+required-features = ["eq"]
 
 [[test]]
 name = "sum"

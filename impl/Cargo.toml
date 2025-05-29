@@ -57,6 +57,7 @@ debug = ["syn/extra-traits", "dep:unicode-xid"]
 deref = []
 deref_mut = []
 display = ["syn/extra-traits", "dep:unicode-xid", "dep:convert_case"]
+eq = ["syn/extra-traits", "syn/visit"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
 from_str = ["dep:convert_case"]
@@ -83,6 +84,7 @@ full = [
     "deref",
     "deref_mut",
     "display",
+    "eq",
     "error",
     "from",
     "from_str",
