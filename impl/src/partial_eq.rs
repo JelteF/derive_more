@@ -168,23 +168,26 @@ impl ToTokens for StructuralExpansion<'_> {
         }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-        let eq_body = self.body(true);
-        let ne_body = self.body(false);
+        let eq_method = self.body(true).map(|body| {
+            quote! {
+                #[inline]
+                fn eq(&self, __other: &Self) -> bool { #body }
+            }
+        });
+        let ne_method = self.body(false).map(|body| {
+            quote! {
+                #[inline]
+                fn ne(&self, __other: &Self) -> bool { #body }
+            }
+        });
 
         quote! {
             #[automatically_derived]
             impl #impl_generics derive_more::core::cmp::PartialEq for #ty #ty_generics
                  #where_clause
             {
-                #[inline]
-                fn eq(&self, __other: &Self) -> bool {
-                    #eq_body
-                }
-
-                #[inline]
-                fn ne(&self, __other: &Self) -> bool {
-                    #ne_body
-                }
+                #eq_method
+                #ne_method
             }
         }
         .to_tokens(tokens);
