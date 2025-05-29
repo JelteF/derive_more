@@ -56,6 +56,7 @@ default = ["std"]
 add = ["derive_more-impl/add"]
 add_assign = ["derive_more-impl/add_assign"]
 as_ref = ["derive_more-impl/as_ref"]
+as_variant = ["derive_more-impl/as_variant"]
 constructor = ["derive_more-impl/constructor"]
 debug = ["derive_more-impl/debug"]
 deref = ["derive_more-impl/deref"]
@@ -129,6 +130,11 @@ required-features = ["as_ref"]
 name = "as_ref"
 path = "tests/as_ref.rs"
 required-features = ["as_ref"]
+
+[[test]]
+name = "as_variant"
+path = "tests/as_variant.rs"
+required-features = ["as_variant"]
 
 [[test]]
 name = "boats_display_derive"

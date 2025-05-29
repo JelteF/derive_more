@@ -52,6 +52,7 @@ default = []
 add = []
 add_assign = []
 as_ref = ["syn/extra-traits", "syn/visit"]
+as_variant = ["dep:convert_case"]
 constructor = []
 debug = ["syn/extra-traits", "dep:unicode-xid"]
 deref = []
@@ -79,6 +80,7 @@ full = [
     "add",
     "add_assign",
     "as_ref",
+    "as_variant",
     "constructor",
     "debug",
     "deref",
