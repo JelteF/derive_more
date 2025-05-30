@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#469](https://github.com/JelteF/derive_more/pull/469))
 - Add `PartialEq` derive similar to `std`'s one, but considering generics correctly.
   ([#473](https://github.com/JelteF/derive_more/pull/473))
+- Proxy-pass `#[allow]`/`#[expect]` attributes of the type in `Constructor` derive.
+  ([#477](https://github.com/JelteF/derive_more/pull/477))
 
 ### Changed
 
