@@ -23,14 +23,20 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
         },
         _ => panic!("Only structs can derive a constructor"),
     };
+
+    let allow_attributes = input
+        .attrs
+        .iter()
+        .filter(|attr| attr.path().get_ident().is_some_and(|name| name == "allow"));
+
     let original_types = &get_field_types(&fields);
     quote! {
-        #[allow(deprecated)] // omit warnings on deprecated fields/variants
+        #(#allow_attributes)*      // proxy-pass any `#[allow]` attributes from input type
+        #[allow(deprecated)]       // omit warnings on deprecated fields/variants
         #[allow(missing_docs)]
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
         #[automatically_derived]
         impl #impl_generics #input_type #ty_generics #where_clause {
-            #[allow(clippy::too_many_arguments)]
             #[inline]
             pub const fn new(#(#vars: #original_types),*) -> #input_type #ty_generics {
                 #body
