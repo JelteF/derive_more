@@ -9,8 +9,10 @@ their type structure.
 ## Structural equality
 
 Deriving `PartialEq` for enums/structs works in a similar way to the one in `std`,
-by comparing all the available fields, but, in the contrast, does not overconstrain
-generic parameters.
+by comparing all the available fields, but, in the contrast:
+1. Does not overconstrain generic parameters.
+2. Implements `PartialEq::ne()` method as well, to propagate possible efficient
+   implementations of this method from the underlying types.
 
 
 ### Structs
@@ -69,6 +71,15 @@ where
         match (self, other) {
             (Self { a: self_0, b: self_1, c: self_2 }, Self { a: other_0, b: other_1, c: other_2 }) => {
                 self_0 == other_0 && self_1 == other_1 && self_2 == other_2
+            }
+        }
+    }
+
+    #[inline]
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self { a: self_0, b: self_1, c: self_2 }, Self { a: other_0, b: other_1, c: other_2 }) => {
+                self_0 != other_0 || self_1 != other_1 || self_2 != other_2
             }
         }
     }
@@ -140,6 +151,17 @@ where
                 (Self::A(self_0), Self::A(other_0)) => { self_0 == other_0 }
                 (Self::B { b: self_0 }, Self::B { b: other_0 }) => { self_0 == other_0 }
                 (Self::C(self_0), Self::C(other_0)) => { self_0 == other_0 }
+                _ => unsafe { std::hint::unreachable_unchecked() },
+            }
+    }
+
+    #[inline]
+    fn ne(&self, other: &Self) -> bool {
+        std::mem::discriminant(self) != std::mem::discriminant(other) ||
+            match (self, other) {
+                (Self::A(self_0), Self::A(other_0)) => { self_0 != other_0 }
+                (Self::B { b: self_0 }, Self::B { b: other_0 }) => { self_0 != other_0 }
+                (Self::C(self_0), Self::C(other_0)) => { self_0 != other_0 }
                 _ => unsafe { std::hint::unreachable_unchecked() },
             }
     }

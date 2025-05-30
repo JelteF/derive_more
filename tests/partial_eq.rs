@@ -1,6 +1,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)] // some code is tested for type checking only
 
+/// Since [`assert_ne!()`] macro in [`core`] doesn't use `$left != $right` comparison, but rather
+/// checks as `!($left == $right)`, it should be redefined for tests to consider actual
+/// [`PartialEq::ne()`] implementations.
+///
+/// [`assert_ne!()`]: core::assert_ne
+#[macro_export]
+macro_rules! assert_ne {
+    ($left:expr, $right:expr $(,)?) => {
+        assert!($left != $right)
+    };
+}
+
 mod structs {
     mod structural {
         use derive_more::PartialEq;
