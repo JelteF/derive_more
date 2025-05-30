@@ -100,6 +100,6 @@ mod proxy_lint_attr {
     #[expect(non_snake_case)]
     #[derive(Constructor)]
     struct User {
-        Name: String,
+        Num: i32,
     }
 }
