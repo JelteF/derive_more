@@ -24,17 +24,18 @@ pub fn expand(input: &DeriveInput, _: &str) -> TokenStream {
         _ => panic!("Only structs can derive a constructor"),
     };
 
-    let allow_attributes = input
-        .attrs
-        .iter()
-        .filter(|attr| attr.path().get_ident().is_some_and(|name| name == "allow"));
+    let inherited_lint_attrs = input.attrs.iter().filter(|attr| {
+        attr.path()
+            .get_ident()
+            .is_some_and(|name| name == "allow" || name == "expect")
+    });
 
     let original_types = &get_field_types(&fields);
     quote! {
-        #(#allow_attributes)*      // proxy-pass any `#[allow]` attributes from input type
         #[allow(deprecated)]       // omit warnings on deprecated fields/variants
         #[allow(missing_docs)]
         #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
+        #(#inherited_lint_attrs)*  // proxy-pass any `#[allow]`/`#[expect]` attributes
         #[automatically_derived]
         impl #impl_generics #input_type #ty_generics #where_clause {
             #[inline]
