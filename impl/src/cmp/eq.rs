@@ -46,7 +46,7 @@ impl ToTokens for StructuralExpansion<'_> {
         let ty = self.self_ty.0;
 
         let mut generics = self.self_ty.1.clone();
-        if generics.params.is_empty() {
+        if !generics.params.is_empty() {
             generics
                 .make_where_clause()
                 .predicates
@@ -70,7 +70,7 @@ impl ToTokens for StructuralExpansion<'_> {
 
         quote! {
             #[automatically_derived]
-            impl #impl_generics derive_more::core::cmp::PartialEq for #ty #ty_generics
+            impl #impl_generics derive_more::core::cmp::Eq for #ty #ty_generics
                  #where_clause
             {}
 
