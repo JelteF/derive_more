@@ -2,10 +2,7 @@
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{
-    parse_quote,
-    spanned::Spanned as _,
-};
+use syn::{parse_quote, spanned::Spanned as _};
 
 /// Expands an [`Eq`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -57,11 +54,27 @@ impl ToTokens for StructuralExpansion<'_> {
         }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
+        let assert_eq_inherent_method = (!self.fields_types.is_empty()).then(|| {
+            let types = &self.fields_types;
+            quote! {
+                #[automatically_derived]
+                #[doc(hidden)]
+                impl #impl_generics #ty #ty_generics {
+                    #[doc(hidden)]
+                    const fn __derive_more_assert_eq() {
+                        #(let _: derive_more::__private::AssertParamIsEq<#types>;)*
+                    }
+                }
+            }
+        });
+
         quote! {
             #[automatically_derived]
             impl #impl_generics derive_more::core::cmp::PartialEq for #ty #ty_generics
                  #where_clause
             {}
+
+            #assert_eq_inherent_method
         }
         .to_tokens(tokens);
     }

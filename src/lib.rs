@@ -64,6 +64,9 @@ pub mod __private {
     #[cfg(feature = "debug")]
     pub use crate::fmt::{debug_tuple, DebugTuple};
 
+    #[cfg(feature = "eq")]
+    pub use crate::cmp::AssertParamIsEq;
+
     #[cfg(feature = "error")]
     pub use crate::vendor::thiserror::aserror::AsDynError;
 }
@@ -74,6 +77,9 @@ pub mod __private {
 mod add;
 #[cfg(feature = "add")]
 pub use crate::add::{BinaryError, WrongVariantError};
+
+#[cfg(feature = "eq")]
+mod cmp;
 
 #[cfg(any(feature = "add", feature = "not"))]
 mod ops;
@@ -193,7 +199,7 @@ pub mod with_trait {
             UpperExp,
             UpperHex,
         );
-        
+
         re_export_traits!("eq", eq_traits, core::cmp, Eq, PartialEq);
 
         re_export_traits!("error", error_traits, core::error, Error);

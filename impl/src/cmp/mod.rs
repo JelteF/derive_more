@@ -2,5 +2,5 @@
 //!
 //! [`cmp`]: std::cmp
 
-pub(crate) mod partial_eq;
 pub(crate) mod eq;
+pub(crate) mod partial_eq;
