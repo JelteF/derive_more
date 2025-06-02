@@ -23,6 +23,8 @@ mod add_helpers;
 mod add_like;
 #[cfg(feature = "as_ref")]
 mod r#as;
+#[cfg(feature = "eq")]
+mod cmp;
 #[cfg(feature = "constructor")]
 mod constructor;
 #[cfg(feature = "deref")]
@@ -57,8 +59,6 @@ mod mul_like;
 mod not_like;
 #[cfg(any(feature = "debug", feature = "display"))]
 pub(crate) mod parsing;
-#[cfg(feature = "eq")]
-mod partial_eq;
 #[cfg(feature = "sum")]
 mod sum_like;
 #[cfg(feature = "try_from")]
@@ -186,7 +186,8 @@ create_derive!(
 );
 create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
 
-create_derive!("eq", partial_eq, PartialEq, partial_eq_derive);
+create_derive!("eq", cmp::eq, Eq, eq_derive);
+create_derive!("eq", cmp::partial_eq, PartialEq, partial_eq_derive);
 
 create_derive!("error", error, Error, error_derive, error);
 
