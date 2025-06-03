@@ -75,6 +75,10 @@ impl ToTokens for StructuralExpansion<'_> {
         }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
+        // For the types containing the implementor type structurally, we should place a static
+        // assertion instead of generating a trait bound, because recursive trait bound will result
+        // in the `error[E0275]: overflow evaluating the requirement`.
+        // https://doc.rust-lang.org/stable/error_codes/E0275.html
         let assert_eq_inherent_method = (!asserted_types.is_empty()).then(|| {
             quote! {
                 #[allow(dead_code, private_bounds)]
