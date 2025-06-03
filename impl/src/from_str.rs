@@ -2,16 +2,22 @@
 
 #[cfg(doc)]
 use std::str::FromStr;
-use std::{collections::HashMap, iter};
+use std::{cmp, collections::HashMap, iter};
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::{parse_quote, spanned::Spanned as _};
+use syn::{parse::Parse, parse_quote, spanned::Spanned as _};
 
 use crate::utils::{
-    attr::{self, ParseMultiple as _},
+    attr::{self, ParseMultiple},
     Either, GenericsSearch, Spanning,
 };
+
+mod keyword {
+    use syn::custom_keyword;
+
+    custom_keyword!(from_str);
+}
 
 /// Expands a [`FromStr`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -120,15 +126,8 @@ struct FlatExpansion<'i> {
     /// [`syn::Ident`]: struct@syn::Ident
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
-    /// [`syn::Ident`]s along with the matched values (enum variants or struct itself), and
-    /// a value-specific [`attr::RenameAll`] overriding [`FlatExpansion::rename_all`], if any.
-    ///
-    /// [`syn::Ident`]: struct@syn::Ident
-    matches: Vec<(
-        &'i syn::Ident,
-        Either<&'i syn::DataStruct, &'i syn::Variant>,
-        Option<attr::RenameAll>,
-    )>,
+    /// [`FlatMatcher`]s for every enum variant, or for the struct container.
+    matches: Vec<FlatMatcher<'i>>,
 
     /// [`FlatExpansion::matches`] grouped by its similar representation for detecting whether their
     /// case-insensitivity should be disabled.
@@ -145,7 +144,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
     fn try_from(input: &'i syn::DeriveInput) -> syn::Result<Self> {
         let attr_ident = &format_ident!("from_str");
 
-        let matches = match &input.data {
+        let mut matches = match &input.data {
             syn::Data::Struct(data) => {
                 if !data.fields.is_empty() {
                     return Err(syn::Error::new(
@@ -153,23 +152,12 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
                         "only structs with no fields can derive `FromStr`",
                     ));
                 }
-                vec![(&input.ident, Either::Left(data), None)]
+                vec![FlatMatcher::from_unit_struct(input, data)?]
             }
             syn::Data::Enum(data) => data
                 .variants
                 .iter()
-                .map(|variant| {
-                    if !variant.fields.is_empty() {
-                        return Err(syn::Error::new(
-                            variant.fields.span(),
-                            "only enums with no fields can derive `FromStr`",
-                        ));
-                    }
-                    let attr =
-                        attr::RenameAll::parse_attrs(&variant.attrs, attr_ident)?
-                            .map(Spanning::into_inner);
-                    Ok((&variant.ident, Either::Right(variant), attr))
-                })
+                .map(FlatMatcher::from_enum_variant)
                 .collect::<syn::Result<_>>()?,
             syn::Data::Union(_) => {
                 return Err(syn::Error::new(
@@ -179,37 +167,108 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             }
         };
 
+        let num_defaults = matches
+            .iter()
+            .filter(|matcher| matcher.settings.default.is_some())
+            .count();
+        if num_defaults > 1 {
+            return Err(syn::Error::new(
+                input.span(),
+                "only one `#[try_from(default)]` attribute is allowed",
+            ));
+        }
+
+        // push the default matcher to the end
+        matches.sort_by(|lhs, rhs| {
+            if lhs.settings.default.is_some() {
+                cmp::Ordering::Greater
+            } else if rhs.settings.default.is_some() {
+                cmp::Ordering::Less
+            } else {
+                cmp::Ordering::Equal
+            }
+        });
+
         let rename_all = attr::RenameAll::parse_attrs(&input.attrs, attr_ident)?
             .map(Spanning::into_inner);
 
         let mut similar_matches = <HashMap<_, Vec<_>>>::new();
         if rename_all.is_none() {
-            for (ident, _, renaming) in &matches {
-                let name = ident.to_string();
+            for matcher in &matches {
+                if matcher.settings.default.is_some()
+                    || matcher.settings.forward.is_some()
+                    || matcher.settings.skip.is_some()
+                {
+                    continue;
+                }
+
+                let name = match &matcher.settings.rename {
+                    Some(rename) => rename.matcher.value(),
+                    None => matcher.ident.to_string(),
+                };
                 let lowercased = name.to_lowercase();
-                if let Some(rename) = renaming {
-                    let renamed_lowercased = rename.convert_case(&name);
-                    if renamed_lowercased != lowercased {
-                        similar_matches
-                            .entry(renamed_lowercased)
-                            .or_default()
-                            .push(*ident);
+
+                if let Some(aliases) = &matcher.settings.aliases {
+                    for alias in aliases.iter() {
+                        let renamed_lowercase = alias.value().to_lowercase();
+                        if renamed_lowercase != lowercased {
+                            similar_matches
+                                .entry(renamed_lowercase)
+                                .or_default()
+                                .push(matcher.ident);
+                        }
                     }
                 }
-                similar_matches.entry(lowercased).or_default().push(*ident);
+
+                if let Some(rename_all) = &matcher.settings.rename_all {
+                    let renamed_lowercase = rename_all.convert_case(&name);
+                    if renamed_lowercase != lowercased {
+                        similar_matches
+                            .entry(renamed_lowercase)
+                            .or_default()
+                            .push(matcher.ident);
+                    }
+                }
+
+                similar_matches
+                    .entry(lowercased)
+                    .or_default()
+                    .push(matcher.ident);
             }
         }
 
         let mut exact_matches = <HashMap<String, Vec<String>>>::new();
-        for (ident, _, renaming) in &matches {
-            let name = ident.to_string();
-            let exact = if let Some(default_renaming) = &rename_all {
-                renaming
-                    .as_ref()
-                    .unwrap_or(default_renaming)
-                    .convert_case(&name)
-            } else if let Some(renaming) = renaming {
-                renaming.convert_case(&name)
+        for matcher in &matches {
+            if matcher.settings.default.is_some()
+                || matcher.settings.forward.is_some()
+                || matcher.settings.skip.is_some()
+            {
+                continue;
+            }
+
+            let ident = matcher.ident.to_string();
+
+            if let Some(aliases) = &matcher.settings.aliases {
+                for alias in aliases.iter() {
+                    let alias = alias.value();
+                    exact_matches.entry(alias).or_default().push(ident.clone());
+                }
+            }
+
+            if let Some(rename) = &matcher.settings.rename {
+                exact_matches
+                    .entry(rename.matcher.value())
+                    .or_default()
+                    .push(ident.clone());
+                continue;
+            }
+
+            let name = matcher.ident.to_string();
+            let match_renamer =
+                matcher.settings.rename_all.as_ref().or(rename_all.as_ref());
+
+            let exact = if let Some(renamer) = match_renamer {
+                renamer.convert_case(&name)
             } else {
                 let lowercased = name.to_lowercase();
                 if similar_matches[&lowercased].len() > 1 {
@@ -218,8 +277,9 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
                     lowercased
                 }
             };
-            exact_matches.entry(exact).or_default().push(name);
+            exact_matches.entry(exact).or_default().push(ident.clone());
         }
+
         if let Some((string, variants)) =
             exact_matches.into_iter().find(|(_, vs)| vs.len() > 1)
         {
@@ -249,61 +309,463 @@ impl ToTokens for FlatExpansion<'_> {
             self.self_ty.1.split_for_impl();
         let ty_name = ty.to_string();
 
-        let scrutinee_lowercased = self
-            .rename_all
-            .is_none()
-            .then(|| quote! { .to_lowercase().as_str() });
-        let match_arms = if let Some(default_renaming) = self.rename_all {
-            self.matches
-                .iter()
-                .map(|(ident, value, renaming)| {
-                    let converted = renaming
-                        .unwrap_or(default_renaming)
-                        .convert_case(&ident.to_string());
-                    let constructor = value.self_constructor_empty();
-
-                    quote! { #converted => #constructor, }
-                })
-                .collect::<Vec<_>>()
-        } else {
-            self.matches
-                .iter()
-                .map(|(ident, value, renaming)| {
-                    let name = ident.to_string();
-                    let constructor = value.self_constructor_empty();
-                    if let Some(rename) = renaming {
-                        let exact_name = rename.convert_case(&name);
-
-                        quote! { _ if s == #exact_name => #constructor, }
-                    } else {
-                        let lowercased = name.to_lowercase();
-                        let exact_guard = (self.similar_matches[&lowercased].len() > 1)
-                            .then(|| quote! { if s == #name });
-
-                        quote! { #lowercased #exact_guard => #constructor, }
+        let forwarded = self
+            .matches
+            .iter()
+            .filter(|matcher| matcher.settings.forward.is_some())
+            .map(|matcher| {
+                let constructor = matcher.data.self_constructor([parse_quote! {v}]);
+                quote! {
+                    if let Some(v) = derive_more::core::str::FromStr::from_str(s).map(|v| #constructor).ok() {
+                        return Ok(v);
                     }
+                }
+            })
+            .collect::<Vec<TokenStream>>();
+
+        let match_arms = self
+            .matches
+            .iter()
+            .filter(|matcher| {
+                matcher.settings.skip.is_none() && matcher.settings.forward.is_none()
+            })
+            .map(|matcher| {
+                let constructor = matcher.data.self_constructor_empty();
+                let span = matcher.ident.span();
+
+                if matcher.settings.default.is_some() {
+                    return quote! {
+                        _ => #constructor,
+                    };
+                }
+
+                let mut aliases = matcher
+                    .settings
+                    .aliases
+                    .as_ref()
+                    .map(|a| a.iter())
+                    .into_iter()
+                    .flatten()
+                    .map(|alias| quote! { | #alias })
+                    .collect::<TokenStream>();
+                if !aliases.is_empty() {
+                    aliases = quote! { #aliases => #constructor, };
+                }
+
+                if let Some(attr::Rename { matcher: match_str }) =
+                    matcher.settings.rename.as_ref()
+                {
+                    return quote! {
+                        #aliases
+                        #match_str => #constructor,
+                    };
+                }
+
+                if let Some(renamer) = matcher
+                    .settings
+                    .rename_all
+                    .as_ref()
+                    .or(self.rename_all.as_ref())
+                {
+                    let match_str = syn::LitStr::new(
+                        renamer
+                            .convert_case(matcher.ident.to_string().as_str())
+                            .as_str(),
+                        span,
+                    );
+                    return quote! {
+                        #aliases
+                        #match_str => #constructor,
+                    };
+                }
+
+                let name = matcher.ident.to_string();
+                let lowercased = name.to_lowercase();
+                if let Some(similar) = self.similar_matches.get(&lowercased) {
+                    if similar.len() > 1 {
+                        let match_str = syn::LitStr::new(name.as_str(), span);
+                        return quote! {
+                            #aliases
+                            #match_str => #constructor,
+                        };
+                    }
+                }
+
+                let match_str = syn::LitStr::new(name.as_str(), span);
+
+                quote! {
+                    #aliases
+                    _ if s.eq_ignore_ascii_case(#match_str) => #constructor,
+                }
+            })
+            .collect::<Vec<TokenStream>>();
+
+        let (error_type, fallback_constructor) = self
+            .matches
+            .iter()
+            .rev() // default case was sorted to the end
+            .find(|m| m.settings.default.is_some())
+            .map(|m| {
+                (quote! { core::convert::Infallible }, {
+                    let constructor = m.data.self_constructor_empty();
+                    quote! { #constructor }
                 })
-                .collect()
-        };
+            })
+            .unwrap_or_else(|| {
+                (
+                    quote! { derive_more::FromStrError },
+                    quote! {
+                        return derive_more::core::result::Result::Err(
+                            derive_more::FromStrError::new(#ty_name),
+                        )
+                    },
+                )
+            });
 
         quote! {
             #[allow(unreachable_code)] // for empty enums
             #[automatically_derived]
             impl #impl_generics derive_more::core::str::FromStr for #ty #ty_generics #where_clause {
-                type Err = derive_more::FromStrError;
+                type Err = #error_type;
 
                 fn from_str(
                     s: &str,
                 ) -> derive_more::core::result::Result<Self, derive_more::FromStrError> {
-                    derive_more::core::result::Result::Ok(match s #scrutinee_lowercased {
+                    #(#forwarded)*
+                    derive_more::core::result::Result::Ok(match s {
                         #( #match_arms )*
-                        _ => return derive_more::core::result::Result::Err(
-                            derive_more::FromStrError::new(#ty_name),
-                        ),
+                        _ => #fallback_constructor,
                     })
                 }
             }
         }.to_tokens(tokens);
+    }
+}
+
+struct FlatMatcher<'i> {
+    ident: &'i syn::Ident,
+    settings: MatcherSettings,
+    data: Either<&'i syn::DataStruct, &'i syn::Variant>,
+}
+
+impl<'i> FlatMatcher<'i> {
+    fn from_enum_variant(variant: &'i syn::Variant) -> syn::Result<Self> {
+        let attr_ident = &format_ident!("from_str");
+
+        let settings =
+            MatcherSettings::parse_attrs(variant.attrs.as_slice(), attr_ident)?
+                .map(|spanning| spanning.item)
+                .unwrap_or_default();
+
+        if settings.default.is_some() && !variant.fields.is_empty() {
+            return Err(syn::Error::new(
+                variant.ident.span(),
+                "`#[from_str(default)]` is not supported for non-unit variants",
+            ));
+        }
+
+        if settings.forward.is_some() {
+            if variant.fields.len() != 1 {
+                return Err(syn::Error::new(
+                    variant.ident.span(),
+                    "`#[from_str(forward)]` is only supported for variants with exactly one field",
+                ));
+            }
+        } else if !variant.fields.is_empty() {
+            return Err(syn::Error::new(
+                variant.fields.span(),
+                "only enum variants with no fields can derive `FromStr` unless `#[from_str(forward)]` is specified",
+            ));
+        }
+
+        Ok(Self {
+            ident: &variant.ident,
+            settings,
+            data: Either::Right(variant),
+        })
+    }
+
+    fn from_unit_struct(
+        input: &'i syn::DeriveInput,
+        data: &'i syn::DataStruct,
+    ) -> syn::Result<Self> {
+        let attr_ident = &format_ident!("from_str");
+
+        let settings =
+            MatcherSettings::parse_attrs(input.attrs.as_slice(), attr_ident)?
+                .map(|spanning| spanning.item)
+                .unwrap_or_default();
+
+        if settings.default.is_some() {
+            return Err(syn::Error::new(
+                input.ident.span(),
+                "#[from_str(default)] is not supported for unit structs",
+            ));
+        }
+
+        if settings.forward.is_some() {
+            return Err(syn::Error::new(
+                input.ident.span(),
+                "#[from_str(forward)] is not supported for unit structs",
+            ));
+        }
+
+        if settings.skip.is_some() {
+            return Err(syn::Error::new(
+                input.ident.span(),
+                "#[from_str(skip)] is not supported for unit structs",
+            ));
+        }
+
+        Ok(Self {
+            ident: &input.ident,
+            settings,
+            data: Either::Left(data),
+        })
+    }
+}
+
+#[derive(Default)]
+struct MatcherSettings {
+    aliases: Option<attr::Aliases>,
+    default: Option<attr::Default>,
+    forward: Option<attr::Forward>,
+    rename: Option<attr::Rename>,
+    rename_all: Option<attr::RenameAll>,
+    skip: Option<attr::Skip>,
+}
+
+impl Parse for MatcherSettings {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        mod keyword {
+            use syn::custom_keyword;
+
+            custom_keyword!(aliases);
+            custom_keyword!(default);
+            custom_keyword!(forward);
+            custom_keyword!(ignore);
+            custom_keyword!(rename);
+            custom_keyword!(rename_all);
+            custom_keyword!(skip);
+        }
+
+        fn parse<T: Parse>(input: syn::parse::ParseStream) -> syn::Result<T> {
+            T::parse(input)
+        }
+
+        let default = Self::default();
+
+        let ahead = input.lookahead1();
+
+        if ahead.peek(keyword::aliases) {
+            Ok(Self {
+                aliases: Some(parse(input)?),
+                ..default
+            })
+        } else if ahead.peek(keyword::default) {
+            Ok(Self {
+                default: Some(parse(input)?),
+                ..default
+            })
+        } else if ahead.peek(keyword::forward) {
+            Ok(Self {
+                forward: Some(parse(input)?),
+                ..default
+            })
+        } else if ahead.peek(keyword::ignore) || ahead.peek(keyword::skip) {
+            Ok(Self {
+                skip: Some(parse(input)?),
+                ..default
+            })
+        } else if ahead.peek(keyword::rename) {
+            Ok(Self {
+                rename: Some(parse(input)?),
+                ..default
+            })
+        } else if ahead.peek(keyword::rename_all) {
+            Ok(Self {
+                rename_all: Some(parse(input)?),
+                ..default
+            })
+        } else {
+            Err(ahead.error())
+        }
+    }
+}
+
+impl ParseMultiple for MatcherSettings {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let Spanning {
+            span: prev_span,
+            item: prev,
+        } = prev;
+        let Spanning {
+            span: new_span,
+            item: new,
+        } = new;
+
+        let aliases = ParseMultiple::merge_opt_attrs(
+            Spanning::new(prev.aliases, prev_span).transpose(),
+            Spanning::new(new.aliases, new_span).transpose(),
+            name,
+        )?;
+        let default = ParseMultiple::merge_opt_attrs(
+            Spanning::new(prev.default, prev_span).transpose(),
+            Spanning::new(new.default, new_span).transpose(),
+            name,
+        )?;
+        let forward = ParseMultiple::merge_opt_attrs(
+            Spanning::new(prev.forward, prev_span).transpose(),
+            Spanning::new(new.forward, new_span).transpose(),
+            name,
+        )?;
+        let rename = ParseMultiple::merge_opt_attrs(
+            Spanning::new(prev.rename, prev_span).transpose(),
+            Spanning::new(new.rename, new_span).transpose(),
+            name,
+        )?;
+        let rename_all = ParseMultiple::merge_opt_attrs(
+            Spanning::new(prev.rename_all, prev_span).transpose(),
+            Spanning::new(new.rename_all, new_span).transpose(),
+            name,
+        )?;
+        let skip = ParseMultiple::merge_opt_attrs(
+            Spanning::new(prev.skip, prev_span).transpose(),
+            Spanning::new(new.skip, new_span).transpose(),
+            name,
+        )?;
+
+        if aliases.is_some() {
+            if default.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(alias = "...")]` and `#[{name}(default = "...")]` together"#
+                    ),
+                ));
+            }
+
+            if forward.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(alias = "...")]` and `#[{name}(forward = "...")]` together"#
+                    ),
+                ));
+            }
+        }
+
+        if default.is_some() {
+            if forward.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(forward = "...")]` and `#[{name}(default = "...")]` together"#
+                    ),
+                ));
+            }
+
+            if rename.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(rename = "...")]` and `#[{name}(default = "...")]` together"#
+                    ),
+                ));
+            }
+
+            if rename_all.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(rename_all = "...")]` and `#[{name}(forward = "...")]` together"#
+                    ),
+                ));
+            }
+
+            if skip.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(skip)]` and `#[{name}(forward = "...")]` together"#
+                    ),
+                ));
+            }
+        }
+
+        if forward.is_some() {
+            if rename.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(rename = "...")]` and `#[{name}(forward = "...")]` together"#
+                    ),
+                ));
+            }
+
+            if rename_all.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(rename_all = "...")]` and `#[{name}(forward = "...")]` together"#
+                    ),
+                ));
+            }
+
+            if skip.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(skip)]` and `#[{name}(forward = "...")]` together"#
+                    ),
+                ));
+            }
+        }
+
+        if rename.is_some() {
+            if rename_all.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(rename = "...")]` and `#[{name}(rename_all = "...")]` together"#
+                    ),
+                ));
+            }
+
+            if skip.is_some() {
+                return Err(syn::Error::new(
+                    new_span,
+                    format!(
+                        r#"cannot use `#[{name}(rename = "...")]` and `#[{name}(skip)]` together"#
+                    ),
+                ));
+            }
+        }
+
+        if rename_all.is_some() && skip.is_some() {
+            return Err(syn::Error::new(
+                new_span,
+                format!(
+                    r#"cannot use `#[{name}(rename_all = "...")]` and `#[{name}(skip)]` together"#
+                ),
+            ));
+        }
+
+        Ok(Spanning::new(
+            Self {
+                aliases: aliases.map(|a| a.item),
+                default: default.map(|d| d.item),
+                forward: forward.map(|f| f.item),
+                rename: rename.map(|r| r.item),
+                rename_all: rename_all.map(|r| r.item),
+                skip: skip.map(|s| s.item),
+            },
+            prev_span.join(new_span).unwrap_or(prev_span),
+        ))
     }
 }
 

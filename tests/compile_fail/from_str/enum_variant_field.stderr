@@ -1,4 +1,4 @@
-error: only enums with no fields can derive `FromStr`
+error: only enum variants with no fields can derive `FromStr` unless `#[from_str(forward)]` is specified
  --> tests/compile_fail/from_str/enum_variant_field.rs:4:10
   |
 4 |     Tuple(i32),

@@ -1437,7 +1437,7 @@ mod spanning {
         }
     }
 
-    #[cfg(feature = "into")]
+    #[cfg(any(feature = "into", feature = "from_str"))]
     impl<T> Spanning<Option<T>> {
         pub(crate) fn transpose(self) -> Option<Spanning<T>> {
             match self.item {
@@ -1484,6 +1484,10 @@ pub(crate) mod attr {
 
     use super::{Either, Spanning};
 
+    #[cfg(feature = "from_str")]
+    pub(crate) use self::aliases::Aliases;
+    #[cfg(feature = "from_str")]
+    pub(crate) use self::default::Default;
     #[cfg(any(
         feature = "as_ref",
         feature = "from",
@@ -1491,21 +1495,24 @@ pub(crate) mod attr {
         feature = "try_from"
     ))]
     pub(crate) use self::empty::Empty;
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "from_str"))]
+    pub(crate) use self::forward::Forward;
+    #[cfg(feature = "from_str")]
+    pub(crate) use self::rename::Rename;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
         feature = "as_ref",
         feature = "debug",
         feature = "from",
+        feature = "from_str",
         feature = "into",
     ))]
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     pub(crate) use self::types::Types;
     #[cfg(any(feature = "as_ref", feature = "from"))]
-    pub(crate) use self::{
-        conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
-    };
+    pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
 
@@ -1701,7 +1708,7 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(any(feature = "as_ref", feature = "from"))]
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "from_str"))]
     mod forward {
         use syn::{
             parse::{Parse, ParseStream},
@@ -1829,6 +1836,7 @@ pub(crate) mod attr {
         feature = "debug",
         feature = "display",
         feature = "from",
+        feature = "from_str",
         feature = "into",
     ))]
     mod skip {
@@ -2260,6 +2268,130 @@ pub(crate) mod attr {
         }
 
         impl ParseMultiple for RenameAll {}
+    }
+
+    mod rename {
+        use syn::{parse::Parse, token};
+
+        use super::ParseMultiple;
+
+        mod keyword {
+            use syn::custom_keyword;
+            custom_keyword!(rename);
+        }
+
+        #[derive(Clone)]
+        pub(crate) struct Rename {
+            pub matcher: syn::LitStr,
+        }
+
+        impl Parse for Rename {
+            fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+                input.parse::<keyword::rename>()?;
+                input.parse::<token::Eq>()?;
+                Ok(Self {
+                    matcher: input.parse()?,
+                })
+            }
+        }
+
+        impl ParseMultiple for Rename {
+            fn merge_attrs(
+                _prev: crate::utils::Spanning<Self>,
+                new: crate::utils::Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<crate::utils::Spanning<Self>> {
+                Err(syn::Error::new(
+                    new.span(),
+                    format!(
+                        r#"only one `#[{name}(rename = "...")]` attribute is allowed here"#
+                    ),
+                ))
+            }
+        }
+    }
+
+    mod aliases {
+        use std::ops::Deref;
+
+        use syn::{parse::Parse, token};
+
+        use super::{ParseMultiple, Spanning};
+
+        mod keyword {
+            use syn::custom_keyword;
+
+            custom_keyword!(alias);
+        }
+
+        #[derive(Clone)]
+        pub(crate) struct Aliases {
+            pub aliases: Vec<syn::LitStr>,
+        }
+
+        impl Deref for Aliases {
+            type Target = Vec<syn::LitStr>;
+            fn deref(&self) -> &Self::Target {
+                &self.aliases
+            }
+        }
+
+        impl Parse for Aliases {
+            fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+                input.parse::<keyword::alias>()?;
+                input.parse::<token::Eq>()?;
+                Ok(Self {
+                    aliases: vec![input.parse()?],
+                })
+            }
+        }
+
+        impl ParseMultiple for Aliases {
+            fn merge_attrs(
+                prev: Spanning<Self>,
+                new: Spanning<Self>,
+                _name: &syn::Ident,
+            ) -> syn::Result<Spanning<Self>> {
+                let span = prev.span().join(new.span()).unwrap_or(new.span());
+                let mut aliases = prev.item.aliases;
+                aliases.extend(new.item.aliases);
+                Ok(Spanning::new(Self { aliases }, span))
+            }
+        }
+    }
+
+    mod default {
+        use syn::parse::Parse;
+
+        use crate::utils::attr::ParseMultiple;
+
+        mod keyword {
+            use syn::custom_keyword;
+
+            custom_keyword!(default);
+        }
+
+        pub(crate) struct Default;
+
+        impl Parse for Default {
+            fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+                input.parse::<keyword::default>()?;
+                Ok(Self)
+            }
+        }
+
+        impl ParseMultiple for Default {
+            fn merge_attrs(
+                _prev: crate::utils::Spanning<Self>,
+                new: crate::utils::Spanning<Self>,
+                name: &syn::Ident,
+            ) -> syn::Result<crate::utils::Spanning<Self>> {
+                Err(syn::Error::new(
+                    new.span(),
+                    format!(r#"only one `#[{name}(default)]` is allowed here`"#),
+                ))
+            }
+        }
     }
 }
 

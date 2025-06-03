@@ -1,4 +1,4 @@
-error: unknown attribute argument, expected `rename_all = "..."`
+error: expected one of: `aliases`, `default`, `forward`, `ignore`, `skip`, `rename`, `rename_all`
  --> tests/compile_fail/from_str/struct_flat_unknown_attribute.rs:2:12
   |
 2 | #[from_str(unknown = "unknown")]
