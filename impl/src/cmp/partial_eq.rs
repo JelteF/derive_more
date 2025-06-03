@@ -182,6 +182,7 @@ impl ToTokens for StructuralExpansion<'_> {
         });
 
         quote! {
+            #[allow(private_bounds)]
             #[automatically_derived]
             impl #impl_generics derive_more::core::cmp::PartialEq for #ty #ty_generics
                  #where_clause

@@ -52,14 +52,21 @@ impl ToTokens for StructuralExpansion<'_> {
                 .predicates
                 .push(parse_quote! { Self: derive_more::core::cmp::PartialEq });
         }
+        for field_ty in &self.fields_types {
+            generics
+                .make_where_clause()
+                .predicates
+                .push(parse_quote! { #field_ty: derive_more::core::cmp::Eq });
+        }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
         let assert_eq_inherent_method = (!self.fields_types.is_empty()).then(|| {
             let types = &self.fields_types;
             quote! {
+                #[allow(dead_code, private_bounds)]
                 #[automatically_derived]
                 #[doc(hidden)]
-                impl #impl_generics #ty #ty_generics {
+                impl #impl_generics #ty #ty_generics #where_clause {
                     #[doc(hidden)]
                     const fn __derive_more_assert_eq() {
                         #(let _: derive_more::__private::AssertParamIsEq<#types>;)*
@@ -69,6 +76,7 @@ impl ToTokens for StructuralExpansion<'_> {
         });
 
         quote! {
+            #[allow(private_bounds)]
             #[automatically_derived]
             impl #impl_generics derive_more::core::cmp::Eq for #ty #ty_generics
                  #where_clause

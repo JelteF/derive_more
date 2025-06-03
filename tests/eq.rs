@@ -47,7 +47,7 @@ mod structs {
 
             let _: AssertParamIsEq<Bar>;
         }
-        
+
         mod generic {
             use derive_more::{Eq, PartialEq, __private::AssertParamIsEq};
 
@@ -106,7 +106,7 @@ mod structs {
                     b: Foo<N>,
                     i: Baz<N>,
                 }
-                
+
                 let _: AssertParamIsEq<Baz<1>>;
                 let _: AssertParamIsEq<Foo<2>>;
                 let _: AssertParamIsEq<Bar<3>>;
@@ -116,7 +116,7 @@ mod structs {
             fn mixed() {
                 #[derive(Eq, PartialEq)]
                 struct Foo<'a, T, const N: usize>([&'a T; N]);
-                
+
                 let _: AssertParamIsEq<Foo<i32, 1>>;
             }
         }
