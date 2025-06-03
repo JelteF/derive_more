@@ -49,9 +49,6 @@ impl ToTokens for StructuralExpansion<'_> {
         let ty = self.self_ty.0;
         let (_, ty_generics, _) = self.self_ty.1.split_for_impl();
 
-        let self_tyty: syn::Type = parse_quote! { Self };
-        let self_ty: syn::Type = parse_quote! { #ty #ty_generics };
-
         let mut asserted_types = vec![];
         let mut generics = self.self_ty.1.clone();
         if !generics.params.is_empty() {
@@ -60,16 +57,20 @@ impl ToTokens for StructuralExpansion<'_> {
                 .predicates
                 .push(parse_quote! { Self: derive_more::core::cmp::PartialEq });
         }
-        for field_ty in &self.fields_types {
-            if field_ty.contains_type_structurally(&self_tyty)
-                || field_ty.contains_type_structurally(&self_ty)
-            {
-                asserted_types.push(field_ty);
-            } else {
-                generics
-                    .make_where_clause()
-                    .predicates
-                    .push(parse_quote! { #field_ty: derive_more::core::cmp::Eq });
+        {
+            let self_ty: syn::Type = parse_quote! { Self };
+            let implementor_ty: syn::Type = parse_quote! { #ty #ty_generics };
+            for field_ty in &self.fields_types {
+                if field_ty.contains_type_structurally(&self_ty)
+                    || field_ty.contains_type_structurally(&implementor_ty)
+                {
+                    asserted_types.push(field_ty);
+                } else {
+                    generics
+                        .make_where_clause()
+                        .predicates
+                        .push(parse_quote! { #field_ty: derive_more::core::cmp::Eq });
+                }
             }
         }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();

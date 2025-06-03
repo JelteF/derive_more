@@ -1,8 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)] // some code is tested for type checking only
 
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
 mod structs {
     mod structural {
+        #[cfg(not(feature = "std"))]
+        use ::alloc::{boxed::Box, vec::Vec};
         use derive_more::{Eq, __private::AssertParamIsEq};
 
         #[test]
@@ -48,7 +53,28 @@ mod structs {
             let _: AssertParamIsEq<Bar>;
         }
 
+        #[test]
+        fn recursive_tuple() {
+            #[derive(Eq, PartialEq)]
+            struct Foo(Box<Self>, Vec<Foo>);
+
+            let _: AssertParamIsEq<Foo>;
+        }
+
+        #[test]
+        fn recursive_struct() {
+            #[derive(Eq, PartialEq)]
+            struct Bar {
+                b: Box<Self>,
+                i: Vec<Bar>,
+            }
+
+            let _: AssertParamIsEq<Bar>;
+        }
+
         mod generic {
+            #[cfg(not(feature = "std"))]
+            use ::alloc::{boxed::Box, vec::Vec};
             use derive_more::{Eq, PartialEq, __private::AssertParamIsEq};
 
             trait Some {
@@ -119,12 +145,22 @@ mod structs {
 
                 let _: AssertParamIsEq<Foo<i32, 1>>;
             }
+
+            #[test]
+            fn recursive() {
+                #[derive(Eq, PartialEq)]
+                struct Foo<A: Some, B>(A::Assoc, B, Vec<Foo<A, B>>, Box<Self>);
+
+                let _: AssertParamIsEq<Foo<f32, ()>>;
+            }
         }
     }
 }
 
 mod enums {
     mod structural {
+        #[cfg(not(feature = "std"))]
+        use ::alloc::{boxed::Box, vec::Vec};
         use derive_more::{Eq, __private::AssertParamIsEq};
 
         #[test]
@@ -219,7 +255,21 @@ mod enums {
             let _: AssertParamIsEq<E>;
         }
 
+        #[test]
+        fn recursive() {
+            #[derive(Eq, PartialEq)]
+            enum E {
+                Foo(Box<E>),
+                Bar { b: Vec<Self> },
+                Baz,
+            }
+
+            let _: AssertParamIsEq<E>;
+        }
+
         mod generic {
+            #[cfg(not(feature = "std"))]
+            use ::alloc::{boxed::Box, vec::Vec};
             use derive_more::{Eq, PartialEq, __private::AssertParamIsEq};
 
             trait Some {
@@ -309,6 +359,18 @@ mod enums {
                 }
 
                 let _: AssertParamIsEq<E<i32, f64, 1>>;
+            }
+
+            #[test]
+            fn recursive() {
+                #[derive(Eq, PartialEq)]
+                enum E<A, B: Some> {
+                    Foo(B::Assoc, Vec<Self>),
+                    Bar { b: Box<E<A, B>>, i: A },
+                    Baz,
+                }
+
+                let _: AssertParamIsEq<E<i64, f64>>;
             }
         }
     }
