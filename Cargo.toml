@@ -161,6 +161,11 @@ path = "tests/display.rs"
 required-features = ["display"]
 
 [[test]]
+name = "eq"
+path = "tests/eq.rs"
+required-features = ["eq"]
+
+[[test]]
 name = "error"
 path = "tests/error_tests.rs"
 required-features = ["error"]
