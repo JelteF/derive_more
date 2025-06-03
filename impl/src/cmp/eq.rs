@@ -4,11 +4,13 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse_quote, spanned::Spanned as _};
 
+use crate::utils::HashSet;
+
 /// Expands an [`Eq`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     let fields_types = match &input.data {
         syn::Data::Struct(data) => {
-            data.fields.iter().map(|f| &f.ty).collect::<Vec<_>>()
+            data.fields.iter().map(|f| &f.ty).collect::<HashSet<_>>()
         }
         syn::Data::Enum(data) => data
             .variants
@@ -38,7 +40,7 @@ struct StructuralExpansion<'i> {
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
     /// [`syn::Type`]s of the enum/struct fields to be asserted for implementing [`Eq`].
-    fields_types: Vec<&'i syn::Type>,
+    fields_types: HashSet<&'i syn::Type>,
 }
 
 impl ToTokens for StructuralExpansion<'_> {
@@ -61,7 +63,7 @@ impl ToTokens for StructuralExpansion<'_> {
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
         let assert_eq_inherent_method = (!self.fields_types.is_empty()).then(|| {
-            let types = &self.fields_types;
+            let types = self.fields_types.iter();
             quote! {
                 #[allow(dead_code, private_bounds)]
                 #[automatically_derived]
