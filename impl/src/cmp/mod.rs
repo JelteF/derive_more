@@ -12,14 +12,8 @@ trait TypeExt {
     /// # False positives
     ///
     /// This check naturally gives a false positives when a type parameter is not used directly in
-    /// a field, but its associative type does.
-    /// ```rust
-    /// trait Some {
-    ///     type Assoc;
-    /// }
-    /// struct Foo<T: Some>(T::Assoc);
-    /// ```
-    /// This is because the structure of the type cannot be scanned by its name only.
+    /// a field, but its associative type does (e.g. `struct Foo<T: Some>(T::Assoc);`). This is
+    /// because the structure of the type cannot be scanned by its name only.
     fn contains_type_structurally(&self, needle: &syn::Type) -> bool;
 }
 
