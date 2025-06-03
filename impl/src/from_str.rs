@@ -10,7 +10,7 @@ use syn::{parse_quote, spanned::Spanned as _};
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
-    Either, Spanning,
+    Either, GenericsSearch, Spanning,
 };
 
 /// Expands a [`FromStr`] derive macro.
@@ -88,8 +88,9 @@ impl ToTokens for ForwardExpansion<'_> {
         let inner_ty = &self.inner.ty;
         let ty = self.self_ty.0;
 
+        let generics_search = GenericsSearch::from(self.self_ty.1);
         let mut generics = self.self_ty.1.clone();
-        if !generics.params.is_empty() {
+        if generics_search.any_in(inner_ty) {
             generics.make_where_clause().predicates.push(parse_quote! {
                 #inner_ty: derive_more::core::str::FromStr
             });
