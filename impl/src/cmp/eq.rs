@@ -4,6 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{parse_quote, spanned::Spanned as _};
 
+use super::TypeExt as _;
 use crate::utils::HashSet;
 
 /// Expands an [`Eq`] derive macro.
@@ -46,7 +47,12 @@ struct StructuralExpansion<'i> {
 impl ToTokens for StructuralExpansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let ty = self.self_ty.0;
+        let (_, ty_generics, _) = self.self_ty.1.split_for_impl();
 
+        let self_tyty: syn::Type = parse_quote! { Self };
+        let self_ty: syn::Type = parse_quote! { #ty #ty_generics };
+
+        let mut asserted_types = vec![];
         let mut generics = self.self_ty.1.clone();
         if !generics.params.is_empty() {
             generics
@@ -55,15 +61,20 @@ impl ToTokens for StructuralExpansion<'_> {
                 .push(parse_quote! { Self: derive_more::core::cmp::PartialEq });
         }
         for field_ty in &self.fields_types {
-            generics
-                .make_where_clause()
-                .predicates
-                .push(parse_quote! { #field_ty: derive_more::core::cmp::Eq });
+            if field_ty.contains_type_structurally(&self_tyty)
+                || field_ty.contains_type_structurally(&self_ty)
+            {
+                asserted_types.push(field_ty);
+            } else {
+                generics
+                    .make_where_clause()
+                    .predicates
+                    .push(parse_quote! { #field_ty: derive_more::core::cmp::Eq });
+            }
         }
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-        let assert_eq_inherent_method = (!self.fields_types.is_empty()).then(|| {
-            let types = self.fields_types.iter();
+        let assert_eq_inherent_method = (!asserted_types.is_empty()).then(|| {
             quote! {
                 #[allow(dead_code, private_bounds)]
                 #[automatically_derived]
@@ -71,7 +82,7 @@ impl ToTokens for StructuralExpansion<'_> {
                 impl #impl_generics #ty #ty_generics #where_clause {
                     #[doc(hidden)]
                     const fn __derive_more_assert_eq() {
-                        #(let _: derive_more::__private::AssertParamIsEq<#types>;)*
+                        #(let _: derive_more::__private::AssertParamIsEq<#asserted_types>;)*
                     }
                 }
             }
