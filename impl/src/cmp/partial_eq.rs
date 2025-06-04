@@ -104,7 +104,10 @@ impl StructuralExpansion<'_> {
         let no_fields_result = quote! { #eq };
 
         // Special case: no fields to compare (also, no need for `ne()` method in this case).
-        if self.variants.len() == 1 && self.variants[0].1.is_empty() {
+        if self.variants.len() == 1
+            && (self.variants[0].1.is_empty()
+                || self.variants[0].1.len() == self.variants[0].2.len())
+        {
             return eq.then_some(no_fields_result);
         }
 
@@ -261,9 +264,10 @@ impl FieldsExt for syn::Fields {
         prefix: &str,
         skipped_indices: &SkippedFields,
     ) -> TokenStream {
-        let wildcard = (!skipped_indices.is_empty()).then(token::DotDot::default);
         match self {
             Self::Named(fields) => {
+                let wildcard =
+                    (!skipped_indices.is_empty()).then(token::DotDot::default);
                 let fields =
                     fields.named.iter().enumerate().filter_map(|(num, field)| {
                         (!skipped_indices.contains(&num)).then(|| {
@@ -275,13 +279,15 @@ impl FieldsExt for syn::Fields {
                 quote! {{ #( #fields , )* #wildcard }}
             }
             Self::Unnamed(fields) => {
-                let fields = (0..fields.unnamed.len()).filter_map(|num| {
-                    (!skipped_indices.contains(&num)).then(|| {
+                let fields = (0..fields.unnamed.len()).map(|num| {
+                    if skipped_indices.contains(&num) {
+                        quote! { _ }
+                    } else {
                         let binding = format_ident!("{prefix}{num}");
                         quote! { #binding }
-                    })
+                    }
                 });
-                quote! {( #( #fields , )* #wildcard )}
+                quote! {( #( #fields , )* )}
             }
             Self::Unit => quote! {},
         }
