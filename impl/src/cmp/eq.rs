@@ -1,23 +1,50 @@
 //! Implementation of an [`Eq`] derive macro.
 
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{parse_quote, spanned::Spanned as _};
 
 use super::TypeExt as _;
-use crate::utils::HashSet;
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    HashSet,
+};
 
 /// Expands an [`Eq`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
+    let attr_name = format_ident!("eq");
+    let secondary_attr_name = format_ident!("partial_eq");
+
     let fields_types = match &input.data {
-        syn::Data::Struct(data) => {
-            data.fields.iter().map(|f| &f.ty).collect::<HashSet<_>>()
-        }
+        syn::Data::Struct(data) => data
+            .fields
+            .iter()
+            .map(|field| {
+                for attr_name in [&attr_name, &secondary_attr_name] {
+                    if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some() {
+                        return Ok(None);
+                    }
+                }
+                Ok(Some(&field.ty))
+            })
+            .filter_map(syn::Result::transpose)
+            .collect::<syn::Result<HashSet<_>>>()?,
         syn::Data::Enum(data) => data
             .variants
             .iter()
-            .flat_map(|variant| variant.fields.iter().map(|f| &f.ty))
-            .collect(),
+            .flat_map(|variant| {
+                variant.fields.iter().map(|field| {
+                    for attr_name in [&attr_name, &secondary_attr_name] {
+                        if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some()
+                        {
+                            return Ok(None);
+                        }
+                    }
+                    Ok(Some(&field.ty))
+                })
+            })
+            .filter_map(syn::Result::transpose)
+            .collect::<syn::Result<HashSet<_>>>()?,
         syn::Data::Union(data) => {
             return Err(syn::Error::new(
                 data.union_token.span(),

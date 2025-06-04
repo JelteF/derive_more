@@ -186,8 +186,14 @@ create_derive!(
 );
 create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
 
-create_derive!("eq", cmp::eq, Eq, eq_derive);
-create_derive!("eq", cmp::partial_eq, PartialEq, partial_eq_derive);
+create_derive!("eq", cmp::eq, Eq, eq_derive, eq);
+create_derive!(
+    "eq",
+    cmp::partial_eq,
+    PartialEq,
+    partial_eq_derive,
+    partial_eq
+);
 
 create_derive!("error", error, Error, error_derive, error);
 
