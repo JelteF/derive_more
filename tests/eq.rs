@@ -72,6 +72,47 @@ mod structs {
             let _: AssertParamIsEq<Bar>;
         }
 
+        mod skip {
+            use derive_more::{Eq, PartialEq, __private::AssertParamIsEq};
+
+            struct NoEq;
+
+            #[test]
+            fn fields() {
+                #[derive(Eq, PartialEq)]
+                struct Foo(#[eq(skip)] NoEq, bool, #[eq(skip)] i32);
+
+                #[derive(Eq, PartialEq)]
+                struct Bar {
+                    #[partial_eq(skip)]
+                    a: NoEq,
+                    i: i32,
+                    #[partial_eq(skip)]
+                    b: bool,
+                }
+
+                let _: AssertParamIsEq<Foo>;
+                let _: AssertParamIsEq<Bar>;
+            }
+
+            #[test]
+            fn all_fields() {
+                #[derive(Eq, PartialEq)]
+                struct Foo(#[eq(skip)] NoEq, #[eq(skip)] i32);
+
+                #[derive(Eq, PartialEq)]
+                struct Bar {
+                    #[partial_eq(skip)]
+                    a: NoEq,
+                    #[partial_eq(skip)]
+                    b: bool,
+                }
+
+                let _: AssertParamIsEq<Foo>;
+                let _: AssertParamIsEq<Bar>;
+            }
+        }
+
         mod generic {
             #[cfg(not(feature = "std"))]
             use ::alloc::{boxed::Box, vec::Vec};
@@ -152,6 +193,47 @@ mod structs {
                 struct Foo<A: Some, B>(A::Assoc, B, Vec<Foo<A, B>>, Box<Self>);
 
                 let _: AssertParamIsEq<Foo<f32, ()>>;
+            }
+
+            mod skip {
+                use derive_more::{Eq, PartialEq, __private::AssertParamIsEq};
+
+                struct NoEq;
+
+                #[test]
+                fn fields() {
+                    #[derive(Eq, PartialEq)]
+                    struct Foo<A, B, C>(#[eq(skip)] A, B, #[eq(skip)] C);
+
+                    #[derive(Eq, PartialEq)]
+                    struct Bar<A, B, C> {
+                        #[partial_eq(skip)]
+                        a: A,
+                        i: B,
+                        #[partial_eq(skip)]
+                        b: C,
+                    }
+
+                    let _: AssertParamIsEq<Foo<NoEq, bool, i32>>;
+                    let _: AssertParamIsEq<Bar<NoEq, i32, bool>>;
+                }
+
+                #[test]
+                fn all_fields() {
+                    #[derive(Eq, PartialEq)]
+                    struct Foo<A, B>(#[eq(skip)] A, #[eq(skip)] B);
+
+                    #[derive(Eq, PartialEq)]
+                    struct Bar<A, B> {
+                        #[partial_eq(skip)]
+                        a: A,
+                        #[partial_eq(skip)]
+                        b: B,
+                    }
+
+                    let _: AssertParamIsEq<Foo<NoEq, i32>>;
+                    let _: AssertParamIsEq<Bar<NoEq, bool>>;
+                }
             }
         }
     }
@@ -267,6 +349,45 @@ mod enums {
             let _: AssertParamIsEq<E>;
         }
 
+        mod skip {
+            use derive_more::{Eq, PartialEq, __private::AssertParamIsEq};
+
+            struct NoEq;
+
+            #[test]
+            fn fields() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(#[eq(skip)] NoEq, bool, #[eq(skip)] i32),
+                    Bar {
+                        #[partial_eq(skip)]
+                        a: NoEq,
+                        i: i32,
+                        #[partial_eq(skip)]
+                        b: bool,
+                    },
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn all_fields() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(skip)] NoEq, #[partial_eq(skip)] i32),
+                    Bar {
+                        #[partial_eq(skip)]
+                        a: NoEq,
+                        #[partial_eq(skip)]
+                        b: bool,
+                    },
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+        }
+
         mod generic {
             #[cfg(not(feature = "std"))]
             use ::alloc::{boxed::Box, vec::Vec};
@@ -371,6 +492,45 @@ mod enums {
                 }
 
                 let _: AssertParamIsEq<E<i64, f64>>;
+            }
+
+            mod skip {
+                use derive_more::{Eq, PartialEq, __private::AssertParamIsEq};
+
+                struct NoEq;
+
+                #[test]
+                fn fields() {
+                    #[derive(Eq, PartialEq)]
+                    enum E<A, B, C> {
+                        Foo(#[partial_eq(skip)] A, B, #[partial_eq(skip)] C),
+                        Bar {
+                            #[partial_eq(skip)]
+                            a: A,
+                            i: C,
+                            #[partial_eq(skip)]
+                            b: B,
+                        },
+                    }
+
+                    let _: AssertParamIsEq<E<NoEq, bool, i32>>;
+                }
+
+                #[test]
+                fn all_fields() {
+                    #[derive(Eq, PartialEq)]
+                    enum E<A, B, C> {
+                        Foo(#[partial_eq(skip)] A, #[partial_eq(skip)] B),
+                        Bar {
+                            #[partial_eq(skip)]
+                            a: A,
+                            #[partial_eq(skip)]
+                            b: C,
+                        },
+                    }
+
+                    let _: AssertParamIsEq<E<NoEq, bool, i32>>;
+                }
             }
         }
     }

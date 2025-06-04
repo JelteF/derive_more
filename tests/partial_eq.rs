@@ -434,7 +434,7 @@ mod structs {
 
                 #[test]
                 fn all_fields() {
-                    #[derive(Debug, derive_more::PartialEq)]
+                    #[derive(Debug, PartialEq)]
                     struct Foo<A, B>(#[partial_eq(skip)] A, #[partial_eq(skip)] B);
 
                     #[derive(Debug, PartialEq)]
