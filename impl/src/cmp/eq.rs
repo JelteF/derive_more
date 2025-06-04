@@ -15,43 +15,42 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     let attr_name = format_ident!("eq");
     let secondary_attr_name = format_ident!("partial_eq");
 
-    let fields_types = match &input.data {
-        syn::Data::Struct(data) => data
-            .fields
-            .iter()
-            .map(|field| {
+    let mut fields_types = HashSet::default();
+    match &input.data {
+        syn::Data::Struct(data) => {
+            'fields: for field in &data.fields {
                 for attr_name in [&attr_name, &secondary_attr_name] {
-                    if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some() {
-                        return Ok(None);
+                    if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                        continue 'fields;
                     }
                 }
-                Ok(Some(&field.ty))
-            })
-            .filter_map(syn::Result::transpose)
-            .collect::<syn::Result<HashSet<_>>>()?,
-        syn::Data::Enum(data) => data
-            .variants
-            .iter()
-            .flat_map(|variant| {
-                variant.fields.iter().map(|field| {
+                _ = fields_types.insert(&field.ty);
+            }
+        }
+        syn::Data::Enum(data) => {
+            'variants: for variant in &data.variants {
+                for attr_name in [&attr_name, &secondary_attr_name] {
+                    if attr::Skip::parse_attrs(&variant.attrs, attr_name)?.is_some() {
+                        continue 'variants;
+                    }
+                }
+                'fields: for field in &variant.fields {
                     for attr_name in [&attr_name, &secondary_attr_name] {
-                        if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some()
-                        {
-                            return Ok(None);
+                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                            continue 'fields;
                         }
                     }
-                    Ok(Some(&field.ty))
-                })
-            })
-            .filter_map(syn::Result::transpose)
-            .collect::<syn::Result<HashSet<_>>>()?,
+                    _ = fields_types.insert(&field.ty);
+                }
+            }
+        }
         syn::Data::Union(data) => {
             return Err(syn::Error::new(
                 data.union_token.span(),
                 "`Eq` cannot be derived for unions",
             ))
         }
-    };
+    }
 
     Ok(StructuralExpansion {
         self_ty: (&input.ident, &input.generics),

@@ -28,8 +28,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 .enumerate()
                 .map(|(n, field)| {
                     for attr_name in [&attr_name, &secondary_attr_name] {
-                        if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some()
-                        {
+                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
                             return Ok(Some(n));
                         }
                     }
@@ -49,7 +48,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     .enumerate()
                     .map(|(n, field)| {
                         for attr_name in [&attr_name, &secondary_attr_name] {
-                            if attr::Skip::parse_attrs(&field.attrs, &attr_name)?
+                            if attr::Skip::parse_attrs(&field.attrs, attr_name)?
                                 .is_some()
                             {
                                 return Ok(Some(n));
