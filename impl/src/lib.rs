@@ -192,7 +192,7 @@ create_derive!(
     cmp::partial_eq,
     PartialEq,
     partial_eq_derive,
-    partial_eq
+    partial_eq,
 );
 
 create_derive!("error", error, Error, error_derive, error);
