@@ -1283,11 +1283,11 @@ mod enums {
 
                     assert_eq!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: true }
+                        E::Bar { a: NoEq, b: true },
                     );
                     assert_eq!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: false }
+                        E::Bar { a: NoEq, b: false },
                     );
 
                     assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
@@ -1312,11 +1312,11 @@ mod enums {
 
                     assert_eq!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: true }
+                        E::Bar { a: NoEq, b: true },
                     );
                     assert_eq!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: false }
+                        E::Bar { a: NoEq, b: false },
                     );
 
                     assert_eq!(E::<bool, i32, NoEq>::Baz, E::Baz);
@@ -1336,11 +1336,11 @@ mod enums {
 
                     assert_eq!(
                         E::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: true }
+                        E::Bar { a: NoEq, b: true },
                     );
                     assert_eq!(
                         E::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: false }
+                        E::Bar { a: NoEq, b: false },
                     );
                 }
 
@@ -1365,11 +1365,11 @@ mod enums {
 
                     assert_eq!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: true }
+                        E::Bar { a: NoEq, b: true },
                     );
                     assert_eq!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: false }
+                        E::Bar { a: NoEq, b: false },
                     );
 
                     assert_eq!(E::<bool, i32, NoEq>::Baz, E::Baz);
@@ -1400,11 +1400,11 @@ mod enums {
 
                     assert_eq!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: true }
+                        E::Bar { a: NoEq, b: true },
                     );
                     assert_ne!(
                         E::<_, i32, _>::Bar { a: NoEq, b: true },
-                        E::Bar { a: NoEq, b: false }
+                        E::Bar { a: NoEq, b: false },
                     );
 
                     assert_eq!(E::<bool, i32, NoEq>::Baz, E::Baz);

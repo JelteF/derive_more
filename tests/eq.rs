@@ -111,6 +111,55 @@ mod structs {
                 let _: AssertParamIsEq<Foo>;
                 let _: AssertParamIsEq<Bar>;
             }
+
+            #[test]
+            fn empty_struct() {
+                #[derive(Eq, PartialEq)]
+                #[eq(skip)]
+                struct Foo;
+
+                #[derive(Eq, PartialEq)]
+                #[partial_eq(skip)]
+                struct Bar {}
+
+                let _: AssertParamIsEq<Foo>;
+                let _: AssertParamIsEq<Bar>;
+            }
+
+            #[test]
+            fn multifield_struct() {
+                #[derive(Eq, PartialEq)]
+                #[eq(skip)]
+                struct Foo(NoEq, bool);
+
+                #[derive(Eq, PartialEq)]
+                #[partial_eq(skip)]
+                struct Bar {
+                    a: NoEq,
+                    b: bool,
+                }
+
+                let _: AssertParamIsEq<Foo>;
+                let _: AssertParamIsEq<Bar>;
+            }
+
+            #[test]
+            fn mixed() {
+                #[derive(Eq, PartialEq)]
+                #[eq(skip)]
+                struct Foo(NoEq, #[eq(skip)] bool);
+
+                #[derive(Eq, PartialEq)]
+                #[partial_eq(skip)]
+                struct Bar {
+                    a: NoEq,
+                    #[partial_eq(skip)]
+                    b: bool,
+                }
+
+                let _: AssertParamIsEq<Foo>;
+                let _: AssertParamIsEq<Bar>;
+            }
         }
 
         mod generic {
@@ -233,6 +282,41 @@ mod structs {
 
                     let _: AssertParamIsEq<Foo<NoEq, i32>>;
                     let _: AssertParamIsEq<Bar<NoEq, bool>>;
+                }
+
+                #[test]
+                fn multifield_struct() {
+                    #[derive(Eq, PartialEq)]
+                    #[eq(skip)]
+                    struct Foo<A, B>(A, B);
+
+                    #[derive(Eq, PartialEq)]
+                    #[partial_eq(skip)]
+                    struct Bar<A, B> {
+                        a: A,
+                        b: B,
+                    }
+
+                    let _: AssertParamIsEq<Foo<NoEq, NoEq>>;
+                    let _: AssertParamIsEq<Bar<NoEq, NoEq>>;
+                }
+
+                #[test]
+                fn mixed() {
+                    #[derive(Eq, PartialEq)]
+                    #[eq(skip)]
+                    struct Foo<A, B>(A, #[eq(skip)] B);
+
+                    #[derive(Eq, PartialEq)]
+                    #[partial_eq(skip)]
+                    struct Bar<A, B> {
+                        a: A,
+                        #[partial_eq(skip)]
+                        b: B,
+                    }
+
+                    let _: AssertParamIsEq<Foo<NoEq, NoEq>>;
+                    let _: AssertParamIsEq<Bar<NoEq, NoEq>>;
                 }
             }
         }
@@ -386,6 +470,81 @@ mod enums {
 
                 let _: AssertParamIsEq<E>;
             }
+
+            #[test]
+            fn variants() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(bool, i32),
+                    #[eq(skip)]
+                    Bar {
+                        a: NoEq,
+                        b: bool,
+                    },
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn all_variants() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    #[eq(skip)]
+                    Foo(bool, i32),
+                    #[partial_eq(skip)]
+                    Bar { a: NoEq, b: bool },
+                    #[eq(skip)]
+                    Baz,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn single_variant() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    #[eq(skip)]
+                    Bar { a: NoEq, b: bool },
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn all_but_single_empty_variant() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    #[eq(skip)]
+                    Foo(bool, i32),
+                    #[partial_eq(skip)]
+                    Bar {
+                        a: NoEq,
+                        b: bool,
+                    },
+                    Baz,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn mixed() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    #[eq(skip)]
+                    Foo(bool, i32),
+                    Bar {
+                        #[partial_eq(skip)]
+                        a: NoEq,
+                        b: bool,
+                    },
+                    Baz,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
         }
 
         mod generic {
@@ -530,6 +689,81 @@ mod enums {
                     }
 
                     let _: AssertParamIsEq<E<NoEq, bool, i32>>;
+                }
+
+                #[test]
+                fn variants() {
+                    #[derive(Eq, PartialEq)]
+                    enum E<A, B, C> {
+                        Foo(A, B),
+                        #[eq(skip)]
+                        Bar {
+                            a: C,
+                            b: A,
+                        },
+                    }
+
+                    let _: AssertParamIsEq<E<i32, bool, NoEq>>;
+                }
+
+                #[test]
+                fn all_variants() {
+                    #[derive(Eq, PartialEq)]
+                    enum E<A, B, C> {
+                        #[eq(skip)]
+                        Foo(A, B),
+                        #[partial_eq(skip)]
+                        Bar { a: C, b: A },
+                        #[eq(skip)]
+                        Baz,
+                    }
+
+                    let _: AssertParamIsEq<E<NoEq, NoEq, f32>>;
+                }
+
+                #[test]
+                fn single_variant() {
+                    #[derive(Eq, PartialEq)]
+                    enum E<A, B> {
+                        #[eq(skip)]
+                        Bar { a: A, b: B },
+                    }
+
+                    let _: AssertParamIsEq<E<NoEq, NoEq>>;
+                }
+
+                #[test]
+                fn all_but_single_empty_variant() {
+                    #[derive(Eq, PartialEq)]
+                    enum E<A, B, C> {
+                        #[eq(skip)]
+                        Foo(A, B),
+                        #[partial_eq(skip)]
+                        Bar {
+                            a: C,
+                            b: A,
+                        },
+                        Baz,
+                    }
+
+                    let _: AssertParamIsEq<E<NoEq, NoEq, f32>>;
+                }
+
+                #[test]
+                fn mixed() {
+                    #[derive(Eq, PartialEq)]
+                    enum E<A, B, C> {
+                        #[eq(skip)]
+                        Foo(A, B),
+                        Bar {
+                            #[partial_eq(skip)]
+                            a: C,
+                            b: A,
+                        },
+                        Baz,
+                    }
+
+                    let _: AssertParamIsEq<E<i32, NoEq, f32>>;
                 }
             }
         }

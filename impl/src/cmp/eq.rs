@@ -18,13 +18,22 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     let mut fields_types = HashSet::default();
     match &input.data {
         syn::Data::Struct(data) => {
-            'fields: for field in &data.fields {
-                for attr_name in [&attr_name, &secondary_attr_name] {
-                    if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
-                        continue 'fields;
-                    }
+            let mut is_skipped = false;
+            for attr_name in [&attr_name, &secondary_attr_name] {
+                if attr::Skip::parse_attrs(&input.attrs, attr_name)?.is_some() {
+                    is_skipped = true;
+                    break;
                 }
-                _ = fields_types.insert(&field.ty);
+            }
+            if !is_skipped {
+                'fields: for field in &data.fields {
+                    for attr_name in [&attr_name, &secondary_attr_name] {
+                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                            continue 'fields;
+                        }
+                    }
+                    _ = fields_types.insert(&field.ty);
+                }
             }
         }
         syn::Data::Enum(data) => {
