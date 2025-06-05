@@ -190,6 +190,62 @@ mod structs {
                 assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: true });
                 assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: false });
             }
+
+            #[test]
+            fn empty_struct() {
+                #[derive(Debug, PartialEq)]
+                #[partial_eq(skip)]
+                struct Foo;
+
+                #[derive(Debug, PartialEq)]
+                struct Bar {}
+
+                assert_eq!(Foo, Foo);
+
+                assert_eq!(Bar {}, Bar {});
+            }
+
+            #[test]
+            fn multifield_struct() {
+                #[derive(Debug, PartialEq)]
+                #[partial_eq(skip)]
+                struct Foo(NoEq, bool);
+
+                #[derive(Debug, PartialEq)]
+                #[partial_eq(skip)]
+                struct Bar {
+                    a: NoEq,
+                    b: bool,
+                }
+
+                assert_eq!(Foo(NoEq, true), Foo(NoEq, true));
+                assert_eq!(Foo(NoEq, true), Foo(NoEq, false));
+
+                assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: true });
+                assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: false });
+            }
+
+            #[test]
+            fn mixed() {
+                #[derive(Debug, derive_more::PartialEq)]
+                #[partial_eq(skip)]
+                struct Foo(NoEq, #[partial_eq(skip)] bool);
+
+                #[derive(Debug, PartialEq)]
+                #[partial_eq(skip)]
+                struct Bar {
+                    a: NoEq,
+
+                    #[partial_eq(skip)]
+                    b: bool,
+                }
+
+                assert_eq!(Foo(NoEq, true), Foo(NoEq, true));
+                assert_eq!(Foo(NoEq, true), Foo(NoEq, false));
+
+                assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: true });
+                assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: false });
+            }
         }
 
         mod generic {
@@ -451,6 +507,47 @@ mod structs {
                     assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: true });
                     assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: false });
                 }
+
+                #[test]
+                fn multifield_struct() {
+                    #[derive(Debug, PartialEq)]
+                    #[partial_eq(skip)]
+                    struct Foo<A, B>(A, B);
+
+                    #[derive(Debug, PartialEq)]
+                    #[partial_eq(skip)]
+                    struct Bar<A, B> {
+                        a: A,
+                        b: B,
+                    }
+
+                    assert_eq!(Foo(1, NoEq), Foo(1, NoEq));
+                    assert_eq!(Foo(1, NoEq), Foo(0, NoEq));
+
+                    assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: true });
+                    assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: false });
+                }
+
+                #[test]
+                fn mixed() {
+                    #[derive(Debug, PartialEq)]
+                    #[partial_eq(skip)]
+                    struct Foo<A, B>(A, #[partial_eq(skip)] B);
+
+                    #[derive(Debug, PartialEq)]
+                    #[partial_eq(skip)]
+                    struct Bar<A, B> {
+                        a: A,
+                        #[partial_eq(skip)]
+                        b: B,
+                    }
+
+                    assert_eq!(Foo(NoEq, true), Foo(NoEq, true));
+                    assert_eq!(Foo(NoEq, true), Foo(NoEq, false));
+
+                    assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: true });
+                    assert_eq!(Bar { a: NoEq, b: true }, Bar { a: NoEq, b: false });
+                }
             }
         }
     }
@@ -708,6 +805,125 @@ mod enums {
                 assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: false });
 
                 assert_ne!(E::Foo(NoEq, 0), E::Bar { a: NoEq, b: true });
+            }
+
+            #[test]
+            fn variants() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(bool, i32),
+                    #[partial_eq(skip)]
+                    Bar {
+                        a: NoEq,
+                        b: bool,
+                    },
+                }
+
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 0));
+                assert_ne!(E::Foo(true, 0), E::Foo(true, 1));
+                assert_ne!(E::Foo(true, 0), E::Foo(false, 0));
+
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: true });
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: false });
+
+                assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+            }
+
+            #[test]
+            fn all_variants() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    #[partial_eq(skip)]
+                    Foo(bool, i32),
+                    #[partial_eq(skip)]
+                    Bar { a: NoEq, b: bool },
+                    #[partial_eq(skip)]
+                    Baz,
+                }
+
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 0));
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 1));
+                assert_eq!(E::Foo(true, 0), E::Foo(false, 0));
+                assert_eq!(E::Foo(true, 0), E::Foo(false, 1));
+
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: true });
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: false });
+
+                assert_eq!(E::Baz, E::Baz);
+
+                assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+                assert_ne!(E::Foo(true, 0), E::Baz);
+                assert_ne!(E::Bar { a: NoEq, b: true }, E::Baz);
+            }
+
+            #[test]
+            fn single_variant() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    #[partial_eq(skip)]
+                    Bar { a: NoEq, b: bool },
+                }
+
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: true });
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: false });
+            }
+
+            #[test]
+            fn all_but_single_empty_variant() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    #[partial_eq(skip)]
+                    Foo(bool, i32),
+                    #[partial_eq(skip)]
+                    Bar {
+                        a: NoEq,
+                        b: bool,
+                    },
+                    Baz,
+                }
+
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 0));
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 1));
+                assert_eq!(E::Foo(true, 0), E::Foo(false, 0));
+                assert_eq!(E::Foo(true, 0), E::Foo(false, 1));
+
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: true });
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: false });
+
+                assert_eq!(E::Baz, E::Baz);
+
+                assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+                assert_ne!(E::Foo(true, 0), E::Baz);
+                assert_ne!(E::Bar { a: NoEq, b: true }, E::Baz);
+            }
+
+            #[test]
+            fn mixed() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    #[partial_eq(skip)]
+                    Foo(bool, i32),
+                    Bar {
+                        #[partial_eq(skip)]
+                        a: NoEq,
+                        b: bool,
+                    },
+                    Baz,
+                }
+
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 0));
+                assert_eq!(E::Foo(true, 0), E::Foo(true, 1));
+                assert_eq!(E::Foo(true, 0), E::Foo(false, 0));
+                assert_eq!(E::Foo(true, 0), E::Foo(false, 1));
+
+                assert_eq!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: true });
+                assert_ne!(E::Bar { a: NoEq, b: true }, E::Bar { a: NoEq, b: false });
+
+                assert_eq!(E::Baz, E::Baz);
+
+                assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+                assert_ne!(E::Foo(true, 0), E::Baz);
+                assert_ne!(E::Bar { a: NoEq, b: true }, E::Baz);
             }
         }
 
@@ -1047,6 +1263,155 @@ mod enums {
                     );
 
                     assert_ne!(E::Foo(NoEq, 0), E::Bar { a: NoEq, b: true });
+                }
+
+                #[test]
+                fn variants() {
+                    #[derive(Debug, PartialEq)]
+                    enum E<A, B, C> {
+                        Foo(A, B),
+                        #[partial_eq(skip)]
+                        Bar {
+                            a: C,
+                            b: A,
+                        },
+                    }
+
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 0));
+                    assert_ne!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 1));
+                    assert_ne!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(false, 0));
+
+                    assert_eq!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: true }
+                    );
+                    assert_eq!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: false }
+                    );
+
+                    assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+                }
+
+                #[test]
+                fn all_variants() {
+                    #[derive(Debug, PartialEq)]
+                    enum E<A, B, C> {
+                        #[partial_eq(skip)]
+                        Foo(A, B),
+                        #[partial_eq(skip)]
+                        Bar { a: C, b: A },
+                        #[partial_eq(skip)]
+                        Baz,
+                    }
+
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 0));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 1));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(false, 0));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(false, 1));
+
+                    assert_eq!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: true }
+                    );
+                    assert_eq!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: false }
+                    );
+
+                    assert_eq!(E::<bool, i32, NoEq>::Baz, E::Baz);
+
+                    assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+                    assert_ne!(E::<_, _, NoEq>::Foo(true, 0), E::Baz);
+                    assert_ne!(E::<_, i32, _>::Bar { a: NoEq, b: true }, E::Baz);
+                }
+
+                #[test]
+                fn single_variant() {
+                    #[derive(Debug, PartialEq)]
+                    enum E<A, B> {
+                        #[partial_eq(skip)]
+                        Bar { a: A, b: B },
+                    }
+
+                    assert_eq!(
+                        E::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: true }
+                    );
+                    assert_eq!(
+                        E::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: false }
+                    );
+                }
+
+                #[test]
+                fn all_but_single_empty_variant() {
+                    #[derive(Debug, PartialEq)]
+                    enum E<A, B, C> {
+                        #[partial_eq(skip)]
+                        Foo(A, B),
+                        #[partial_eq(skip)]
+                        Bar {
+                            a: C,
+                            b: A,
+                        },
+                        Baz,
+                    }
+
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 0));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 1));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(false, 0));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(false, 1));
+
+                    assert_eq!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: true }
+                    );
+                    assert_eq!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: false }
+                    );
+
+                    assert_eq!(E::<bool, i32, NoEq>::Baz, E::Baz);
+
+                    assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+                    assert_ne!(E::<_, _, NoEq>::Foo(true, 0), E::Baz);
+                    assert_ne!(E::<_, i32, _>::Bar { a: NoEq, b: true }, E::Baz);
+                }
+
+                #[test]
+                fn mixed() {
+                    #[derive(Debug, PartialEq)]
+                    enum E<A, B, C> {
+                        #[partial_eq(skip)]
+                        Foo(A, B),
+                        Bar {
+                            #[partial_eq(skip)]
+                            a: C,
+                            b: A,
+                        },
+                        Baz,
+                    }
+
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 0));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(true, 1));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(false, 0));
+                    assert_eq!(E::<_, _, NoEq>::Foo(true, 0), E::Foo(false, 1));
+
+                    assert_eq!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: true }
+                    );
+                    assert_ne!(
+                        E::<_, i32, _>::Bar { a: NoEq, b: true },
+                        E::Bar { a: NoEq, b: false }
+                    );
+
+                    assert_eq!(E::<bool, i32, NoEq>::Baz, E::Baz);
+
+                    assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
+                    assert_ne!(E::<_, _, NoEq>::Foo(true, 0), E::Baz);
+                    assert_ne!(E::<_, i32, _>::Bar { a: NoEq, b: true }, E::Baz);
                 }
             }
         }

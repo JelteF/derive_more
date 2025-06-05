@@ -20,58 +20,63 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     let attr_name = format_ident!("partial_eq");
     let secondary_attr_name = format_ident!("eq");
 
-    let variants = match &input.data {
+    let mut has_skipped_variants = false;
+    let mut variants = vec![];
+
+    match &input.data {
         syn::Data::Struct(data) => {
-            let skipped_fields = data
-                .fields
-                .iter()
-                .enumerate()
-                .map(|(n, field)| {
+            for attr_name in [&attr_name, &secondary_attr_name] {
+                if attr::Skip::parse_attrs(&input.attrs, attr_name)?.is_some() {
+                    has_skipped_variants = true;
+                    break;
+                }
+            }
+            if !has_skipped_variants {
+                let mut skipped_fields = HashSet::default();
+                'fields: for (n, field) in data.fields.iter().enumerate() {
                     for attr_name in [&attr_name, &secondary_attr_name] {
                         if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
-                            return Ok(Some(n));
+                            _ = skipped_fields.insert(n);
+                            continue 'fields;
                         }
                     }
-                    Ok(None)
-                })
-                .filter_map(syn::Result::transpose)
-                .collect::<syn::Result<HashSet<_>>>()?;
-            vec![(None, &data.fields, skipped_fields)]
+                }
+                variants.push((None, &data.fields, skipped_fields));
+            }
         }
-        syn::Data::Enum(data) => data
-            .variants
-            .iter()
-            .map(|variant| {
-                let skipped_fields = variant
-                    .fields
-                    .iter()
-                    .enumerate()
-                    .map(|(n, field)| {
-                        for attr_name in [&attr_name, &secondary_attr_name] {
-                            if attr::Skip::parse_attrs(&field.attrs, attr_name)?
-                                .is_some()
-                            {
-                                return Ok(Some(n));
-                            }
+        syn::Data::Enum(data) => {
+            'variants: for variant in &data.variants {
+                for attr_name in [&attr_name, &secondary_attr_name] {
+                    if attr::Skip::parse_attrs(&variant.attrs, attr_name)?.is_some() {
+                        has_skipped_variants = true;
+                        continue 'variants;
+                    }
+                }
+                let mut skipped_fields = HashSet::default();
+                'fields: for (n, field) in variant.fields.iter().enumerate() {
+                    for attr_name in [&attr_name, &secondary_attr_name] {
+                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                            _ = skipped_fields.insert(n);
+                            continue 'fields;
                         }
-                        Ok(None)
-                    })
-                    .filter_map(syn::Result::transpose)
-                    .collect::<syn::Result<HashSet<_>>>()?;
-                Ok((Some(&variant.ident), &variant.fields, skipped_fields))
-            })
-            .collect::<syn::Result<_>>()?,
+                    }
+                }
+                variants.push((Some(&variant.ident), &variant.fields, skipped_fields));
+            }
+        }
         syn::Data::Union(data) => {
             return Err(syn::Error::new(
                 data.union_token.span(),
                 "`PartialEq` cannot be derived for unions",
             ))
         }
-    };
+    }
 
     Ok(StructuralExpansion {
         self_ty: (&input.ident, &input.generics),
         variants,
+        has_skipped_variants,
+        is_enum: matches!(input.data, syn::Data::Enum(_)),
     }
     .into_token_stream())
 }
@@ -89,6 +94,12 @@ struct StructuralExpansion<'i> {
 
     /// [`syn::Fields`] of the enum/struct to be compared in this [`StructuralExpansion`].
     variants: Vec<(Option<&'i syn::Ident>, &'i syn::Fields, SkippedFields)>,
+
+    /// Indicator whether some original enum variants where skipped with an [`attr::Skip`].
+    has_skipped_variants: bool,
+
+    /// Indicator whether this expansion is for an enum.
+    is_enum: bool,
 }
 
 impl StructuralExpansion<'_> {
@@ -96,14 +107,20 @@ impl StructuralExpansion<'_> {
     /// [`StructuralExpansion`], if it's required.
     fn body(&self, eq: bool) -> Option<TokenStream> {
         // Special case: empty enum (also, no need for `ne()` method in this case).
-        if self.variants.is_empty() {
+        if self.is_enum && self.variants.is_empty() && !self.has_skipped_variants {
             return eq.then(|| quote! { match *self {} });
         }
 
         let no_fields_result = quote! { #eq };
 
-        // Special case: no fields to compare (also, no need for `ne()` method in this case).
-        if self.variants.len() == 1
+        // Special case: fully skipped struct (also, no need for `ne()` method in this case).
+        if !self.is_enum && self.variants.is_empty() && self.has_skipped_variants {
+            return eq.then_some(no_fields_result);
+        }
+        // Special case: no fields to compare in struct/single-variant enum (also, no need for
+        // `ne()` method in this case).
+        if !(self.is_enum && self.has_skipped_variants)
+            && self.variants.len() == 1
             && (self.variants[0].1.is_empty()
                 || self.variants[0].1.len() == self.variants[0].2.len())
         {
@@ -116,12 +133,13 @@ impl StructuralExpansion<'_> {
             (quote! { != }, quote! { || })
         };
 
-        let discriminants_cmp = (self.variants.len() > 1).then(|| {
-            quote! {
-                derive_more::core::mem::discriminant(self) #cmp
-                    derive_more::core::mem::discriminant(__other)
-            }
-        });
+        let discriminants_cmp = (self.variants.len() > 1 || self.has_skipped_variants)
+            .then(|| {
+                quote! {
+                    derive_more::core::mem::discriminant(self) #cmp
+                        derive_more::core::mem::discriminant(__other)
+                }
+            });
 
         let match_arms = self
             .variants
@@ -155,9 +173,11 @@ impl StructuralExpansion<'_> {
             })
             .collect::<Vec<_>>();
         let match_expr = (!match_arms.is_empty()).then(|| {
-            let no_fields_arm = (match_arms.len() != self.variants.len()).then(|| {
-                quote! { _ => #no_fields_result }
-            });
+            let no_fields_arm = (match_arms.len() != self.variants.len()
+                || self.has_skipped_variants)
+                .then(|| {
+                    quote! { _ => #no_fields_result }
+                });
             let unreachable_arm = (self.variants.len() > 1
                 && no_fields_arm.is_none())
             .then(|| {
