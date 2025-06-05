@@ -235,6 +235,8 @@ assert_ne!(Enum::Bar(NoEq), Enum::Baz);
 ```
 This generates code equivalent to:
 ```rust
+# struct NoEq;
+#
 # struct Foo { num: i32, ignored: f32 }
 #
 impl PartialEq for Foo {
