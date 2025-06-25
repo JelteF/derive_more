@@ -82,7 +82,7 @@ assert_eq!(vec![123, 456], *cool_vec);
 
 ## Structs
 
-When deriving a non-forwarded `Deref` for a struct:
+When deriving a non-forwarded `DerefMut` for a struct:
 
 ```rust
 # use derive_more::{Deref, DerefMut};
