@@ -89,7 +89,7 @@ mod never {
 }
 
 #[derive(Deref)]
-enum MyEnum1<'a> {
+enum MyEnum<'a> {
     Variant1(&'a [u8]),
     Variant2(&'a [u8]),
     Variant3(&'a [u8]),
@@ -108,25 +108,25 @@ fn deref_enum() {
     assert_eq!(*e, 5);
 }
 
-// #[derive(Deref)]
-// enum MyEnum {
-//   Variant1 {
-//     #[deref]
-//     named_field1: u8,
-//     named_field2: bool,
-//   },
-//   Variant2 {
-//     #[deref]
-//     named_field1: u8,
-//     named_field2: bool,
-//   },
-// }
+#[derive(Deref)]
+enum MyEnum1 {
+    Variant1 {
+        #[deref]
+        named_field1: u8,
+        named_field2: bool,
+    },
+    Variant2 {
+        named_field1: u8,
+        #[deref(ignore)]
+        named_field2: bool,
+    },
+}
 
-// #[derive(Deref)]
-// enum MyEnum {
-//     Variant1(#[deref] u8, bool),
-//     Variant2(#[deref] u8, bool),
-// }
+#[derive(Deref)]
+enum MyEnum2 {
+    Variant1(u8, #[deref(ignore)] bool),
+    Variant2(#[deref] u8, bool),
+}
 
 mod deprecated {
     use super::*;

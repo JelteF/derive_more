@@ -531,6 +531,22 @@ impl<'input> State<'input> {
             .map(|attrs| get_meta_info(&trait_attr, attrs, &allowed_attr_params.field))
             .collect();
         let meta_infos = meta_infos?;
+
+        let first_match = meta_infos
+            .iter()
+            .find_map(|info| info.enabled.map(|_| info));
+
+        let default_enabled = if trait_name == "Error" {
+            true
+        } else {
+            first_match.map_or(true, |info| !info.enabled.unwrap())
+        };
+
+        let default_info = FullMetaInfo {
+            enabled: default_enabled,
+            ..default_info.clone()
+        };
+
         let full_meta_infos: Vec<_> = meta_infos
             .into_iter()
             .map(|info| info.into_full(default_info.clone()))
