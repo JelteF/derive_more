@@ -98,7 +98,7 @@ enum MyEnum<'a> {
 #[derive(Deref)]
 enum Compression {
     Stored(u32),
-    Zlib(u32),
+    Zlib(#[deref(forward)] Box<u32>),
     LZMA1(u32),
 }
 
