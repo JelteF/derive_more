@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
    [#475](https://github.com/JelteF/derive_more/pull/475))
 - Proxy-pass `#[allow]`/`#[expect]` attributes of the type in `Constructor` derive.
   ([#477](https://github.com/JelteF/derive_more/pull/477))
+- Add `Deref` and `DerefMut` derive for enums.
+  ([#485](https://github.com/JelteF/derive_more/pull/485))
 
 ### Changed
 
