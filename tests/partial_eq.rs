@@ -1,6 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)] // some code is tested for type checking only
 
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
 /// Since [`assert_ne!()`] macro in [`core`] doesn't use `$left != $right` comparison, but rather
 /// checks as `!($left == $right)`, it should be redefined for tests to consider actual
 /// [`PartialEq::ne()`] implementations.
@@ -15,6 +18,8 @@ macro_rules! assert_ne {
 
 mod structs {
     mod structural {
+        #[cfg(not(feature = "std"))]
+        use ::alloc::{boxed::Box, vec, vec::Vec};
         use derive_more::PartialEq;
 
         #[test]
@@ -66,7 +71,47 @@ mod structs {
             assert_ne!(Bar { b: true, i: 0 }, Bar { b: false, i: 1 });
         }
 
+        #[test]
+        fn recursive_tuple() {
+            #[derive(Debug, PartialEq)]
+            struct Foo(Option<Box<Self>>, Vec<Foo>);
+
+            assert_eq!(Foo(None, vec![]), Foo(None, vec![]));
+            assert_ne!(Foo(None, vec![]), Foo(None, vec![Foo(None, vec![])]));
+            assert_ne!(
+                Foo(None, vec![]),
+                Foo(Some(Box::new(Foo(None, vec![]))), vec![])
+            );
+        }
+
+        #[test]
+        fn recursive_struct() {
+            #[derive(Debug, PartialEq)]
+            struct Bar {
+                b: Option<Box<Self>>,
+                i: Vec<Bar>,
+            }
+
+            assert_eq!(Bar { b: None, i: vec![] }, Bar { b: None, i: vec![] });
+            assert_ne!(
+                Bar { b: None, i: vec![] },
+                Bar {
+                    b: None,
+                    i: vec![Bar { b: None, i: vec![] }],
+                },
+            );
+            assert_ne!(
+                Bar { b: None, i: vec![] },
+                Bar {
+                    b: Some(Box::new(Bar { b: None, i: vec![] })),
+                    i: vec![],
+                },
+            );
+        }
+
         mod generic {
+            #[cfg(not(feature = "std"))]
+            use ::alloc::{boxed::Box, vec, vec::Vec};
             use derive_more::PartialEq;
 
             trait Some {
@@ -77,15 +122,18 @@ mod structs {
                 type Assoc = bool;
             }
 
+            #[derive(Debug)]
+            struct NoEq;
+
             #[test]
             fn multi_field_tuple() {
                 #[derive(Debug, PartialEq)]
                 struct Foo<A: Some, B>(A::Assoc, B);
 
-                assert_eq!(Foo::<(), _>(true, 0), Foo(true, 0));
-                assert_ne!(Foo::<(), _>(true, 0), Foo(false, 0));
-                assert_ne!(Foo::<(), _>(true, 0), Foo(true, 1));
-                assert_ne!(Foo::<(), _>(true, 0), Foo(false, 1));
+                assert_eq!(Foo::<NoEq, _>(true, 0), Foo(true, 0));
+                assert_ne!(Foo::<NoEq, _>(true, 0), Foo(false, 0));
+                assert_ne!(Foo::<NoEq, _>(true, 0), Foo(true, 1));
+                assert_ne!(Foo::<NoEq, _>(true, 0), Foo(false, 1));
             }
 
             #[test]
@@ -96,10 +144,10 @@ mod structs {
                     i: A,
                 }
 
-                assert_eq!(Bar::<_, ()> { b: true, i: 0 }, Bar { b: true, i: 0 });
-                assert_ne!(Bar::<_, ()> { b: true, i: 0 }, Bar { b: false, i: 0 });
-                assert_ne!(Bar::<_, ()> { b: true, i: 0 }, Bar { b: true, i: 1 });
-                assert_ne!(Bar::<_, ()> { b: true, i: 0 }, Bar { b: false, i: 1 });
+                assert_eq!(Bar::<_, NoEq> { b: true, i: 0 }, Bar { b: true, i: 0 });
+                assert_ne!(Bar::<_, NoEq> { b: true, i: 0 }, Bar { b: false, i: 0 });
+                assert_ne!(Bar::<_, NoEq> { b: true, i: 0 }, Bar { b: true, i: 1 });
+                assert_ne!(Bar::<_, NoEq> { b: true, i: 0 }, Bar { b: false, i: 1 });
             }
 
             #[test]
@@ -202,12 +250,46 @@ mod structs {
                     },
                 );
             }
+
+            #[test]
+            fn recursive() {
+                #[derive(Debug, PartialEq)]
+                struct Foo<A: Some, B>(A::Assoc, B, Vec<Foo<A, B>>, Option<Box<Self>>);
+
+                assert_eq!(
+                    Foo::<NoEq, _>(true, 2, vec![], None),
+                    Foo::<NoEq, _>(true, 2, vec![], None),
+                );
+                assert_ne!(
+                    Foo::<NoEq, _>(true, 2, vec![], None),
+                    Foo::<NoEq, _>(false, 2, vec![], None),
+                );
+                assert_ne!(
+                    Foo::<NoEq, _>(true, 2, vec![], None),
+                    Foo::<NoEq, _>(true, 0, vec![], None),
+                );
+                assert_ne!(
+                    Foo::<NoEq, _>(true, 2, vec![], None),
+                    Foo::<NoEq, _>(true, 2, vec![Foo(true, 2, vec![], None)], None),
+                );
+                assert_ne!(
+                    Foo::<NoEq, _>(true, 2, vec![], None),
+                    Foo::<NoEq, _>(
+                        true,
+                        2,
+                        vec![],
+                        Some(Box::new(Foo(true, 2, vec![], None)))
+                    ),
+                );
+            }
         }
     }
 }
 
 mod enums {
     mod structural {
+        #[cfg(not(feature = "std"))]
+        use ::alloc::{boxed::Box, vec, vec::Vec};
         use derive_more::PartialEq;
 
         #[test]
@@ -336,7 +418,38 @@ mod enums {
             assert_ne!(E::Baz, E::Foo(false, 1));
         }
 
+        #[test]
+        fn recursive() {
+            #[derive(Debug, PartialEq)]
+            enum E {
+                Foo(Option<Box<E>>),
+                Bar { b: Vec<Self> },
+                Baz,
+            }
+
+            assert_eq!(E::Foo(None), E::Foo(None));
+            assert_ne!(E::Foo(None), E::Foo(Some(Box::new(E::Foo(None)))));
+            assert_ne!(E::Foo(None), E::Foo(Some(Box::new(E::Baz))));
+
+            assert_eq!(E::Bar { b: vec![] }, E::Bar { b: vec![] });
+            assert_ne!(
+                E::Bar { b: vec![] },
+                E::Bar {
+                    b: vec![E::Bar { b: vec![] }],
+                },
+            );
+            assert_ne!(E::Bar { b: vec![] }, E::Bar { b: vec![E::Baz] });
+
+            assert_eq!(E::Baz, E::Baz);
+
+            assert_ne!(E::Foo(None), E::Bar { b: vec![] });
+            assert_ne!(E::Foo(None), E::Baz);
+            assert_ne!(E::Bar { b: vec![] }, E::Baz);
+        }
+
         mod generic {
+            #[cfg(not(feature = "std"))]
+            use ::alloc::{boxed::Box, vec, vec::Vec};
             use derive_more::PartialEq;
 
             trait Some {
@@ -347,6 +460,9 @@ mod enums {
                 type Assoc = bool;
             }
 
+            #[derive(Debug)]
+            struct NoEq;
+
             #[test]
             fn single_variant_multi_field_tuple() {
                 #[derive(Debug, PartialEq)]
@@ -354,10 +470,10 @@ mod enums {
                     Foo(A::Assoc, B),
                 }
 
-                assert_eq!(E::<u8, _>::Foo(true, 0), E::Foo(true, 0));
-                assert_ne!(E::<u8, _>::Foo(true, 0), E::Foo(false, 0));
-                assert_ne!(E::<u8, _>::Foo(true, 0), E::Foo(true, 1));
-                assert_ne!(E::<u8, _>::Foo(true, 0), E::Foo(false, 1));
+                assert_eq!(E::<NoEq, _>::Foo(true, 0), E::Foo(true, 0));
+                assert_ne!(E::<NoEq, _>::Foo(true, 0), E::Foo(false, 0));
+                assert_ne!(E::<NoEq, _>::Foo(true, 0), E::Foo(true, 1));
+                assert_ne!(E::<NoEq, _>::Foo(true, 0), E::Foo(false, 1));
             }
 
             #[test]
@@ -367,14 +483,20 @@ mod enums {
                     Bar { b: B::Assoc, i: A },
                 }
 
-                assert_eq!(E::<_, ()>::Bar { b: true, i: 0 }, E::Bar { b: true, i: 0 });
+                assert_eq!(
+                    E::<_, NoEq>::Bar { b: true, i: 0 },
+                    E::Bar { b: true, i: 0 }
+                );
                 assert_ne!(
-                    E::<_, ()>::Bar { b: true, i: 0 },
+                    E::<_, NoEq>::Bar { b: true, i: 0 },
                     E::Bar { b: false, i: 0 }
                 );
-                assert_ne!(E::<_, ()>::Bar { b: true, i: 0 }, E::Bar { b: true, i: 1 });
                 assert_ne!(
-                    E::<_, ()>::Bar { b: true, i: 0 },
+                    E::<_, NoEq>::Bar { b: true, i: 0 },
+                    E::Bar { b: true, i: 1 }
+                );
+                assert_ne!(
+                    E::<_, NoEq>::Bar { b: true, i: 0 },
                     E::Bar { b: false, i: 1 }
                 );
             }
@@ -388,30 +510,36 @@ mod enums {
                     Baz,
                 }
 
-                assert_eq!(E::<_, ()>::Foo(true, 0), E::Foo(true, 0));
-                assert_ne!(E::<_, ()>::Foo(true, 0), E::Foo(false, 0));
-                assert_ne!(E::<_, ()>::Foo(true, 0), E::Foo(true, 1));
-                assert_ne!(E::<_, ()>::Foo(true, 0), E::Foo(false, 1));
+                assert_eq!(E::<_, NoEq>::Foo(true, 0), E::Foo(true, 0));
+                assert_ne!(E::<_, NoEq>::Foo(true, 0), E::Foo(false, 0));
+                assert_ne!(E::<_, NoEq>::Foo(true, 0), E::Foo(true, 1));
+                assert_ne!(E::<_, NoEq>::Foo(true, 0), E::Foo(false, 1));
 
-                assert_eq!(E::<_, ()>::Bar { b: true, i: 0 }, E::Bar { b: true, i: 0 });
+                assert_eq!(
+                    E::<_, NoEq>::Bar { b: true, i: 0 },
+                    E::Bar { b: true, i: 0 }
+                );
                 assert_ne!(
-                    E::<_, ()>::Bar { b: true, i: 0 },
+                    E::<_, NoEq>::Bar { b: true, i: 0 },
                     E::Bar { b: false, i: 0 }
                 );
-                assert_ne!(E::<_, ()>::Bar { b: true, i: 0 }, E::Bar { b: true, i: 1 });
+                assert_ne!(
+                    E::<_, NoEq>::Bar { b: true, i: 0 },
+                    E::Bar { b: true, i: 1 }
+                );
                 assert_ne!(
                     E::<_, ()>::Bar { b: true, i: 0 },
                     E::Bar { b: false, i: 1 }
                 );
 
-                assert_eq!(E::<i32, ()>::Baz, E::Baz);
+                assert_eq!(E::<i32, NoEq>::Baz, E::Baz);
 
-                assert_ne!(E::<_, ()>::Foo(true, 0), E::Bar { b: true, i: 0 });
-                assert_ne!(E::<_, ()>::Bar { b: false, i: 1 }, E::Foo(false, 1));
-                assert_ne!(E::<_, ()>::Foo(true, 0), E::Baz);
-                assert_ne!(E::<_, ()>::Baz, E::Foo(false, 1));
-                assert_ne!(E::<_, ()>::Bar { b: false, i: 1 }, E::Baz);
-                assert_ne!(E::<_, ()>::Baz, E::Bar { b: true, i: 0 });
+                assert_ne!(E::<_, NoEq>::Foo(true, 0), E::Bar { b: true, i: 0 });
+                assert_ne!(E::<_, NoEq>::Bar { b: false, i: 1 }, E::Foo(false, 1));
+                assert_ne!(E::<_, NoEq>::Foo(true, 0), E::Baz);
+                assert_ne!(E::<_, NoEq>::Baz, E::Foo(false, 1));
+                assert_ne!(E::<_, NoEq>::Bar { b: false, i: 1 }, E::Baz);
+                assert_ne!(E::<_, NoEq>::Baz, E::Bar { b: true, i: 0 });
             }
 
             #[test]
@@ -517,6 +645,45 @@ mod enums {
                         i: E3::Baz,
                     },
                 );
+            }
+
+            #[test]
+            fn recursive() {
+                #[derive(Debug, PartialEq)]
+                enum E<A, B: Some> {
+                    Foo(B::Assoc, Vec<Self>),
+                    Bar { b: Option<Box<E<A, B>>>, i: A },
+                    Baz,
+                }
+
+                assert_eq!(E::<(), NoEq>::Foo(true, vec![]), E::Foo(true, vec![]));
+                assert_ne!(E::<(), NoEq>::Foo(true, vec![]), E::Foo(false, vec![]));
+                assert_ne!(
+                    E::<(), NoEq>::Foo(true, vec![]),
+                    E::Foo(true, vec![E::Baz]),
+                );
+
+                assert_eq!(
+                    E::<_, NoEq>::Bar { b: None, i: 3 },
+                    E::Bar { b: None, i: 3 },
+                );
+                assert_ne!(
+                    E::<_, NoEq>::Bar { b: None, i: 3 },
+                    E::Bar { b: None, i: 0 },
+                );
+                assert_ne!(
+                    E::<_, NoEq>::Bar { b: None, i: 3 },
+                    E::Bar {
+                        b: Some(Box::new(E::Baz)),
+                        i: 3,
+                    },
+                );
+
+                assert_eq!(E::<(), NoEq>::Baz, E::Baz);
+
+                assert_ne!(E::<_, NoEq>::Foo(true, vec![]), E::Bar { b: None, i: 3 });
+                assert_ne!(E::<(), NoEq>::Foo(true, vec![]), E::Baz);
+                assert_ne!(E::<_, NoEq>::Bar { b: None, i: 3 }, E::Baz);
             }
         }
     }

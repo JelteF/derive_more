@@ -8,6 +8,7 @@ use syn::{
     spanned::Spanned as _,
 };
 
+use super::TypeExt as _;
 use crate::utils::GenericsSearch;
 
 /// Expands a [`PartialEq`] derive macro.
@@ -154,15 +155,23 @@ impl StructuralExpansion<'_> {
 impl ToTokens for StructuralExpansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let ty = self.self_ty.0;
+        let (_, ty_generics, _) = self.self_ty.1.split_for_impl();
 
         let generics_search = GenericsSearch::from(self.self_ty.1);
         let mut generics = self.self_ty.1.clone();
-        for variant in &self.variants {
-            for field_ty in variant.1.iter().map(|field| &field.ty) {
-                if generics_search.any_in(field_ty) {
-                    generics.make_where_clause().predicates.push(parse_quote! {
-                        #field_ty: derive_more::core::cmp::PartialEq
-                    });
+        {
+            let self_ty: syn::Type = parse_quote! { Self };
+            let implementor_ty: syn::Type = parse_quote! { #ty #ty_generics };
+            for variant in &self.variants {
+                for field_ty in variant.1.iter().map(|field| &field.ty) {
+                    if generics_search.any_in(field_ty)
+                        && !field_ty.contains_type_structurally(&self_ty)
+                        && !field_ty.contains_type_structurally(&implementor_ty)
+                    {
+                        generics.make_where_clause().predicates.push(parse_quote! {
+                            #field_ty: derive_more::core::cmp::PartialEq
+                        });
+                    }
                 }
             }
         }
@@ -182,6 +191,7 @@ impl ToTokens for StructuralExpansion<'_> {
         });
 
         quote! {
+            #[allow(private_bounds)]
             #[automatically_derived]
             impl #impl_generics derive_more::core::cmp::PartialEq for #ty #ty_generics
                  #where_clause

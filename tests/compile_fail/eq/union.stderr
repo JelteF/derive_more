@@ -1,0 +1,5 @@
+error: `Eq` cannot be derived for unions
+ --> tests/compile_fail/eq/union.rs:2:1
+  |
+2 | union IntOrFloat {
+  | ^^^^^
