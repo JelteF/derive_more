@@ -137,6 +137,25 @@ fn deref_mut_generic_forward() {
     assert_eq!(*boxed, 3i32);
 }
 
+#[derive(DerefMut)]
+enum Compression {
+    Stored(u32),
+    Zlib(u32),
+    LZMA1(u32),
+}
+
+impl ::core::ops::Deref for Compression {
+    type Target = u32;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Compression::Stored(size) => size,
+            Compression::Zlib(size) => size,
+            Compression::LZMA1(size) => size,
+        }
+    }
+}
+
 #[cfg(nightly)]
 mod never {
     use super::*;
