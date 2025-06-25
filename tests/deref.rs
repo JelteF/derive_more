@@ -96,9 +96,26 @@ enum MyEnum<'a> {
 }
 
 #[derive(Deref)]
+enum Enum {
+    V1(i32),
+    V2 { num: i32 },
+}
+
+#[derive(Deref)]
 #[deref(forward)]
 enum MyBoxedIntEnum {
-    Variant(Box<i32>),
+    V1(Box<i32>),
+    V2 { num: Box<i32> },
+}
+
+#[derive(Deref)]
+enum CoolVecEnum {
+    V1(Vec<i32>),
+    V2 {
+        cool: bool,
+        #[deref]
+        vec: Vec<i32>,
+    },
 }
 
 #[derive(Deref)]
