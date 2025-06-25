@@ -1,10 +1,65 @@
-use crate::utils::{add_extra_where_clauses, SingleFieldData, State};
+use crate::utils::{
+    add_extra_where_clauses, numbered_vars, panic_one_field, SingleFieldData, State,
+};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse::Result, DeriveInput};
+use syn::{parse::Result, Data, DeriveInput};
 
 /// Provides the hook to expand `#[derive(Deref)]` into an implementation of `Deref`
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    match input.data {
+        Data::Struct(_) => expand_struct(input, trait_name),
+        Data::Enum(_) => expand_enum(input, trait_name),
+        _ => panic!("Only structs and enums can use derive({trait_name})"),
+    }
+}
+
+fn expand_enum(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+    let state = State::with_field_ignore(input, trait_name, trait_name.to_lowercase())?;
+
+    let trait_path = &state.trait_path;
+    let enum_name = &input.ident;
+    let (imp_generics, type_generics, where_clause) = input.generics.split_for_impl();
+
+    let mut target = None;
+    let mut match_arms = vec![];
+
+    for variant_state in state.enabled_variant_data().variant_states.into_iter() {
+        let data = variant_state.enabled_fields_data();
+        if data.fields.len() != 1 {
+            panic_one_field(variant_state.trait_name, &variant_state.trait_attr);
+        };
+
+        let vars = numbered_vars(variant_state.fields.len(), "");
+        let matcher = data.matcher(&data.field_indexes, &vars);
+
+        if let None = target {
+            target = Some(data.field_types[0]);
+        }
+
+        match_arms.push(matcher);
+    }
+
+    let target = target.unwrap();
+
+    Ok(quote! {
+        #[allow(deprecated)] // omit warnings on deprecated fields/variants
+        #[allow(unreachable_code)] // omit warnings for `!` and other unreachable types
+        #[automatically_derived]
+        impl #imp_generics #trait_path for #enum_name #type_generics #where_clause {
+            type Target = #target;
+
+            #[inline]
+            fn deref(&self) -> &Self::Target {
+                match self {
+                    #(#match_arms)|* => __0
+                }
+            }
+        }
+    })
+}
+
+fn expand_struct(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state = State::with_field_ignore_and_forward(
         input,
         trait_name,

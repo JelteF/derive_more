@@ -246,7 +246,7 @@ pub fn named_to_vec(fields: &FieldsNamed) -> Vec<&Field> {
     fields.named.iter().collect()
 }
 
-fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
+pub fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     panic!(
         "derive({trait_name}) only works when forwarding to a single field. \
          Try putting #[{trait_attr}] or #[{trait_attr}(ignore)] on the fields in the struct",

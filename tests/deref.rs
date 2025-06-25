@@ -88,6 +88,46 @@ mod never {
     }
 }
 
+#[derive(Deref)]
+enum MyEnum1<'a> {
+    Variant1(&'a [u8]),
+    Variant2(&'a [u8]),
+    Variant3(&'a [u8]),
+}
+
+#[derive(Deref)]
+enum Compression {
+    Stored(u32),
+    Zlib(u32),
+    LZMA1(u32),
+}
+
+#[test]
+fn deref_enum() {
+    let e = Compression::Stored(5);
+    assert_eq!(*e, 5);
+}
+
+// #[derive(Deref)]
+// enum MyEnum {
+//   Variant1 {
+//     #[deref]
+//     named_field1: u8,
+//     named_field2: bool,
+//   },
+//   Variant2 {
+//     #[deref]
+//     named_field1: u8,
+//     named_field2: bool,
+//   },
+// }
+
+// #[derive(Deref)]
+// enum MyEnum {
+//     Variant1(#[deref] u8, bool),
+//     Variant2(#[deref] u8, bool),
+// }
+
 mod deprecated {
     use super::*;
 
