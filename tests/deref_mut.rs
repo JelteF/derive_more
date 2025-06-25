@@ -139,8 +139,8 @@ fn deref_mut_generic_forward() {
 
 #[derive(DerefMut)]
 enum Compression {
+    Zlib(#[deref_mut(forward)] Box<u32>),
     Stored(u32),
-    Zlib(u32),
     LZMA1(u32),
 }
 

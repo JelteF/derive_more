@@ -15,13 +15,14 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
 }
 
 fn expand_enum(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let state = State::with_field_ignore(input, trait_name, "deref_mut".into())?;
+    let state =
+        State::with_field_ignore_and_forward(input, trait_name, "deref_mut".into())?;
 
     let trait_path = &state.trait_path;
     let enum_name = &input.ident;
-    let (imp_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
     let mut match_arms = vec![];
+    let mut predicates = vec![];
 
     for variant_state in state.enabled_variant_data().variant_states.into_iter() {
         let data = variant_state.enabled_fields_data();
@@ -32,8 +33,29 @@ fn expand_enum(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStr
         let vars = numbered_vars(variant_state.fields.len(), "");
         let matcher = data.matcher(&data.field_indexes, &vars);
 
-        match_arms.push(matcher);
+        let info = data.infos[0].clone();
+        let field_type = data.field_types[0];
+
+        let var = if info.forward {
+            let casted_trait = data.casted_traits[0].clone();
+            predicates.push(quote! { #field_type: #trait_path });
+            quote! { #casted_trait::deref_mut(__0) }
+        } else {
+            quote! { __0 }
+        };
+
+        match_arms.push(quote! {
+            #matcher => #var
+        });
     }
+
+    let generics = if predicates.is_empty() {
+        &input.generics
+    } else {
+        &add_extra_where_clauses(&input.generics, quote! { where #(#predicates),* })
+    };
+
+    let (imp_generics, type_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
         #[allow(deprecated)] // omit warnings on deprecated fields/variants
@@ -43,7 +65,7 @@ fn expand_enum(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStr
             #[inline]
             fn deref_mut(&mut self) -> &mut Self::Target {
                 match self {
-                    #(#match_arms)|* => __0
+                    #(#match_arms),*
                 }
             }
         }
