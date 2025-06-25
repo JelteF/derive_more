@@ -280,7 +280,7 @@ pub(crate) fn format(input: &str) -> Option<(LeftToParse<'_>, Format<'_>)> {
 /// ```
 ///
 /// [0]: std::fmt#syntax
-fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument)> {
+fn argument(input: &str) -> Option<(LeftToParse<'_>, Argument<'_>)> {
     alt(&mut [
         &mut map(identifier, |(i, ident)| (i, Argument::Identifier(ident))),
         &mut map(integer, |(i, int)| (i, Argument::Integer(int))),
