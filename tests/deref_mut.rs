@@ -157,9 +157,26 @@ impl<'a> ::core::ops::Deref for MyEnum<'a> {
 }
 
 #[derive(DerefMut)]
+enum Enum {
+    V1(i32),
+    V2 { num: i32 },
+}
+
+impl ::core::ops::Deref for Enum {
+    type Target = i32;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Enum::V1(num) | Enum::V2 { num } => num,
+        }
+    }
+}
+
+#[derive(DerefMut)]
 #[deref_mut(forward)]
 enum MyBoxedIntEnum {
-    Variant(Box<i32>),
+    V1(Box<i32>),
+    V2 { num: Box<i32> },
 }
 
 impl ::core::ops::Deref for MyBoxedIntEnum {
@@ -167,9 +184,29 @@ impl ::core::ops::Deref for MyBoxedIntEnum {
     #[inline]
     fn deref(&self) -> &Self::Target {
         match self {
-            MyBoxedIntEnum::Variant(inner) => {
-                <Box<i32> as ::core::ops::Deref>::deref(inner)
+            MyBoxedIntEnum::V1(num) | MyBoxedIntEnum::V2 { num } => {
+                <Box<i32> as ::core::ops::Deref>::deref(num)
             }
+        }
+    }
+}
+
+#[derive(DerefMut)]
+enum CoolVecEnum {
+    V1(Vec<i32>),
+    V2 {
+        cool: bool,
+        #[deref_mut]
+        vec: Vec<i32>,
+    },
+}
+
+impl ::core::ops::Deref for CoolVecEnum {
+    type Target = Vec<i32>;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        match self {
+            CoolVecEnum::V1(vec) | CoolVecEnum::V2 { cool: _, vec } => vec,
         }
     }
 }
