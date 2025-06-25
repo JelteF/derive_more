@@ -93,6 +93,7 @@ struct NormalStruct {
 
 #[derive(From)]
 #[derive(Debug, Eq, PartialEq)]
+#[allow(dead_code)]
 struct NestedInt(MyInt);
 
 #[derive(Debug, Eq, PartialEq)]
@@ -280,6 +281,9 @@ fn main() {
     let mut myint2 = MyInt2(8);
     myint2 *= MyInt2(4);
     assert_eq!(MyInt2(32), myint2);
+
+    let foo = Foo;
+    let _bar: Bar = foo.into();
 
     let mut boxed = MyBoxedInt(Box::new(5));
     assert_eq!(5, *boxed);
