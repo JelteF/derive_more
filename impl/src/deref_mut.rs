@@ -72,10 +72,7 @@ fn expand_enum(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStr
     })
 }
 
-pub fn expand_struct(
-    input: &DeriveInput,
-    trait_name: &'static str,
-) -> Result<TokenStream> {
+fn expand_struct(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
     let state =
         State::with_field_ignore_and_forward(input, trait_name, "deref_mut".into())?;
     let SingleFieldData {
