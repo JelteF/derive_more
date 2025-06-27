@@ -1,6 +1,7 @@
 # What `#[derive(DerefMut)]` generates
 
-Deriving `Deref` only works for a single field of a struct.
+Deriving `Deref` only works for a single field of a struct, or a single field of
+each variant of an enum.
 Furthermore it requires that the type also implements `Deref`, so usually
 `Deref` should also be derived.
 The resulting implementation of `Deref` will allow you to mutably dereference
@@ -27,9 +28,23 @@ struct Num {
 }
 
 #[derive(Deref, DerefMut)]
+enum Enum {
+    V1(i32),
+    V2 { num: i32 },
+}
+
+#[derive(Deref, DerefMut)]
 #[deref(forward)]
 #[deref_mut(forward)]
 struct MyBoxedInt(Box<i32>);
+
+#[derive(Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
+enum MyBoxedIntEnum {
+    V1(Box<i32>),
+    V2 { num: Box<i32> },
+}
 
 // You can specify the field you want to derive DerefMut for
 #[derive(Deref, DerefMut)]
@@ -38,6 +53,17 @@ struct CoolVec {
     #[deref]
     #[deref_mut]
     vec: Vec<i32>,
+}
+
+#[derive(Deref, DerefMut)]
+enum CoolVecEnum {
+    V1(Vec<i32>),
+    V2 {
+        cool: bool,
+        #[deref]
+        #[deref_mut]
+        vec: Vec<i32>,
+    },
 }
 
 let mut num = Num{num: 123};
@@ -56,7 +82,7 @@ assert_eq!(vec![123, 456], *cool_vec);
 
 ## Structs
 
-When deriving a non-forwarded `Deref` for a struct:
+When deriving a non-forwarded `DerefMut` for a struct:
 
 ```rust
 # use derive_more::{Deref, DerefMut};
@@ -129,4 +155,100 @@ impl derive_more::core::ops::DerefMut for MyBoxedInt {
 
 ## Enums
 
-Deriving `DerefMut` is not supported for enums.
+When deriving a non-forwarded `DerefMut` for an enum:
+
+```rust
+# use derive_more::{Deref, DerefMut};
+#
+#[derive(Deref, DerefMut)]
+enum CoolVecEnum {
+    V1(Vec<i32>),
+    V2 {
+        cool: bool,
+        #[deref]
+        #[deref_mut]
+        vec: Vec<i32>,
+    },
+}
+```
+
+Code like this will be generated:
+
+```rust
+# use ::core::ops::Deref;
+# enum CoolVecEnum {
+#     V1(Vec<i32>),
+#     V2 {
+#         cool: bool,
+#         vec: Vec<i32>,
+#     },
+# }
+# impl Deref for CoolVecEnum {
+#     type Target = Vec<i32>;
+#     #[inline]
+#     fn deref(&self) -> &Self::Target {
+#         match self {
+#             CoolVecEnum::V1(__0) => __0,
+#             CoolVecEnum::V2 { cool: _, vec: __0 } => __0,
+#         }
+#     }
+# }
+impl derive_more::with_trait::DerefMut for CoolVecEnum {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            CoolVecEnum::V1(__0) => __0,
+            CoolVecEnum::V2 { cool: _, vec: __0 } => __0,
+        }
+    }
+}
+```
+
+When deriving a forwarded `DerefMut` for an enum:
+
+```rust
+# use derive_more::{Deref, DerefMut};
+#
+#[derive(Deref, DerefMut)]
+#[deref(forward)]
+#[deref_mut(forward)]
+enum MyBoxedIntEnum {
+    V1(Box<i32>),
+    V2 { num: Box<i32> },
+}
+```
+
+Code like this will be generated:
+
+```rust
+# use ::core::ops::Deref;
+# enum MyBoxedIntEnum {
+#     V1(Box<i32>),
+#     V2 { num: Box<i32> },
+# }
+# impl Deref for MyBoxedIntEnum {
+#     type Target = <Box<i32> as derive_more::with_trait::Deref>::Target;
+#     #[inline]
+#     fn deref(&self) -> &Self::Target {
+#         match self {
+#             MyBoxedIntEnum::V1(__0) =>
+#                 <Box<i32> as derive_more::with_trait::Deref>::deref(__0),
+#             MyBoxedIntEnum::V2 { num: __0 } =>
+#                 <Box<i32> as derive_more::with_trait::Deref>::deref(__0),
+#         }
+#     }
+# }
+impl derive_more::with_trait::DerefMut for MyBoxedIntEnum {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            MyBoxedIntEnum::V1(__0) => {
+                <Box<i32> as derive_more::with_trait::DerefMut>::deref_mut(__0)
+            }
+            MyBoxedIntEnum::V2 { num: __0 } => {
+                <Box<i32> as derive_more::with_trait::DerefMut>::deref_mut(__0)
+            }
+        }
+    }
+}
+```
