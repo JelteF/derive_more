@@ -26,6 +26,8 @@ pub(crate) use self::either::Either;
 pub(crate) use self::fields_ext::FieldsExt;
 #[cfg(any(feature = "as_ref", feature = "eq", feature = "from_str"))]
 pub(crate) use self::generics_search::GenericsSearch;
+#[cfg(any(feature = "into", feature = "try_into"))]
+pub(crate) use self::self_type_resolution::resolve_self_type;
 #[cfg(any(
     feature = "as_ref",
     feature = "debug",
@@ -2564,6 +2566,113 @@ mod generics_search {
                     input.into_token_stream(),
                 );
             }
+        }
+    }
+}
+
+/// Replace `Self` with the actual type it refers to in a `DeriveInput`
+///
+/// Based on
+/// <https://github.com/mbrobbel/narrow/blob/aaae3ddeda3c74e8a15324a5c853b898cf7f5c52/narrow-derive/src/util/self_replace.rs>
+#[cfg(any(feature = "into", feature = "try_into"))]
+mod self_type_resolution {
+    use syn::{visit_mut::VisitMut, DeriveInput, Generics, Ident, PathSegment};
+
+    pub(crate) fn resolve_self_type(input: &mut DeriveInput) {
+        SelfTypeResolution::new(&input.ident, &input.generics)
+            .resolve_derive_input(input);
+    }
+
+    struct SelfTypeResolution(PathSegment);
+
+    impl SelfTypeResolution {
+        fn new(ident: &Ident, generics: &Generics) -> Self {
+            let (_, ty_generics, _) = generics.split_for_impl();
+            Self(syn::parse_quote! { #ident #ty_generics })
+        }
+
+        fn resolve_derive_input(&mut self, input: &mut DeriveInput) {
+            self.visit_generics_mut(&mut input.generics);
+            self.resolve_derive_input_data(&mut input.data);
+        }
+
+        fn resolve_derive_input_data(&mut self, data: &mut syn::Data) {
+            match data {
+                syn::Data::Struct(syn::DataStruct { fields, .. }) => {
+                    self.resolve_fields(fields)
+                }
+                syn::Data::Enum(syn::DataEnum { variants, .. }) => {
+                    for syn::Variant { fields, .. } in variants {
+                        self.resolve_fields(fields)
+                    }
+                }
+                syn::Data::Union(syn::DataUnion {
+                    fields: syn::FieldsNamed { named, .. },
+                    ..
+                }) => self.resolve_field_iter(named),
+            }
+        }
+
+        fn resolve_fields(&mut self, fields: &mut syn::Fields) {
+            match fields {
+                syn::Fields::Named(syn::FieldsNamed { named: fields, .. })
+                | syn::Fields::Unnamed(syn::FieldsUnnamed {
+                    unnamed: fields, ..
+                }) => {
+                    self.resolve_field_iter(fields);
+                }
+                syn::Fields::Unit => (),
+            }
+        }
+
+        fn resolve_field_iter<'a, T>(&mut self, fields: T)
+        where
+            T: IntoIterator<Item = &'a mut syn::Field>,
+        {
+            for field in fields {
+                self.visit_type_mut(&mut field.ty);
+            }
+        }
+    }
+
+    impl VisitMut for SelfTypeResolution {
+        fn visit_path_segment_mut(&mut self, i: &mut PathSegment) {
+            if i.ident == "Self" {
+                *i = self.0.clone();
+            } else {
+                self.visit_path_arguments_mut(&mut i.arguments);
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod spec {
+        use super::resolve_self_type;
+        use syn::{parse_quote, DeriveInput};
+
+        #[test]
+        fn test() {
+            let mut input: DeriveInput = parse_quote! {
+                struct Foo<T, U: Sub<Self>>
+                where
+                    U: Add<Self>,
+                    Self: X,
+                    <U as Add<Self>>::Output: X,
+                    T: IntoIterator<Item = Self>;
+            };
+
+            resolve_self_type(&mut input);
+
+            let expected: DeriveInput = parse_quote! {
+                struct Foo<T, U: Sub<Foo<T, U>>>
+                where
+                    U: Add<Foo<T, U>>,
+                    Foo<T, U>: X,
+                    <U as Add<Foo<T, U>>>::Output: X,
+                    T: IntoIterator<Item = Foo<T, U>>;
+            };
+
+            assert_eq!(input, expected);
         }
     }
 }
