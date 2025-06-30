@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#458](https://github.com/JelteF/derive_more/pull/458))
 - Missing trait bounds in `AsRef`/`AsMut` derives when associative types are involved.
   ([#474](https://github.com/JelteF/derive_more/pull/474))
+- Erroneous code generated in `Try`/`TryInto` derives when `Self` type is present in
+  the struct or enum definition.
+  ([#489](https://github.com/JelteF/derive_more/pull/489))
 
 ## 2.0.1 - 2025-02-03
 

@@ -57,6 +57,17 @@ enum EnumIntoEnumWithError {
     Foo(EnumWithError),
 }
 
+pub struct BarWrapper<V>(V);
+
+#[derive(TryInto)]
+#[try_into(ref, ref_mut)]
+pub enum Bar<V>
+where
+    Self: 'static,
+{
+    V(BarWrapper<V>),
+}
+
 #[test]
 fn test_try_into() {
     let mut i = MixedInts::SmallInt(42);
