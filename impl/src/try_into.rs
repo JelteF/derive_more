@@ -1,6 +1,6 @@
 use crate::utils::{
-    add_extra_generic_param, numbered_vars, resolve_self_type, AttrParams, DeriveType,
-    MultiFieldData, State,
+    add_extra_generic_param, numbered_vars, replace_self::DeriveInputExt as _,
+    AttrParams, DeriveType, MultiFieldData, State,
 };
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -11,9 +11,7 @@ use crate::utils::HashMap;
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
 #[allow(clippy::cognitive_complexity)]
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let mut input = input.clone();
-    resolve_self_type(&mut input);
-    let input = &input;
+    let input = &input.replace_self_type();
 
     let state = State::with_attr_params(
         input,
