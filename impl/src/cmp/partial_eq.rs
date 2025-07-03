@@ -154,15 +154,11 @@ impl StructuralExpansion<'_> {
                 let other_pattern = all_fields.arm_pattern("__other_", skipped_fields);
 
                 let mut val_eqs = (0..all_fields.len())
-                    .filter_map(|num| {
-                        (!skipped_fields.contains(&num)).then(|| {
-                            let self_val = format_ident!("__self_{num}");
-                            let other_val = format_ident!("__other_{num}");
-                            punctuated::Pair::Punctuated(
-                                quote! { #self_val #cmp #other_val },
-                                &chain,
-                            )
-                        })
+                    .filter(|num| !skipped_fields.contains(num))
+                    .map(|num| {
+                        let self_val = format_ident!("__self_{num}");
+                        let other_val = format_ident!("__other_{num}");
+                        punctuated::Pair::Punctuated(quote! { #self_val #cmp #other_val }, &chain)
                     })
                     .collect::<Punctuated<TokenStream, _>>();
                 _ = val_eqs.pop_punct();
@@ -287,13 +283,15 @@ impl FieldsExt for syn::Fields {
             Self::Named(fields) => {
                 let wildcard =
                     (!skipped_indices.is_empty()).then(token::DotDot::default);
-                let fields =
-                    fields.named.iter().enumerate().filter_map(|(num, field)| {
-                        (!skipped_indices.contains(&num)).then(|| {
-                            let name = &field.ident;
-                            let binding = format_ident!("{prefix}{num}");
-                            quote! { #name: #binding }
-                        })
+                let fields = fields
+                    .named
+                    .iter()
+                    .enumerate()
+                    .filter(|(num, _)| !skipped_indices.contains(num))
+                    .map(|(num, field)| {
+                        let name = &field.ident;
+                        let binding = format_ident!("{prefix}{num}");
+                        quote! { #name: #binding }
                     });
                 quote! {{ #( #fields , )* #wildcard }}
             }
