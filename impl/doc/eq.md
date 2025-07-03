@@ -277,7 +277,6 @@ impl PartialEq for Enum {
                 _ => true,
             }
     }
-    #[inline]
     fn ne(&self, __other: &Self) -> bool {
         std::mem::discriminant(self) != std::mem::discriminant(__other) ||
             match (self, __other) {
