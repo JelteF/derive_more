@@ -1,4 +1,4 @@
-error: `PartialEq` cannot be derived structurally for unions
+error: `PartialEq` cannot be derived for unions
  --> tests/compile_fail/partial_eq/union.rs:2:1
   |
 2 | union IntOrFloat {
