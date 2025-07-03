@@ -132,15 +132,15 @@ mod structs {
 
                 #[test]
                 fn assert() {
-                    assert_eq!(format!("{:03}", Display), "011");
-                    assert_eq!(format!("{:03}", Debug), "011");
-                    assert_eq!(format!("{:07}", Binary), "0001011");
-                    assert_eq!(format!("{:07}", Octal), "0000013");
-                    assert_eq!(format!("{:03}", LowerHex), "00b");
-                    assert_eq!(format!("{:03}", UpperHex), "00B");
-                    assert_eq!(format!("{:07}", LowerExp), "03.15e0");
-                    assert_eq!(format!("{:07}", UpperExp), "03.15E0");
-                    assert_eq!(format!("{:018}", Pointer), format!("{POINTER:018p}"));
+                    assert_eq!(format!("{Display:03}"), "011");
+                    assert_eq!(format!("{Debug:03}"), "011");
+                    assert_eq!(format!("{Binary:07}"), "0001011");
+                    assert_eq!(format!("{Octal:07}"), "0000013");
+                    assert_eq!(format!("{LowerHex:03}"), "00b");
+                    assert_eq!(format!("{UpperHex:03}"), "00B");
+                    assert_eq!(format!("{LowerExp:07}"), "03.15e0");
+                    assert_eq!(format!("{UpperExp:07}"), "03.15E0");
+                    assert_eq!(format!("{Pointer:018}"), format!("{POINTER:018p}"));
                 }
             }
 
@@ -187,14 +187,14 @@ mod structs {
 
                     #[test]
                     fn assert() {
-                        assert_eq!(format!("{:03}", LowerDebug), "b");
-                        assert_eq!(format!("{:03}", UpperDebug), "B");
-                        assert_eq!(format!("{:03}", Align), "11");
-                        assert_eq!(format!("{:04}", Sign), "+11");
-                        assert_eq!(format!("{:07}", Alternate), "0b1011");
-                        assert_eq!(format!("{:07}", ZeroPadded), "11");
-                        assert_eq!(format!("{:03}", Width), "0000011");
-                        assert_eq!(format!("{:.3}", Precision), "3.1");
+                        assert_eq!(format!("{LowerDebug:03}"), "b");
+                        assert_eq!(format!("{UpperDebug:03}"), "B");
+                        assert_eq!(format!("{Align:03}"), "11");
+                        assert_eq!(format!("{Sign:04}"), "+11");
+                        assert_eq!(format!("{Alternate:07}"), "0b1011");
+                        assert_eq!(format!("{ZeroPadded:07}"), "11");
+                        assert_eq!(format!("{Width:03}"), "0000011");
+                        assert_eq!(format!("{Precision:.3}"), "3.1");
                     }
                 }
             }

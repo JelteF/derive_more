@@ -110,10 +110,20 @@ mod single_field {
         field: i32,
     }
 
+    #[derive(Debug, Into, PartialEq)]
+    pub struct A([u8; Self::SIZE]);
+
+    impl A {
+        const SIZE: usize = 32;
+    }
+
     #[test]
     fn assert() {
         assert_eq!(42, Tuple(42).into());
         assert_eq!(42, Struct { field: 42 }.into());
+
+        let arr: [u8; A::SIZE] = A([42u8; A::SIZE]).into();
+        assert_eq!([42u8; A::SIZE], arr);
     }
 
     mod skip {

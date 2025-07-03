@@ -2574,3 +2574,164 @@ mod generics_search {
         }
     }
 }
+
+#[cfg(any(feature = "into", feature = "try_into"))]
+pub(crate) mod replace_self {
+    use syn::{parse_quote, visit_mut::VisitMut};
+
+    /// Extension of a [`syn::DeriveInput`] providing capabilities for `Self` type replacement.
+    pub(crate) trait DeriveInputExt {
+        /// Replaces `Self` type in fields and trait bounds of this [`syn::DeriveInput`].
+        fn replace_self_type(&self) -> Self;
+    }
+
+    impl DeriveInputExt for syn::DeriveInput {
+        fn replace_self_type(&self) -> Self {
+            let mut input = self.clone();
+            Visitor::new(&input).visit_derive_input_mut(&mut input);
+            input
+        }
+    }
+
+    /// [`VisitMut`] implementation performing the `Self` type replacement.
+    ///
+    /// Based on:
+    /// <https://github.com/mbrobbel/narrow/blob/v0.11.1/narrow-derive/src/util/self_replace.rs>
+    struct Visitor {
+        /// [`syn::PathSegment`] representing a type to replace `Self` occurrences with.
+        self_ty: syn::PathSegment,
+    }
+
+    impl Visitor {
+        /// Creates a new `Self` type replacement [`Visitor`] for the provided [`syn::DeriveInput`].
+        fn new(input: &syn::DeriveInput) -> Self {
+            let ident = &input.ident;
+            let (_, ty_generics, _) = input.generics.split_for_impl();
+            Self {
+                self_ty: parse_quote! { #ident #ty_generics },
+            }
+        }
+    }
+
+    impl VisitMut for Visitor {
+        fn visit_derive_input_mut(&mut self, i: &mut syn::DeriveInput) {
+            self.visit_generics_mut(&mut i.generics);
+            self.visit_data_mut(&mut i.data);
+        }
+
+        fn visit_field_mut(&mut self, i: &mut syn::Field) {
+            self.visit_type_mut(&mut i.ty);
+        }
+
+        fn visit_path_segment_mut(&mut self, i: &mut syn::PathSegment) {
+            if i.ident == "Self" {
+                *i = self.self_ty.clone();
+            } else {
+                self.visit_path_arguments_mut(&mut i.arguments);
+            }
+        }
+
+        fn visit_variant_mut(&mut self, i: &mut syn::Variant) {
+            self.visit_fields_mut(&mut i.fields);
+        }
+    }
+
+    #[cfg(test)]
+    mod spec {
+        use syn::{parse_quote, DeriveInput};
+
+        use super::DeriveInputExt as _;
+
+        #[test]
+        fn replaces_generics() {
+            let input: DeriveInput = parse_quote! {
+                struct Foo<T, U: Sub<Self>>
+                where
+                    U: Add<Self>,
+                    Self: X,
+                    <U as Add<Self>>::Output: X,
+                    T: IntoIterator<Item = Self>,
+                    [Self; 5]: SomeTrait,
+                    <Self as OtherTrait>::Type: Copy;
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                struct Foo<T, U: Sub<Foo<T, U>>>
+                where
+                    U: Add<Foo<T, U>>,
+                    Foo<T, U>: X,
+                    <U as Add<Foo<T, U>>>::Output: X,
+                    T: IntoIterator<Item = Foo<T, U>>,
+                    [Foo<T, U>; 5]: SomeTrait,
+                    <Foo<T, U> as OtherTrait>::Type: Copy;
+            };
+
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn replaces_struct_named_fields() {
+            let input: DeriveInput = parse_quote! {
+                struct Foo {
+                    a: AddType<Self>,
+                    b: <Self as OtherTrait>::Type,
+                }
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                struct Foo {
+                    a: AddType<Foo>,
+                    b: <Foo as OtherTrait>::Type,
+                }
+            };
+
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn replaces_struct_unnamed_fields() {
+            let input: DeriveInput = parse_quote! {
+                struct Bar([Self; 5], <Foo as Add<Self>>::Output);
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                struct Bar([Bar; 5], <Foo as Add<Bar>>::Output);
+            };
+
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn replaces_enum_fields() {
+            let input: DeriveInput = parse_quote! {
+                enum E {
+                    Foo {
+                        a: AddType<Self>,
+                        b: <Self as OtherTrait>::Type,
+                    },
+                    Bar([Self; 5], <Foo as Add<Self>>::Output),
+                }
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                enum E {
+                    Foo {
+                        a: AddType<E>,
+                        b: <E as OtherTrait>::Type,
+                    },
+                    Bar([E; 5], <Foo as Add<E>>::Output),
+                }
+            };
+
+            assert_eq!(actual, expected);
+        }
+    }
+}
