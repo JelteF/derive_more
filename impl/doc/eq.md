@@ -221,7 +221,7 @@ assert_eq!(Bar(0.0, NoEq), Bar(0.0, NoEq));
 assert_eq!(Bar(0.0, NoEq), Bar(1.0, NoEq));
 
 assert_eq!(Enum::Foo(0, NoEq), Enum::Foo(0, NoEq));
-assert_eq!(Enum::Foo(0, NoEq), Enum::Foo(1, NoEq));
+assert_ne!(Enum::Foo(0, NoEq), Enum::Foo(1, NoEq));
 
 assert_eq!(Enum::Bar(NoEq), Enum::Bar(NoEq));
 
