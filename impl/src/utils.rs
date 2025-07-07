@@ -248,7 +248,7 @@ pub fn named_to_vec(fields: &FieldsNamed) -> Vec<&Field> {
     fields.named.iter().collect()
 }
 
-fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
+pub(crate) fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     panic!(
         "derive({trait_name}) only works when forwarding to a single field. \
          Try putting #[{trait_attr}] or #[{trait_attr}(ignore)] on the fields in the struct",
@@ -533,6 +533,22 @@ impl<'input> State<'input> {
             .map(|attrs| get_meta_info(&trait_attr, attrs, &allowed_attr_params.field))
             .collect();
         let meta_infos = meta_infos?;
+
+        let first_match = meta_infos
+            .iter()
+            .find_map(|info| info.enabled.map(|_| info));
+
+        let default_enabled = if trait_name == "Error" {
+            true
+        } else {
+            first_match.map_or(true, |info| !info.enabled.unwrap())
+        };
+
+        let default_info = FullMetaInfo {
+            enabled: default_enabled,
+            ..default_info.clone()
+        };
+
         let full_meta_infos: Vec<_> = meta_infos
             .into_iter()
             .map(|info| info.into_full(default_info.clone()))
