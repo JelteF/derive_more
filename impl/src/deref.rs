@@ -10,7 +10,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     match input.data {
         Data::Struct(_) => expand_struct(input, trait_name),
         Data::Enum(_) => expand_enum(input, trait_name),
-        _ => panic!("Only structs and enums can use derive({trait_name})"),
+        _ => panic!("only structs and enums can use `derive({trait_name})`"),
     }
 }
 
