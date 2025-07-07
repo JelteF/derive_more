@@ -6,15 +6,83 @@ use syn::{
     parse_quote,
     punctuated::{self, Punctuated},
     spanned::Spanned as _,
+    token,
 };
 
 use super::TypeExt as _;
-use crate::utils::GenericsSearch;
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    GenericsSearch, HashSet,
+};
 
 /// Expands a [`PartialEq`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
-    Ok(StructuralExpansion::try_from(input)?.into_token_stream())
+    let attr_name = format_ident!("partial_eq");
+    let secondary_attr_name = format_ident!("eq");
+
+    let mut has_skipped_variants = false;
+    let mut variants = vec![];
+
+    match &input.data {
+        syn::Data::Struct(data) => {
+            for attr_name in [&attr_name, &secondary_attr_name] {
+                if attr::Skip::parse_attrs(&input.attrs, attr_name)?.is_some() {
+                    has_skipped_variants = true;
+                    break;
+                }
+            }
+            if !has_skipped_variants {
+                let mut skipped_fields = HashSet::default();
+                'fields: for (n, field) in data.fields.iter().enumerate() {
+                    for attr_name in [&attr_name, &secondary_attr_name] {
+                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                            _ = skipped_fields.insert(n);
+                            continue 'fields;
+                        }
+                    }
+                }
+                variants.push((None, &data.fields, skipped_fields));
+            }
+        }
+        syn::Data::Enum(data) => {
+            'variants: for variant in &data.variants {
+                for attr_name in [&attr_name, &secondary_attr_name] {
+                    if attr::Skip::parse_attrs(&variant.attrs, attr_name)?.is_some() {
+                        has_skipped_variants = true;
+                        continue 'variants;
+                    }
+                }
+                let mut skipped_fields = HashSet::default();
+                'fields: for (n, field) in variant.fields.iter().enumerate() {
+                    for attr_name in [&attr_name, &secondary_attr_name] {
+                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                            _ = skipped_fields.insert(n);
+                            continue 'fields;
+                        }
+                    }
+                }
+                variants.push((Some(&variant.ident), &variant.fields, skipped_fields));
+            }
+        }
+        syn::Data::Union(data) => {
+            return Err(syn::Error::new(
+                data.union_token.span(),
+                "`PartialEq` cannot be derived for unions",
+            ))
+        }
+    }
+
+    Ok(StructuralExpansion {
+        self_ty: (&input.ident, &input.generics),
+        variants,
+        has_skipped_variants,
+        is_enum: matches!(input.data, syn::Data::Enum(_)),
+    }
+    .into_token_stream())
 }
+
+/// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
+type SkippedFields = HashSet<usize>;
 
 /// Expansion of a macro for generating a structural [`PartialEq`] implementation of an enum or a
 /// struct.
@@ -25,35 +93,13 @@ struct StructuralExpansion<'i> {
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
     /// [`syn::Fields`] of the enum/struct to be compared in this [`StructuralExpansion`].
-    variants: Vec<(Option<&'i syn::Ident>, &'i syn::Fields)>,
-}
+    variants: Vec<(Option<&'i syn::Ident>, &'i syn::Fields, SkippedFields)>,
 
-impl<'i> TryFrom<&'i syn::DeriveInput> for StructuralExpansion<'i> {
-    type Error = syn::Error;
+    /// Indicator whether some original enum variants where skipped with an [`attr::Skip`].
+    has_skipped_variants: bool,
 
-    fn try_from(input: &'i syn::DeriveInput) -> syn::Result<Self> {
-        let variants = match &input.data {
-            syn::Data::Struct(data) => {
-                vec![(None, &data.fields)]
-            }
-            syn::Data::Enum(data) => data
-                .variants
-                .iter()
-                .map(|variant| (Some(&variant.ident), &variant.fields))
-                .collect(),
-            syn::Data::Union(data) => {
-                return Err(syn::Error::new(
-                    data.union_token.span(),
-                    "`PartialEq` cannot be derived structurally for unions",
-                ))
-            }
-        };
-
-        Ok(Self {
-            self_ty: (&input.ident, &input.generics),
-            variants,
-        })
-    }
+    /// Indicator whether this expansion is for an enum.
+    is_enum: bool,
 }
 
 impl StructuralExpansion<'_> {
@@ -61,14 +107,23 @@ impl StructuralExpansion<'_> {
     /// [`StructuralExpansion`], if it's required.
     fn body(&self, eq: bool) -> Option<TokenStream> {
         // Special case: empty enum (also, no need for `ne()` method in this case).
-        if self.variants.is_empty() {
+        if self.is_enum && self.variants.is_empty() && !self.has_skipped_variants {
             return eq.then(|| quote! { match *self {} });
         }
 
         let no_fields_result = quote! { #eq };
 
-        // Special case: no fields to compare (also, no need for `ne()` method in this case).
-        if self.variants.len() == 1 && self.variants[0].1.is_empty() {
+        // Special case: fully skipped struct (also, no need for `ne()` method in this case).
+        if !self.is_enum && self.variants.is_empty() && self.has_skipped_variants {
+            return eq.then_some(no_fields_result);
+        }
+        // Special case: no fields to compare in struct/single-variant enum (also, no need for
+        // `ne()` method in this case).
+        if !(self.is_enum && self.has_skipped_variants)
+            && self.variants.len() == 1
+            && (self.variants[0].1.is_empty()
+                || self.variants[0].1.len() == self.variants[0].2.len())
+        {
             return eq.then_some(no_fields_result);
         }
 
@@ -78,33 +133,32 @@ impl StructuralExpansion<'_> {
             (quote! { != }, quote! { || })
         };
 
-        let discriminants_cmp = (self.variants.len() > 1).then(|| {
-            quote! {
-                derive_more::core::mem::discriminant(self) #cmp
-                    derive_more::core::mem::discriminant(__other)
-            }
-        });
+        let discriminants_cmp = (self.variants.len() > 1 || self.has_skipped_variants)
+            .then(|| {
+                quote! {
+                    derive_more::core::mem::discriminant(self) #cmp
+                        derive_more::core::mem::discriminant(__other)
+                }
+            });
 
         let match_arms = self
             .variants
             .iter()
-            .filter_map(|(variant, fields)| {
-                if fields.is_empty() {
+            .filter_map(|(variant, all_fields, skipped_fields)| {
+                if all_fields.is_empty() || skipped_fields.len() == all_fields.len() {
                     return None;
                 }
 
                 let variant = variant.map(|variant| quote! { :: #variant });
-                let self_pattern = fields.arm_pattern("__self_");
-                let other_pattern = fields.arm_pattern("__other_");
+                let self_pattern = all_fields.arm_pattern("__self_", skipped_fields);
+                let other_pattern = all_fields.arm_pattern("__other_", skipped_fields);
 
-                let mut val_eqs = (0..fields.len())
+                let mut val_eqs = (0..all_fields.len())
+                    .filter(|num| !skipped_fields.contains(num))
                     .map(|num| {
                         let self_val = format_ident!("__self_{num}");
                         let other_val = format_ident!("__other_{num}");
-                        punctuated::Pair::Punctuated(
-                            quote! { #self_val #cmp #other_val },
-                            &chain,
-                        )
+                        punctuated::Pair::Punctuated(quote! { #self_val #cmp #other_val }, &chain)
                     })
                     .collect::<Punctuated<TokenStream, _>>();
                 _ = val_eqs.pop_punct();
@@ -115,9 +169,11 @@ impl StructuralExpansion<'_> {
             })
             .collect::<Vec<_>>();
         let match_expr = (!match_arms.is_empty()).then(|| {
-            let no_fields_arm = (match_arms.len() != self.variants.len()).then(|| {
-                quote! { _ => #no_fields_result }
-            });
+            let no_fields_arm = (match_arms.len() != self.variants.len()
+                || self.has_skipped_variants)
+                .then(|| {
+                    quote! { _ => #no_fields_result }
+                });
             let unreachable_arm = (self.variants.len() > 1
                 && no_fields_arm.is_none())
             .then(|| {
@@ -162,8 +218,12 @@ impl ToTokens for StructuralExpansion<'_> {
         {
             let self_ty: syn::Type = parse_quote! { Self };
             let implementor_ty: syn::Type = parse_quote! { #ty #ty_generics };
-            for variant in &self.variants {
-                for field_ty in variant.1.iter().map(|field| &field.ty) {
+            for (_, all_fields, skipped_fields) in &self.variants {
+                for field_ty in
+                    all_fields.iter().enumerate().filter_map(|(n, field)| {
+                        (!skipped_fields.contains(&n)).then_some(&field.ty)
+                    })
+                {
                     if generics_search.any_in(field_ty)
                         && !field_ty.contains_type_structurally(&self_ty)
                         && !field_ty.contains_type_structurally(&implementor_ty)
@@ -209,24 +269,40 @@ trait FieldsExt {
     /// Generates a pattern for matching these [`syn::Fields`] in an arm of a `match` expression.
     ///
     /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
-    fn arm_pattern(&self, prefix: &str) -> TokenStream;
+    fn arm_pattern(&self, prefix: &str, skipped_indices: &SkippedFields)
+        -> TokenStream;
 }
 
 impl FieldsExt for syn::Fields {
-    fn arm_pattern(&self, prefix: &str) -> TokenStream {
+    fn arm_pattern(
+        &self,
+        prefix: &str,
+        skipped_indices: &SkippedFields,
+    ) -> TokenStream {
         match self {
             Self::Named(fields) => {
-                let fields = fields.named.iter().enumerate().map(|(num, field)| {
-                    let name = &field.ident;
-                    let binding = format_ident!("{prefix}{num}");
-                    quote! { #name: #binding }
-                });
-                quote! {{ #( #fields , )* }}
+                let wildcard =
+                    (!skipped_indices.is_empty()).then(token::DotDot::default);
+                let fields = fields
+                    .named
+                    .iter()
+                    .enumerate()
+                    .filter(|(num, _)| !skipped_indices.contains(num))
+                    .map(|(num, field)| {
+                        let name = &field.ident;
+                        let binding = format_ident!("{prefix}{num}");
+                        quote! { #name: #binding }
+                    });
+                quote! {{ #( #fields , )* #wildcard }}
             }
             Self::Unnamed(fields) => {
                 let fields = (0..fields.unnamed.len()).map(|num| {
-                    let binding = format_ident!("{prefix}{num}");
-                    quote! { #binding }
+                    if skipped_indices.contains(&num) {
+                        quote! { _ }
+                    } else {
+                        let binding = format_ident!("{prefix}{num}");
+                        quote! { #binding }
+                    }
                 });
                 quote! {( #( #fields , )* )}
             }

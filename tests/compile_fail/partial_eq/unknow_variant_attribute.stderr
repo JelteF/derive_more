@@ -1,0 +1,5 @@
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/partial_eq/unknow_variant_attribute.rs:3:18
+  |
+3 |     #[partial_eq(unknown)]
+  |                  ^^^^^^^
