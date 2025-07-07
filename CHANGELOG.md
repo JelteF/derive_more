@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   and implementing `ne()` method as well.
   ([#473](https://github.com/JelteF/derive_more/pull/473),
    [#475](https://github.com/JelteF/derive_more/pull/475))
+- Add `Eq` derive similar to `std`'s one, but considering generics correctly.
+  ([#479](https://github.com/JelteF/derive_more/pull/479))
 - Proxy-pass `#[allow]`/`#[expect]` attributes of the type in `Constructor` derive.
   ([#477](https://github.com/JelteF/derive_more/pull/477))
 - Add `Deref` and `DerefMut` derive for enums.
@@ -41,6 +43,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#458](https://github.com/JelteF/derive_more/pull/458))
 - Missing trait bounds in `AsRef`/`AsMut` derives when associative types are involved.
   ([#474](https://github.com/JelteF/derive_more/pull/474))
+- Erroneous code generated in `Try`/`TryInto` derives when `Self` type is present in
+  the struct or enum definition.
+  ([#489](https://github.com/JelteF/derive_more/pull/489))
 
 ## 2.0.1 - 2025-02-03
 
