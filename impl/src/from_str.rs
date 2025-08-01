@@ -6,7 +6,7 @@ use std::{collections::HashMap, iter};
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::{parse_quote, spanned::Spanned as _};
+use syn::{parse::Parse, parse_quote, spanned::Spanned as _};
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
@@ -137,6 +137,8 @@ struct FlatExpansion<'i> {
     /// Optional [`attr::RenameAll`] indicating the case convertion to be applied to all the matched
     /// values (enum variants or struct itself).
     rename_all: Option<attr::RenameAll>,
+
+    error_conversion: Option<attr::ErrorConversion>,
 }
 
 impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
@@ -179,8 +181,12 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             }
         };
 
-        let rename_all = attr::RenameAll::parse_attrs(&input.attrs, attr_ident)?
-            .map(Spanning::into_inner);
+        let ContainerAttributes {
+            rename_all,
+            error_conversion,
+        } = ContainerAttributes::parse_attrs(&input.attrs, attr_ident)?
+            .map(Spanning::into_inner)
+            .unwrap_or_default();
 
         let mut similar_matches = <HashMap<_, Vec<_>>>::new();
         if rename_all.is_none() {
@@ -237,6 +243,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             matches,
             similar_matches,
             rename_all,
+            error_conversion,
         })
     }
 }
@@ -286,20 +293,34 @@ impl ToTokens for FlatExpansion<'_> {
                 .collect()
         };
 
+        let default_error = quote! { derive_more::FromStrError::new(#ty_name) };
+
+        let (error_ty, error) = self.error_conversion.as_ref().map_or_else(
+            || (quote! { derive_more::FromStrError }, default_error.clone()),
+            |error_conversion| {
+                let error_ty = error_conversion.error_ty.to_token_stream();
+
+                let error = error_conversion.error_fn.as_ref().map_or_else(
+                    || quote! { #default_error.into() },
+                    |error_fn| quote! { #error_fn(#default_error) },
+                );
+
+                (error_ty, error)
+            },
+        );
+
         quote! {
             #[allow(unreachable_code)] // for empty enums
             #[automatically_derived]
             impl #impl_generics derive_more::core::str::FromStr for #ty #ty_generics #where_clause {
-                type Err = derive_more::FromStrError;
+                type Err = #error_ty;
 
                 fn from_str(
                     s: &str,
-                ) -> derive_more::core::result::Result<Self, derive_more::FromStrError> {
+                ) -> derive_more::core::result::Result<Self, <Self as derive_more::core::str::FromStr>::Err> {
                     derive_more::core::result::Result::Ok(match s #scrutinee_lowercased {
                         #( #match_arms )*
-                        _ => return derive_more::core::result::Result::Err(
-                            derive_more::FromStrError::new(#ty_name),
-                        ),
+                        _ => return derive_more::core::result::Result::Err(#error),
                     })
                 }
             }
@@ -436,5 +457,93 @@ impl<L: FieldsExt, R: FieldsExt> FieldsExt for Either<&L, &R> {
             Self::Left(l) => l.self_ty(),
             Self::Right(r) => r.self_ty(),
         }
+    }
+}
+
+/// Representation of possible [`FromStr`] derive macro attributes placed on an enum.
+///
+/// ```rust,ignore
+/// #[<attribute>(rename_all = "<casing>")]
+/// #[<attribute>(error(<error_ty>))]
+/// #[<attribute>(error(<error_ty>, <error_fn>))]
+/// ```
+///
+/// Both `#[<attribute>(rename_all = "<casing>")]` and
+/// `#[<attribute>(error(<error_ty>[, <error_fn>]))]` can be specified only once.
+#[derive(Default)]
+struct ContainerAttributes {
+    /// [`attr::RenameAll`] for case convertion.
+    rename_all: Option<attr::RenameAll>,
+
+    error_conversion: Option<attr::ErrorConversion>,
+}
+
+impl Parse for ContainerAttributes {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        mod ident {
+            use syn::custom_keyword;
+
+            custom_keyword!(error);
+            custom_keyword!(rename_all);
+        }
+
+        let ahead = input.lookahead1();
+        if ahead.peek(ident::error) {
+            Ok(Self {
+                error_conversion: Some(input.parse()?),
+                ..Default::default()
+            })
+        } else if ahead.peek(ident::rename_all) {
+            Ok(Self {
+                rename_all: Some(input.parse()?),
+                ..Default::default()
+            })
+        } else {
+            return Err(ahead.error());
+        }
+    }
+}
+
+impl attr::ParseMultiple for ContainerAttributes {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let Spanning {
+            span: prev_span,
+            item: mut prev,
+        } = prev;
+        let Spanning {
+            span: new_span,
+            item: new,
+        } = new;
+
+        if new
+            .rename_all
+            .and_then(|n| prev.rename_all.replace(n))
+            .is_some()
+        {
+            return Err(syn::Error::new(
+                new_span,
+                format!("multiple `#[{name}(rename_all=\"...\")]` attributes aren't allowed"),
+            ));
+        }
+
+        if prev.error_conversion.is_some() && new.error_conversion.is_some() {
+            return Err(syn::Error::new(
+                new_span,
+                format!(
+                    "multiple `#[{name}(error(\"...\")]` attributes aren't allowed"
+                ),
+            ));
+        }
+
+        prev.error_conversion = prev.error_conversion.or(new.error_conversion);
+
+        Ok(Spanning::new(
+            prev,
+            prev_span.join(new_span).unwrap_or(prev_span),
+        ))
     }
 }

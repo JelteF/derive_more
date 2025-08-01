@@ -1512,6 +1512,8 @@ pub(crate) mod attr {
         feature = "try_from"
     ))]
     pub(crate) use self::empty::Empty;
+    #[cfg(feature = "from_str")]
+    pub(crate) use self::error_conversion::ErrorConversion;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
@@ -2113,6 +2115,65 @@ pub(crate) mod attr {
                     .map(|v| v.map(Self::from))
             }
         }
+    }
+
+    #[cfg(feature = "from_str")]
+    mod error_conversion {
+        use syn::parse::{Parse, ParseStream};
+
+        use super::ParseMultiple;
+
+        /// Representation of an attribute, specifying the error type and
+        /// optionally a function to convert from `derive_more` built-in error type.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(error(<error_ty>))]
+        /// #[<attribute>(error(<error_ty>, <error_fn>))]
+        /// ```
+        pub(crate) struct ErrorConversion {
+            pub(crate) error_ty: syn::TypePath,
+            pub(crate) error_fn: Option<syn::Path>,
+        }
+
+        impl Parse for ErrorConversion {
+            fn parse(input: ParseStream) -> syn::Result<Self> {
+                let prefix = syn::Ident::parse(input)?;
+                if prefix != "error" {
+                    return Err(syn::Error::new(
+                        prefix.span(),
+                        "expected `error` argument here",
+                    ));
+                }
+
+                let inner;
+                syn::parenthesized!(inner in input);
+
+                let error_ty = syn::TypePath::parse(&inner)?;
+
+                if inner.is_empty() {
+                    Ok(ErrorConversion {
+                        error_ty,
+                        error_fn: None,
+                    })
+                } else {
+                    let _: syn::token::Comma = inner.parse()?;
+                    let error_fn = syn::Path::parse(&inner)?;
+                    if inner.is_empty() {
+                        Ok(ErrorConversion {
+                            error_ty,
+                            error_fn: Some(error_fn),
+                        })
+                    } else {
+                        Err(syn::Error::new(
+                            inner.span(),
+                            "no more arguments allowed here",
+                        ))
+                    }
+                }
+            }
+        }
+
+        impl ParseMultiple for ErrorConversion {}
     }
 
     #[cfg(feature = "try_from")]
