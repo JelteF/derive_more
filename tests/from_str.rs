@@ -716,4 +716,93 @@ mod enums {
             }
         }
     }
+
+    mod error_conversion {
+        use super::*;
+
+        #[derive(Debug)]
+        struct CustomError(derive_more::FromStrError);
+
+        impl CustomError {
+            fn new(err: derive_more::FromStrError) -> CustomError {
+                CustomError(err)
+            }
+        }
+
+        impl From<derive_more::FromStrError> for CustomError {
+            fn from(value: derive_more::FromStrError) -> Self {
+                Self(value)
+            }
+        }
+
+        #[test]
+        fn error_ty_only() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            #[from_str(error(CustomError))]
+            enum EnumNoFields {
+                Foo,
+                Bar,
+                Baz,
+                BaZ,
+            }
+
+            assert_eq!("foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+            assert_eq!("Foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+            assert_eq!("FOO".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+
+            assert_eq!("Bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
+            assert_eq!("bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
+
+            assert_eq!("Baz".parse::<EnumNoFields>().unwrap(), EnumNoFields::Baz);
+            assert_eq!("BaZ".parse::<EnumNoFields>().unwrap(), EnumNoFields::BaZ);
+
+            assert_eq!(
+                match "baz".parse::<EnumNoFields>().unwrap_err() {
+                    CustomError(error) => error.to_string(),
+                },
+                "Invalid `EnumNoFields` string representation",
+            );
+            assert_eq!(
+                match "other".parse::<EnumNoFields>().unwrap_err() {
+                    CustomError(error) => error.to_string(),
+                },
+                "Invalid `EnumNoFields` string representation",
+            );
+        }
+
+        #[test]
+        fn with_error_fn() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            #[from_str(error(CustomError, CustomError::new))]
+            enum EnumNoFields {
+                Foo,
+                Bar,
+                Baz,
+                BaZ,
+            }
+
+            assert_eq!("foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+            assert_eq!("Foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+            assert_eq!("FOO".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+
+            assert_eq!("Bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
+            assert_eq!("bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
+
+            assert_eq!("Baz".parse::<EnumNoFields>().unwrap(), EnumNoFields::Baz);
+            assert_eq!("BaZ".parse::<EnumNoFields>().unwrap(), EnumNoFields::BaZ);
+
+            assert_eq!(
+                match "baz".parse::<EnumNoFields>().unwrap_err() {
+                    CustomError(error) => error.to_string(),
+                },
+                "Invalid `EnumNoFields` string representation",
+            );
+            assert_eq!(
+                match "other".parse::<EnumNoFields>().unwrap_err() {
+                    CustomError(error) => error.to_string(),
+                },
+                "Invalid `EnumNoFields` string representation",
+            );
+        }
+    }
 }
