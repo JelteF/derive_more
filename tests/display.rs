@@ -992,6 +992,54 @@ mod enums {
                 }
             }
         }
+
+        mod default {
+            use super::*;
+
+            #[derive(
+                Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex
+            )]
+            #[binary("Binary")]
+            #[display("Display")]
+            #[lower_exp("LowerExp")]
+            #[lower_hex("LowerHex")]
+            #[octal("Octal")]
+            #[pointer("Pointer")]
+            #[upper_exp("UpperExp")]
+            #[upper_hex("UpperHex")]
+            enum Unit {
+                A,
+                #[binary("Binary Custom")]
+                #[display("Display Custom")]
+                #[lower_exp("LowerExp Custom")]
+                #[lower_hex("LowerHex Custom")]
+                #[octal("Octal Custom")]
+                #[pointer("Pointer Custom")]
+                #[upper_exp("UpperExp Custom")]
+                #[upper_hex("UpperHex Custom")]
+                B,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(format!("{:b}", Unit::A), "Binary");
+                assert_eq!(format!("{:b}", Unit::B), "Binary Custom");
+                assert_eq!(format!("{:}", Unit::A), "Display");
+                assert_eq!(format!("{:}", Unit::B), "Display Custom");
+                assert_eq!(format!("{:e}", Unit::A), "LowerExp");
+                assert_eq!(format!("{:e}", Unit::B), "LowerExp Custom");
+                assert_eq!(format!("{:x}", Unit::A), "LowerHex");
+                assert_eq!(format!("{:x}", Unit::B), "LowerHex Custom");
+                assert_eq!(format!("{:o}", Unit::A), "Octal");
+                assert_eq!(format!("{:o}", Unit::B), "Octal Custom");
+                assert_eq!(format!("{:p}", Unit::A), "Pointer");
+                assert_eq!(format!("{:p}", Unit::B), "Pointer Custom");
+                assert_eq!(format!("{:E}", Unit::A), "UpperExp");
+                assert_eq!(format!("{:E}", Unit::B), "UpperExp Custom");
+                assert_eq!(format!("{:X}", Unit::A), "UpperHex");
+                assert_eq!(format!("{:X}", Unit::B), "UpperHex Custom");
+            }
+        }
     }
 
     mod single_field_variant {
