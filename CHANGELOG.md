@@ -46,6 +46,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Erroneous code generated in `Try`/`TryInto` derives when `Self` type is present in
   the struct or enum definition.
   ([#489](https://github.com/JelteF/derive_more/pull/489))
+- Support `#[<display-trait>("default formatting")]` attribute without `{_variant}`
+  to be used as default for variants without explicit formatting.
+  ([#495](https://github.com/JelteF/derive_more/pull/495))
 
 ## 2.0.1 - 2025-02-03
 
