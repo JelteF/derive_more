@@ -2,9 +2,8 @@ error[E0277]: `NoDebug<'_>` doesn't implement `Debug`
  --> tests/compile_fail/debug/lifetime_no_debug.rs:5:10
   |
 5 | #[derive(derive_more::Debug)]
-  |          ^^^^^^^^^^^^^^^^^^ `NoDebug<'_>` cannot be formatted using `{:?}`
+  |          ^^^^^^^^^^^^^^^^^^ the trait `Debug` is not implemented for `NoDebug<'_>`
   |
-  = help: the trait `Debug` is not implemented for `NoDebug<'_>`
   = note: add `#[derive(Debug)]` to `NoDebug<'_>` or manually `impl Debug for NoDebug<'_>`
   = note: required for `&NoDebug<'_>` to implement `Debug`
   = note: required for the cast from `&&NoDebug<'_>` to `&dyn Debug`
