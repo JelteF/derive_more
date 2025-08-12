@@ -132,10 +132,10 @@ impl Parse for ContainerAttributes {
         } else if ahead.peek(ident::rename_all) {
             Ok(Self {
                 rename_all: Some(input.parse()?),
-                ..Default::default()
+                ..Self::default()
             })
         } else {
-            return Err(ahead.error());
+            Err(ahead.error())
         }
     }
 }
