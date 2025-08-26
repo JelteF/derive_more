@@ -79,7 +79,78 @@ assert_eq!(Str { inner: "String".into() }, "String".to_owned().into());
 assert_eq!(Str { inner: "Cow".into() }, Cow::Borrowed("Cow").to_owned().into());
 ```
 
+Finally, for extra flexibility, you can directly specify which fields to include
+in the tuple and specify defaults for the rest. NOTE: this is currently not
+supported for `#[from(forward)]` or `#[from(<types>]`; this may be alleviated in
+the future.
 
+If you add a `#[from(<default value>)]` attribute to any fields of the struct,
+then those fields will be omitted from the tuple and be set to the default value
+in the implementation:
+
+```rust
+# use std::collections::HashMap;
+#
+# use derive_more::From;
+#
+#[derive(Debug, From, PartialEq)]
+struct MyWrapper {
+    inner: u8,
+    #[from(1)]
+    not_important: u32,
+    #[from(HashMap::new())]
+    extra_properties: HashMap<String, String>,
+}
+
+assert_eq!(MyWrapper { inner: 123, not_important: 1, extra_properties: HashMap::new(), }, 123.into());
+```
+
+
+If you add a `#[from]` value to any fields of the struct, then only those
+fields will be present in the tuple and the rest will be either set to
+`Default::default()` or taken from their default values specified in
+`#[from(<default value>)]`:
+
+```rust
+
+# use std::collections::HashMap;
+#
+# use derive_more::From;
+#
+#[derive(Debug, From, PartialEq)]
+struct Location {
+    #[from]
+    lat: f32,
+    #[from]
+    lon: f32,
+    #[from(String::from("Check out my location!"))]
+    description: String,
+    extra_properties: HashMap<String, String>,
+}
+
+// This is equivalent to:
+
+// #[derive(Debug, From, PartialEq)]
+// struct Location {
+//     lat: f32,
+//     lon: f32,
+//     #[from(String::from("Check out my location!"))]
+//     description: String,
+//     #[from(Default::default())]
+//     extra_properties: HashMap<String, String>,
+// }
+
+
+assert_eq!(
+    Location {
+        lat: 41.7310,
+        lon: 44.8067,
+        description: String::from("Check out my location!"),
+        extra_properties: Default::default(),
+    },
+    (41.7310, 44.8067).into()
+);
+```
 
 
 ## Enums
@@ -132,7 +203,8 @@ enum Int {
 ```
 
 
-
+`#[from]`/`#[from(<default value>)]` may also be used on fields of enum variants
+in the same way as for struct fields.
 
 ## Example usage
 

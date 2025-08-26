@@ -290,6 +290,85 @@ mod structs {
             }
         }
 
+        mod default_fields {
+            use super::*;
+            #[derive(Debug, From, PartialEq)]
+            struct StructAllDefaultsApartFromOne {
+                field1: i32,
+                #[from(1)]
+                field2_has_default: i16,
+                #[from(Default::default())]
+                field3_has_default: bool,
+                #[from(Default::default())]
+                field4_has_default: Option<bool>,
+            }
+            #[derive(Debug, From, PartialEq)]
+            struct StructAllDefaultsApartFromTwo {
+                field1: i32,
+                #[from(1)]
+                field2_has_default: i16,
+                field3: bool,
+                #[from(Default::default())]
+                field4_has_default: Option<bool>,
+            }
+            #[derive(Debug, From, PartialEq)]
+            struct StructImplicitDefaults {
+                #[from]
+                field1: i32,
+                field2_implicit_default: bool,
+                field3_implicit_default: Option<bool>,
+            }
+            #[derive(Debug, From, PartialEq)]
+            struct StructImplicitAndExplicitDefaults {
+                #[from]
+                field1: i32,
+                #[from]
+                field2: i16,
+                #[from(true)]
+                field3_has_default: bool,
+                field4_implicit_default: Option<bool>,
+            }
+
+            #[test]
+            fn assert() {
+                assert_eq!(
+                    StructAllDefaultsApartFromOne {
+                        field1: 123,
+                        field2_has_default: 1,
+                        field3_has_default: false,
+                        field4_has_default: None,
+                    },
+                    123.into(),
+                );
+                assert_eq!(
+                    StructAllDefaultsApartFromTwo {
+                        field1: 123,
+                        field2_has_default: 1,
+                        field3: true,
+                        field4_has_default: None,
+                    },
+                    (123, true).into(),
+                );
+                assert_eq!(
+                    StructImplicitDefaults {
+                        field1: 123,
+                        field2_implicit_default: false,
+                        field3_implicit_default: None,
+                    },
+                    123.into(),
+                );
+                assert_eq!(
+                    StructImplicitAndExplicitDefaults {
+                        field1: 123,
+                        field2: 1,
+                        field3_has_default: true,
+                        field4_implicit_default: None,
+                    },
+                    (123, 1).into(),
+                );
+            }
+        }
+
         mod forward {
             use super::*;
 
@@ -579,11 +658,43 @@ mod enums {
                 AutomaticallySkipped {},
             }
 
+            #[derive(Debug, From, PartialEq)]
+            enum DefaultFields {
+                #[from]
+                Variant1 {
+                    #[from]
+                    field1: i32,
+                    field2: bool,
+                },
+                #[from]
+                Variant2 {
+                    #[from]
+                    field1: String,
+                    #[from(String::from("This should be field2"))]
+                    field2: String,
+                },
+                AutomaticallySkipped,
+            }
+
             #[test]
             fn assert() {
                 assert_eq!(Unit::Variant, ().into());
                 assert_eq!(Tuple::Variant(), ().into());
                 assert_eq!(Struct::Variant {}, ().into());
+                assert_eq!(
+                    DefaultFields::Variant1 {
+                        field1: 123,
+                        field2: false,
+                    },
+                    123.into(),
+                );
+                assert_eq!(
+                    DefaultFields::Variant2 {
+                        field1: String::from("This should be field1"),
+                        field2: String::from("This should be field2"),
+                    },
+                    String::from("This should be field1").into(),
+                );
             }
 
             mod r#const {

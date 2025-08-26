@@ -148,8 +148,31 @@ impl Expansion<'_> {
     fn expand(&self) -> syn::Result<TokenStream> {
         use crate::utils::FieldsExt as _;
 
+        let attr_name = format_ident!("from");
         let ident = self.ident;
-        let field_tys = self.fields.iter().map(|f| &f.ty).collect::<Vec<_>>();
+        let fields_explicit_from: Vec<&syn::Type> = self
+            .fields
+            .iter()
+            .filter(|field| {
+                field.attrs.iter().any(|attr| match attr.meta.clone() {
+                    syn::Meta::Path(path) => path.is_ident(&attr_name),
+                    _ => false,
+                })
+            })
+            .map(|f| &f.ty)
+            .collect();
+        let has_explicit_from_fields = !fields_explicit_from.is_empty();
+        let field_tys = if has_explicit_from_fields {
+            fields_explicit_from
+        } else {
+            self.fields
+                .iter()
+                .filter(|f| {
+                    !f.attrs.iter().any(|attr| attr.path().is_ident(&attr_name))
+                })
+                .map(|f| &f.ty)
+                .collect::<Vec<_>>()
+        };
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
 
         let skip_variant = self.has_explicit_from
@@ -188,10 +211,39 @@ impl Expansion<'_> {
             }
             (Some(VariantAttribute::Empty(_)), _) | (None, false) => {
                 let variant = self.variant.iter();
-                let init = self.expand_fields(|ident, _, index| {
+                let mut fields = self.fields.iter();
+                let mut index: Option<usize> =
+                    if field_tys.len() > 1 { Some(0) } else { None };
+                let init = self.expand_fields(|ident, _, _| {
                     let ident = ident.into_iter();
-                    let index = index.into_iter();
-                    quote! { #( #ident: )* value #( . #index )*, }
+                    let field = fields.next().unwrap();
+
+                    let from_val = if let Some(attr) = field
+                        .attrs
+                        .iter()
+                        .find(|a| a.meta.path().is_ident(&format_ident!("from")))
+                    {
+                        match attr.meta.clone() {
+                            syn::Meta::List(meta_list) => Some(meta_list.tokens),
+                            syn::Meta::Path(_) => None,
+                            _ => panic!("Only #[from] and #[from(<default_value>)] are supported"),
+                        }
+                    } else                         if has_explicit_from_fields {
+                            Some(quote! { Default::default() })
+                        } else {
+                            None
+                        };
+                    if let Some(value) = from_val {
+                        quote! {
+                            #( #ident: )* #value,
+                        }
+                    } else {
+                        let index_ = index.into_iter().map(syn::Index::from);
+                        index = index.map(|v| v + 1);
+                        quote! {
+                            #( #ident: )* value #( . #index_ )*,
+                        }
+                    }
                 });
 
                 Ok(quote! {

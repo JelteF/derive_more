@@ -169,10 +169,17 @@ struct Unit;
 // containing `$crate`
 macro_rules! use_dollar_crate {
     () => {
-        struct Foo;
-        #[derive(From)]
+        #[derive(From, Debug, PartialEq)]
+        struct Foo(u32);
+        #[derive(From, Debug, PartialEq)]
         enum Bar {
-            First(#[from(forward)] $crate::Foo),
+            #[from(forward)]
+            First($crate::Foo),
+        }
+
+        #[test]
+        fn test_dollar_crate() {
+            assert_eq!(Bar::First(Foo(123)), 123.into());
         }
     };
 }

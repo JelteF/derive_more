@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#477](https://github.com/JelteF/derive_more/pull/477))
 - Support `Deref` and `DerefMut` derives for enums.
   ([#485](https://github.com/JelteF/derive_more/pull/485))
+- Support for `#[from]` and `#[from(<default value>)]` on struct fields.
+  ([#500](https://github.com/JelteF/derive_more/pull/500))
 
 ### Changed
 
