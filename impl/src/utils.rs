@@ -1513,7 +1513,7 @@ pub(crate) mod attr {
     ))]
     pub(crate) use self::empty::Empty;
     #[cfg(feature = "from_str")]
-    pub(crate) use self::error_conversion::ErrorConversion;
+    pub(crate) use self::error::Error;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
@@ -2118,7 +2118,7 @@ pub(crate) mod attr {
     }
 
     #[cfg(feature = "from_str")]
-    mod error_conversion {
+    mod error {
         use syn::parse::{Parse, ParseStream};
 
         use super::ParseMultiple;
@@ -2130,12 +2130,12 @@ pub(crate) mod attr {
         /// #[<attribute>(error(<error_ty>))]
         /// #[<attribute>(error(<error_ty>, <error_fn>))]
         /// ```
-        pub(crate) struct ErrorConversion {
+        pub(crate) struct Error {
             pub(crate) error_ty: syn::TypePath,
             pub(crate) error_fn: Option<syn::Path>,
         }
 
-        impl Parse for ErrorConversion {
+        impl Parse for Error {
             fn parse(input: ParseStream) -> syn::Result<Self> {
                 let prefix = syn::Ident::parse(input)?;
                 if prefix != "error" {
@@ -2151,7 +2151,7 @@ pub(crate) mod attr {
                 let error_ty = syn::TypePath::parse(&inner)?;
 
                 if inner.is_empty() {
-                    Ok(ErrorConversion {
+                    Ok(Self {
                         error_ty,
                         error_fn: None,
                     })
@@ -2159,7 +2159,7 @@ pub(crate) mod attr {
                     let _: syn::token::Comma = inner.parse()?;
                     let error_fn = syn::Path::parse(&inner)?;
                     if inner.is_empty() {
-                        Ok(ErrorConversion {
+                        Ok(Self {
                             error_ty,
                             error_fn: Some(error_fn),
                         })
@@ -2173,7 +2173,7 @@ pub(crate) mod attr {
             }
         }
 
-        impl ParseMultiple for ErrorConversion {}
+        impl ParseMultiple for Error {}
     }
 
     #[cfg(feature = "try_from")]
