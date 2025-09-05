@@ -499,7 +499,7 @@ impl Parse for ContainerAttributes {
                 ..Default::default()
             })
         } else {
-            return Err(ahead.error());
+            Err(ahead.error())
         }
     }
 }
