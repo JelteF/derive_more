@@ -787,7 +787,7 @@ mod enums {
             }
 
             #[test]
-            fn error_ty_only() {
+            fn enum_error_ty_only() {
                 #[derive(Debug, Eq, FromStr, PartialEq)]
                 #[from_str(error(CustomError))]
                 enum EnumNoFields {
@@ -801,7 +801,7 @@ mod enums {
             }
 
             #[test]
-            fn with_error_fn() {
+            fn enum_with_error_fn() {
                 #[derive(Debug, Eq, FromStr, PartialEq)]
                 #[from_str(error(CustomError, CustomError::new))]
                 enum EnumNoFields {
@@ -812,6 +812,34 @@ mod enums {
                 }
 
                 test_cases!();
+            }
+
+            #[test]
+            fn struct_error_ty_only() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError))]
+                struct Foo;
+
+                assert_eq!(
+                    match "bar".parse::<Foo>().unwrap_err() {
+                        CustomError(error) => error.to_string(),
+                    },
+                    "Invalid `Foo` string representation",
+                );
+            }
+
+            #[test]
+            fn struct_with_error_fn() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, CustomError::new))]
+                struct Foo;
+
+                assert_eq!(
+                    match "bar".parse::<Foo>().unwrap_err() {
+                        CustomError(error) => error.to_string(),
+                    },
+                    "Invalid `Foo` string representation",
+                );
             }
         }
 
@@ -838,7 +866,9 @@ mod enums {
             fn error_ty_only() {
                 #[derive(Debug, FromStr)]
                 #[from_str(error(CustomError))]
-                struct MyInt(i32);
+                struct MyInt {
+                    value: i32,
+                }
 
                 assert_eq!(
                     MyInt::from_str("foo").unwrap_err(),
@@ -848,6 +878,32 @@ mod enums {
 
             #[test]
             fn with_error_fn() {
+                #[derive(Debug, FromStr)]
+                #[from_str(error(CustomError, CustomError::new))]
+                struct MyInt {
+                    value: i32,
+                }
+
+                assert_eq!(
+                    MyInt::from_str("foo").unwrap_err(),
+                    CustomError("foo".parse::<i32>().unwrap_err())
+                );
+            }
+
+            #[test]
+            fn tuple_error_ty_only() {
+                #[derive(Debug, FromStr)]
+                #[from_str(error(CustomError))]
+                struct MyInt(i32);
+
+                assert_eq!(
+                    MyInt::from_str("foo").unwrap_err(),
+                    CustomError("foo".parse::<i32>().unwrap_err())
+                );
+            }
+
+            #[test]
+            fn tuple_with_error_fn() {
                 #[derive(Debug, FromStr)]
                 #[from_str(error(CustomError, CustomError::new))]
                 struct MyInt(i32);
