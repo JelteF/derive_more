@@ -138,10 +138,181 @@ impl derive_more::core::str::FromStr for EnumNoFields {
 }
 ```
 
+
+### Empty structs
+
+Deriving `FromStr` for structs with no fields is similar to enums,
+but involves only case-insensitive matching by now.
+
+Given the following struct:
+```rust
+# use derive_more::FromStr;
+#
+#[derive(FromStr, Debug, Eq, PartialEq)]
+struct Foo;
+
+assert_eq!("foo".parse::<Foo>().unwrap(), Foo);
+assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
+assert_eq!("FOO".parse::<Foo>().unwrap(), Foo);
+```
+
+Code like this is generated:
+```rust
+# struct Foo;
+#
+impl derive_more::core::str::FromStr for Foo {
+    type Err = derive_more::FromStrError;
+    fn from_str(s: &str) -> Result<Self, derive_more::FromStrError> {
+        Ok(match s.to_lowercase().as_str() {
+            "foo" => Self,
+            _ => return Err(derive_more::FromStrError::new("Foo")),
+        })
+    }
+}
+```
+
+
+### The `rename_all` attribute
+
+To control the concrete string representation of the name verbatim,
+the `#[from_str(rename_all = "...")]` attribute can be placed on structs,
+enums and variants.
+
+The available casings are:
+- `lowercase`
+- `UPPERCASE`
+- `PascalCase`
+- `camelCase`
+- `snake_case`
+- `SCREAMING_SNAKE_CASE`
+- `kebab-case`
+- `SCREAMING-KEBAB-CASE`
+
+```rust
+# use derive_more::FromStr;
+#
+#[derive(FromStr, Debug, Eq, PartialEq)]
+#[from_str(rename_all = "lowercase")]
+enum Enum {
+    VariantOne,
+    #[from_str(rename_all = "kebab-case")] // overrides the top-level one
+    VariantTwo
+}
+
+assert_eq!("variantone".parse::<Enum>().unwrap(), Enum::VariantOne);
+assert_eq!("variant-two".parse::<Enum>().unwrap(), Enum::VariantTwo);
+```
+
+> **NOTE**: Using `#[from_str(rename_all = "...")]` attribute disables
+> any case-insensitivity where applied. This is also true for any enum
+> variant whose name or string representation is similar to the variant
+> being marked:
+> ```rust
+> # use derive_more::FromStr;
+> #
+> # #[allow(non_camel_case_types)]
+> #[derive(FromStr, Debug, Eq, PartialEq)]
+> enum Enum {
+>    Foo,  // case-insensitive
+>    #[from_str(rename_all = "SCREAMING_SNAKE_CASE")]
+>    BaR,  // case-sensitive (marked with attribute)
+>    Bar,  // case-sensitive (name is similar to the marked `BaR` variant)
+>    Ba_R, // case-sensitive (string representation is similar to the marked `BaR` variant)
+> }
+> #
+> # assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+> # assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
+> # assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+> #
+> # assert_eq!("BA_R".parse::<Enum>().unwrap(), Enum::BaR);
+> # assert_eq!("Bar".parse::<Enum>().unwrap(), Enum::Bar);
+> # assert_eq!("Ba_R".parse::<Enum>().unwrap(), Enum::Ba_R);
+> ```
+
+
+## Custom error
+
 A custom error type can be specified, optionally with a function to convert to it from
 `derive_more::FromStrError`, using the `#[from_str(error(error_ty[, error_fn]))]`
 attribute. If the conversion function is not provided, the error type T must satisfy
 `derive_more::FromStrError: Into<T>`.
+
+
+### Forwarding
+
+Given the following struct:
+```rust
+# use derive_more::{From, FromStr};
+#
+# #[derive(From)]
+# struct CustomError(core::num::ParseIntError);
+#
+# #[derive(FromStr, Debug, Eq, PartialEq)]
+#[from_str(error(CustomError))]
+struct MyInt(i32);
+```
+
+Code like this is generated:
+```rust
+# struct CustomError(core::num::ParseIntError);
+#
+# impl From<core::num::ParseIntError> for CustomError {
+#     fn from(value: core::num::ParseIntError) -> Self {
+#         Self(value)
+#     }
+# }
+#
+# struct MyInt(i32);
+impl derive_more::core::str::FromStr for MyInt {
+    type Err = CustomError;
+    fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
+        derive_more::core::str::FromStr::from_str(s)
+            .map(|v| Self(v))
+            .map_err(|e| e.into())
+    }
+}
+```
+
+Given the following struct:
+```rust
+# use derive_more::FromStr;
+#
+# struct CustomError(core::num::ParseIntError);
+#
+# impl CustomError {
+#     fn new(err: core::num::ParseIntError) -> CustomError {
+#         CustomError(err)
+#     }
+# }
+#
+# #[derive(FromStr, Debug, Eq, PartialEq)]
+#[from_str(error(CustomError, CustomError::new))]
+struct MyInt(i32);
+```
+
+Code like this is generated:
+```rust
+# struct CustomError(core::num::ParseIntError);
+#
+# impl CustomError {
+#     fn new(err: core::num::ParseIntError) -> CustomError {
+#         CustomError(err)
+#     }
+# }
+#
+# struct MyInt(i32);
+impl derive_more::core::str::FromStr for MyInt {
+    type Err = CustomError;
+    fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
+        derive_more::core::str::FromStr::from_str(s)
+            .map(|v| Self(v))
+            .map_err(CustomError::new)
+    }
+}
+```
+
+
+### Flat representation
 
 Given the following enum:
 ```rust
@@ -243,94 +414,3 @@ impl derive_more::core::str::FromStr for EnumNoFields {
     }
 }
 ```
-
-
-### Empty structs
-
-Deriving `FromStr` for structs with no fields is similar to enums,
-but involves only case-insensitive matching by now.
-
-Given the following struct:
-```rust
-# use derive_more::FromStr;
-#
-#[derive(FromStr, Debug, Eq, PartialEq)]
-struct Foo;
-
-assert_eq!("foo".parse::<Foo>().unwrap(), Foo);
-assert_eq!("Foo".parse::<Foo>().unwrap(), Foo);
-assert_eq!("FOO".parse::<Foo>().unwrap(), Foo);
-```
-
-Code like this is generated:
-```rust
-# struct Foo;
-#
-impl derive_more::core::str::FromStr for Foo {
-    type Err = derive_more::FromStrError;
-    fn from_str(s: &str) -> Result<Self, derive_more::FromStrError> {
-        Ok(match s.to_lowercase().as_str() {
-            "foo" => Self,
-            _ => return Err(derive_more::FromStrError::new("Foo")),
-        })
-    }
-}
-```
-
-
-### The `rename_all` attribute
-
-To control the concrete string representation of the name verbatim,
-the `#[from_str(rename_all = "...")]` attribute can be placed on structs,
-enums and variants.
-
-The available casings are:
-- `lowercase`
-- `UPPERCASE`
-- `PascalCase`
-- `camelCase`
-- `snake_case`
-- `SCREAMING_SNAKE_CASE`
-- `kebab-case`
-- `SCREAMING-KEBAB-CASE`
-
-```rust
-# use derive_more::FromStr;
-#
-#[derive(FromStr, Debug, Eq, PartialEq)]
-#[from_str(rename_all = "lowercase")]
-enum Enum {
-    VariantOne,
-    #[from_str(rename_all = "kebab-case")] // overrides the top-level one
-    VariantTwo
-}
-
-assert_eq!("variantone".parse::<Enum>().unwrap(), Enum::VariantOne);
-assert_eq!("variant-two".parse::<Enum>().unwrap(), Enum::VariantTwo);
-```
-
-> **NOTE**: Using `#[from_str(rename_all = "...")]` attribute disables
-> any case-insensitivity where applied. This is also true for any enum
-> variant whose name or string representation is similar to the variant
-> being marked:
-> ```rust
-> # use derive_more::FromStr;
-> #
-> # #[allow(non_camel_case_types)]
-> #[derive(FromStr, Debug, Eq, PartialEq)]
-> enum Enum {
->    Foo,  // case-insensitive
->    #[from_str(rename_all = "SCREAMING_SNAKE_CASE")]
->    BaR,  // case-sensitive (marked with attribute)
->    Bar,  // case-sensitive (name is similar to the marked `BaR` variant)
->    Ba_R, // case-sensitive (string representation is similar to the marked `BaR` variant)
-> }
-> #
-> # assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
-> # assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
-> # assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
-> #
-> # assert_eq!("BA_R".parse::<Enum>().unwrap(), Enum::BaR);
-> # assert_eq!("Bar".parse::<Enum>().unwrap(), Enum::Bar);
-> # assert_eq!("Ba_R".parse::<Enum>().unwrap(), Enum::Ba_R);
-> ```

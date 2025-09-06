@@ -720,74 +720,143 @@ mod enums {
     mod error_conversion {
         use super::*;
 
-        #[derive(Debug)]
-        struct CustomError(derive_more::FromStrError);
+        mod flat {
+            use super::*;
 
-        impl CustomError {
-            fn new(err: derive_more::FromStrError) -> CustomError {
-                CustomError(err)
+            #[derive(Debug)]
+            struct CustomError(derive_more::FromStrError);
+
+            impl CustomError {
+                fn new(err: derive_more::FromStrError) -> CustomError {
+                    CustomError(err)
+                }
+            }
+
+            impl From<derive_more::FromStrError> for CustomError {
+                fn from(value: derive_more::FromStrError) -> Self {
+                    Self(value)
+                }
+            }
+
+            macro_rules! test_cases {
+                () => {
+                    assert_eq!(
+                        "foo".parse::<EnumNoFields>().unwrap(),
+                        EnumNoFields::Foo
+                    );
+                    assert_eq!(
+                        "Foo".parse::<EnumNoFields>().unwrap(),
+                        EnumNoFields::Foo
+                    );
+                    assert_eq!(
+                        "FOO".parse::<EnumNoFields>().unwrap(),
+                        EnumNoFields::Foo
+                    );
+
+                    assert_eq!(
+                        "Bar".parse::<EnumNoFields>().unwrap(),
+                        EnumNoFields::Bar
+                    );
+                    assert_eq!(
+                        "bar".parse::<EnumNoFields>().unwrap(),
+                        EnumNoFields::Bar
+                    );
+
+                    assert_eq!(
+                        "Baz".parse::<EnumNoFields>().unwrap(),
+                        EnumNoFields::Baz
+                    );
+                    assert_eq!(
+                        "BaZ".parse::<EnumNoFields>().unwrap(),
+                        EnumNoFields::BaZ
+                    );
+
+                    assert_eq!(
+                        match "baz".parse::<EnumNoFields>().unwrap_err() {
+                            CustomError(error) => error.to_string(),
+                        },
+                        "Invalid `EnumNoFields` string representation",
+                    );
+                    assert_eq!(
+                        match "other".parse::<EnumNoFields>().unwrap_err() {
+                            CustomError(error) => error.to_string(),
+                        },
+                        "Invalid `EnumNoFields` string representation",
+                    );
+                };
+            }
+
+            #[test]
+            fn error_ty_only() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError))]
+                enum EnumNoFields {
+                    Foo,
+                    Bar,
+                    Baz,
+                    BaZ,
+                }
+
+                test_cases!();
+            }
+
+            #[test]
+            fn with_error_fn() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, CustomError::new))]
+                enum EnumNoFields {
+                    Foo,
+                    Bar,
+                    Baz,
+                    BaZ,
+                }
+
+                test_cases!();
             }
         }
 
-        impl From<derive_more::FromStrError> for CustomError {
-            fn from(value: derive_more::FromStrError) -> Self {
-                Self(value)
+        mod forward {
+            use super::*;
+            use core::num::ParseIntError;
+
+            #[derive(Debug, PartialEq)]
+            struct CustomError(ParseIntError);
+
+            impl CustomError {
+                fn new(err: ParseIntError) -> CustomError {
+                    CustomError(err)
+                }
             }
-        }
 
-        macro_rules! test_cases {
-            () => {
-                assert_eq!("foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
-                assert_eq!("Foo".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
-                assert_eq!("FOO".parse::<EnumNoFields>().unwrap(), EnumNoFields::Foo);
+            impl From<ParseIntError> for CustomError {
+                fn from(value: ParseIntError) -> Self {
+                    Self(value)
+                }
+            }
 
-                assert_eq!("Bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
-                assert_eq!("bar".parse::<EnumNoFields>().unwrap(), EnumNoFields::Bar);
-
-                assert_eq!("Baz".parse::<EnumNoFields>().unwrap(), EnumNoFields::Baz);
-                assert_eq!("BaZ".parse::<EnumNoFields>().unwrap(), EnumNoFields::BaZ);
+            #[test]
+            fn error_ty_only() {
+                #[derive(Debug, FromStr)]
+                #[from_str(error(CustomError))]
+                struct MyInt(i32);
 
                 assert_eq!(
-                    match "baz".parse::<EnumNoFields>().unwrap_err() {
-                        CustomError(error) => error.to_string(),
-                    },
-                    "Invalid `EnumNoFields` string representation",
+                    MyInt::from_str("foo").unwrap_err(),
+                    CustomError("foo".parse::<i32>().unwrap_err())
                 );
+            }
+
+            #[test]
+            fn with_error_fn() {
+                #[derive(Debug, FromStr)]
+                #[from_str(error(CustomError, CustomError::new))]
+                struct MyInt(i32);
+
                 assert_eq!(
-                    match "other".parse::<EnumNoFields>().unwrap_err() {
-                        CustomError(error) => error.to_string(),
-                    },
-                    "Invalid `EnumNoFields` string representation",
+                    MyInt::from_str("foo").unwrap_err(),
+                    CustomError("foo".parse::<i32>().unwrap_err())
                 );
-            };
-        }
-
-        #[test]
-        fn error_ty_only() {
-            #[derive(Debug, Eq, FromStr, PartialEq)]
-            #[from_str(error(CustomError))]
-            enum EnumNoFields {
-                Foo,
-                Bar,
-                Baz,
-                BaZ,
             }
-
-            test_cases!();
-        }
-
-        #[test]
-        fn with_error_fn() {
-            #[derive(Debug, Eq, FromStr, PartialEq)]
-            #[from_str(error(CustomError, CustomError::new))]
-            enum EnumNoFields {
-                Foo,
-                Bar,
-                Baz,
-                BaZ,
-            }
-
-            test_cases!();
         }
     }
 }
