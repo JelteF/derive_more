@@ -232,10 +232,9 @@ assert_eq!("variant-two".parse::<Enum>().unwrap(), Enum::VariantTwo);
 
 ## Custom error
 
-A custom error type can be specified, optionally with a function to convert to it from
-`derive_more::FromStrError`, using the `#[from_str(error(error_ty[, error_fn]))]`
-attribute. If the conversion function is not provided, the error type T must satisfy
-`derive_more::FromStrError: Into<T>`.
+The `#[from_str(error(error_ty[, error_fn]))]` attribute can be used to convert
+the `FromStr` `Err` type to a custom error type. If the conversion function is
+not provided, the custom error type `E` must satisfy `FromStr::Err: Into<E>`.
 
 
 ### Forwarding
@@ -247,7 +246,7 @@ Given the following struct:
 # #[derive(From)]
 # struct CustomError(core::num::ParseIntError);
 #
-# #[derive(FromStr, Debug, Eq, PartialEq)]
+#[derive(FromStr, Debug, Eq, PartialEq)]
 #[from_str(error(CustomError))]
 struct MyInt(i32);
 ```
@@ -285,7 +284,7 @@ Given the following struct:
 #     }
 # }
 #
-# #[derive(FromStr, Debug, Eq, PartialEq)]
+#[derive(FromStr, Debug, Eq, PartialEq)]
 #[from_str(error(CustomError, CustomError::new))]
 struct MyInt(i32);
 ```
@@ -311,8 +310,26 @@ impl derive_more::core::str::FromStr for MyInt {
 }
 ```
 
+Custom error for a newtype struct with one named field, *e.g*,
+```rust
+# use derive_more::{From, FromStr};
+#
+# #[derive(From)]
+# struct CustomError(core::num::ParseIntError);
+#
+#[derive(FromStr)]
+#[from_str(error(CustomError))]
+struct Point1D {
+    x: i32,
+}
+```
+
+works similarly.
+
 
 ### Flat representation
+
+Custom error type is also supported for empty enums and unit structs.
 
 Given the following enum:
 ```rust
@@ -414,3 +431,17 @@ impl derive_more::core::str::FromStr for EnumNoFields {
     }
 }
 ```
+
+Custom error type for unit structs, *e.g*,
+```rust
+# use derive_more::{From, FromStr};
+#
+# #[derive(From)]
+# struct CustomError(derive_more::FromStrError);
+#
+#[derive(FromStr)]
+#[from_str(error(CustomError))]
+struct Foo;
+```
+
+works similarly.
