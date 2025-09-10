@@ -117,6 +117,8 @@ assert_eq!(
 
 Code like this is generated:
 ```rust
+# use core::str::FromStr;
+#
 # enum EnumNoFields {
 #     Foo,
 #     Bar,
@@ -126,7 +128,7 @@ Code like this is generated:
 #
 impl derive_more::core::str::FromStr for EnumNoFields {
     type Err = derive_more::FromStrError;
-    fn from_str(s: &str) -> Result<Self, derive_more::FromStrError> {
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
         Ok(match s.to_lowercase().as_str() {
             "foo" => Self::Foo,
             "bar" => Self::Bar,
@@ -158,11 +160,13 @@ assert_eq!("FOO".parse::<Foo>().unwrap(), Foo);
 
 Code like this is generated:
 ```rust
+# use core::str::FromStr;
+#
 # struct Foo;
 #
 impl derive_more::core::str::FromStr for Foo {
     type Err = derive_more::FromStrError;
-    fn from_str(s: &str) -> Result<Self, derive_more::FromStrError> {
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
         Ok(match s.to_lowercase().as_str() {
             "foo" => Self,
             _ => return Err(derive_more::FromStrError::new("Foo")),
@@ -230,11 +234,13 @@ assert_eq!("variant-two".parse::<Enum>().unwrap(), Enum::VariantTwo);
 > ```
 
 
+
+
 ## Custom error
 
-The `#[from_str(error(error_ty[, error_fn]))]` attribute can be used to convert
-the `FromStr` `Err` type to a custom error type. If the conversion function is
-not provided, the custom error type `E` must satisfy `FromStr::Err: Into<E>`.
+The `#[from_str(error(<ty>[, <conv>]))]` attribute can be used to convert the `FromStr`' `Err` type
+into a custom error type. If the conversion function is not provided, the custom error type must implement
+`From<FromStr::Err>`.
 
 
 ### Forwarding
@@ -250,37 +256,35 @@ struct CustomError(core::num::ParseIntError);
 #[from_str(error(CustomError))]
 struct MyInt(i32);
 ```
-
 Code like this is generated:
 ```rust
+# use core::str::FromStr;
+# use derive_more::From;
+#
+# #[derive(From)]
 # struct CustomError(core::num::ParseIntError);
 #
-# impl From<core::num::ParseIntError> for CustomError {
-#     fn from(value: core::num::ParseIntError) -> Self {
-#         Self(value)
-#     }
-# }
-#
 # struct MyInt(i32);
+#
 impl derive_more::core::str::FromStr for MyInt {
     type Err = CustomError;
-    fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
-        derive_more::core::str::FromStr::from_str(s)
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        FromStr::from_str(s)
             .map(|v| Self(v))
-            .map_err(|e| e.into())
+            .map_err(Into::into)
     }
 }
 ```
 
-Given the following struct:
+For the explicitly specified error conversion:
 ```rust
 # use derive_more::FromStr;
 #
 struct CustomError(core::num::ParseIntError);
 
 impl CustomError {
-    fn new(err: core::num::ParseIntError) -> CustomError {
-        CustomError(err)
+    fn new(err: core::num::ParseIntError) -> Self {
+        Self(err)
     }
 }
 
@@ -288,22 +292,24 @@ impl CustomError {
 #[from_str(error(CustomError, CustomError::new))]
 struct MyInt(i32);
 ```
-
 Code like this is generated:
 ```rust
+# use core::str::FromStr;
+#
 # struct CustomError(core::num::ParseIntError);
 #
 # impl CustomError {
-#     fn new(err: core::num::ParseIntError) -> CustomError {
-#         CustomError(err)
+#     fn new(err: core::num::ParseIntError) -> Self {
+#         Self(err)
 #     }
 # }
 #
 # struct MyInt(i32);
+#
 impl derive_more::core::str::FromStr for MyInt {
     type Err = CustomError;
-    fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
-        derive_more::core::str::FromStr::from_str(s)
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        FromStr::from_str(s)
             .map(|v| Self(v))
             .map_err(CustomError::new)
     }
@@ -323,7 +329,6 @@ struct Point1D {
     x: i32,
 }
 ```
-
 works similarly.
 
 
@@ -344,50 +349,44 @@ enum EnumNoFields {
     Foo,
     Bar,
     Baz,
-    BaZ,
 }
 ```
-
 Code like this is generated:
 ```rust
-# struct CustomError(derive_more::FromStrError);
+# use core::str::FromStr;
+# use derive_more::From;
 #
-# impl From<derive_more::FromStrError> for CustomError {
-#    fn from(value: derive_more::FromStrError) -> CustomError {
-#        CustomError(value)
-#    }
-# }
+# #[derive(From)]
+# struct CustomError(derive_more::FromStrError);
 #
 # enum EnumNoFields {
 #     Foo,
 #     Bar,
 #     Baz,
-#     BaZ,
 # }
 #
 impl derive_more::core::str::FromStr for EnumNoFields {
     type Err = CustomError;
-    fn from_str(s: &str) -> Result<Self, <Self as derive_more::core::str::FromStr>::Err> {
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
         Ok(match s.to_lowercase().as_str() {
             "foo" => Self::Foo,
             "bar" => Self::Bar,
-            "baz" if s == "Baz" => Self::Baz,
-            "baz" if s == "BaZ" => Self::BaZ,
+            "baz" => Self::Baz,
             _ => return Err(derive_more::FromStrError::new("EnumNoFields").into()),
         })
     }
 }
 ```
 
-Given the following enum:
+For the explicitly specified error conversion:
 ```rust
 # use derive_more::FromStr;
 #
 struct CustomError(derive_more::FromStrError);
 
 impl CustomError {
-   pub fn new(err: derive_more::FromStrError) -> CustomError {
-       CustomError(err)
+   pub fn new(err: derive_more::FromStrError) -> Self {
+       Self(err)
    }
 }
 
@@ -397,17 +396,17 @@ enum EnumNoFields {
     Foo,
     Bar,
     Baz,
-    BaZ,
 }
 ```
-
 Code like this is generated:
 ```rust
+# use core::str::FromStr;
+#
 # struct CustomError(derive_more::FromStrError);
 #
 # impl CustomError {
-#    pub fn new(err: derive_more::FromStrError) -> CustomError {
-#        CustomError(err)
+#    pub fn new(err: derive_more::FromStrError) -> Self {
+#        Self(err)
 #    }
 # }
 #
@@ -415,17 +414,15 @@ Code like this is generated:
 #     Foo,
 #     Bar,
 #     Baz,
-#     BaZ,
 # }
 #
 impl derive_more::core::str::FromStr for EnumNoFields {
     type Err = CustomError;
-    fn from_str(s: &str) -> Result<Self, <Self as derive_more::core::str::FromStr>::Err> {
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
         Ok(match s.to_lowercase().as_str() {
             "foo" => Self::Foo,
             "bar" => Self::Bar,
-            "baz" if s == "Baz" => Self::Baz,
-            "baz" if s == "BaZ" => Self::BaZ,
+            "baz" => Self::Baz,
             _ => return Err(CustomError::new(derive_more::FromStrError::new("EnumNoFields"))),
         })
     }
@@ -443,5 +440,4 @@ struct CustomError(derive_more::FromStrError);
 #[from_str(error(CustomError))]
 struct Foo;
 ```
-
 works similarly.
