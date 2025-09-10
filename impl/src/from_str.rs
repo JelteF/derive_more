@@ -38,6 +38,9 @@ struct ForwardExpansion<'i> {
 
     /// [`syn::Field`] representing the wrapped type to forward implementation on.
     inner: &'i syn::Field,
+
+    /// Optional [`attr::Error`] enabling conversion to a custom error type.
+    error: Option<attr::Error>,
 }
 
 impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
@@ -50,16 +53,6 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
                 "expected a struct for forward `FromStr` derive",
             ));
         };
-        if let Some(attr) = input
-            .attrs
-            .iter()
-            .find(|attr| attr.path().is_ident("from_str"))
-        {
-            return Err(syn::Error::new(
-                attr.path().span(),
-                "no attribute is allowed here",
-            ));
-        }
 
         // TODO: Unite these two conditions via `&&` once MSRV is bumped to 1.88 or above.
         if data.fields.len() != 1 {
@@ -75,9 +68,15 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
             ));
         };
 
+        let attr_ident = &format_ident!("from_str");
+
+        let error = attr::Error::parse_attrs(&input.attrs, attr_ident)?
+            .map(Spanning::into_inner);
+
         Ok(Self {
             self_ty: (&input.ident, &input.generics),
             inner,
+            error,
         })
     }
 }
@@ -99,14 +98,33 @@ impl ToTokens for ForwardExpansion<'_> {
 
         let constructor = self.inner.self_constructor([parse_quote! { v }]);
 
+        let (error_ty, map_err) = self.error.as_ref().map_or_else(
+            || {
+                (
+                    quote! { <#inner_ty as derive_more::core::str::FromStr>::Err },
+                    quote! {},
+                )
+            },
+            |error| {
+                let error_ty = error.error_ty.to_token_stream();
+
+                let map_err = error.error_fn.as_ref().map_or_else(
+                    || quote! { .map_err(|e| e.into()) },
+                    |error_fn| quote! { .map_err(#error_fn) },
+                );
+
+                (error_ty, map_err)
+            },
+        );
+
         quote! {
             #[automatically_derived]
             impl #impl_generics derive_more::core::str::FromStr for #ty #ty_generics #where_clause {
-                type Err = <#inner_ty as derive_more::core::str::FromStr>::Err;
+                type Err = #error_ty;
 
                 #[inline]
                 fn from_str(s: &str) -> derive_more::core::result::Result<Self, Self::Err> {
-                    derive_more::core::str::FromStr::from_str(s).map(|v| #constructor)
+                    derive_more::core::str::FromStr::from_str(s).map(|v| #constructor)#map_err
                 }
             }
         }.to_tokens(tokens);
@@ -134,11 +152,12 @@ struct FlatExpansion<'i> {
     /// case-insensitivity should be disabled.
     similar_matches: HashMap<String, Vec<&'i syn::Ident>>,
 
-    /// Optional [`attr::RenameAll`] indicating the case convertion to be applied to all the matched
+    /// Optional [`attr::RenameAll`] indicating the case conversion to be applied to all the matched
     /// values (enum variants or struct itself).
     rename_all: Option<attr::RenameAll>,
 
-    error_conversion: Option<attr::ErrorConversion>,
+    /// Optional [`attr::Error`] enabling conversion to a custom error type.
+    error: Option<attr::Error>,
 }
 
 impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
@@ -181,12 +200,10 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             }
         };
 
-        let ContainerAttributes {
-            rename_all,
-            error_conversion,
-        } = ContainerAttributes::parse_attrs(&input.attrs, attr_ident)?
-            .map(Spanning::into_inner)
-            .unwrap_or_default();
+        let ContainerAttributes { rename_all, error } =
+            ContainerAttributes::parse_attrs(&input.attrs, attr_ident)?
+                .map(Spanning::into_inner)
+                .unwrap_or_default();
 
         let mut similar_matches = <HashMap<_, Vec<_>>>::new();
         if rename_all.is_none() {
@@ -243,7 +260,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             matches,
             similar_matches,
             rename_all,
-            error_conversion,
+            error,
         })
     }
 }
@@ -295,17 +312,17 @@ impl ToTokens for FlatExpansion<'_> {
 
         let default_error = quote! { derive_more::FromStrError::new(#ty_name) };
 
-        let (error_ty, error) = self.error_conversion.as_ref().map_or_else(
+        let (error_ty, error_inst) = self.error.as_ref().map_or_else(
             || (quote! { derive_more::FromStrError }, default_error.clone()),
-            |error_conversion| {
-                let error_ty = error_conversion.error_ty.to_token_stream();
+            |error| {
+                let error_ty = error.error_ty.to_token_stream();
 
-                let error = error_conversion.error_fn.as_ref().map_or_else(
+                let error_inst = error.error_fn.as_ref().map_or_else(
                     || quote! { #default_error.into() },
                     |error_fn| quote! { #error_fn(#default_error) },
                 );
 
-                (error_ty, error)
+                (error_ty, error_inst)
             },
         );
 
@@ -320,7 +337,7 @@ impl ToTokens for FlatExpansion<'_> {
                 ) -> derive_more::core::result::Result<Self, <Self as derive_more::core::str::FromStr>::Err> {
                     derive_more::core::result::Result::Ok(match s #scrutinee_lowercased {
                         #( #match_arms )*
-                        _ => return derive_more::core::result::Result::Err(#error),
+                        _ => return derive_more::core::result::Result::Err(#error_inst),
                     })
                 }
             }
@@ -472,10 +489,11 @@ impl<L: FieldsExt, R: FieldsExt> FieldsExt for Either<&L, &R> {
 /// `#[<attribute>(error(<error_ty>[, <error_fn>]))]` can be specified only once.
 #[derive(Default)]
 struct ContainerAttributes {
-    /// [`attr::RenameAll`] for case convertion.
+    /// [`attr::RenameAll`] for case conversion.
     rename_all: Option<attr::RenameAll>,
 
-    error_conversion: Option<attr::ErrorConversion>,
+    /// [`attr::Error`] for conversion to a custom error type.
+    error: Option<attr::Error>,
 }
 
 impl Parse for ContainerAttributes {
@@ -490,7 +508,7 @@ impl Parse for ContainerAttributes {
         let ahead = input.lookahead1();
         if ahead.peek(ident::error) {
             Ok(Self {
-                error_conversion: Some(input.parse()?),
+                error: Some(input.parse()?),
                 ..Default::default()
             })
         } else if ahead.peek(ident::rename_all) {
@@ -499,7 +517,7 @@ impl Parse for ContainerAttributes {
                 ..Default::default()
             })
         } else {
-            return Err(ahead.error());
+            Err(ahead.error())
         }
     }
 }
@@ -530,7 +548,7 @@ impl attr::ParseMultiple for ContainerAttributes {
             ));
         }
 
-        if prev.error_conversion.is_some() && new.error_conversion.is_some() {
+        if prev.error.is_some() && new.error.is_some() {
             return Err(syn::Error::new(
                 new_span,
                 format!(
@@ -539,7 +557,7 @@ impl attr::ParseMultiple for ContainerAttributes {
             ));
         }
 
-        prev.error_conversion = prev.error_conversion.or(new.error_conversion);
+        prev.error = prev.error.or(new.error);
 
         Ok(Spanning::new(
             prev,
