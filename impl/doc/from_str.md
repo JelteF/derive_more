@@ -243,9 +243,9 @@ Given the following struct:
 ```rust
 # use derive_more::{From, FromStr};
 #
-# #[derive(From)]
-# struct CustomError(core::num::ParseIntError);
-#
+#[derive(From)]
+struct CustomError(core::num::ParseIntError);
+
 #[derive(FromStr, Debug, Eq, PartialEq)]
 #[from_str(error(CustomError))]
 struct MyInt(i32);
@@ -276,14 +276,14 @@ Given the following struct:
 ```rust
 # use derive_more::FromStr;
 #
-# struct CustomError(core::num::ParseIntError);
-#
-# impl CustomError {
-#     fn new(err: core::num::ParseIntError) -> CustomError {
-#         CustomError(err)
-#     }
-# }
-#
+struct CustomError(core::num::ParseIntError);
+
+impl CustomError {
+    fn new(err: core::num::ParseIntError) -> CustomError {
+        CustomError(err)
+    }
+}
+
 #[derive(FromStr, Debug, Eq, PartialEq)]
 #[from_str(error(CustomError, CustomError::new))]
 struct MyInt(i32);
@@ -314,9 +314,9 @@ Custom error for a newtype struct with one named field, *e.g*,
 ```rust
 # use derive_more::{From, FromStr};
 #
-# #[derive(From)]
-# struct CustomError(core::num::ParseIntError);
-#
+#[derive(From)]
+struct CustomError(core::num::ParseIntError);
+
 #[derive(FromStr)]
 #[from_str(error(CustomError))]
 struct Point1D {
@@ -335,9 +335,9 @@ Given the following enum:
 ```rust
 # use derive_more::{From, FromStr};
 #
-# #[derive(From)]
-# struct CustomError(derive_more::FromStrError);
-#
+#[derive(From)]
+struct CustomError(derive_more::FromStrError);
+
 #[derive(FromStr, Debug, Eq, PartialEq)]
 #[from_str(error(CustomError))]
 enum EnumNoFields {
@@ -383,14 +383,14 @@ Given the following enum:
 ```rust
 # use derive_more::FromStr;
 #
-# struct CustomError(derive_more::FromStrError);
-#
-# impl CustomError {
-#    pub fn new(err: derive_more::FromStrError) -> CustomError {
-#        CustomError(err)
-#    }
-# }
-#
+struct CustomError(derive_more::FromStrError);
+
+impl CustomError {
+   pub fn new(err: derive_more::FromStrError) -> CustomError {
+       CustomError(err)
+   }
+}
+
 #[derive(FromStr, Debug, Eq, PartialEq)]
 #[from_str(error(CustomError, CustomError::new))]
 enum EnumNoFields {
@@ -436,9 +436,9 @@ Custom error type for unit structs, *e.g*,
 ```rust
 # use derive_more::{From, FromStr};
 #
-# #[derive(From)]
-# struct CustomError(derive_more::FromStrError);
-#
+#[derive(From)]
+struct CustomError(derive_more::FromStrError);
+
 #[derive(FromStr)]
 #[from_str(error(CustomError))]
 struct Foo;
