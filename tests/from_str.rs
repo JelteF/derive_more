@@ -255,6 +255,91 @@ mod structs {
                 );
             }
         }
+
+        mod custom_error {
+            use core::num::ParseIntError;
+
+            use super::*;
+
+            #[derive(Debug, PartialEq)]
+            struct CustomError(ParseIntError);
+
+            impl CustomError {
+                fn new(err: ParseIntError) -> Self {
+                    Self(err)
+                }
+            }
+
+            impl From<ParseIntError> for CustomError {
+                fn from(value: ParseIntError) -> Self {
+                    Self(value)
+                }
+            }
+
+            fn custom_error_fn() -> fn(ParseIntError) -> CustomError {
+                CustomError::new
+            }
+
+            mod unnamed {
+                use super::*;
+
+                #[test]
+                fn only_ty() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError))]
+                    struct MyInt(i32);
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
+
+                #[test]
+                fn with_fn() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError, CustomError::new))]
+                    struct MyInt(i32);
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
+            }
+
+            mod named {
+                use super::*;
+
+                #[test]
+                fn only_ty() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError))]
+                    struct MyInt {
+                        value: i32,
+                    }
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
+
+                #[test]
+                fn with_fn() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError, CustomError::new))]
+                    struct MyInt {
+                        value: i32,
+                    }
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
+            }
+        }
     }
 
     mod flat {
@@ -360,6 +445,59 @@ mod structs {
                 casing_test!(screaming_snake_case, "SCREAMING_SNAKE_CASE", "FOO_BAR");
                 casing_test!(kebab_case, "kebab-case", "foo-bar");
                 casing_test!(screaming_kebab_case, "SCREAMING-KEBAB-CASE", "FOO-BAR");
+            }
+        }
+
+        mod custom_error {
+            use derive_more::FromStrError;
+
+            use super::*;
+
+            #[derive(Debug)]
+            struct CustomError(FromStrError);
+
+            impl CustomError {
+                fn new(err: FromStrError) -> Self {
+                    Self(err)
+                }
+            }
+
+            impl From<FromStrError> for CustomError {
+                fn from(value: FromStrError) -> Self {
+                    Self(value)
+                }
+            }
+
+            fn custom_error_fn() -> fn(FromStrError) -> CustomError {
+                CustomError::new
+            }
+
+            #[test]
+            fn only_ty() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError))]
+                struct Foo;
+
+                assert_eq!(
+                    match "bar".parse::<Foo>().unwrap_err() {
+                        CustomError(e) => e.to_string(),
+                    },
+                    "Invalid `Foo` string representation",
+                );
+            }
+
+            #[test]
+            fn with_fn() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, CustomError::new))]
+                struct Foo;
+
+                assert_eq!(
+                    match "bar".parse::<Foo>().unwrap_err() {
+                        CustomError(e) => e.to_string(),
+                    },
+                    "Invalid `Foo` string representation",
+                );
             }
         }
     }
@@ -713,6 +851,86 @@ mod enums {
                     "VARIANT-ONE",
                     "TWO"
                 );
+            }
+        }
+
+        mod custom_error {
+            use derive_more::FromStrError;
+
+            use super::*;
+
+            #[derive(Debug)]
+            struct CustomError(FromStrError);
+
+            impl CustomError {
+                fn new(err: FromStrError) -> Self {
+                    Self(err)
+                }
+            }
+
+            impl From<FromStrError> for CustomError {
+                fn from(value: FromStrError) -> Self {
+                    Self(value)
+                }
+            }
+
+            fn custom_error_fn() -> fn(FromStrError) -> CustomError {
+                CustomError::new
+            }
+
+            macro_rules! assertions {
+                () => {
+                    assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+                    assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+                    assert_eq!("FOO".parse::<Enum>().unwrap(), Enum::Foo);
+
+                    assert_eq!("Bar".parse::<Enum>().unwrap(), Enum::Bar);
+                    assert_eq!("bar".parse::<Enum>().unwrap(), Enum::Bar);
+
+                    assert_eq!("Baz".parse::<Enum>().unwrap(), Enum::Baz);
+                    assert_eq!("BaZ".parse::<Enum>().unwrap(), Enum::BaZ);
+
+                    assert_eq!(
+                        match "baz".parse::<Enum>().unwrap_err() {
+                            CustomError(e) => e.to_string(),
+                        },
+                        "Invalid `Enum` string representation",
+                    );
+                    assert_eq!(
+                        match "other".parse::<Enum>().unwrap_err() {
+                            CustomError(e) => e.to_string(),
+                        },
+                        "Invalid `Enum` string representation",
+                    );
+                };
+            }
+
+            #[test]
+            fn only_ty() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError))]
+                enum Enum {
+                    Foo,
+                    Bar,
+                    Baz,
+                    BaZ,
+                }
+
+                assertions!();
+            }
+
+            #[test]
+            fn with_fn() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, CustomError::new))]
+                enum Enum {
+                    Foo,
+                    Bar,
+                    Baz,
+                    BaZ,
+                }
+
+                assertions!();
             }
         }
     }

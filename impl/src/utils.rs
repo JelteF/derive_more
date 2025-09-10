@@ -1512,6 +1512,8 @@ pub(crate) mod attr {
         feature = "try_from"
     ))]
     pub(crate) use self::empty::Empty;
+    #[cfg(feature = "from_str")]
+    pub(crate) use self::error::Error;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
@@ -2113,6 +2115,74 @@ pub(crate) mod attr {
                     .map(|v| v.map(Self::from))
             }
         }
+    }
+
+    #[cfg(feature = "from_str")]
+    pub(crate) mod error {
+        use syn::parse::{Parse, ParseStream};
+
+        use super::ParseMultiple;
+
+        /// Representation of an attribute, specifying the error type and, optionally, a
+        /// [`Conversion`] from a built-in error type.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(error(<ty>))]
+        /// #[<attribute>(error(<ty>, <conv>))]
+        /// ```
+        pub(crate) struct Error {
+            /// Type to convert the error into.
+            pub(crate) ty: syn::TypePath,
+
+            /// Custom conversion.
+            ///
+            /// If [`None`], then [`Into`] conversion should be applied.
+            pub(crate) conv: Option<Conversion>,
+        }
+
+        impl Parse for Error {
+            fn parse(input: ParseStream) -> syn::Result<Self> {
+                let prefix = syn::Ident::parse(input)?;
+                if prefix != "error" {
+                    return Err(syn::Error::new(
+                        prefix.span(),
+                        "expected `error` argument here",
+                    ));
+                }
+
+                let inner;
+                syn::parenthesized!(inner in input);
+
+                let ty = syn::TypePath::parse(&inner)?;
+                if inner.is_empty() {
+                    return Ok(Self { ty, conv: None });
+                }
+
+                _ = syn::token::Comma::parse(&inner)?;
+
+                let conv = Conversion::parse(&inner)?;
+                if inner.is_empty() {
+                    Ok(Self {
+                        ty,
+                        conv: Some(conv),
+                    })
+                } else {
+                    Err(syn::Error::new(
+                        inner.span(),
+                        "no more arguments allowed here",
+                    ))
+                }
+            }
+        }
+
+        impl ParseMultiple for Error {}
+
+        // TODO: Support `syn::ExprClosure` and `syn::ExprCall` by providing
+        //       `syn-full` Cargo feature.
+        /// Possible conversions for of an [`attr::Error`].
+        ///
+        /// [`attr::Error`]: Error
+        pub(crate) type Conversion = syn::Path;
     }
 
     #[cfg(feature = "try_from")]
