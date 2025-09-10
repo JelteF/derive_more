@@ -68,8 +68,9 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for ForwardExpansion<'i> {
             ));
         };
 
-        let custom_error = attr::Error::parse_attrs(&input.attrs, &format_ident!("from_str"))?
-            .map(Spanning::into_inner);
+        let custom_error =
+            attr::Error::parse_attrs(&input.attrs, &format_ident!("from_str"))?
+                .map(Spanning::into_inner);
 
         Ok(Self {
             self_ty: (&input.ident, &input.generics),
@@ -96,7 +97,8 @@ impl ToTokens for ForwardExpansion<'_> {
 
         let constructor = self.inner.self_constructor([parse_quote! { v }]);
 
-        let mut error_ty = quote! { <#inner_ty as derive_more::core::str::FromStr>::Err };
+        let mut error_ty =
+            quote! { <#inner_ty as derive_more::core::str::FromStr>::Err };
         let mut error_conv = quote! {};
         if let Some(custom_error) = &self.custom_error {
             error_ty = custom_error.ty.to_token_stream();
@@ -189,10 +191,12 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             }
         };
 
-        let FlatContainerAttributes { rename_all, error: custom_error } =
-            FlatContainerAttributes::parse_attrs(&input.attrs, attr_ident)?
-                .map(Spanning::into_inner)
-                .unwrap_or_default();
+        let FlatContainerAttributes {
+            rename_all,
+            error: custom_error,
+        } = FlatContainerAttributes::parse_attrs(&input.attrs, attr_ident)?
+            .map(Spanning::into_inner)
+            .unwrap_or_default();
 
         let mut similar_matches = <HashMap<_, Vec<_>>>::new();
         if rename_all.is_none() {
