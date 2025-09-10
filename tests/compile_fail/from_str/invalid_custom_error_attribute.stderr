@@ -1,13 +1,13 @@
 error: no more arguments allowed here
  --> tests/compile_fail/from_str/invalid_custom_error_attribute.rs:2:47
   |
-2 | #[from_str(error(CustomError, CustomError::new, custom_error_fn()))]
+2 | #[from_str(error(CustomError, CustomError::new, CustomError::from))]
   |                                               ^
 
 error: no more arguments allowed here
  --> tests/compile_fail/from_str/invalid_custom_error_attribute.rs:8:48
   |
-8 | #[from_str(error(CustomError, custom_error_fn(), CustomError::new))]
+8 | #[from_str(error(CustomError, CustomError::from, CustomError::new))]
   |                                                ^
 
 error: unexpected end of input, expected identifier
