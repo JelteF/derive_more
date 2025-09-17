@@ -21,6 +21,7 @@ use syn::{
     feature = "from_str",
     feature = "into",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
@@ -36,6 +37,7 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "from_str",
     feature = "into",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) use self::spanning::Spanning;
 
@@ -1324,6 +1326,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "from_str",
     feature = "into",
     feature = "try_from",
+    feature = "try_into",
 ))]
 mod either {
     use proc_macro2::TokenStream;
@@ -1397,6 +1400,7 @@ mod either {
     feature = "from_str",
     feature = "into",
     feature = "try_from",
+    feature = "try_into",
 ))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
@@ -1494,6 +1498,7 @@ mod spanning {
     feature = "from_str",
     feature = "into",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) mod attr {
     use std::any::Any;
@@ -1512,7 +1517,7 @@ pub(crate) mod attr {
         feature = "try_from"
     ))]
     pub(crate) use self::empty::Empty;
-    #[cfg(feature = "from_str")]
+    #[cfg(any(feature = "from_str", feature = "try_into"))]
     pub(crate) use self::error::Error;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
@@ -2117,7 +2122,7 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(feature = "from_str")]
+    #[cfg(any(feature = "from_str", feature = "try_into"))]
     pub(crate) mod error {
         use syn::parse::{Parse, ParseStream};
 

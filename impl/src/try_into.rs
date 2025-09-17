@@ -2,21 +2,50 @@ use crate::utils::{
     add_extra_generic_param, numbered_vars, replace_self::DeriveInputExt as _,
     AttrParams, DeriveType, MultiFieldData, State,
 };
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{DeriveInput, Result};
+use syn::{Attribute, DeriveInput, Ident, Result};
 
-use crate::utils::HashMap;
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    HashMap, Spanning,
+};
 
 /// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
 #[allow(clippy::cognitive_complexity)]
 pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let input = &input.replace_self_type();
+    let input = &mut input.replace_self_type();
+
+    let trait_attr = "try_into";
+
+    let error_attrs: Vec<(usize, Attribute)> = input
+        .attrs
+        .iter()
+        .enumerate()
+        .filter(|(_, attr)| attr.path().is_ident(trait_attr))
+        .filter(|(_, attr)| attr.parse_args_with(detect_error_attr).is_ok())
+        .map(|(i, attr)| (i, attr.clone()))
+        .collect();
+
+    for (i, _) in &error_attrs {
+        let _ = &mut input.attrs.remove(*i);
+    }
+
+    let error_attrs = error_attrs
+        .into_iter()
+        .map(|(_, attr)| attr)
+        .collect::<Vec<Attribute>>();
+
+    let custom_error = attr::Error::parse_attrs(
+        error_attrs,
+        &Ident::new(trait_attr, Span::call_site()),
+    )?
+    .map(Spanning::into_inner);
 
     let state = State::with_attr_params(
         input,
         trait_name,
-        "try_into".into(),
+        trait_attr.into(),
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
             variant: vec!["ignore", "owned", "ref", "ref_mut"],
@@ -101,26 +130,36 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             input.generics.split_for_impl()
         };
 
-        let error = quote! {
+        let mut error_ty = quote! {
             derive_more::TryIntoError<#reference_with_lifetime #input_type #ty_generics>
         };
+
+        let mut error_conv = quote! {};
+
+        if let Some(custom_error) = custom_error.as_ref() {
+            error_ty = custom_error.ty.to_token_stream();
+            error_conv = custom_error.conv.as_ref().map_or_else(
+                || quote! { .map_err(derive_more::core::convert::Into::into) },
+                |conv| quote! { .map_err(#conv) },
+            );
+        }
 
         let try_from = quote! {
             #[automatically_derived]
             impl #impl_generics derive_more::core::convert::TryFrom<
                 #reference_with_lifetime #input_type #ty_generics
             > for (#(#reference_with_lifetime #original_types),*) #where_clause {
-                type Error = #error;
+                type Error = #error_ty;
 
                 #[inline]
                 fn try_from(
                     value: #reference_with_lifetime #input_type #ty_generics,
-                ) -> derive_more::core::result::Result<Self, #error> {
+                ) -> derive_more::core::result::Result<Self, #error_ty> {
                     match value {
                         #(#matchers)|* => derive_more::core::result::Result::Ok(#vars),
                         _ => derive_more::core::result::Result::Err(
                             derive_more::TryIntoError::new(value, #variant_names, #output_type),
-                        ),
+                        )#error_conv,
                     }
                 }
             }
@@ -128,4 +167,18 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         try_from.to_tokens(&mut tokens)
     }
     Ok(tokens)
+}
+
+fn detect_error_attr(input: syn::parse::ParseStream) -> Result<()> {
+    mod ident {
+        syn::custom_keyword!(error);
+    }
+
+    let ahead = input.lookahead1();
+    if ahead.peek(ident::error) {
+        let _ = input.parse::<TokenStream>();
+        Ok(())
+    } else {
+        Err(ahead.error())
+    }
 }
