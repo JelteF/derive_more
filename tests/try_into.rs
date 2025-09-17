@@ -260,3 +260,73 @@ fn test_try_into() {
     );
     assert!(matches!(i.try_into().unwrap(), ()));
 }
+
+mod error {
+    use core::fmt;
+
+    #[cfg(not(feature = "std"))]
+    use alloc::string::String;
+
+    use derive_more::TryIntoError;
+
+    use super::*;
+
+    struct CustomError(String);
+
+    impl<T> From<TryIntoError<T>> for CustomError {
+        fn from(value: TryIntoError<T>) -> Self {
+            Self(value.to_string())
+        }
+    }
+
+    impl fmt::Display for CustomError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            self.0.fmt(f)
+        }
+    }
+
+    #[derive(TryInto, Clone, Copy, Debug, Eq, PartialEq)]
+    #[try_into(ref)]
+    #[try_into(error(CustomError))]
+    enum MixedInts {
+        SmallInt(i32),
+        NamedBigInt {
+            int: i64,
+        },
+        UnsignedWithIgnoredField(#[try_into(ignore)] bool, i64),
+        NamedUnsignedWithIgnoredField {
+            #[try_into(ignore)]
+            useless: bool,
+            x: i64,
+        },
+        TwoSmallInts(i32, i32),
+        NamedBigInts {
+            x: i64,
+            y: i64,
+        },
+        Unsigned(u32),
+        NamedUnsigned {
+            x: u32,
+        },
+        Unit,
+        #[try_into(ignore)]
+        Unit2,
+    }
+
+    #[test]
+    fn test() {
+        let i = MixedInts::Unsigned(42);
+        assert_eq!(
+            i32::try_from(i).unwrap_err().to_string(),
+            "Only SmallInt can be converted to i32"
+        );
+        assert_eq!(
+            i64::try_from(i).unwrap_err().to_string(),
+            "Only NamedBigInt, UnsignedWithIgnoredField, NamedUnsignedWithIgnoredField can be converted to i64"
+        );
+        assert_eq!(
+            <(i32, i32)>::try_from(i).unwrap_err().to_string(),
+            "Only TwoSmallInts can be converted to (i32, i32)"
+        );
+    }
+}
