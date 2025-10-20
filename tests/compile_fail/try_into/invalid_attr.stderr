@@ -1,0 +1,5 @@
+error: Attribute parameter not supported. Supported attribute parameters are: ignore, owned, ref, ref_mut, error
+ --> tests/compile_fail/try_into/invalid_attr.rs:2:12
+  |
+2 | #[try_into(foo)]
+  |            ^^^

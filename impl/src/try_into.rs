@@ -4,7 +4,7 @@ use crate::utils::{
 };
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::{Attribute, DeriveInput, Ident, Result};
+use syn::{Attribute, DeriveInput, Error, Ident, Result};
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
@@ -52,7 +52,20 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             struct_: vec!["ignore", "owned", "ref", "ref_mut"],
             field: vec!["ignore"],
         },
-    )?;
+    ).map_err(|err| {
+        let msg = &err.to_string();
+        if msg == "Only a single attribute is allowed" {
+            Error::new(
+                err.span(),
+                "Only a single attribute is allowed.\n\
+                For the top-level attribute, an additional `#[try_into(error(...))]` may be provided.",
+            )
+        } else if msg.starts_with("Attribute parameter not supported. Supported attribute parameters are:") {
+            Error::new(err.span(), format!("{msg}, error"))
+        } else {
+            err
+        }
+    })?;
     assert!(
         state.derive_type == DeriveType::Enum,
         "Only enums can derive TryInto"
