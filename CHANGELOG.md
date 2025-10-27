@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Erroneous code generated in `Try`/`TryInto` derives when `Self` type is present in
   the struct or enum definition.
   ([#489](https://github.com/JelteF/derive_more/pull/489))
+- Dependency on unstable `error_generic_member_access` feature in `Error` derive when
+  using backtraces on a non-nightly toolchain.
+  ([#513](https://github.com/JelteF/derive_more/pull/512))
 
 ## 2.0.1 - 2025-02-03
 

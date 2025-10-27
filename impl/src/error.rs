@@ -109,7 +109,11 @@ fn render_struct(
     let parsed_fields = parse_fields(type_params, state)?;
 
     let source = parsed_fields.render_source_as_struct();
-    let provide = parsed_fields.render_provide_as_struct();
+    let provide = if cfg!(error_generic_member_access) {
+        parsed_fields.render_provide_as_struct()
+    } else {
+        None
+    };
 
     Ok((parsed_fields.bounds, source, provide))
 }
