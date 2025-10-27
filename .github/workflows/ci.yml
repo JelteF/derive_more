@@ -199,6 +199,15 @@ jobs:
           test "${{ steps.release.outputs.version }}" \
             == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
 
+      - name: Ensure CHANGELOG date is today
+        run: |
+          today="$(date '+%Y-%m-%d')"
+          changelog="$(grep -E '^## ${{ steps.release.outputs.version }} -'\
+                            CHANGELOG.md \
+                       | cut -d' ' -f4 | tr -d ' ')"
+          echo "Changelog: $changelog"
+          echo "Today: $today"
+          [ "$changelog" = "$today" ]
       - name: Parse CHANGELOG link
         id: changelog
         run: echo "link=${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## ${{ steps.release.outputs.version }}/{s/^## \([^ ]*\) - \([0-9].*\)/\1---\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)"
