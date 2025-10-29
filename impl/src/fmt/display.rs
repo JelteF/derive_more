@@ -94,7 +94,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
 /// while multiple `#[<attribute>(bound(...))]` are allowed.
 #[derive(Debug, Default)]
 struct ContainerAttributes {
-    /// [`attr::RenameAll`] for case convertion.
+    /// [`attr::RenameAll`] for case conversion.
     rename_all: Option<attr::RenameAll>,
 
     /// Common [`ContainerAttributes`].
