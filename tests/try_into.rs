@@ -212,9 +212,9 @@ mod enums {
         );
 
         let mut i = MixedInts::Unit;
-        assert_eq!(TryInto::<()>::try_into(i).unwrap(), ());
-        assert_eq!(TryInto::<()>::try_into(&i).unwrap(), ());
-        assert_eq!(TryInto::<()>::try_into(&mut i).unwrap(), ());
+        assert!(TryInto::<()>::try_into(i).is_ok());
+        assert!(TryInto::<()>::try_into(&i).is_ok());
+        assert!(TryInto::<()>::try_into(&mut i).is_ok());
         assert_eq!(
             i32::try_from(i).unwrap_err().to_string(),
             "Only SmallInt can be converted to i32",

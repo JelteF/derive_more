@@ -2,45 +2,40 @@ use crate::utils::{
     add_extra_generic_param, numbered_vars, replace_self::DeriveInputExt as _,
     AttrParams, DeriveType, MultiFieldData, State,
 };
-use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens};
-use syn::{Attribute, DeriveInput, Error, Ident, Result};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
     HashMap, Spanning,
 };
 
-/// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
+/// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`.
 #[allow(clippy::cognitive_complexity)]
-pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
+pub fn expand(
+    input: &syn::DeriveInput,
+    trait_name: &'static str,
+) -> syn::Result<TokenStream> {
     let input = &mut input.replace_self_type();
-
     let trait_attr = "try_into";
 
-    let error_attrs: Vec<(usize, Attribute)> = input
+    // TODO: Use `Vec::extract_if` once MSRV is bumped to 1.87 or above.
+    let (error_indices, error_attrs) = input
         .attrs
         .iter()
         .enumerate()
-        .filter(|(_, attr)| attr.path().is_ident(trait_attr))
-        .filter(|(_, attr)| attr.parse_args_with(detect_error_attr).is_ok())
+        .filter(|(_, attr)| {
+            attr.path().is_ident(trait_attr)
+                && attr.parse_args_with(detect_error_attr).is_ok()
+        })
         .map(|(i, attr)| (i, attr.clone()))
-        .collect();
-
-    for (i, _) in &error_attrs {
-        let _ = &mut input.attrs.remove(*i);
+        .unzip::<_, _, Vec<_>, Vec<_>>();
+    for i in error_indices {
+        _ = &mut input.attrs.remove(i);
     }
-
-    let error_attrs = error_attrs
-        .into_iter()
-        .map(|(_, attr)| attr)
-        .collect::<Vec<Attribute>>();
-
-    let custom_error = attr::Error::parse_attrs(
-        error_attrs,
-        &Ident::new(trait_attr, Span::call_site()),
-    )?
-    .map(Spanning::into_inner);
+    let custom_error =
+        attr::Error::parse_attrs(error_attrs, &format_ident!("{trait_attr}"))?
+            .map(Spanning::into_inner);
 
     let state = State::with_attr_params(
         input,
@@ -52,23 +47,28 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             struct_: vec!["ignore", "owned", "ref", "ref_mut"],
             field: vec!["ignore"],
         },
-    ).map_err(|err| {
-        let msg = &err.to_string();
+    ).map_err(|e| {
+        // Temporary adjustment of attribute parsing errors until these attributes are reimplemented
+        // via `utils::attr` machinery.
+        let msg = &e.to_string();
         if msg == "Only a single attribute is allowed" {
-            Error::new(
-                err.span(),
+            syn::Error::new(
+                e.span(),
                 "Only a single attribute is allowed.\n\
-                For the top-level attribute, an additional `#[try_into(error(...))]` may be provided.",
+                 For the top-level attribute, an additional `#[try_into(error(...))]` may be \
+                 provided.",
             )
-        } else if msg.starts_with("Attribute parameter not supported. Supported attribute parameters are:") {
-            Error::new(err.span(), format!("{msg}, error"))
+        } else if msg.starts_with(
+            "Attribute parameter not supported. Supported attribute parameters are:",
+        ) {
+            syn::Error::new(e.span(), format!("{msg}, error"))
         } else {
-            err
+            e
         }
     })?;
     assert!(
         state.derive_type == DeriveType::Enum,
-        "Only enums can derive TryInto"
+        "only enums can derive `TryInto`",
     );
 
     let mut variants_per_types = HashMap::default();
@@ -128,7 +128,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             .iter()
             .map(|d| {
                 d.variant_name
-                    .expect("Somehow there was no variant name")
+                    .expect("somehow there was no variant name")
                     .to_string()
             })
             .collect::<Vec<_>>()
@@ -146,9 +146,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         let mut error_ty = quote! {
             derive_more::TryIntoError<#reference_with_lifetime #input_type #ty_generics>
         };
-
         let mut error_conv = quote! {};
-
         if let Some(custom_error) = custom_error.as_ref() {
             error_ty = custom_error.ty.to_token_stream();
             error_conv = custom_error.conv.as_ref().map_or_else(
@@ -182,7 +180,8 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
     Ok(tokens)
 }
 
-fn detect_error_attr(input: syn::parse::ParseStream) -> Result<()> {
+/// Checks whether the inner of a [`syn::Attribute`] represents an [`attr::Error`].
+fn detect_error_attr(input: syn::parse::ParseStream) -> syn::Result<()> {
     mod ident {
         syn::custom_keyword!(error);
     }
