@@ -30,7 +30,7 @@ convert_case = { version = "0.8", optional = true }
 unicode-xid = { version = "0.2.2", optional = true }
 
 [build-dependencies]
-rustc_version = { version = "0.4" }
+rustc_version = "0.4"
 
 [dev-dependencies]
 derive_more = { path = "..", features = ["full"] }
@@ -44,7 +44,7 @@ features = ["full"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(nightly)", "cfg(error_generic_member_access)"] }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(error_generic_member_access)", "cfg(nightly)"] }
 
 [features]
 default = []
