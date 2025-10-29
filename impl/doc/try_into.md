@@ -188,24 +188,25 @@ impl TryFrom<EnumWithUnit> for () {
 
 The `#[try_into(error(error_ty[, error_fn]))]` attribute can be used to convert the `TryIntoError` type
 into a custom error type. If the conversion function is not provided, the custom error type must implement
-`From<TryIntoError>`.
+`From<derive_more::TryIntoError<T>>`.
 
-This does not support custom error with generic parameters. For example, `struct CustomError<T>(TryIntoError<T>)`, a custom error that is a newtype wrapper around `TryIntoError`, is not supported.
+This, however, doesn't support custom error with generic parameters, such as
+`struct CustomError<T>(derive_more::TryIntoError<T>)` (newtype wrapper around `derive_more::TryIntoError`).
 
 Given the following enum:
 ```rust
-# use derive_more::{TryInto, TryIntoError};
+# use derive_more::TryInto;
 #
 struct CustomError(String);
 
-impl<T> From<TryIntoError<T>> for CustomError {
-    fn from(value: TryIntoError<T>) -> Self {
+impl<T> From<derive_more::TryIntoError<T>> for CustomError {
+    fn from(value: derive_more::TryIntoError<T>) -> Self {
         Self(value.to_string())
     }
 }
 
 #[derive(TryInto, Clone, Debug)]
-#[try_into(owned, ref, ref_mut)]
+#[try_into(error(CustomError))]
 enum MixedData {
     Int(u32),
     String(String),
@@ -227,68 +228,20 @@ Code like this is generated:
 #         Self(value.to_string())
 #     }
 # }
-impl derive_more::core::convert::TryFrom<MixedData> for (String) {
-    type Error = CustomError;
-    fn try_from(
-        value: MixedData,
-    ) -> derive_more::core::result::Result<Self, CustomError> {
-        match value {
-            MixedData::String(__0) => Ok(__0),
-            _ => Err(derive_more::TryIntoError::new(value, "String", "String").into()),
-        }
-    }
-}
-impl<'a> derive_more::core::convert::TryFrom<&'a mut MixedData> for (&'a mut u32) {
-    type Error = CustomError;
-    fn try_from(
-        value: &'a mut MixedData,
-    ) -> derive_more::core::result::Result<Self, CustomError> {
-        match value {
-            MixedData::Int(ref mut __0) => Ok(__0),
-            _ => Err(derive_more::TryIntoError::new(value, "Int", "u32").into()),
-        }
-    }
-}
-impl<'a> derive_more::core::convert::TryFrom<&'a MixedData> for (&'a u32) {
-    type Error = CustomError;
-    fn try_from(
-        value: &'a MixedData,
-    ) -> derive_more::core::result::Result<Self, CustomError> {
-        match value {
-            MixedData::Int(ref __0) => Ok(__0),
-            _ => Err(derive_more::TryIntoError::new(value, "Int", "u32").into()),
-        }
-    }
-}
 impl derive_more::core::convert::TryFrom<MixedData> for (u32) {
     type Error = CustomError;
-    fn try_from(
-        value: MixedData,
-    ) -> derive_more::core::result::Result<Self, CustomError> {
+    fn try_from(value: MixedData) -> Result<Self, CustomError> {
         match value {
-            MixedData::Int(__0) => Ok(__0),
+            MixedData::Int(v) => Ok(v),
             _ => Err(derive_more::TryIntoError::new(value, "Int", "u32").into()),
         }
     }
 }
-impl<'a> derive_more::core::convert::TryFrom<&'a mut MixedData> for (&'a mut String) {
+impl derive_more::core::convert::TryFrom<MixedData> for (String) {
     type Error = CustomError;
-    fn try_from(
-        value: &'a mut MixedData,
-    ) -> derive_more::core::result::Result<Self, CustomError> {
+    fn try_from(value: MixedData) -> Result<Self, CustomError> {
         match value {
-            MixedData::String(ref mut __0) => Ok(__0),
-            _ => Err(derive_more::TryIntoError::new(value, "String", "String").into()),
-        }
-    }
-}
-impl<'a> derive_more::core::convert::TryFrom<&'a MixedData> for (&'a String) {
-    type Error = CustomError;
-    fn try_from(
-        value: &'a MixedData,
-    ) -> derive_more::core::result::Result<Self, CustomError> {
-        match value {
-            MixedData::String(ref __0) => Ok(__0),
+            MixedData::String(v) => Ok(v),
             _ => Err(derive_more::TryIntoError::new(value, "String", "String").into()),
         }
     }
