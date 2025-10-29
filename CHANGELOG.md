@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#485](https://github.com/JelteF/derive_more/pull/485))
 - Support custom error in `FromStr` derive.
   ([#494](https://github.com/JelteF/derive_more/pull/494))
+- Support custom error in `TryInto` derive.
+  ([#503](https://github.com/JelteF/derive_more/pull/503))
 
 ### Changed
 

@@ -180,3 +180,70 @@ impl TryFrom<EnumWithUnit> for () {
     }
 }
 ```
+
+
+
+
+## Custom error
+
+The `#[try_into(error(error_ty[, error_fn]))]` attribute can be used to convert the `TryIntoError` type
+into a custom error type. If the conversion function is not provided, the custom error type must implement
+`From<derive_more::TryIntoError<T>>`.
+
+This, however, doesn't support custom error with generic parameters, such as
+`struct CustomError<T>(derive_more::TryIntoError<T>)` (newtype wrapper around `derive_more::TryIntoError`).
+
+Given the following enum:
+```rust
+# use derive_more::TryInto;
+#
+struct CustomError(String);
+
+impl<T> From<derive_more::TryIntoError<T>> for CustomError {
+    fn from(value: derive_more::TryIntoError<T>) -> Self {
+        Self(value.to_string())
+    }
+}
+
+#[derive(TryInto, Clone, Debug)]
+#[try_into(error(CustomError))]
+enum MixedData {
+    Int(u32),
+    String(String),
+}
+```
+Code like this is generated:
+```rust
+# use derive_more::TryIntoError;
+#
+# enum MixedData {
+#     Int(u32),
+#     String(String),
+# }
+#
+# struct CustomError(String);
+#
+# impl<T> From<TryIntoError<T>> for CustomError {
+#     fn from(value: TryIntoError<T>) -> Self {
+#         Self(value.to_string())
+#     }
+# }
+impl derive_more::core::convert::TryFrom<MixedData> for (u32) {
+    type Error = CustomError;
+    fn try_from(value: MixedData) -> Result<Self, CustomError> {
+        match value {
+            MixedData::Int(v) => Ok(v),
+            _ => Err(derive_more::TryIntoError::new(value, "Int", "u32").into()),
+        }
+    }
+}
+impl derive_more::core::convert::TryFrom<MixedData> for (String) {
+    type Error = CustomError;
+    fn try_from(value: MixedData) -> Result<Self, CustomError> {
+        match value {
+            MixedData::String(v) => Ok(v),
+            _ => Err(derive_more::TryIntoError::new(value, "String", "String").into()),
+        }
+    }
+}
+```
