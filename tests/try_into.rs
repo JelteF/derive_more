@@ -5,7 +5,7 @@
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-use alloc::string::ToString as _;
+use alloc::string::{String, ToString as _};
 
 use derive_more::TryInto;
 
@@ -325,15 +325,15 @@ mod enums {
             }
 
             assert_eq!(
-                TryInto::<Wrapper<_, _>>::try_into(Foo::X(Wrapper(&[1]))).unwrap(),
+                TryInto::<Wrapper<1, _>>::try_into(Foo::X(Wrapper(&[1]))).unwrap(),
                 Wrapper(&[1]),
             );
             assert_eq!(
-                TryInto::<&Wrapper<_, _>>::try_into(&Foo::X(Wrapper(&[1]))).unwrap(),
+                TryInto::<&Wrapper<1, _>>::try_into(&Foo::X(Wrapper(&[1]))).unwrap(),
                 &Wrapper(&[1]),
             );
             assert_eq!(
-                TryInto::<&mut Wrapper<_, _>>::try_into(&mut Foo::X(Wrapper(&[1])))
+                TryInto::<&mut Wrapper<1, _>>::try_into(&mut Foo::X(Wrapper(&[1])))
                     .unwrap(),
                 &mut Wrapper(&[1]),
             );
