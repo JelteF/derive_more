@@ -2126,7 +2126,7 @@ pub(crate) mod attr {
     pub(crate) mod error {
         use syn::parse::{Parse, ParseStream};
 
-        use super::ParseMultiple;
+        use super::{Either, ParseMultiple};
 
         /// Representation of an attribute, specifying the error type and, optionally, a
         /// [`Conversion`] from a built-in error type.
@@ -2182,12 +2182,10 @@ pub(crate) mod attr {
 
         impl ParseMultiple for Error {}
 
-        // TODO: Support `syn::ExprClosure` and `syn::ExprCall` by providing
-        //       `syn-full` Cargo feature.
-        /// Possible conversions for of an [`attr::Error`].
+        /// Possible conversions of an [`attr::Error`].
         ///
         /// [`attr::Error`]: Error
-        pub(crate) type Conversion = syn::Path;
+        pub(crate) type Conversion = Either<syn::Path, Either<syn::ExprClosure, syn::ExprCall>>;
     }
 
     #[cfg(feature = "try_from")]
