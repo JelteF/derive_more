@@ -360,11 +360,84 @@ mod enums {
             }
         }
 
+        fn custom_error_fn<T>() -> fn(derive_more::TryIntoError<T>) -> CustomError {
+            CustomError::from
+        }
+
         #[test]
         fn simple() {
             #[derive(TryInto, Clone, Debug)]
             #[try_into(owned, ref, ref_mut)]
             #[try_into(error(CustomError))]
+            enum MixedData {
+                Int(u32),
+                String(String),
+            }
+
+            let i = MixedData::Int(42);
+            assert_eq!(
+                String::try_from(i).unwrap_err().to_string(),
+                "Only String can be converted to String",
+            );
+
+            let s = MixedData::String("foo".into());
+            assert_eq!(
+                u32::try_from(s).unwrap_err().to_string(),
+                "Only Int can be converted to u32",
+            );
+        }
+
+        #[test]
+        fn with_fn() {
+            #[derive(TryInto, Clone, Debug)]
+            #[try_into(owned, ref, ref_mut)]
+            #[try_into(error(CustomError, CustomError::from))]
+            enum MixedData {
+                Int(u32),
+                String(String),
+            }
+
+            let i = MixedData::Int(42);
+            assert_eq!(
+                String::try_from(i).unwrap_err().to_string(),
+                "Only String can be converted to String",
+            );
+
+            let s = MixedData::String("foo".into());
+            assert_eq!(
+                u32::try_from(s).unwrap_err().to_string(),
+                "Only Int can be converted to u32",
+            );
+        }
+
+        #[test]
+        fn with_closure() {
+            #[derive(TryInto, Clone, Debug)]
+            #[try_into(owned, ref, ref_mut)]
+            #[try_into(error(CustomError, |e| e.into()))]
+            enum MixedData {
+                Int(u32),
+                String(String),
+            }
+
+            let i = MixedData::Int(42);
+            assert_eq!(
+                String::try_from(i).unwrap_err().to_string(),
+                "Only String can be converted to String",
+            );
+
+            let s = MixedData::String("foo".into());
+            assert_eq!(
+                u32::try_from(s).unwrap_err().to_string(),
+                "Only Int can be converted to u32",
+            );
+        }
+
+        #[test]
+        fn with_fn_call() {
+            #[derive(TryInto, Clone, Debug)]
+            #[try_into(owned, ref, ref_mut)]
+            #[try_into(error(CustomError, custom_error_fn()))]
             enum MixedData {
                 Int(u32),
                 String(String),
