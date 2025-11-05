@@ -306,6 +306,30 @@ mod structs {
                         CustomError("foo".parse::<i32>().unwrap_err()),
                     );
                 }
+
+                #[test]
+                fn with_closure() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError, |e| CustomError::new(e)))]
+                    struct MyInt(i32);
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
+
+                #[test]
+                fn with_fn_call() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError, custom_error_fn()))]
+                    struct MyInt(i32);
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
             }
 
             mod named {
@@ -329,6 +353,34 @@ mod structs {
                 fn with_fn() {
                     #[derive(Debug, FromStr)]
                     #[from_str(error(CustomError, CustomError::new))]
+                    struct MyInt {
+                        value: i32,
+                    }
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
+
+                #[test]
+                fn with_closure() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError, |e| CustomError::new(e)))]
+                    struct MyInt {
+                        value: i32,
+                    }
+
+                    assert_eq!(
+                        "foo".parse::<MyInt>().unwrap_err(),
+                        CustomError("foo".parse::<i32>().unwrap_err()),
+                    );
+                }
+
+                #[test]
+                fn with_fn_call() {
+                    #[derive(Debug, FromStr)]
+                    #[from_str(error(CustomError, custom_error_fn()))]
                     struct MyInt {
                         value: i32,
                     }
@@ -490,6 +542,34 @@ mod structs {
             fn with_fn() {
                 #[derive(Debug, Eq, FromStr, PartialEq)]
                 #[from_str(error(CustomError, CustomError::new))]
+                struct Foo;
+
+                assert_eq!(
+                    match "bar".parse::<Foo>().unwrap_err() {
+                        CustomError(e) => e.to_string(),
+                    },
+                    "Invalid `Foo` string representation",
+                );
+            }
+
+            #[test]
+            fn with_closure() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, |e| CustomError::new(e)))]
+                struct Foo;
+
+                assert_eq!(
+                    match "bar".parse::<Foo>().unwrap_err() {
+                        CustomError(e) => e.to_string(),
+                    },
+                    "Invalid `Foo` string representation",
+                );
+            }
+
+            #[test]
+            fn with_fn_call() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, custom_error_fn()))]
                 struct Foo;
 
                 assert_eq!(
@@ -923,6 +1003,34 @@ mod enums {
             fn with_fn() {
                 #[derive(Debug, Eq, FromStr, PartialEq)]
                 #[from_str(error(CustomError, CustomError::new))]
+                enum Enum {
+                    Foo,
+                    Bar,
+                    Baz,
+                    BaZ,
+                }
+
+                assertions!();
+            }
+
+            #[test]
+            fn with_closure() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, |e| CustomError::new(e)))]
+                enum Enum {
+                    Foo,
+                    Bar,
+                    Baz,
+                    BaZ,
+                }
+
+                assertions!();
+            }
+
+            #[test]
+            fn with_fn_call() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(error(CustomError, custom_error_fn()))]
                 enum Enum {
                     Foo,
                     Bar,

@@ -310,7 +310,7 @@ impl ToTokens for FlatExpansion<'_> {
             error_ty = custom_error.ty.to_token_stream();
             error_val = custom_error.conv.as_ref().map_or_else(
                 || quote! { derive_more::core::convert::Into::into(#default_error) },
-                |conv| quote! { #conv(#default_error) },
+                |conv| quote! { (#conv)(#default_error) },
             );
         }
 
