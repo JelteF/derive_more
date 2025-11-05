@@ -307,6 +307,7 @@ mod structs {
                     );
                 }
 
+                #[expect(clippy::redundant_closure, reason = "intended for testing")]
                 #[test]
                 fn with_closure() {
                     #[derive(Debug, FromStr)]
@@ -363,6 +364,7 @@ mod structs {
                     );
                 }
 
+                #[expect(clippy::redundant_closure, reason = "intended for testing")]
                 #[test]
                 fn with_closure() {
                     #[derive(Debug, FromStr)]
@@ -552,6 +554,7 @@ mod structs {
                 );
             }
 
+            #[expect(clippy::redundant_closure, reason = "intended for testing")]
             #[test]
             fn with_closure() {
                 #[derive(Debug, Eq, FromStr, PartialEq)]
@@ -1013,6 +1016,7 @@ mod enums {
                 assertions!();
             }
 
+            #[expect(clippy::redundant_closure, reason = "intended for testing")]
             #[test]
             fn with_closure() {
                 #[derive(Debug, Eq, FromStr, PartialEq)]
