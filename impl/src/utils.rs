@@ -2185,7 +2185,8 @@ pub(crate) mod attr {
         /// Possible conversions of an [`attr::Error`].
         ///
         /// [`attr::Error`]: Error
-        pub(crate) type Conversion = Either<syn::ExprCall, Either<syn::Path, syn::ExprClosure>>;
+        pub(crate) type Conversion =
+            Either<syn::ExprCall, Either<syn::Path, syn::ExprClosure>>;
     }
 
     #[cfg(feature = "try_from")]
