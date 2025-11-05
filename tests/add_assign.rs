@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)] // some code is tested for type checking only
 
-use core::marker::PhantomData;
-
 use derive_more::AddAssign;
 
 #[derive(AddAssign)]
@@ -14,39 +12,41 @@ struct Point2D {
     y: i32,
 }
 
-#[derive(AddAssign)]
-struct TupleWithZst<T>(i32, #[add_assign(skip)] PhantomData<T>);
+mod ignore {
+    use core::marker::PhantomData;
 
-#[derive(AddAssign)]
-struct StructWithZst<T> {
-    x: i32,
-    #[add_assign(skip)]
-    _marker: PhantomData<T>,
-}
-
-mod skip {
     use super::*;
 
     #[test]
-    fn tuple_non_add_generic() {
-        let mut a: TupleWithZst<()> = TupleWithZst(12, PhantomData);
+    fn tuple() {
+        #[derive(AddAssign)]
+        struct TupleWithZst<T = ()>(i32, #[add_assign(ignore)] PhantomData<T>);
+
+        let mut a: TupleWithZst = TupleWithZst(12, PhantomData);
         a += TupleWithZst(2, PhantomData);
+
         assert_eq!(a.0, 14);
     }
 
     #[test]
-    fn struct_non_add_generic() {
-        let mut a: StructWithZst<()> = StructWithZst {
+    fn struct_() {
+        #[derive(AddAssign)]
+        struct StructWithZst<T = String> {
+            x: i32,
+            #[add_assign(skip)]
+            _marker: PhantomData<T>,
+        }
+
+        let mut a: StructWithZst = StructWithZst {
             x: 12,
             _marker: PhantomData,
         };
-
-        let b: StructWithZst<()> = StructWithZst {
+        let b: StructWithZst = StructWithZst {
             x: 2,
             _marker: PhantomData,
         };
-
         a += b;
+
         assert_eq!(a.x, 14);
     }
 }

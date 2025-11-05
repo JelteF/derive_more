@@ -32,41 +32,39 @@ struct MyInt2<T> {
     ph: PhantomData<T>,
 }
 
-#[derive(MulAssign)]
-#[mul_assign(forward)]
-struct TupleWithZst<T>(i32, #[mul_assign(skip)] PhantomData<T>);
-
-#[derive(MulAssign)]
-#[mul_assign(forward)]
-struct StructWithZst<T> {
-    x: i32,
-    #[mul_assign(skip)]
-    _marker: PhantomData<T>,
-}
-
-mod forward {
+mod ignore {
     use super::*;
 
     #[test]
-    fn tuple_non_add_generic() {
-        let mut a: TupleWithZst<()> = TupleWithZst(12, PhantomData);
+    fn tuple() {
+        #[derive(MulAssign)]
+        struct TupleWithZst<T = ()>(i32, #[mul_assign(ignore)] PhantomData<T>);
+
+        let mut a: TupleWithZst = TupleWithZst(12, PhantomData);
         a *= TupleWithZst(2, PhantomData);
+
         assert_eq!(a.0, 24);
     }
 
     #[test]
-    fn struct_non_add_generic() {
-        let mut a: StructWithZst<()> = StructWithZst {
+    fn struct_() {
+        #[derive(MulAssign)]
+        struct StructWithZst<T = String> {
+            x: i32,
+            #[mul_assign(skip)]
+            _marker: PhantomData<T>,
+        }
+
+        let mut a: StructWithZst = StructWithZst {
             x: 12,
             _marker: PhantomData,
         };
-
-        let b: StructWithZst<()> = StructWithZst {
+        let b: StructWithZst = StructWithZst {
             x: 2,
             _marker: PhantomData,
         };
-
         a *= b;
+
         assert_eq!(a.x, 24);
     }
 }
