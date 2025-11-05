@@ -33,8 +33,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#494](https://github.com/JelteF/derive_more/pull/494))
 - Support custom error in `TryInto` derive.
   ([#503](https://github.com/JelteF/derive_more/pull/503))
-- Support `#[skip]` attribute for the `Add` derive to allow skipping zero sized
-  fields. ([#472](https://github.com/JelteF/derive_more/pull/472))
+- Support skipping fields in `Add`-like, `AddAssign`-like, `Mul`-like and
+  `MulAssign`-like derives.
+  ([#472](https://github.com/JelteF/derive_more/pull/472))
 
 ### Changed
 
