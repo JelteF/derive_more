@@ -123,6 +123,7 @@ These are traits that can be used for operator overloading.
    `BitOrAssign` and `BitXorAssign`
 10. [`MulAssign`-like], contains `MulAssign`, `DivAssign`, `RemAssign`,
     `ShrAssign` and `ShlAssign`
+11. [`Eq`], [`PartialEq`]
 
 
 ### Static methods
@@ -260,6 +261,8 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 [`DerefMut`]: https://docs.rs/derive_more/latest/derive_more/derive.DerefMut.html
 [`AddAssign`-like]: https://docs.rs/derive_more/latest/derive_more/derive.AddAssign.html
 [`MulAssign`-like]: https://docs.rs/derive_more/latest/derive_more/derive.MulAssign.html
+[`Eq`]: https://docs.rs/derive_more/latest/derive_more/derive.Eq.html
+[`PartialEq`]: https://docs.rs/derive_more/latest/derive_more/derive.PartialEq.html
 
 [`Constructor`]: https://docs.rs/derive_more/latest/derive_more/derive.Constructor.html
 [`IsVariant`]: https://docs.rs/derive_more/latest/derive_more/derive.IsVariant.html

@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![recursion_limit = "128"]
 #![cfg_attr(any(not(docsrs), ci), deny(rustdoc::all))]
 #![forbid(non_ascii_idents, unsafe_code)]
@@ -23,6 +23,8 @@ mod add_helpers;
 mod add_like;
 #[cfg(feature = "as_ref")]
 mod r#as;
+#[cfg(feature = "eq")]
+mod cmp;
 #[cfg(feature = "constructor")]
 mod constructor;
 #[cfg(feature = "deref")]
@@ -199,11 +201,20 @@ create_derive!(
 );
 create_derive!("display", fmt::display, Pointer, pointer_derive, pointer);
 
+create_derive!("eq", cmp::eq, Eq, eq_derive, eq);
+create_derive!(
+    "eq",
+    cmp::partial_eq,
+    PartialEq,
+    partial_eq_derive,
+    partial_eq,
+);
+
 create_derive!("error", error, Error, error_derive, error);
 
 create_derive!("from", from, From, from_derive, from);
 
-create_derive!("from_str", from_str, FromStr, from_str_derive);
+create_derive!("from_str", from_str, FromStr, from_str_derive, from_str);
 
 create_derive!("index", index, Index, index_derive, index);
 

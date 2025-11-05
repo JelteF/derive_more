@@ -1,0 +1,19 @@
+error[E0277]: the trait bound `NotEq<IntOrFloat>: std::cmp::Eq` is not satisfied
+  --> tests/compile_fail/eq/non_eq_field_recursive.rs:1:10
+   |
+ 1 | #[derive(derive_more::Eq)]
+   |          ^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `std::cmp::Eq` is not implemented for `NotEq<IntOrFloat>`
+  --> tests/compile_fail/eq/non_eq_field_recursive.rs:14:1
+   |
+14 | struct NotEq<T>(f32, T);
+   | ^^^^^^^^^^^^^^^
+   = help: the trait `std::cmp::Eq` is implemented for `Box<T, A>`
+   = note: required for `Box<NotEq<IntOrFloat>>` to implement `std::cmp::Eq`
+note: required by a bound in `derive_more::__private::AssertParamIsEq`
+  --> src/cmp.rs
+   |
+   | pub struct AssertParamIsEq<T: Eq + ?Sized> {
+   |                               ^^ required by this bound in `AssertParamIsEq`
+   = note: this error originates in the derive macro `derive_more::Eq` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -18,11 +18,15 @@ use syn::{
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
-    polyfill, Either, FieldsExt, Spanning,
+    polyfill,
+    replace_self::DeriveInputExt as _,
+    Either, FieldsExt, Spanning,
 };
 
 /// Expands an [`Into`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
+    let input = &input.replace_self_type();
+
     let attr_name = format_ident!("into");
 
     let data = match &input.data {

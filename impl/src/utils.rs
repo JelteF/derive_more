@@ -18,17 +18,19 @@ use syn::{
     feature = "add_assign",
     feature = "debug",
     feature = "display",
+    feature = "eq",
     feature = "from",
     feature = "from_str",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
-#[cfg(feature = "as_ref")]
+#[cfg(any(feature = "as_ref", feature = "eq", feature = "from_str"))]
 pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
@@ -36,11 +38,14 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "add_assign",
     feature = "debug",
     feature = "display",
+    feature = "eq",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) use self::spanning::Spanning;
 
@@ -338,7 +343,7 @@ pub fn named_to_vec(fields: &FieldsNamed) -> Vec<&Field> {
     fields.named.iter().collect()
 }
 
-fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
+pub(crate) fn panic_one_field(trait_name: &str, trait_attr: &str) -> ! {
     panic!(
         "derive({trait_name}) only works when forwarding to a single field. \
          Try putting #[{trait_attr}] or #[{trait_attr}(ignore)] on the fields in the struct",
@@ -623,6 +628,22 @@ impl<'input> State<'input> {
             .map(|attrs| get_meta_info(&trait_attr, attrs, &allowed_attr_params.field))
             .collect();
         let meta_infos = meta_infos?;
+
+        let first_match = meta_infos
+            .iter()
+            .find_map(|info| info.enabled.map(|_| info));
+
+        let default_enabled = if trait_name == "Error" {
+            true
+        } else {
+            first_match.map_or(true, |info| !info.enabled.unwrap())
+        };
+
+        let default_info = FullMetaInfo {
+            enabled: default_enabled,
+            ..default_info.clone()
+        };
+
         let full_meta_infos: Vec<_> = meta_infos
             .into_iter()
             .map(|info| info.into_full(default_info.clone()))
@@ -1397,12 +1418,14 @@ pub fn is_type_parameter_used_in_type(
     feature = "add_assign",
     feature = "debug",
     feature = "display",
+    feature = "eq",
     feature = "from",
     feature = "from_str",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 mod either {
     use proc_macro2::TokenStream;
@@ -1473,11 +1496,14 @@ mod either {
     feature = "add_assign",
     feature = "debug",
     feature = "display",
+    feature = "eq",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
@@ -1572,11 +1598,14 @@ mod spanning {
     feature = "add_assign",
     feature = "debug",
     feature = "display",
+    feature = "eq",
     feature = "from",
+    feature = "from_str",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) mod attr {
     use std::any::Any;
@@ -1595,11 +1624,16 @@ pub(crate) mod attr {
         feature = "try_from"
     ))]
     pub(crate) use self::empty::Empty;
+    #[cfg(any(feature = "from_str", feature = "try_into"))]
+    pub(crate) use self::error::Error;
+    #[cfg(any(feature = "display", feature = "from_str"))]
+    pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
         feature = "as_ref",
         feature = "add",
         feature = "add_assign",
         feature = "debug",
+        feature = "eq",
         feature = "from",
         feature = "into",
         feature = "mul",
@@ -1936,6 +1970,7 @@ pub(crate) mod attr {
         feature = "add_assign",
         feature = "debug",
         feature = "display",
+        feature = "eq",
         feature = "from",
         feature = "into",
         feature = "mul",
@@ -2202,6 +2237,73 @@ pub(crate) mod attr {
         }
     }
 
+    #[cfg(any(feature = "from_str", feature = "try_into"))]
+    pub(crate) mod error {
+        use syn::parse::{Parse, ParseStream};
+
+        use super::{Either, ParseMultiple};
+
+        /// Representation of an attribute, specifying the error type and, optionally, a
+        /// [`Conversion`] from a built-in error type.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(error(<ty>))]
+        /// #[<attribute>(error(<ty>, <conv>))]
+        /// ```
+        pub(crate) struct Error {
+            /// Type to convert the error into.
+            pub(crate) ty: syn::TypePath,
+
+            /// Custom conversion.
+            ///
+            /// If [`None`], then [`Into`] conversion should be applied.
+            pub(crate) conv: Option<Conversion>,
+        }
+
+        impl Parse for Error {
+            fn parse(input: ParseStream) -> syn::Result<Self> {
+                let prefix = syn::Ident::parse(input)?;
+                if prefix != "error" {
+                    return Err(syn::Error::new(
+                        prefix.span(),
+                        "expected `error` argument here",
+                    ));
+                }
+
+                let inner;
+                syn::parenthesized!(inner in input);
+
+                let ty = syn::TypePath::parse(&inner)?;
+                if inner.is_empty() {
+                    return Ok(Self { ty, conv: None });
+                }
+
+                _ = syn::token::Comma::parse(&inner)?;
+
+                let conv = Conversion::parse(&inner)?;
+                if inner.is_empty() {
+                    Ok(Self {
+                        ty,
+                        conv: Some(conv),
+                    })
+                } else {
+                    Err(syn::Error::new(
+                        inner.span(),
+                        "no more arguments allowed here",
+                    ))
+                }
+            }
+        }
+
+        impl ParseMultiple for Error {}
+
+        /// Possible conversions of an [`attr::Error`].
+        ///
+        /// [`attr::Error`]: Error
+        pub(crate) type Conversion =
+            Either<syn::ExprCall, Either<syn::Path, syn::ExprClosure>>;
+    }
+
     #[cfg(feature = "try_from")]
     mod repr_conversion {
         use syn::parse::{Parse, ParseStream};
@@ -2271,6 +2373,105 @@ pub(crate) mod attr {
                 })
             }
         }
+    }
+
+    #[cfg(any(feature = "display", feature = "from_str"))]
+    mod rename_all {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+            token,
+        };
+
+        use super::ParseMultiple;
+
+        /// Representation of a `rename_all` macro attribute.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(rename_all = "...")]
+        /// ```
+        ///
+        /// Possible cases:
+        /// - `lowercase`
+        /// - `UPPERCASE`
+        /// - `PascalCase`
+        /// - `camelCase`
+        /// - `snake_case`
+        /// - `SCREAMING_SNAKE_CASE`
+        /// - `kebab-case`
+        /// - `SCREAMING-KEBAB-CASE`
+        #[derive(Clone, Copy, Debug)]
+        pub(crate) enum RenameAll {
+            Lower,
+            Upper,
+            Pascal,
+            Camel,
+            Snake,
+            ScreamingSnake,
+            Kebab,
+            ScreamingKebab,
+        }
+
+        impl RenameAll {
+            /// Converts the provided `name` into the case of this [`RenameAll`].
+            pub(crate) fn convert_case(&self, name: &str) -> String {
+                use convert_case::Casing as _;
+
+                let case = match self {
+                    Self::Lower => convert_case::Case::Flat,
+                    Self::Upper => convert_case::Case::UpperFlat,
+                    Self::Pascal => convert_case::Case::Pascal,
+                    Self::Camel => convert_case::Case::Camel,
+                    Self::Snake => convert_case::Case::Snake,
+                    Self::ScreamingSnake => convert_case::Case::UpperSnake,
+                    Self::Kebab => convert_case::Case::Kebab,
+                    Self::ScreamingKebab => convert_case::Case::UpperKebab,
+                };
+                name.to_case(case)
+            }
+        }
+
+        impl Parse for RenameAll {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let _ = input.parse::<syn::Path>().and_then(|p| {
+                    if p.is_ident("rename_all") {
+                        Ok(p)
+                    } else {
+                        Err(syn::Error::new(
+                            p.span(),
+                            "unknown attribute argument, expected `rename_all = \"...\"`",
+                        ))
+                    }
+                })?;
+
+                input.parse::<token::Eq>()?;
+
+                let lit: syn::LitStr = input.parse()?;
+                Ok(
+                    match lit.value().replace(['-', '_'], "").to_lowercase().as_str() {
+                        "lowercase" => Self::Lower,
+                        "uppercase" => Self::Upper,
+                        "pascalcase" => Self::Pascal,
+                        "camelcase" => Self::Camel,
+                        "snakecase" => Self::Snake,
+                        "screamingsnakecase" => Self::ScreamingSnake,
+                        "kebabcase" => Self::Kebab,
+                        "screamingkebabcase" => Self::ScreamingKebab,
+                        _ => {
+                            return Err(syn::Error::new_spanned(
+                                lit,
+                                "unexpected casing expected one of: \
+                         \"lowercase\", \"UPPERCASE\", \"PascalCase\", \"camelCase\", \
+                         \"snake_case\", \"SCREAMING_SNAKE_CASE\", \"kebab-case\", or \
+                         \"SCREAMING-KEBAB-CASE\"",
+                            ))
+                        }
+                    },
+                )
+            }
+        }
+
+        impl ParseMultiple for RenameAll {}
     }
 }
 
@@ -2392,23 +2593,31 @@ mod fields_ext {
     impl<T: Len + ?Sized> FieldsExt for T {}
 }
 
-#[cfg(feature = "as_ref")]
+#[cfg(any(feature = "as_ref", feature = "eq", feature = "from_str"))]
 mod generics_search {
     use syn::visit::Visit;
-
-    use super::HashSet;
 
     /// Search of whether some generics (type parameters, lifetime parameters or const parameters)
     /// are present in some [`syn::Type`].
     pub(crate) struct GenericsSearch<'s> {
         /// Type parameters to look for.
-        pub(crate) types: HashSet<&'s syn::Ident>,
+        pub(crate) types: Vec<&'s syn::Ident>,
 
         /// Lifetime parameters to look for.
-        pub(crate) lifetimes: HashSet<&'s syn::Ident>,
+        pub(crate) lifetimes: Vec<&'s syn::Ident>,
 
         /// Const parameters to look for.
-        pub(crate) consts: HashSet<&'s syn::Ident>,
+        pub(crate) consts: Vec<&'s syn::Ident>,
+    }
+
+    impl<'s> From<&'s syn::Generics> for GenericsSearch<'s> {
+        fn from(value: &'s syn::Generics) -> Self {
+            Self {
+                types: value.type_params().map(|p| &p.ident).collect(),
+                lifetimes: value.lifetimes().map(|p| &p.lifetime.ident).collect(),
+                consts: value.const_params().map(|p| &p.ident).collect(),
+            }
+        }
     }
 
     impl GenericsSearch<'_> {
@@ -2433,27 +2642,301 @@ mod generics_search {
     }
 
     impl<'ast> Visit<'ast> for Visitor<'_> {
-        fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
-            self.found |= tp.path.get_ident().is_some_and(|ident| {
-                self.search.types.contains(ident) || self.search.consts.contains(ident)
-            });
-
-            syn::visit::visit_type_path(self, tp)
-        }
-
-        fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
-            self.found |= self.search.lifetimes.contains(&lf.ident);
-
-            syn::visit::visit_lifetime(self, lf)
-        }
-
         fn visit_expr_path(&mut self, ep: &'ast syn::ExprPath) {
             self.found |= ep
                 .path
                 .get_ident()
-                .is_some_and(|ident| self.search.consts.contains(ident));
+                .is_some_and(|ident| self.search.consts.contains(&ident));
 
-            syn::visit::visit_expr_path(self, ep)
+            if !self.found {
+                syn::visit::visit_expr_path(self, ep);
+            }
+        }
+
+        fn visit_lifetime(&mut self, lf: &'ast syn::Lifetime) {
+            self.found |= self.search.lifetimes.contains(&&lf.ident);
+
+            if !self.found {
+                syn::visit::visit_lifetime(self, lf);
+            }
+        }
+
+        fn visit_type_path(&mut self, tp: &'ast syn::TypePath) {
+            self.found |= tp.path.get_ident().is_some_and(|ident| {
+                self.search.types.contains(&ident)
+                    || self.search.consts.contains(&ident)
+            });
+
+            if !self.found {
+                // `TypeParam::AssocType` case.
+                self.found |= tp.path.segments.first().is_some_and(|segment| {
+                    matches!(segment.arguments, syn::PathArguments::None)
+                        && self.search.types.contains(&&segment.ident)
+                });
+            }
+
+            if !self.found {
+                syn::visit::visit_type_path(self, tp)
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod spec {
+        use quote::ToTokens as _;
+        use syn::parse_quote;
+
+        use super::GenericsSearch;
+
+        #[test]
+        fn types() {
+            let generics: syn::Generics = parse_quote! { <T> };
+            let search = GenericsSearch::from(&generics);
+
+            for input in [
+                parse_quote! { T },
+                parse_quote! { &T },
+                parse_quote! { &'a T },
+                parse_quote! { &&'a T },
+                parse_quote! { Type<'a, T> },
+                parse_quote! { path::Type<T, 'a> },
+                parse_quote! { path::<'a, T>::Type },
+                parse_quote! { <Self as Trait<'a, T>>::Type },
+                parse_quote! { <Self as Trait>::Type<T, 'a> },
+                parse_quote! { T::Type },
+                parse_quote! { <T as Trait>::Type },
+                parse_quote! { [T] },
+                parse_quote! { [T; 3] },
+                parse_quote! { [T; _] },
+                parse_quote! { (T) },
+                parse_quote! { (T,) },
+                parse_quote! { (T, u8) },
+                parse_quote! { (u8, T) },
+                parse_quote! { fn(T) },
+                parse_quote! { fn(u8, T) },
+                parse_quote! { fn(_) -> T },
+                parse_quote! { fn(_) -> (u8, T) },
+            ] {
+                assert!(
+                    search.any_in(&input),
+                    "cannot find type parameter `T` in type `{}`",
+                    input.into_token_stream(),
+                );
+            }
+        }
+
+        #[test]
+        fn lifetimes() {
+            let generics: syn::Generics = parse_quote! { <'a> };
+            let search = GenericsSearch::from(&generics);
+
+            for input in [
+                parse_quote! { &'a T },
+                parse_quote! { &&'a T },
+                parse_quote! { Type<'a> },
+                parse_quote! { path::Type<'a> },
+                parse_quote! { path::<'a>::Type },
+                parse_quote! { <Self as Trait<'a>>::Type },
+                parse_quote! { <Self as Trait>::Type<'a> },
+            ] {
+                assert!(
+                    search.any_in(&input),
+                    "cannot find lifetime parameter `'a` in type `{}`",
+                    input.into_token_stream(),
+                );
+            }
+        }
+
+        #[test]
+        fn consts() {
+            let generics: syn::Generics = parse_quote! { <const N: usize> };
+            let search = GenericsSearch::from(&generics);
+
+            for input in [
+                parse_quote! { [_; N] },
+                parse_quote! { Type<N> },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { Type<{ N }> },
+                parse_quote! { path::Type<N> },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { path::Type<{ N }> },
+                parse_quote! { path::<N>::Type },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { path::<{ N }>::Type },
+                parse_quote! { <Self as Trait<N>>::Type },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { <Self as Trait<{ N }>>::Type },
+                parse_quote! { <Self as Trait>::Type<N> },
+                #[cfg(feature = "testing-helpers")] // requires `syn/full`
+                parse_quote! { <Self as Trait>::Type<{ N }> },
+            ] {
+                assert!(
+                    search.any_in(&input),
+                    "cannot find const parameter `N` in type `{}`",
+                    input.into_token_stream(),
+                );
+            }
+        }
+    }
+}
+
+#[cfg(any(feature = "into", feature = "try_into"))]
+pub(crate) mod replace_self {
+    use syn::{parse_quote, visit_mut::VisitMut};
+
+    /// Extension of a [`syn::DeriveInput`] providing capabilities for `Self` type replacement.
+    pub(crate) trait DeriveInputExt {
+        /// Replaces `Self` type in fields and trait bounds of this [`syn::DeriveInput`].
+        fn replace_self_type(&self) -> Self;
+    }
+
+    impl DeriveInputExt for syn::DeriveInput {
+        fn replace_self_type(&self) -> Self {
+            let mut input = self.clone();
+            Visitor::new(&input).visit_derive_input_mut(&mut input);
+            input
+        }
+    }
+
+    /// [`VisitMut`] implementation performing the `Self` type replacement.
+    ///
+    /// Based on:
+    /// <https://github.com/mbrobbel/narrow/blob/v0.11.1/narrow-derive/src/util/self_replace.rs>
+    struct Visitor {
+        /// [`syn::PathSegment`] representing a type to replace `Self` occurrences with.
+        self_ty: syn::PathSegment,
+    }
+
+    impl Visitor {
+        /// Creates a new `Self` type replacement [`Visitor`] for the provided [`syn::DeriveInput`].
+        fn new(input: &syn::DeriveInput) -> Self {
+            let ident = &input.ident;
+            let (_, ty_generics, _) = input.generics.split_for_impl();
+            Self {
+                self_ty: parse_quote! { #ident #ty_generics },
+            }
+        }
+    }
+
+    impl VisitMut for Visitor {
+        fn visit_derive_input_mut(&mut self, i: &mut syn::DeriveInput) {
+            self.visit_generics_mut(&mut i.generics);
+            self.visit_data_mut(&mut i.data);
+        }
+
+        fn visit_field_mut(&mut self, i: &mut syn::Field) {
+            self.visit_type_mut(&mut i.ty);
+        }
+
+        fn visit_path_segment_mut(&mut self, i: &mut syn::PathSegment) {
+            if i.ident == "Self" {
+                *i = self.self_ty.clone();
+            } else {
+                self.visit_path_arguments_mut(&mut i.arguments);
+            }
+        }
+
+        fn visit_variant_mut(&mut self, i: &mut syn::Variant) {
+            self.visit_fields_mut(&mut i.fields);
+        }
+    }
+
+    #[cfg(test)]
+    mod spec {
+        use syn::{parse_quote, DeriveInput};
+
+        use super::DeriveInputExt as _;
+
+        #[test]
+        fn replaces_generics() {
+            let input: DeriveInput = parse_quote! {
+                struct Foo<T, U: Sub<Self>>
+                where
+                    U: Add<Self>,
+                    Self: X,
+                    <U as Add<Self>>::Output: X,
+                    T: IntoIterator<Item = Self>,
+                    [Self; 5]: SomeTrait,
+                    <Self as OtherTrait>::Type: Copy;
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                struct Foo<T, U: Sub<Foo<T, U>>>
+                where
+                    U: Add<Foo<T, U>>,
+                    Foo<T, U>: X,
+                    <U as Add<Foo<T, U>>>::Output: X,
+                    T: IntoIterator<Item = Foo<T, U>>,
+                    [Foo<T, U>; 5]: SomeTrait,
+                    <Foo<T, U> as OtherTrait>::Type: Copy;
+            };
+
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn replaces_struct_named_fields() {
+            let input: DeriveInput = parse_quote! {
+                struct Foo {
+                    a: AddType<Self>,
+                    b: <Self as OtherTrait>::Type,
+                }
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                struct Foo {
+                    a: AddType<Foo>,
+                    b: <Foo as OtherTrait>::Type,
+                }
+            };
+
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn replaces_struct_unnamed_fields() {
+            let input: DeriveInput = parse_quote! {
+                struct Bar([Self; 5], <Foo as Add<Self>>::Output);
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                struct Bar([Bar; 5], <Foo as Add<Bar>>::Output);
+            };
+
+            assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn replaces_enum_fields() {
+            let input: DeriveInput = parse_quote! {
+                enum E {
+                    Foo {
+                        a: AddType<Self>,
+                        b: <Self as OtherTrait>::Type,
+                    },
+                    Bar([Self; 5], <Foo as Add<Self>>::Output),
+                }
+            };
+
+            let actual = input.replace_self_type();
+
+            let expected: DeriveInput = parse_quote! {
+                enum E {
+                    Foo {
+                        a: AddType<E>,
+                        b: <E as OtherTrait>::Type,
+                    },
+                    Bar([E; 5], <Foo as Add<E>>::Output),
+                }
+            };
+
+            assert_eq!(actual, expected);
         }
     }
 }

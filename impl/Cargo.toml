@@ -30,7 +30,7 @@ convert_case = { version = "0.8", optional = true }
 unicode-xid = { version = "0.2.2", optional = true }
 
 [build-dependencies]
-rustc_version = { version = "0.4", optional = true }
+rustc_version = "0.4"
 
 [dev-dependencies]
 derive_more = { path = "..", features = ["full"] }
@@ -44,7 +44,7 @@ features = ["full"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(nightly)"] }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(error_generic_member_access)", "cfg(nightly)"] }
 
 [features]
 default = []
@@ -57,12 +57,13 @@ debug = ["syn/extra-traits", "dep:unicode-xid"]
 deref = []
 deref_mut = []
 display = ["syn/extra-traits", "dep:unicode-xid", "dep:convert_case"]
+eq = ["syn/extra-traits", "syn/visit"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
-from_str = []
+from_str = ["syn/full", "syn/visit", "dep:convert_case"]
 index = []
 index_mut = []
-into = ["syn/extra-traits"]
+into = ["syn/extra-traits", "syn/visit-mut"]
 into_iterator = []
 is_variant = ["dep:convert_case"]
 mul = ["syn/extra-traits"]
@@ -70,7 +71,7 @@ mul_assign = ["syn/extra-traits"]
 not = ["syn/extra-traits"]
 sum = []
 try_from = []
-try_into = ["syn/extra-traits"]
+try_into = ["syn/extra-traits", "syn/full", "syn/visit-mut"]
 try_unwrap = ["dep:convert_case"]
 unwrap = ["dep:convert_case"]
 
@@ -83,6 +84,7 @@ full = [
     "deref",
     "deref_mut",
     "display",
+    "eq",
     "error",
     "from",
     "from_str",
@@ -101,4 +103,4 @@ full = [
     "unwrap",
 ]
 
-testing-helpers = ["dep:rustc_version"]
+testing-helpers = ["syn/full"]

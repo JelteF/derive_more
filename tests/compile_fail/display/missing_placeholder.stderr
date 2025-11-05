@@ -5,3 +5,8 @@ error: argument never used
   |           ---------  ^^^ argument never used
   |           |
   |           formatting specifier missing
+  |
+help: format specifiers use curly braces, consider adding a format specifier
+  |
+2 | #[display("Stuff(){}", bar)]
+  |                   ++

@@ -23,6 +23,8 @@
 //! [`DerefMut`]: macro@crate::DerefMut
 //! [`AddAssign`-like]: macro@crate::AddAssign
 //! [`MulAssign`-like]: macro@crate::MulAssign
+//! [`Eq`]: macro@crate::Eq
+//! [`PartialEq`]: macro@crate::PartialEq
 //!
 //! [`Constructor`]: macro@crate::Constructor
 //! [`IsVariant`]: macro@crate::IsVariant
@@ -42,7 +44,7 @@
     doc = core::include_str!("../README.md")
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(any(not(docsrs), ci), deny(rustdoc::all))]
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(clippy::nonstandard_macro_braces)]
@@ -62,6 +64,9 @@ pub mod __private {
     #[cfg(feature = "debug")]
     pub use crate::fmt::{debug_tuple, DebugTuple};
 
+    #[cfg(feature = "eq")]
+    pub use crate::cmp::AssertParamIsEq;
+
     #[cfg(feature = "error")]
     pub use crate::vendor::thiserror::aserror::AsDynError;
 }
@@ -72,6 +77,9 @@ pub mod __private {
 mod add;
 #[cfg(feature = "add")]
 pub use crate::add::{BinaryError, WrongVariantError};
+
+#[cfg(feature = "eq")]
+mod cmp;
 
 #[cfg(any(feature = "add", feature = "not"))]
 mod ops;
@@ -192,6 +200,8 @@ pub mod with_trait {
             UpperHex,
         );
 
+        re_export_traits!("eq", eq_traits, core::cmp, Eq, PartialEq);
+
         re_export_traits!("error", error_traits, core::error, Error);
 
         re_export_traits!("from", from_traits, core::convert, From);
@@ -265,6 +275,9 @@ pub mod with_trait {
 
         #[cfg(feature = "error")]
         pub use derive_more_impl::Error;
+
+        #[cfg(feature = "eq")]
+        pub use derive_more_impl::{Eq, PartialEq};
 
         #[cfg(feature = "from")]
         pub use derive_more_impl::From;
@@ -355,6 +368,10 @@ pub mod with_trait {
         Binary, Display, LowerExp, LowerHex, Octal, Pointer, UpperExp, UpperHex,
     };
 
+    #[cfg(feature = "eq")]
+    #[doc(hidden)]
+    pub use all_traits_and_derives::{Eq, PartialEq};
+
     #[cfg(feature = "error")]
     #[doc(hidden)]
     pub use all_traits_and_derives::Error;
@@ -438,6 +455,7 @@ pub mod with_trait {
     feature = "deref",
     feature = "deref_mut",
     feature = "display",
+    feature = "eq",
     feature = "error",
     feature = "from",
     feature = "from_str",

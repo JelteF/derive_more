@@ -61,6 +61,7 @@ debug = ["derive_more-impl/debug"]
 deref = ["derive_more-impl/deref"]
 deref_mut = ["derive_more-impl/deref_mut"]
 display = ["derive_more-impl/display"]
+eq = ["derive_more-impl/eq"]
 error = ["derive_more-impl/error"]
 from = ["derive_more-impl/from"]
 from_str = ["derive_more-impl/from_str"]
@@ -88,6 +89,7 @@ full = [
     "deref",
     "deref_mut",
     "display",
+    "eq",
     "error",
     "from",
     "from_str",
@@ -159,6 +161,11 @@ path = "tests/display.rs"
 required-features = ["display"]
 
 [[test]]
+name = "eq"
+path = "tests/eq.rs"
+required-features = ["eq"]
+
+[[test]]
 name = "error"
 path = "tests/error_tests.rs"
 required-features = ["error"]
@@ -214,6 +221,11 @@ path = "tests/not.rs"
 required-features = ["not"]
 
 [[test]]
+name = "partial_eq"
+path = "tests/partial_eq.rs"
+required-features = ["eq"]
+
+[[test]]
 name = "sum"
 path = "tests/sum.rs"
 required-features = ["sum"]
@@ -241,7 +253,7 @@ required-features = ["unwrap"]
 [[test]]
 name = "compile_fail"
 path = "tests/compile_fail/mod.rs"
-required-features = ["as_ref", "debug", "display", "from", "into", "is_variant", "try_from"]
+required-features = ["as_ref", "debug", "display", "from", "into", "is_variant", "try_from", "try_into"]
 
 [[test]]
 name = "no_std"
