@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - The minimum supported Rust version (MSRV) is now Rust 1.81.
   ([#466](https://github.com/JelteF/derive_more/pull/466))
+- `Add`-like, `AddAssign`-like, `Mul`-like and `MulAssign`-like derives now
+  infer trait bounds for generics structurally (bound field types instead of
+  type parameters directly).
+  ([#472](https://github.com/JelteF/derive_more/pull/472))
 
 ### Fixed
 
