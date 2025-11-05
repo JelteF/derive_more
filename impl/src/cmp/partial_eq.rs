@@ -10,8 +10,8 @@ use syn::{
 };
 
 use crate::utils::{
-    structural_inclusion::TypeExt as _,
     attr::{self, ParseMultiple as _},
+    structural_inclusion::TypeExt as _,
     GenericsSearch, HashSet,
 };
 

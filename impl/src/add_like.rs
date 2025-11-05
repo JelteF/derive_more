@@ -16,20 +16,21 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     let method_name = trait_name.to_lowercase();
     let method_ident = format_ident!("{method_name}");
     let input_type = &input.ident;
+    let self_ty: syn::Type = parse_quote! { Self };
 
     let (block, used_fields) = match &input.data {
         syn::Data::Struct(data_struct) => match &data_struct.fields {
             fields @ syn::Fields::Unnamed(_) => {
                 let (exprs, used_fields) =
                     tuple_exprs_and_used_fields(fields, &method_ident)?;
-                (quote! { #input_type(#(#exprs,)*) }, used_fields)
+                (quote! { #self_ty(#(#exprs,)*) }, used_fields)
             }
             fields @ syn::Fields::Named(_) => {
                 let (exprs, used_fields) =
                     struct_exprs_and_used_fields(fields, &method_ident)?;
                 let field_names = fields.iter().filter_map(|f| f.ident.as_ref());
                 (
-                    quote! { #input_type{ #(#field_names: #exprs,)* } },
+                    quote! { #self_ty { #(#field_names: #exprs,)* } },
                     used_fields,
                 )
             }
@@ -48,25 +49,22 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     let mut generics = input.generics.clone();
     let (_, ty_generics, _) = input.generics.split_for_impl();
     let implementor_ty: syn::Type = parse_quote! { #input_type #ty_generics };
-    {
-        let self_ty: syn::Type = parse_quote! { Self };
-        for field_ty in used_fields.iter().map(|f| &f.ty) {
-            if generics_search.any_in(field_ty)
-                && !field_ty.contains_type_structurally(&self_ty)
-                && !field_ty.contains_type_structurally(&implementor_ty)
-            {
-                generics.make_where_clause().predicates.push(parse_quote! {
-                    #field_ty: derive_more::core::ops::#trait_ident
-                });
-            }
+    for field_ty in used_fields.iter().map(|f| &f.ty) {
+        if generics_search.any_in(field_ty)
+            && !field_ty.contains_type_structurally(&self_ty)
+            && !field_ty.contains_type_structurally(&implementor_ty)
+        {
+            generics.make_where_clause().predicates.push(parse_quote! {
+                #field_ty: derive_more::core::ops::#trait_ident<Output = #field_ty>
+            });
         }
     }
     let (impl_generics, _, where_clause) = generics.split_for_impl();
 
     let output_type = match input.data {
-        syn::Data::Struct(_) => quote! { #implementor_ty },
+        syn::Data::Struct(_) => quote! { #self_ty },
         syn::Data::Enum(_) => quote! {
-            derive_more::core::result::Result<#implementor_ty, derive_more::BinaryError>
+            derive_more::core::result::Result<#self_ty, derive_more::BinaryError>
         },
         _ => unreachable!(),
     };
@@ -74,12 +72,12 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     Ok(quote! {
         #[automatically_derived]
         impl #impl_generics derive_more::core::ops::#trait_ident
-         for #input_type #ty_generics #where_clause {
+         for #implementor_ty #where_clause {
             type Output = #output_type;
 
             #[inline]
             #[track_caller]
-            fn #method_ident(self, rhs: #input_type #ty_generics) -> #output_type {
+            fn #method_ident(self, rhs: Self) -> Self::Output {
                 #block
             }
         }
