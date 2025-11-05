@@ -239,8 +239,13 @@ assert_eq!("variant-two".parse::<Enum>().unwrap(), Enum::VariantTwo);
 ## Custom error
 
 The `#[from_str(error(<ty>[, <conv>]))]` attribute can be used to convert the `FromStr`' `Err` type
-into a custom error type. If the conversion function is not provided, the custom error type must implement
-`From<FromStr::Err>`.
+into a custom error type.
+
+If the conversion function is not provided, the custom error type must implement `From<FromStr::Err>`.
+The conversion function could be provided in the following forms:
+- function (like `CustomError::new`);
+- closure (like `|e| CustomError::new(e)`);
+- function call (like `CustomError::factory()`).
 
 
 ### Forwarding

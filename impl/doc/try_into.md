@@ -186,9 +186,15 @@ impl TryFrom<EnumWithUnit> for () {
 
 ## Custom error
 
-The `#[try_into(error(error_ty[, error_fn]))]` attribute can be used to convert the `TryIntoError` type
-into a custom error type. If the conversion function is not provided, the custom error type must implement
+The `#[try_into(error(<ty>[, <conv>]))]` attribute can be used to convert the `TryIntoError` type
+into a custom error type.
+
+If the conversion function is not provided, the custom error type must implement
 `From<derive_more::TryIntoError<T>>`.
+The conversion function could be provided in the following forms:
+- function (like `CustomError::new`);
+- closure (like `|e| CustomError::new(e)`);
+- function call (like `CustomError::factory()`).
 
 This, however, doesn't support custom error with generic parameters, such as
 `struct CustomError<T>(derive_more::TryIntoError<T>)` (newtype wrapper around `derive_more::TryIntoError`).
