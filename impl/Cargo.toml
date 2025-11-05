@@ -49,7 +49,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(error_generic_m
 [features]
 default = []
 
-add = []
+add = ["syn/extra-traits", "syn/visit"]
 add_assign = []
 as_ref = ["syn/extra-traits", "syn/visit"]
 constructor = []

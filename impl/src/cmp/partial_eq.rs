@@ -9,8 +9,8 @@ use syn::{
     token,
 };
 
-use super::TypeExt as _;
 use crate::utils::{
+    structural_inclusion::TypeExt as _,
     attr::{self, ParseMultiple as _},
     GenericsSearch, HashSet,
 };

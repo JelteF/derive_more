@@ -4,8 +4,8 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse_quote, spanned::Spanned as _};
 
-use super::TypeExt as _;
 use crate::utils::{
+    structural_inclusion::TypeExt as _,
     attr::{self, ParseMultiple as _},
     HashSet,
 };

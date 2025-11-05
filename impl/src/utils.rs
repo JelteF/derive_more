@@ -7,9 +7,9 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse_quote, punctuated::Punctuated, spanned::Spanned, Attribute, Data,
-    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericArgument,
-    GenericParam, Generics, Ident, Index, Result, ReturnType, Token, Type,
-    TypeGenerics, TypeParamBound, Variant, WhereClause,
+    DeriveInput, Error, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam,
+    Generics, Ident, Index, Result, Token, Type, TypeGenerics, TypeParamBound, Variant,
+    WhereClause,
 };
 
 #[cfg(any(
@@ -30,7 +30,12 @@ use syn::{
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
-#[cfg(any(feature = "as_ref", feature = "eq", feature = "from_str"))]
+#[cfg(any(
+    feature = "add",
+    feature = "as_ref",
+    feature = "eq",
+    feature = "from_str"
+))]
 pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
     feature = "as_ref",
@@ -149,74 +154,12 @@ pub fn get_field_types<'a>(fields: &'a [&'a Field]) -> Vec<&'a Type> {
     get_field_types_iter(fields).collect()
 }
 
-pub fn extract_idents_from_generic_arguments<'a>(
-    args: impl IntoIterator<Item = &'a GenericArgument>,
-) -> HashSet<Ident> {
-    fn extract_from_type(set: &mut HashSet<Ident>, ty: &syn::Type) {
-        match ty {
-            Type::Array(type_array) => extract_from_type(set, &type_array.elem),
-            Type::BareFn(type_bare_fn) => {
-                for arg in &type_bare_fn.inputs {
-                    extract_from_type(set, &arg.ty)
-                }
-                if let ReturnType::Type(_, ty) = &type_bare_fn.output {
-                    extract_from_type(set, ty)
-                }
-            }
-            Type::Group(type_group) => extract_from_type(set, &type_group.elem),
-            Type::Paren(type_paren) => extract_from_type(set, &type_paren.elem),
-            Type::Path(type_path) => {
-                if type_path.qself.is_none()
-                    && type_path.path.leading_colon.is_none()
-                    && type_path.path.segments.len() == 1
-                {
-                    set.insert(type_path.path.segments[0].ident.clone());
-                }
-            }
-            Type::Ptr(type_ptr) => extract_from_type(set, &type_ptr.elem),
-            Type::Reference(type_reference) => {
-                extract_from_type(set, &type_reference.elem)
-            }
-            Type::Slice(type_slice) => extract_from_type(set, &type_slice.elem),
-            Type::Tuple(type_tuple) => {
-                for ty in &type_tuple.elems {
-                    extract_from_type(set, ty);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    let mut type_params = HashSet::default();
-    for arg in args {
-        if let GenericArgument::Type(ty) = arg {
-            extract_from_type(&mut type_params, ty);
-        }
-    }
-    type_params
-}
-
 pub fn add_extra_type_param_bound_op_output<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
 ) -> Generics {
-    add_extra_type_param_bound_op_output_except(
-        generics,
-        trait_ident,
-        HashSet::default(),
-    )
-}
-
-pub fn add_extra_type_param_bound_op_output_except<'a>(
-    generics: &'a Generics,
-    trait_ident: &'a Ident,
-    except: HashSet<Ident>,
-) -> Generics {
     let mut generics = generics.clone();
-    for type_param in &mut generics
-        .type_params_mut()
-        .skip_while(|t| except.contains(&t.ident))
-    {
+    for type_param in &mut generics.type_params_mut() {
         let type_ident = &type_param.ident;
         let bound: TypeParamBound = parse_quote! {
             derive_more::core::ops::#trait_ident<Output = #type_ident>
@@ -227,43 +170,20 @@ pub fn add_extra_type_param_bound_op_output_except<'a>(
     generics
 }
 
-// pub fn add_extra_ty_param_bound_op<'a>(
-//     generics: &'a Generics,
-//     trait_ident: &'a Ident,
-// ) -> Generics {
-//     add_extra_ty_param_bound_op_except(generics, trait_ident, HashSet::default())
-// }
-
-pub fn add_extra_ty_param_bound_op_except<'a>(
+pub fn add_extra_ty_param_bound_op<'a>(
     generics: &'a Generics,
     trait_ident: &'a Ident,
-    except: HashSet<Ident>,
 ) -> Generics {
-    add_extra_ty_param_bound_except(
-        generics,
-        &quote! { derive_more::core::ops::#trait_ident },
-        except,
-    )
+    add_extra_ty_param_bound(generics, &quote! { derive_more::core::ops::#trait_ident })
 }
 
 pub fn add_extra_ty_param_bound<'a>(
     generics: &'a Generics,
     bound: &'a TokenStream,
 ) -> Generics {
-    add_extra_ty_param_bound_except(generics, bound, HashSet::default())
-}
-
-pub fn add_extra_ty_param_bound_except<'a>(
-    generics: &'a Generics,
-    bound: &'a TokenStream,
-    except: HashSet<Ident>,
-) -> Generics {
     let mut generics = generics.clone();
     let bound: TypeParamBound = parse_quote! { #bound };
-    for type_param in &mut generics
-        .type_params_mut()
-        .skip_while(|t| except.contains(&t.ident))
-    {
+    for type_param in &mut generics.type_params_mut() {
         type_param.bounds.push(bound.clone())
     }
 
@@ -1121,7 +1041,6 @@ fn parse_punctuated_nested_meta(
                     (None, "owned") => info.owned = Some(true),
                     (None, "ref") => info.ref_ = Some(true),
                     (None, "ref_mut") => info.ref_mut = Some(true),
-                    (None, "skip") => info.skip = Some(true),
                     (None, "source") => info.source = Some(true),
                     (Some("not"), "source") => info.source = Some(false),
                     (Some("source"), "optional") => info.source_optional = Some(true),
@@ -1320,7 +1239,6 @@ pub struct MetaInfo {
     pub owned: Option<bool>,
     pub ref_: Option<bool>,
     pub ref_mut: Option<bool>,
-    pub skip: Option<bool>,
     pub source: Option<bool>,
     pub source_optional: Option<bool>,
     pub backtrace: Option<bool>,
@@ -2593,7 +2511,12 @@ mod fields_ext {
     impl<T: Len + ?Sized> FieldsExt for T {}
 }
 
-#[cfg(any(feature = "as_ref", feature = "eq", feature = "from_str"))]
+#[cfg(any(
+    feature = "add",
+    feature = "as_ref",
+    feature = "eq",
+    feature = "from_str"
+))]
 mod generics_search {
     use syn::visit::Visit;
 
@@ -2937,6 +2860,159 @@ pub(crate) mod replace_self {
             };
 
             assert_eq!(actual, expected);
+        }
+    }
+}
+
+#[cfg(any(feature = "add", feature = "eq"))]
+pub(crate) mod structural_inclusion {
+    //! Helper extensions of [`syn`] types for checking structural inclusion.
+
+    /// Extension of a [`syn::Type`] providing helper methods checking for structural inclusion of
+    /// other types.
+    pub(crate) trait TypeExt {
+        /// Checks whether the provided [`syn::Type`] is contained within this [`syn::Type`]
+        /// structurally (part of the actual structure).
+        ///
+        /// # False positives
+        ///
+        /// This check naturally gives a false positive when a type parameter is not used directly
+        /// in a field, but its associative type does (e.g. `struct Foo<T: Some>(T::Assoc);`). This
+        /// is because the structure of the type cannot be scanned by its name only.
+        fn contains_type_structurally(&self, needle: &syn::Type) -> bool;
+    }
+
+    impl TypeExt for syn::Type {
+        fn contains_type_structurally(&self, needle: &Self) -> bool {
+            if self == needle {
+                return true;
+            }
+            match self {
+                syn::Type::Array(syn::TypeArray { elem, .. })
+                | syn::Type::Group(syn::TypeGroup { elem, .. })
+                | syn::Type::Paren(syn::TypeParen { elem, .. })
+                | syn::Type::Ptr(syn::TypePtr { elem, .. })
+                | syn::Type::Reference(syn::TypeReference { elem, .. })
+                | syn::Type::Slice(syn::TypeSlice { elem, .. }) => {
+                    elem.contains_type_structurally(needle)
+                }
+                syn::Type::Tuple(syn::TypeTuple { elems, .. }) => {
+                    elems.iter().any(|elem| elem.contains_type_structurally(needle))
+                }
+                syn::Type::Path(syn::TypePath { path, .. }) => path
+                    .segments
+                    .iter()
+                    .filter_map(|seg| {
+                        if let syn::PathArguments::AngleBracketed(args) = &seg.arguments {
+                            Some(&args.args)
+                        } else {
+                            None
+                        }
+                    })
+                    .flatten()
+                    .any(|generic_arg| {
+                        matches!(
+                            generic_arg,
+                            syn::GenericArgument::Type(ty) if ty.contains_type_structurally(needle),
+                        )
+                    }),
+                syn::Type::BareFn(_)
+                | syn::Type::ImplTrait(_)
+                | syn::Type::Infer(_)
+                | syn::Type::Macro(_)
+                | syn::Type::Never(_)
+                | syn::Type::TraitObject(_)
+                | syn::Type::Verbatim(_) => false,
+                _ => unimplemented!(
+                    "syntax is not supported by `derive_more`, please report a bug",
+                ),
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod type_ext_spec {
+        use quote::ToTokens as _;
+        use syn::parse_quote;
+
+        use super::TypeExt as _;
+
+        #[test]
+        fn contains() {
+            for (input, container) in [
+                (parse_quote! { Self }, parse_quote! { Self }),
+                (parse_quote! { Self }, parse_quote! { (Self) }),
+                (parse_quote! { Self }, parse_quote! { (Self,) }),
+                (parse_quote! { Self }, parse_quote! { (Self, Foo) }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { (Foo, Bar, Baz, Self) },
+                ),
+                (parse_quote! { Self }, parse_quote! { [Self] }),
+                (parse_quote! { Self }, parse_quote! { [Self; N] }),
+                (parse_quote! { Self }, parse_quote! { *const Self }),
+                (parse_quote! { Self }, parse_quote! { *mut Self }),
+                (parse_quote! { Self }, parse_quote! { &'a Self }),
+                (parse_quote! { Self }, parse_quote! { &'a mut Self }),
+                (parse_quote! { Self }, parse_quote! { Box<Self> }),
+                (parse_quote! { Self }, parse_quote! { PhantomData<Self> }),
+                (parse_quote! { Self }, parse_quote! { Arc<Mutex<Self>> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { [*const (&'a [Arc<Mutex<Self>>],); 0] },
+                ),
+            ] {
+                let container: syn::Type = container; // for type inference only
+                assert!(
+                    container.contains_type_structurally(&input),
+                    "cannot find type `{}` in type `{}`",
+                    input.into_token_stream(),
+                    container.into_token_stream(),
+                );
+            }
+        }
+
+        #[test]
+        fn not_contains() {
+            for (input, container) in [
+                (parse_quote! { Self }, parse_quote! { Foo }),
+                (parse_quote! { Self }, parse_quote! { (Foo) }),
+                (parse_quote! { Self }, parse_quote! { (Foo,) }),
+                (parse_quote! { Self }, parse_quote! { (Foo, Bar, Baz) }),
+                (parse_quote! { Self }, parse_quote! { [Foo] }),
+                (parse_quote! { Self }, parse_quote! { [Foo; N] }),
+                (parse_quote! { Self }, parse_quote! { *const Foo }),
+                (parse_quote! { Self }, parse_quote! { *mut Foo }),
+                (parse_quote! { Self }, parse_quote! { &'a Foo }),
+                (parse_quote! { Self }, parse_quote! { &'a mut Foo }),
+                (parse_quote! { Self }, parse_quote! { Box<Foo> }),
+                (parse_quote! { Self }, parse_quote! { PhantomData<Foo> }),
+                (parse_quote! { Self }, parse_quote! { Arc<Mutex<Foo>> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { [*const (&'a [Arc<Mutex<Foo>>],); 0] },
+                ),
+                (parse_quote! { Self }, parse_quote! { fn(Self) -> Foo }),
+                (parse_quote! { Self }, parse_quote! { fn(Foo) -> Self }),
+                (parse_quote! { Self }, parse_quote! { impl Foo<Self> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { impl Foo<Type = Self> },
+                ),
+                (parse_quote! { Self }, parse_quote! { dyn Foo<Self> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { dyn Sync + Foo<Type = Self> },
+                ),
+            ] {
+                let container: syn::Type = container; // for type inference only
+                assert!(
+                    !container.contains_type_structurally(&input),
+                    "found type `{}` in type `{}`",
+                    input.into_token_stream(),
+                    container.into_token_stream(),
+                );
+            }
         }
     }
 }
