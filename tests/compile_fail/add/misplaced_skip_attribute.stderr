@@ -1,0 +1,11 @@
+error: `#[add(ignore)]` attribute can be placed only on struct fields
+ --> tests/compile_fail/add/misplaced_skip_attribute.rs:2:1
+  |
+2 | #[add(ignore)]
+  | ^
+
+error: `#[add(skip)]` attribute can be placed only on variant fields
+ --> tests/compile_fail/add/misplaced_skip_attribute.rs:7:5
+  |
+7 |     #[add(skip)]
+  |     ^
