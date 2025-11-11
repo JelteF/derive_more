@@ -13,13 +13,12 @@ mod utils;
 #[cfg(any(feature = "add_assign", feature = "mul_assign"))]
 mod add_assign_like;
 #[cfg(any(
-    feature = "add",
     feature = "add_assign",
     feature = "mul",
     feature = "mul_assign",
 ))]
 mod add_helpers;
-#[cfg(any(feature = "add", feature = "mul"))]
+#[cfg(feature = "mul")]
 mod add_like;
 #[cfg(feature = "as_ref")]
 mod r#as;
@@ -57,6 +56,8 @@ mod mul_helpers;
 mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
+#[cfg(feature = "add")]
+mod ops;
 #[cfg(any(feature = "debug", feature = "display"))]
 pub(crate) mod parsing;
 #[cfg(feature = "sum")]
@@ -109,11 +110,11 @@ macro_rules! create_derive(
     }
 );
 
-create_derive!("add", add_like, Add, add_derive, add);
-create_derive!("add", add_like, Sub, sub_derive, sub);
-create_derive!("add", add_like, BitAnd, bit_and_derive, bitand);
-create_derive!("add", add_like, BitOr, bit_or_derive, bitor);
-create_derive!("add", add_like, BitXor, bit_xor_derive, bitxor);
+create_derive!("add", ops::add, Add, add_derive, add);
+create_derive!("add", ops::add, Sub, sub_derive, sub);
+create_derive!("add", ops::add, BitAnd, bit_and_derive, bitand);
+create_derive!("add", ops::add, BitOr, bit_or_derive, bitor);
+create_derive!("add", ops::add, BitXor, bit_xor_derive, bitxor);
 
 create_derive!(
     "add_assign",

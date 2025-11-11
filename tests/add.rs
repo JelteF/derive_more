@@ -1,19 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)] // some code is tested for type checking only
 
-use derive_more::Add;
-
-#[derive(Add)]
-enum MixedInts {
-    SmallInt(i32),
-    BigInt(i64),
-    TwoSmallInts(i32, i32),
-    NamedSmallInts { x: i32, y: i32 },
-    UnsignedOne(u32),
-    UnsignedTwo(u32),
-    Unit,
-}
-
 mod structs {
     use derive_more::Add;
 
@@ -68,10 +55,10 @@ mod structs {
         #[test]
         fn multi_field_struct() {
             #[derive(Add)]
-                struct Bar<A, B: Some> {
-                    b: B::Assoc,
-                    i: A,
-                }
+            struct Bar<A, B: Some> {
+                b: B::Assoc,
+                i: A,
+            }
 
             let a = Bar::<_, ()> { b: 12, i: 21 };
             let b = Bar::<_, ()> { b: 1, i: 2 };
@@ -116,6 +103,110 @@ mod structs {
             };
 
             assert_eq!((a + b).x, 14);
+        }
+    }
+}
+
+mod enums {
+    use derive_more::Add;
+
+    #[test]
+    fn empty() {
+        #[derive(Add)]
+        enum Empty {}
+    }
+
+    #[test]
+    fn multi() {
+        #[derive(Add, Debug, PartialEq)]
+        enum MixedInts {
+            SmallInt(i32),
+            BigInt(i64),
+            TwoSmallInts(i32, i32),
+            NamedSmallInts { x: i32, y: i32 },
+            UnsignedOne(u32),
+            UnsignedTwo(u32),
+            Unit,
+        }
+
+        assert_eq!(
+            (MixedInts::SmallInt(-1) + MixedInts::SmallInt(2)).unwrap(),
+            MixedInts::SmallInt(1),
+        );
+        assert_eq!(
+            (MixedInts::BigInt(-1) + MixedInts::BigInt(2)).unwrap(),
+            MixedInts::BigInt(1),
+        );
+        assert_eq!(
+            (MixedInts::TwoSmallInts(-1, 3) + MixedInts::TwoSmallInts(2, -5)).unwrap(),
+            MixedInts::TwoSmallInts(1, -2),
+        );
+        assert_eq!(
+            (MixedInts::NamedSmallInts { x: -1, y: 3 }
+                + MixedInts::NamedSmallInts { x: 2, y: -5 })
+            .unwrap(),
+            MixedInts::NamedSmallInts { x: 1, y: -2 },
+        );
+        assert_eq!(
+            (MixedInts::UnsignedOne(1) + MixedInts::UnsignedOne(2)).unwrap(),
+            MixedInts::UnsignedOne(3),
+        );
+        assert_eq!(
+            (MixedInts::UnsignedTwo(1) + MixedInts::UnsignedTwo(2)).unwrap(),
+            MixedInts::UnsignedTwo(3),
+        );
+
+        assert_eq!(
+            (MixedInts::Unit + MixedInts::Unit).unwrap_err().to_string(),
+            "Cannot add() unit variants",
+        );
+        assert_eq!(
+            (MixedInts::SmallInt(-1) + MixedInts::BigInt(2))
+                .unwrap_err()
+                .to_string(),
+            "Trying to add() mismatched enum variants",
+        );
+    }
+
+    mod ignore {
+        use derive_more::Add;
+
+        #[test]
+        fn multi() {
+            #[derive(Add, Debug, PartialEq)]
+            enum MixedInts {
+                TwoSmallInts(i32, #[add(skip)] i32),
+                NamedSmallInts {
+                    #[add(ignore)]
+                    x: i32,
+                    y: i32,
+                },
+                Unit,
+            }
+
+            assert_eq!(
+                (MixedInts::TwoSmallInts(-1, 3) + MixedInts::TwoSmallInts(2, -5))
+                    .unwrap(),
+                MixedInts::TwoSmallInts(1, 3),
+            );
+            assert_eq!(
+                (MixedInts::NamedSmallInts { x: -1, y: 3 }
+                    + MixedInts::NamedSmallInts { x: 2, y: -5 })
+                .unwrap(),
+                MixedInts::NamedSmallInts { x: -1, y: -2 },
+            );
+
+            assert_eq!(
+                (MixedInts::Unit + MixedInts::Unit).unwrap_err().to_string(),
+                "Cannot add() unit variants",
+            );
+            assert_eq!(
+                (MixedInts::TwoSmallInts(-1, 3)
+                    + MixedInts::NamedSmallInts { x: -1, y: 3 })
+                .unwrap_err()
+                .to_string(),
+                "Trying to add() mismatched enum variants",
+            );
         }
     }
 }

@@ -1,0 +1,220 @@
+//! Implementations of [`ops`]-related derive macros.
+//!
+//! [`ops`]: std::ops
+
+pub(crate) mod add;
+
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
+use syn::parse_quote;
+
+#[cfg(doc)]
+use crate::utils::attr;
+use crate::utils::{structural_inclusion::TypeExt as _, GenericsSearch, HashSet};
+
+/// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
+type SkippedFields = HashSet<usize>;
+
+/// Expansion of a macro for generating a structural trait implementation for an enum or a struct.
+struct StructuralExpansion<'i> {
+    /// [`syn::Ident`] of the implemented trait.
+    trait_ty: &'i syn::Ident,
+
+    /// [`syn::Ident`] of the implemented method in trait.
+    method_ident: &'i syn::Ident,
+
+    /// [`syn::Ident`] and [`syn::Generics`] of the implementor enum/struct.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
+    self_ty: (&'i syn::Ident, &'i syn::Generics),
+
+    /// [`syn::Fields`] of the enum/struct to be used in this [`StructuralExpansion`].
+    variants: Vec<(Option<&'i syn::Ident>, &'i syn::Fields, SkippedFields)>,
+
+    /// Indicator whether this expansion is for an enum.
+    is_enum: bool,
+}
+
+impl StructuralExpansion<'_> {
+    /// Generates body of the method implementation for this [`StructuralExpansion`].
+    fn body(&self) -> TokenStream {
+        let method_name = self.method_ident.to_string();
+        let method_path = {
+            let trait_ty = self.trait_ty;
+            let method_ident = self.method_ident;
+
+            parse_quote! { derive_more::core::ops::#trait_ty::#method_ident }
+        };
+
+        let match_arms = self
+            .variants
+            .iter()
+            .map(|(variant, all_fields, skipped_fields)| {
+                let variant = variant.map(|variant| quote! { :: #variant });
+                let self_pat = all_fields.arm_pattern("__self_");
+                let rhs_pat = all_fields.arm_pattern("__rhs_");
+
+                let expr = if matches!(all_fields, syn::Fields::Unit) {
+                    quote! {
+                        derive_more::core::result::Result::Err(derive_more::BinaryError::Unit(
+                            derive_more::UnitError::new(#method_name)
+                        ))
+                    }
+                } else {
+                    let fields_expr = all_fields.arm_expr(&method_path, skipped_fields);
+                    if self.is_enum {
+                        quote! { derive_more::core::result::Result::Ok(Self #variant #fields_expr) }
+                    } else {
+                        quote! { Self #variant #fields_expr }
+                    }
+                };
+
+                quote! {
+                    (Self #variant #self_pat, Self #variant #rhs_pat) => #expr,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let wrong_variant_arm = (self.is_enum && match_arms.len() > 1).then(|| {
+            quote! {
+                _ => derive_more::core::result::Result::Err(derive_more::BinaryError::Mismatch(
+                    derive_more::WrongVariantError::new(#method_name)
+                )),
+            }
+        });
+
+        quote! {
+            match (self, __rhs) {
+                #( #match_arms )*
+                #wrong_variant_arm
+            }
+        }
+    }
+}
+
+impl ToTokens for StructuralExpansion<'_> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let trait_ty = self.trait_ty;
+        let method_ident = self.method_ident;
+
+        let ty = self.self_ty.0;
+        let (_, ty_generics, _) = self.self_ty.1.split_for_impl();
+        let implementor_ty: syn::Type = parse_quote! { #ty #ty_generics };
+        let self_ty: syn::Type = parse_quote! { Self };
+
+        let output_ty = if self.is_enum {
+            parse_quote! { derive_more::core::result::Result<#self_ty, derive_more::BinaryError> }
+        } else {
+            self_ty.clone()
+        };
+
+        let generics_search = GenericsSearch::from(self.self_ty.1);
+        let mut generics = self.self_ty.1.clone();
+        for (_, all_fields, skipped_fields) in &self.variants {
+            for field_ty in all_fields.iter().enumerate().filter_map(|(n, field)| {
+                (!skipped_fields.contains(&n)).then_some(&field.ty)
+            }) {
+                if generics_search.any_in(field_ty)
+                    && !field_ty.contains_type_structurally(&self_ty)
+                    && !field_ty.contains_type_structurally(&implementor_ty)
+                {
+                    generics.make_where_clause().predicates.push(parse_quote! {
+                        #field_ty: derive_more::core::ops:: #trait_ty <Output = #field_ty>
+                    });
+                }
+            }
+        }
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+
+        let body = self.body();
+
+        quote! {
+            #[allow(private_bounds)]
+            #[automatically_derived]
+            impl #impl_generics derive_more::core::ops:: #trait_ty for #implementor_ty
+                 #where_clause
+            {
+                type Output = #output_ty;
+
+                #[inline]
+                #[track_caller]
+                fn #method_ident(self, __rhs: Self) -> Self::Output {
+                    #body
+                }
+            }
+        }
+        .to_tokens(tokens);
+    }
+}
+
+/// Extension of [`syn::Fields`] used by a [`StructuralExpansion`].
+trait StructuralExpansionFieldsExt {
+    /// Generates a pattern for matching these [`syn::Fields`] in an arm of a `match` expression.
+    ///
+    /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
+    fn arm_pattern(&self, prefix: &str) -> TokenStream;
+
+    /// Generates a resulting expression with these [`syn::Fields`] in a matched arm of a `match`
+    /// expression, by applying the specified method.
+    fn arm_expr(
+        &self,
+        method: &syn::Path,
+        skipped_indices: &SkippedFields,
+    ) -> TokenStream;
+}
+
+impl StructuralExpansionFieldsExt for syn::Fields {
+    fn arm_pattern(&self, prefix: &str) -> TokenStream {
+        match self {
+            Self::Named(fields) => {
+                let fields = fields.named.iter().enumerate().map(|(num, field)| {
+                    let name = &field.ident;
+                    let binding = format_ident!("{prefix}{num}");
+                    quote! { #name: #binding }
+                });
+                quote! {{ #( #fields , )* }}
+            }
+            Self::Unnamed(fields) => {
+                let fields =
+                    (0..fields.unnamed.len()).map(|num| format_ident!("{prefix}{num}"));
+                quote! {( #( #fields , )* )}
+            }
+            Self::Unit => quote! {},
+        }
+    }
+
+    fn arm_expr(
+        &self,
+        method_path: &syn::Path,
+        skipped_indices: &SkippedFields,
+    ) -> TokenStream {
+        match self {
+            Self::Named(fields) => {
+                let fields = fields.named.iter().enumerate().map(|(num, field)| {
+                    let name = &field.ident;
+                    let self_val = format_ident!("__self_{num}");
+                    if skipped_indices.contains(&num) {
+                        quote! { #name: #self_val }
+                    } else {
+                        let rhs_val = format_ident!("__rhs_{num}");
+                        quote! { #name: #method_path(#self_val, #rhs_val) }
+                    }
+                });
+                quote! {{ #( #fields , )* }}
+            }
+            Self::Unnamed(fields) => {
+                let fields = (0..fields.unnamed.len()).map(|num| {
+                    let self_val = format_ident!("__self_{num}");
+                    if skipped_indices.contains(&num) {
+                        quote! { #self_val }
+                    } else {
+                        let rhs_val = format_ident!("__rhs_{num}");
+                        quote! { #method_path(#self_val, #rhs_val) }
+                    }
+                });
+                quote! {( #( #fields , )* )}
+            }
+            Self::Unit => quote! {},
+        }
+    }
+}

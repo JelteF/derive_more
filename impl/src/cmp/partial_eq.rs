@@ -32,7 +32,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 }
             }
             if !has_skipped_variants {
-                let mut skipped_fields = HashSet::default();
+                let mut skipped_fields = SkippedFields::default();
                 'fields: for (n, field) in data.fields.iter().enumerate() {
                     for attr_name in [&attr_name, &secondary_attr_name] {
                         if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
@@ -52,7 +52,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                         continue 'variants;
                     }
                 }
-                let mut skipped_fields = HashSet::default();
+                let mut skipped_fields = SkippedFields::default();
                 'fields: for (n, field) in variant.fields.iter().enumerate() {
                     for attr_name in [&attr_name, &secondary_attr_name] {
                         if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
@@ -178,8 +178,9 @@ impl StructuralExpansion<'_> {
                 && no_fields_arm.is_none())
             .then(|| {
                 quote! {
-                    // SAFETY: This arm is never reachable, but is required by the expanded
-                    //         `match (self, other)` expression when there is more than one variant.
+                    // SAFETY: This arm is never reachable due to `mem::discriminant()` comparison
+                    //         preceding the expanded `match (self, other)` expression, but is
+                    //         required by it when there is more than one variant.
                     _ => unsafe { derive_more::core::hint::unreachable_unchecked() },
                 }
             });
