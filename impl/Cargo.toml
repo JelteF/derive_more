@@ -50,7 +50,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ["cfg(ci)", "cfg(error_generic_m
 default = []
 
 add = ["syn/extra-traits", "syn/visit"]
-add_assign = []
+add_assign = ["syn/extra-traits", "syn/visit"]
 as_ref = ["syn/extra-traits", "syn/visit"]
 constructor = []
 debug = ["syn/extra-traits", "dep:unicode-xid"]

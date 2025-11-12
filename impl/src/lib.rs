@@ -12,11 +12,7 @@ mod utils;
 
 #[cfg(any(feature = "add_assign", feature = "mul_assign"))]
 mod add_assign_like;
-#[cfg(any(
-    feature = "add_assign",
-    feature = "mul",
-    feature = "mul_assign",
-))]
+#[cfg(any(feature = "add_assign", feature = "mul", feature = "mul_assign",))]
 mod add_helpers;
 #[cfg(feature = "mul")]
 mod add_like;
@@ -56,7 +52,7 @@ mod mul_helpers;
 mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
-#[cfg(feature = "add")]
+#[cfg(any(feature = "add", feature = "add_assign"))]
 mod ops;
 #[cfg(any(feature = "debug", feature = "display"))]
 pub(crate) mod parsing;
@@ -118,35 +114,35 @@ create_derive!("add", ops::add, BitXor, bit_xor_derive, bitxor);
 
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
     AddAssign,
     add_assign_derive,
     add_assign,
 );
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
     SubAssign,
     sub_assign_derive,
     sub_assign,
 );
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
     BitAndAssign,
     bit_and_assign_derive,
     bitand_assign,
 );
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
     BitOrAssign,
     bit_or_assign_derive,
     bitor_assign,
 );
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
     BitXorAssign,
     bit_xor_assign_derive,
     bitxor_assign,

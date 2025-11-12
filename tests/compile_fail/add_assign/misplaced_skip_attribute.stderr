@@ -1,0 +1,5 @@
+error: `#[add_assign(skip)]` attribute can be placed only on struct fields
+ --> tests/compile_fail/add_assign/misplaced_skip_attribute.rs:2:1
+  |
+2 | #[add_assign(skip)]
+  | ^

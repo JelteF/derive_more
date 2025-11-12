@@ -6,11 +6,11 @@ use syn::{
     parse_quote,
     punctuated::{self, Punctuated},
     spanned::Spanned as _,
-    token,
 };
 
 use crate::utils::{
     attr::{self, ParseMultiple as _},
+    pattern_matching::FieldsExt as _,
     structural_inclusion::TypeExt as _,
     GenericsSearch, HashSet,
 };
@@ -150,8 +150,10 @@ impl StructuralExpansion<'_> {
                 }
 
                 let variant = variant.map(|variant| quote! { :: #variant });
-                let self_pattern = all_fields.arm_pattern("__self_", skipped_fields);
-                let other_pattern = all_fields.arm_pattern("__other_", skipped_fields);
+                let self_pattern = all_fields
+                    .non_exhaustive_arm_pattern("__self_", skipped_fields);
+                let other_pattern = all_fields
+                    .non_exhaustive_arm_pattern("__other_", skipped_fields);
 
                 let mut val_eqs = (0..all_fields.len())
                     .filter(|num| !skipped_fields.contains(num))
@@ -262,52 +264,5 @@ impl ToTokens for StructuralExpansion<'_> {
             }
         }
         .to_tokens(tokens);
-    }
-}
-
-/// Extension of [`syn::Fields`] used by this expansion.
-trait FieldsExt {
-    /// Generates a pattern for matching these [`syn::Fields`] in an arm of a `match` expression.
-    ///
-    /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
-    fn arm_pattern(&self, prefix: &str, skipped_indices: &SkippedFields)
-        -> TokenStream;
-}
-
-impl FieldsExt for syn::Fields {
-    fn arm_pattern(
-        &self,
-        prefix: &str,
-        skipped_indices: &SkippedFields,
-    ) -> TokenStream {
-        match self {
-            Self::Named(fields) => {
-                let wildcard =
-                    (!skipped_indices.is_empty()).then(token::DotDot::default);
-                let fields = fields
-                    .named
-                    .iter()
-                    .enumerate()
-                    .filter(|(num, _)| !skipped_indices.contains(num))
-                    .map(|(num, field)| {
-                        let name = &field.ident;
-                        let binding = format_ident!("{prefix}{num}");
-                        quote! { #name: #binding }
-                    });
-                quote! {{ #( #fields , )* #wildcard }}
-            }
-            Self::Unnamed(fields) => {
-                let fields = (0..fields.unnamed.len()).map(|num| {
-                    if skipped_indices.contains(&num) {
-                        quote! { _ }
-                    } else {
-                        let binding = format_ident!("{prefix}{num}");
-                        quote! { #binding }
-                    }
-                });
-                quote! {( #( #fields , )* )}
-            }
-            Self::Unit => quote! {},
-        }
     }
 }

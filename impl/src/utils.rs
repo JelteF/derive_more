@@ -13,9 +13,9 @@ use syn::{
 };
 
 #[cfg(any(
-    feature = "as_ref",
     feature = "add",
     feature = "add_assign",
+    feature = "as_ref",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -32,15 +32,16 @@ pub(crate) use self::either::Either;
 pub(crate) use self::fields_ext::FieldsExt;
 #[cfg(any(
     feature = "add",
+    feature = "add_assign",
     feature = "as_ref",
     feature = "eq",
     feature = "from_str"
 ))]
 pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
-    feature = "as_ref",
     feature = "add",
     feature = "add_assign",
+    feature = "as_ref",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1331,9 +1332,9 @@ pub fn is_type_parameter_used_in_type(
 }
 
 #[cfg(any(
-    feature = "as_ref",
     feature = "add",
     feature = "add_assign",
+    feature = "as_ref",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1409,9 +1410,9 @@ mod either {
 }
 
 #[cfg(any(
-    feature = "as_ref",
     feature = "add",
     feature = "add_assign",
+    feature = "as_ref",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1511,9 +1512,9 @@ mod spanning {
 }
 
 #[cfg(any(
-    feature = "as_ref",
     feature = "add",
     feature = "add_assign",
+    feature = "as_ref",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1547,9 +1548,9 @@ pub(crate) mod attr {
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
-        feature = "as_ref",
         feature = "add",
         feature = "add_assign",
+        feature = "as_ref",
         feature = "debug",
         feature = "eq",
         feature = "from",
@@ -1883,9 +1884,9 @@ pub(crate) mod attr {
     }
 
     #[cfg(any(
-        feature = "as_ref",
         feature = "add",
         feature = "add_assign",
+        feature = "as_ref",
         feature = "debug",
         feature = "display",
         feature = "eq",
@@ -2513,6 +2514,7 @@ mod fields_ext {
 
 #[cfg(any(
     feature = "add",
+    feature = "add_assign",
     feature = "as_ref",
     feature = "eq",
     feature = "from_str"
@@ -2864,7 +2866,7 @@ pub(crate) mod replace_self {
     }
 }
 
-#[cfg(any(feature = "add", feature = "eq"))]
+#[cfg(any(feature = "add", feature = "add_assign", feature = "eq"))]
 pub(crate) mod structural_inclusion {
     //! Helper extensions of [`syn`] types for checking structural inclusion.
 
@@ -3012,6 +3014,97 @@ pub(crate) mod structural_inclusion {
                     input.into_token_stream(),
                     container.into_token_stream(),
                 );
+            }
+        }
+    }
+}
+
+#[cfg(any(feature = "add", feature = "add_assign", feature = "eq"))]
+pub(crate) mod pattern_matching {
+    //! Helper extensions of [`syn`] types for pattern matching.
+
+    use proc_macro2::TokenStream;
+    use quote::{format_ident, quote};
+
+    #[cfg(any(feature = "add_assign", feature = "eq"))]
+    use crate::utils::HashSet;
+
+    /// Extension of [`syn::Fields`] for pattern matching.
+    pub(crate) trait FieldsExt {
+        #[cfg(any(feature = "add_assign", feature = "eq"))]
+        /// Generates a pattern for matching these [`syn::Fields`] non-exhaustively (considering the
+        /// provided `skipped_indices`) in an arm of a `match` expression.
+        ///
+        /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
+        fn non_exhaustive_arm_pattern(
+            &self,
+            prefix: &str,
+            skipped_indices: &HashSet<usize>,
+        ) -> TokenStream;
+
+        #[cfg(feature = "add")]
+        /// Generates a pattern for matching these [`syn::Fields`] exhaustively in an arm of a
+        /// `match` expression.
+        ///
+        /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
+        fn exhaustive_arm_pattern(&self, prefix: &str) -> TokenStream;
+    }
+
+    impl FieldsExt for syn::Fields {
+        #[cfg(any(feature = "add_assign", feature = "eq"))]
+        fn non_exhaustive_arm_pattern(
+            &self,
+            prefix: &str,
+            skipped_indices: &HashSet<usize>,
+        ) -> TokenStream {
+            match self {
+                Self::Named(fields) => {
+                    let fields = fields
+                        .named
+                        .iter()
+                        .enumerate()
+                        .filter(|(num, _)| !skipped_indices.contains(num))
+                        .map(|(num, field)| {
+                            let name = &field.ident;
+                            let binding = format_ident!("{prefix}{num}");
+                            quote! { #name: #binding }
+                        });
+                    let wildcard =
+                        (!skipped_indices.is_empty()).then(syn::token::DotDot::default);
+                    quote! {{ #( #fields , )* #wildcard }}
+                }
+                Self::Unnamed(fields) => {
+                    let fields = (0..fields.unnamed.len()).map(|num| {
+                        if skipped_indices.contains(&num) {
+                            quote! { _ }
+                        } else {
+                            let binding = format_ident!("{prefix}{num}");
+                            quote! { #binding }
+                        }
+                    });
+                    quote! {( #( #fields , )* )}
+                }
+                Self::Unit => quote! {},
+            }
+        }
+
+        #[cfg(feature = "add")]
+        fn exhaustive_arm_pattern(&self, prefix: &str) -> TokenStream {
+            match self {
+                Self::Named(fields) => {
+                    let fields = fields.named.iter().enumerate().map(|(num, field)| {
+                        let name = &field.ident;
+                        let binding = format_ident!("{prefix}{num}");
+                        quote! { #name: #binding }
+                    });
+                    quote! {{ #( #fields , )* }}
+                }
+                Self::Unnamed(fields) => {
+                    let fields = (0..fields.unnamed.len())
+                        .map(|num| format_ident!("{prefix}{num}"));
+                    quote! {( #( #fields , )* )}
+                }
+                Self::Unit => quote! {},
             }
         }
     }
