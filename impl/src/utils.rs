@@ -35,7 +35,8 @@ pub(crate) use self::fields_ext::FieldsExt;
     feature = "add_assign",
     feature = "as_ref",
     feature = "eq",
-    feature = "from_str"
+    feature = "from_str",
+    feature = "mul",
 ))]
 pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
@@ -1545,6 +1546,8 @@ pub(crate) mod attr {
     pub(crate) use self::empty::Empty;
     #[cfg(any(feature = "from_str", feature = "try_into"))]
     pub(crate) use self::error::Error;
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "mul"))]
+    pub(crate) use self::forward::Forward;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
@@ -1562,9 +1565,7 @@ pub(crate) mod attr {
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     pub(crate) use self::types::Types;
     #[cfg(any(feature = "as_ref", feature = "from"))]
-    pub(crate) use self::{
-        conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
-    };
+    pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
 
@@ -1760,7 +1761,7 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(any(feature = "as_ref", feature = "from"))]
+    #[cfg(any(feature = "as_ref", feature = "from", feature = "mul"))]
     mod forward {
         use syn::{
             parse::{Parse, ParseStream},
@@ -2517,7 +2518,8 @@ mod fields_ext {
     feature = "add_assign",
     feature = "as_ref",
     feature = "eq",
-    feature = "from_str"
+    feature = "from_str",
+    feature = "mul"
 ))]
 mod generics_search {
     use syn::visit::Visit;
@@ -2866,7 +2868,12 @@ pub(crate) mod replace_self {
     }
 }
 
-#[cfg(any(feature = "add", feature = "add_assign", feature = "eq"))]
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "eq",
+    feature = "mul"
+))]
 pub(crate) mod structural_inclusion {
     //! Helper extensions of [`syn`] types for checking structural inclusion.
 
@@ -3019,7 +3026,12 @@ pub(crate) mod structural_inclusion {
     }
 }
 
-#[cfg(any(feature = "add", feature = "add_assign", feature = "eq"))]
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "eq",
+    feature = "mul"
+))]
 pub(crate) mod pattern_matching {
     //! Helper extensions of [`syn`] types for pattern matching.
 
@@ -3042,7 +3054,7 @@ pub(crate) mod pattern_matching {
             skipped_indices: &HashSet<usize>,
         ) -> TokenStream;
 
-        #[cfg(feature = "add")]
+        #[cfg(any(feature = "add", feature = "mul"))]
         /// Generates a pattern for matching these [`syn::Fields`] exhaustively in an arm of a
         /// `match` expression.
         ///
@@ -3088,7 +3100,7 @@ pub(crate) mod pattern_matching {
             }
         }
 
-        #[cfg(feature = "add")]
+        #[cfg(any(feature = "add", feature = "mul"))]
         fn exhaustive_arm_pattern(&self, prefix: &str) -> TokenStream {
             match self {
                 Self::Named(fields) => {

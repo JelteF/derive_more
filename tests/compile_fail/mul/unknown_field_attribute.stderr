@@ -1,0 +1,11 @@
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/mul/unknown_field_attribute.rs:3:18
+  |
+3 | struct Foo(#[mul(unknown)] i32);
+  |                  ^^^^^^^
+
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/mul/unknown_field_attribute.rs:8:17
+  |
+8 |     Bar { #[mul(unknown)] i: i32 },
+  |                 ^^^^^^^

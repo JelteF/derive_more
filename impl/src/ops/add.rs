@@ -57,6 +57,15 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
             variants.push((None, &data.fields, skipped_fields));
         }
         syn::Data::Enum(data) => {
+            if let Some(skip) = attr::Skip::parse_attrs(&input.attrs, &attr_name)? {
+                return Err(syn::Error::new(
+                    skip.span,
+                    format!(
+                        "`#[{attr_name}({})]` attribute can be placed only on enum fields",
+                        skip.item.name(),
+                    ),
+                ));
+            }
             for variant in &data.variants {
                 if let Some(skip) = attr::Skip::parse_attrs(&variant.attrs, &attr_name)?
                 {
@@ -92,7 +101,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
             return Err(syn::Error::new(
                 data.union_token.span(),
                 format!("`{trait_name}` cannot be derived for unions"),
-            ))
+            ));
         }
     }
 

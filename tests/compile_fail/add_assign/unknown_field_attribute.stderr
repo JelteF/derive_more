@@ -1,5 +1,5 @@
 error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/add_assign/unknow_field_attribute.rs:2:25
+ --> tests/compile_fail/add_assign/unknown_field_attribute.rs:2:25
   |
 2 | struct Foo(#[add_assign(unknown)] i32);
   |                         ^^^^^^^

@@ -6,6 +6,8 @@
 pub(crate) mod add;
 #[cfg(feature = "add_assign")]
 pub(crate) mod add_assign;
+#[cfg(feature = "mul")]
+pub(crate) mod mul;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
@@ -138,7 +140,7 @@ impl ToTokens for AssignStructuralExpansion<'_> {
     }
 }
 
-#[cfg(feature = "add")]
+#[cfg(any(feature = "add", feature = "mul"))]
 /// Expansion of a macro for generating a structural trait implementation with a `self` method
 /// receiver for an enum or a struct.
 struct StructuralExpansion<'i> {
@@ -160,7 +162,7 @@ struct StructuralExpansion<'i> {
     is_enum: bool,
 }
 
-#[cfg(feature = "add")]
+#[cfg(any(feature = "add", feature = "mul"))]
 impl StructuralExpansion<'_> {
     /// Generates body of the method implementation for this [`StructuralExpansion`].
     fn body(&self) -> TokenStream {
@@ -218,7 +220,7 @@ impl StructuralExpansion<'_> {
     }
 }
 
-#[cfg(feature = "add")]
+#[cfg(any(feature = "add", feature = "mul"))]
 impl ToTokens for StructuralExpansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let trait_ty = &self.trait_ty;
@@ -274,9 +276,8 @@ impl ToTokens for StructuralExpansion<'_> {
     }
 }
 
-#[cfg(feature = "add")]
-/// Extension of [`syn::Fields`] used by a [`StructuralExpansion`] and an
-/// [`AssignStructuralExpansion`].
+#[cfg(any(feature = "add", feature = "mul"))]
+/// Extension of [`syn::Fields`] used by a [`StructuralExpansion`].
 trait StructuralExpansionFieldsExt {
     /// Generates a resulting expression with these [`syn::Fields`] in a matched arm of a `match`
     /// expression, by applying the specified method.
@@ -287,9 +288,8 @@ trait StructuralExpansionFieldsExt {
     ) -> TokenStream;
 }
 
-#[cfg(feature = "add")]
+#[cfg(any(feature = "add", feature = "mul"))]
 impl StructuralExpansionFieldsExt for syn::Fields {
-    #[cfg(feature = "add")]
     fn arm_expr(
         &self,
         method_path: &syn::Path,

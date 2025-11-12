@@ -1,5 +1,0 @@
-error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/add/unknow_variant_attribute.rs:3:11
-  |
-3 |     #[add(unknown)]
-  |           ^^^^^^^

@@ -1,5 +1,0 @@
-error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/add_assign/unknow_struct_attribute.rs:2:14
-  |
-2 | #[add_assign(unknown)]
-  |              ^^^^^^^

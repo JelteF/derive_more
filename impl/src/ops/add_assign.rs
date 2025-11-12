@@ -60,13 +60,13 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
             return Err(syn::Error::new(
                 data.enum_token.span(),
                 format!("`{trait_name}` cannot be derived for enums"),
-            ))
+            ));
         }
         syn::Data::Union(data) => {
             return Err(syn::Error::new(
                 data.union_token.span(),
                 format!("`{trait_name}` cannot be derived for unions"),
-            ))
+            ));
         }
     }
 

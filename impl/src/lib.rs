@@ -10,12 +10,10 @@ use syn::parse::Error as ParseError;
 
 mod utils;
 
-#[cfg(any(feature = "add_assign", feature = "mul_assign"))]
+#[cfg(feature = "mul_assign")]
 mod add_assign_like;
-#[cfg(any(feature = "add_assign", feature = "mul", feature = "mul_assign",))]
+#[cfg(feature = "mul_assign")]
 mod add_helpers;
-#[cfg(feature = "mul")]
-mod add_like;
 #[cfg(feature = "as_ref")]
 mod r#as;
 #[cfg(feature = "eq")]
@@ -46,13 +44,11 @@ mod into_iterator;
 mod is_variant;
 #[cfg(feature = "mul_assign")]
 mod mul_assign_like;
-#[cfg(any(feature = "mul", feature = "mul_assign"))]
+#[cfg(feature = "mul_assign")]
 mod mul_helpers;
-#[cfg(feature = "mul")]
-mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
-#[cfg(any(feature = "add", feature = "add_assign"))]
+#[cfg(any(feature = "add", feature = "add_assign", feature = "mul"))]
 mod ops;
 #[cfg(any(feature = "debug", feature = "display"))]
 pub(crate) mod parsing;
@@ -241,11 +237,11 @@ create_derive!(
     is_variant,
 );
 
-create_derive!("mul", mul_like, Mul, mul_derive, mul);
-create_derive!("mul", mul_like, Div, div_derive, div);
-create_derive!("mul", mul_like, Rem, rem_derive, rem);
-create_derive!("mul", mul_like, Shr, shr_derive, shr);
-create_derive!("mul", mul_like, Shl, shl_derive, shl);
+create_derive!("mul", ops::mul, Mul, mul_derive, mul);
+create_derive!("mul", ops::mul, Div, div_derive, div);
+create_derive!("mul", ops::mul, Rem, rem_derive, rem);
+create_derive!("mul", ops::mul, Shr, shr_derive, shr);
+create_derive!("mul", ops::mul, Shl, shl_derive, shl);
 
 create_derive!(
     "mul_assign",
