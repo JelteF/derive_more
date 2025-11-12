@@ -1,5 +1,5 @@
 error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/eq/unknow_struct_attribute.rs:2:6
+ --> tests/compile_fail/eq/unknown_struct_attribute.rs:2:6
   |
 2 | #[eq(unknown)]
   |      ^^^^^^^

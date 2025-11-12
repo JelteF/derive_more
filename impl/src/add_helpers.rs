@@ -1,28 +1,43 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Field, Ident, Index};
 
-pub fn tuple_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
-    let mut exprs = vec![];
+use crate::utils::attr::{ParseMultiple as _, Skip};
 
-    for i in 0..fields.len() {
-        let i = Index::from(i);
-        // generates `self.0.add(rhs.0)`
-        let expr = quote! { self.#i.#method_ident(rhs.#i) };
-        exprs.push(expr);
+pub(crate) fn tuple_exprs_and_used_fields<'f>(
+    fields: impl IntoIterator<Item = &'f syn::Field>,
+    method_ident: &syn::Ident,
+) -> syn::Result<(Vec<TokenStream>, Vec<&'f syn::Field>)> {
+    let (mut exprs, mut used_fields) = (vec![], vec![]);
+    for (i, field) in fields.into_iter().enumerate() {
+        let index = syn::Index::from(i);
+        exprs.push(
+            if Skip::parse_attrs(&field.attrs, method_ident)?.is_some() {
+                quote! { self.#index }
+            } else {
+                used_fields.push(field);
+                quote! { self.#index.#method_ident(rhs.#index) }
+            },
+        );
     }
-    exprs
+    Ok((exprs, used_fields))
 }
 
-pub fn struct_exprs(fields: &[&Field], method_ident: &Ident) -> Vec<TokenStream> {
-    let mut exprs = vec![];
-
+pub fn struct_exprs_and_used_fields<'f>(
+    fields: impl IntoIterator<Item = &'f syn::Field>,
+    method_ident: &syn::Ident,
+) -> syn::Result<(Vec<TokenStream>, Vec<&'f syn::Field>)> {
+    let (mut exprs, mut used_fields) = (vec![], vec![]);
     for field in fields {
-        // It's safe to unwrap because struct fields always have an identifier
-        let field_id = field.ident.as_ref().unwrap();
-        // generates `x: self.x.add(rhs.x)`
-        let expr = quote! { self.#field_id.#method_ident(rhs.#field_id) };
-        exprs.push(expr)
+        // PANIC: OK, because struct fields are always named.
+        let field_name = field.ident.as_ref().unwrap();
+        exprs.push(
+            if Skip::parse_attrs(&field.attrs, method_ident)?.is_some() {
+                quote! { self.#field_name }
+            } else {
+                used_fields.push(field);
+                quote! { self.#field_name.#method_ident(rhs.#field_name) }
+            },
+        );
     }
-    exprs
+    Ok((exprs, used_fields))
 }

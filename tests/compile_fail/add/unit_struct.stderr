@@ -1,0 +1,5 @@
+error: `Add` cannot be derived for unit structs
+ --> tests/compile_fail/add/unit_struct.rs:2:1
+  |
+2 | struct Foo;
+  | ^^^^^^

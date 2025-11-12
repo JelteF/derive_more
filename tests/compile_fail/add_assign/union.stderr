@@ -1,0 +1,5 @@
+error: `AddAssign` cannot be derived for unions
+ --> tests/compile_fail/add_assign/union.rs:2:1
+  |
+2 | union IntOrFloat {
+  | ^^^^^

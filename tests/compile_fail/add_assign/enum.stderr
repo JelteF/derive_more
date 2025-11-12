@@ -1,0 +1,5 @@
+error: `AddAssign` cannot be derived for enums
+ --> tests/compile_fail/add_assign/enum.rs:2:1
+  |
+2 | enum Foo {
+  | ^^^^

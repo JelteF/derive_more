@@ -1,0 +1,5 @@
+error: `AddAssign` cannot be derived for structs with all the fields being skipped
+ --> tests/compile_fail/add_assign/all_fields_skipped.rs:2:1
+  |
+2 | struct Foo(#[add_assign(skip)] i32);
+  | ^^^^^^

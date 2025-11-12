@@ -1,0 +1,11 @@
+error: `Add` cannot be derived for structs with all the fields being skipped
+ --> tests/compile_fail/add/all_fields_skipped.rs:2:1
+  |
+2 | struct Foo(#[add(skip)] i32);
+  | ^^^^^^
+
+error: `Add` cannot be derived for enum with all the fields being skipped in its variants
+ --> tests/compile_fail/add/all_fields_skipped.rs:6:5
+  |
+6 |     Bar { #[add(skip)] x: i32, #[add(ignore)] y: i32 },
+  |     ^^^
