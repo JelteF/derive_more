@@ -1,4 +1,4 @@
-//! Implementation of [`ops::Mul`]-like derive macros.
+//! Implementation of [`ops::MulAssign`]-like derive macros.
 
 #[cfg(doc)]
 use std::ops;
@@ -7,21 +7,21 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{parse_quote, spanned::Spanned as _};
 
-use super::{SkippedFields, StructuralExpansion};
+use super::{AssignStructuralExpansion, SkippedFields};
 use crate::utils::{
     attr::{self, ParseMultiple as _},
     pattern_matching::FieldsExt as _,
     structural_inclusion::TypeExt as _,
 };
 
-/// Expands an [`ops::Mul`]-like derive macro.
+/// Expands an [`ops::MulAssign`]-like derive macro.
 ///
 /// Available macros:
-/// - [`Div`](ops::Div)
-/// - [`Mul`](ops::Mul)
-/// - [`Rem`](ops::Rem)
-/// - [`Shl`](ops::Shl)
-/// - [`Shr`](ops::Shr)
+/// - [`DivAssign`](ops::DivAssign)
+/// - [`MulAssign`](ops::MulAssign)
+/// - [`RemAssign`](ops::RemAssign)
+/// - [`ShlAssign`](ops::ShlAssign)
+/// - [`ShrAssign`](ops::ShrAssign)
 pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenStream> {
     let trait_name = normalize_trait_name(trait_name);
     let attr_name = format_ident!("{}", trait_name_to_attribute_name(trait_name));
@@ -34,12 +34,12 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     }
 }
 
-/// Expands an [`ops::Mul`]-like derive macro in a structural manner.
+/// Expands an [`ops::MulAssign`]-like derive macro in a structural manner.
 fn expand_structural<'i>(
     input: &'i syn::DeriveInput,
     trait_name: &str,
     attr_name: syn::Ident,
-) -> syn::Result<StructuralExpansion<'i>> {
+) -> syn::Result<AssignStructuralExpansion<'i>> {
     let mut variants = vec![];
     match &input.data {
         syn::Data::Struct(data) => {
@@ -67,36 +67,10 @@ fn expand_structural<'i>(
             variants.push((None, &data.fields, skipped_fields));
         }
         syn::Data::Enum(data) => {
-            for variant in &data.variants {
-                if let Some(skip) = attr::Skip::parse_attrs(&variant.attrs, &attr_name)?
-                {
-                    return Err(syn::Error::new(
-                        skip.span,
-                        format!(
-                            "`#[{attr_name}({})]` attribute can be placed only on variant fields",
-                            skip.item.name(),
-                        ),
-                    ));
-                }
-                let mut skipped_fields = SkippedFields::default();
-                for (n, field) in variant.fields.iter().enumerate() {
-                    if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some() {
-                        _ = skipped_fields.insert(n);
-                    }
-                }
-                if !matches!(variant.fields, syn::Fields::Unit)
-                    && variant.fields.len() == skipped_fields.len()
-                {
-                    return Err(syn::Error::new(
-                        variant.span(),
-                        format!(
-                            "`{trait_name}` cannot be derived for enum with all the fields being \
-                             skipped in its variants",
-                        ),
-                    ));
-                }
-                variants.push((Some(&variant.ident), &variant.fields, skipped_fields));
-            }
+            return Err(syn::Error::new(
+                data.enum_token.span(),
+                format!("`{trait_name}` cannot be derived for enums"),
+            ));
         }
         syn::Data::Union(data) => {
             return Err(syn::Error::new(
@@ -106,16 +80,16 @@ fn expand_structural<'i>(
         }
     }
 
-    Ok(StructuralExpansion {
+    Ok(AssignStructuralExpansion {
         trait_ty: format_ident!("{trait_name}"),
         method_ident: format_ident!("{}", trait_name_to_method_name(trait_name)),
         self_ty: (&input.ident, &input.generics),
         variants,
-        is_enum: matches!(input.data, syn::Data::Enum(_)),
+        is_enum: false,
     })
 }
 
-/// Expands an [`ops::Mul`]-like derive macro in an applicative manner.
+/// Expands an [`ops::MulAssign`]-like derive macro in an applicative manner.
 fn expand_applicative<'i>(
     input: &'i syn::DeriveInput,
     trait_name: &str,
@@ -149,10 +123,7 @@ fn expand_applicative<'i>(
         syn::Data::Enum(data) => {
             return Err(syn::Error::new(
                 data.enum_token.span(),
-                format!(
-                    "`{trait_name}` can be derived for enums only when using \
-                     `#[{attr_name}(forward)]` attribute",
-                ),
+                format!("`{trait_name}` cannot be derived for enums",),
             ));
         }
         syn::Data::Union(data) => {
@@ -214,7 +185,7 @@ impl ToTokens for ApplicativeExpansion<'_> {
                 && !field_ty.contains_type_structurally(&implementor_ty)
             {
                 generics.make_where_clause().predicates.push(parse_quote! {
-                    #field_ty: derive_more::core::ops:: #trait_ty <#rhs_ty, Output = #field_ty>
+                    #field_ty: derive_more::core::ops:: #trait_ty <#rhs_ty>
                 });
             }
             used_fields_count += 1;
@@ -228,13 +199,21 @@ impl ToTokens for ApplicativeExpansion<'_> {
 
         let body = {
             let method_path =
-                parse_quote! { derive_more::core::ops::#trait_ty::#method_ident };
-            let self_pat = self.fields.exhaustive_arm_pattern("__self_");
-            let fields_expr = self.fields.arm_expr(&method_path, &self.skipped_fields);
+                quote! { derive_more::core::ops::#trait_ty::#method_ident };
+            let self_pat = self
+                .fields
+                .non_exhaustive_arm_pattern("__self_", &self.skipped_fields);
+            let fields_exprs = (0..self.fields.len())
+                .filter(|num| !self.skipped_fields.contains(num))
+                .map(|num| {
+                    let self_val = format_ident!("__self_{num}");
+
+                    quote! { #method_path(#self_val, __rhs); }
+                });
 
             quote! {
                 match self {
-                    Self #self_pat => Self #fields_expr,
+                    Self #self_pat => { #( #fields_exprs )* },
                 }
             }
         };
@@ -245,11 +224,9 @@ impl ToTokens for ApplicativeExpansion<'_> {
             impl #impl_generics derive_more::core::ops:: #trait_ty<#rhs_ty> for #implementor_ty
                  #where_clause
             {
-                type Output = #self_ty;
-
                 #[inline]
                 #[track_caller]
-                fn #method_ident(self, __rhs: #rhs_ty) -> Self::Output {
+                fn #method_ident(&mut self, __rhs: #rhs_ty) {
                     #body
                 }
             }
@@ -258,77 +235,31 @@ impl ToTokens for ApplicativeExpansion<'_> {
     }
 }
 
-/// Extension of [`syn::Fields`] used by an [`ApplicativeExpansion`].
-trait ApplicativeExpansionFieldsExt {
-    /// Generates a resulting expression with these [`syn::Fields`] in a matched arm of a `match`
-    /// expression, by applying the specified method.
-    fn arm_expr(
-        &self,
-        method: &syn::Path,
-        skipped_indices: &SkippedFields,
-    ) -> TokenStream;
-}
-
-impl ApplicativeExpansionFieldsExt for syn::Fields {
-    fn arm_expr(
-        &self,
-        method_path: &syn::Path,
-        skipped_indices: &SkippedFields,
-    ) -> TokenStream {
-        match self {
-            Self::Named(fields) => {
-                let fields = fields.named.iter().enumerate().map(|(num, field)| {
-                    let name = &field.ident;
-                    let self_val = format_ident!("__self_{num}");
-                    if skipped_indices.contains(&num) {
-                        quote! { #name: #self_val }
-                    } else {
-                        quote! { #name: #method_path(#self_val, __rhs) }
-                    }
-                });
-                quote! {{ #( #fields , )* }}
-            }
-            Self::Unnamed(fields) => {
-                let fields = (0..fields.unnamed.len()).map(|num| {
-                    let self_val = format_ident!("__self_{num}");
-                    if skipped_indices.contains(&num) {
-                        quote! { #self_val }
-                    } else {
-                        quote! { #method_path(#self_val, __rhs) }
-                    }
-                });
-                quote! {( #( #fields , )* )}
-            }
-            Self::Unit => quote! {},
-        }
-    }
-}
-
 /// Matches the provided derive macro `name` to appropriate actual trait name.
 fn normalize_trait_name(name: &str) -> &'static str {
     match name {
-        "Div" => "Div",
-        "Mul" => "Mul",
-        "Rem" => "Rem",
-        "Shl" => "Shl",
-        "Shr" => "Shr",
+        "DivAssign" => "DivAssign",
+        "MulAssign" => "MulAssign",
+        "RemAssign" => "RemAssign",
+        "ShlAssign" => "ShlAssign",
+        "ShrAssign" => "ShrAssign",
         _ => unimplemented!(),
     }
 }
 
-/// Matches the provided [`ops::Mul`]-like trait `name` to its attribute's name.
+/// Matches the provided [`ops::MulAssign`]-like trait `name` to its attribute's name.
 fn trait_name_to_attribute_name(name: &str) -> &'static str {
     trait_name_to_method_name(name)
 }
 
-/// Matches the provided [`ops::Mul`]-like trait `name` to its method name.
+/// Matches the provided [`ops::MulAssign`]-like trait `name` to its method name.
 fn trait_name_to_method_name(name: &str) -> &'static str {
     match name {
-        "Div" => "div",
-        "Mul" => "mul",
-        "Rem" => "rem",
-        "Shl" => "shl",
-        "Shr" => "shr",
+        "DivAssign" => "div_assign",
+        "MulAssign" => "mul_assign",
+        "RemAssign" => "rem_assign",
+        "ShlAssign" => "shl_assign",
+        "ShrAssign" => "shr_assign",
         _ => unimplemented!(),
     }
 }

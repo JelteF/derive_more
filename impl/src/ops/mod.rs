@@ -8,6 +8,8 @@ pub(crate) mod add;
 pub(crate) mod add_assign;
 #[cfg(feature = "mul")]
 pub(crate) mod mul;
+#[cfg(feature = "mul_assign")]
+pub(crate) mod mul_assign;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
@@ -23,7 +25,7 @@ use crate::utils::{
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
-#[cfg(feature = "add_assign")]
+#[cfg(any(feature = "add_assign", feature = "mul_assign"))]
 /// Expansion of a macro for generating a structural trait implementation with a `&mut self` method
 /// receiver for an enum or a struct.
 struct AssignStructuralExpansion<'i> {
@@ -45,7 +47,7 @@ struct AssignStructuralExpansion<'i> {
     is_enum: bool,
 }
 
-#[cfg(feature = "add_assign")]
+#[cfg(any(feature = "add_assign", feature = "mul_assign"))]
 impl AssignStructuralExpansion<'_> {
     /// Generates body of the method implementation for this [`StructuralExpansion`].
     fn body(&self) -> TokenStream {
@@ -92,7 +94,7 @@ impl AssignStructuralExpansion<'_> {
     }
 }
 
-#[cfg(feature = "add_assign")]
+#[cfg(any(feature = "add_assign", feature = "mul_assign"))]
 impl ToTokens for AssignStructuralExpansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let trait_ty = &self.trait_ty;

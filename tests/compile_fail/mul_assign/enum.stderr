@@ -1,0 +1,5 @@
+error: `MulAssign` cannot be derived for enums
+ --> tests/compile_fail/mul_assign/enum.rs:2:1
+  |
+2 | enum Foo {
+  | ^^^^
