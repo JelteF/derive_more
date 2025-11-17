@@ -4,9 +4,6 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
-#[cfg(not(feature = "std"))]
-use alloc::string::ToString;
-
 mod structs {
     mod applicative {
         use derive_more::Mul;
@@ -250,12 +247,10 @@ mod structs {
 }
 
 mod enums {
-    use super::*;
-
     mod structural {
+        #[cfg(not(feature = "std"))]
+        use alloc::string::ToString as _;
         use derive_more::Mul;
-
-        use super::*;
 
         #[test]
         fn empty() {
@@ -319,9 +314,9 @@ mod enums {
         }
 
         mod ignore {
+            #[cfg(not(feature = "std"))]
+            use alloc::string::ToString as _;
             use derive_more::Mul;
-
-            use super::*;
 
             #[test]
             fn multi() {
