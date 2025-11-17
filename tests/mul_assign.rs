@@ -110,7 +110,7 @@ mod structs {
             #[test]
             fn struct_() {
                 #[derive(MulAssign)]
-                struct StructWithZst<T = String> {
+                struct StructWithZst<T = ()> {
                     x: i32,
                     #[mul_assign(skip)]
                     _marker: PhantomData<T>,
@@ -243,7 +243,7 @@ mod structs {
             fn struct_() {
                 #[derive(MulAssign)]
                 #[mul_assign(forward)]
-                struct StructWithZst<T = String> {
+                struct StructWithZst<T = ()> {
                     x: i32,
                     #[mul_assign(skip)]
                     _marker: PhantomData<T>,

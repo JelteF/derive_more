@@ -85,7 +85,7 @@ mod structs {
         #[test]
         fn struct_() {
             #[derive(AddAssign)]
-            struct StructWithZst<T = String> {
+            struct StructWithZst<T = ()> {
                 x: i32,
                 #[add_assign(skip)]
                 _marker: PhantomData<T>,

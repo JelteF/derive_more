@@ -97,7 +97,7 @@ mod structs {
             #[test]
             fn struct_() {
                 #[derive(Mul)]
-                struct StructWithZst<T = String> {
+                struct StructWithZst<T = ()> {
                     x: i32,
                     #[mul(skip)]
                     _marker: PhantomData<T>,
@@ -222,7 +222,7 @@ mod structs {
             fn struct_() {
                 #[derive(Mul)]
                 #[mul(forward)]
-                struct StructWithZst<T = String> {
+                struct StructWithZst<T = ()> {
                     x: i32,
                     #[mul(skip)]
                     _marker: PhantomData<T>,
