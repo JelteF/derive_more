@@ -89,7 +89,8 @@ commonly `PhantomData`. A field containing a ZST can be skipped using the
 
 ```rust
 # use core::marker::PhantomData;
-# 
+# use derive_more::MulAssign;
+#
 #[derive(MulAssign)]
 #[mul_assign(forward)]
 struct TupleWithZst<T>(i32, #[mul_assign(skip)] PhantomData<T>);

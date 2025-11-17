@@ -77,7 +77,8 @@ Sometimes the struct needs to hold a zero sized field, most commonly
 
 ```rust
 # use core::marker::PhantomData;
-# 
+# use derive_more::AddAssign;
+#
 #[derive(AddAssign)]
 struct TupleWithZst<T>(i32, #[add_assign(skip)] PhantomData<T>);
 

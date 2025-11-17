@@ -84,7 +84,8 @@ attribute like this:
 
 ```rust
 # use core::marker::PhantomData;
-# 
+# use derive_more::Add;
+#
 #[derive(Add)]
 struct TupleWithZst<T>(i32, #[add(skip)] PhantomData<T>);
 

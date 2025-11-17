@@ -149,7 +149,8 @@ Struct marked with `#[mul(forward)]` can hold zero sized fields, most commonly
 
 ```rust
 # use core::marker::PhantomData;
-# 
+# use derive_more::Mul;
+#
 #[derive(Mul)]
 #[mul(forward)]
 struct TupleWithZst<T>(i32, #[mul(skip)] PhantomData<T>);
