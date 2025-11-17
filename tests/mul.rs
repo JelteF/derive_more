@@ -78,6 +78,39 @@ mod structs {
                 assert_eq!((res.b, res.i), (60, 105));
             }
         }
+
+        mod ignore {
+            use core::marker::PhantomData;
+
+            use derive_more::Mul;
+
+            #[test]
+            fn tuple() {
+                #[derive(Mul)]
+                struct TupleWithZst<T = ()>(i32, #[mul(ignore)] PhantomData<T>);
+
+                let a: TupleWithZst = TupleWithZst(12, PhantomData);
+
+                assert_eq!((a * 3).0, 36);
+            }
+
+            #[test]
+            fn struct_() {
+                #[derive(Mul)]
+                struct StructWithZst<T = String> {
+                    x: i32,
+                    #[mul(skip)]
+                    _marker: PhantomData<T>,
+                }
+
+                let a: StructWithZst<()> = StructWithZst {
+                    x: 12,
+                    _marker: PhantomData,
+                };
+
+                assert_eq!((a * -3).x, -36);
+            }
+        }
     }
 
     mod structural {

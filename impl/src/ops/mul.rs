@@ -121,6 +121,7 @@ fn expand_applicative<'i>(
     trait_name: &str,
     attr_name: syn::Ident,
 ) -> syn::Result<ApplicativeExpansion<'i>> {
+    let mut skipped_fields = SkippedFields::default();
     let fields = match &input.data {
         syn::Data::Struct(data) => {
             if matches!(data.fields, syn::Fields::Unit) {
@@ -129,17 +130,19 @@ fn expand_applicative<'i>(
                     format!("`{trait_name}` cannot be derived for unit structs"),
                 ));
             }
-            for field in &data.fields {
-                if let Some(skip) = attr::Skip::parse_attrs(&field.attrs, &attr_name)? {
-                    return Err(syn::Error::new(
-                        skip.span,
-                        format!(
-                            "`#[{attr_name}({})]` attribute can be placed on struct fields only \
-                             when using `#[{attr_name}(forward)]` attribute",
-                            skip.item.name(),
-                        ),
-                    ));
+            for (n, field) in data.fields.iter().enumerate() {
+                if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some() {
+                    _ = skipped_fields.insert(n);
                 }
+            }
+            if data.fields.len() == skipped_fields.len() {
+                return Err(syn::Error::new(
+                    data.struct_token.span(),
+                    format!(
+                        "`{trait_name}` cannot be derived for structs with all the fields being \
+                         skipped",
+                    ),
+                ));
             }
             &data.fields
         }
@@ -165,6 +168,7 @@ fn expand_applicative<'i>(
         method_ident: format_ident!("{}", trait_name_to_method_name(trait_name)),
         self_ty: (&input.ident, &input.generics),
         fields,
+        skipped_fields,
     })
 }
 
@@ -184,6 +188,9 @@ struct ApplicativeExpansion<'i> {
 
     /// [`syn::Fields`] of the struct to be used in this [`ApplicativeExpansion`].
     fields: &'i syn::Fields,
+
+    /// Indices of the struct [`syn::Fields`] marked with an [`attr::Skip`].
+    skipped_fields: SkippedFields,
 }
 
 impl ToTokens for ApplicativeExpansion<'_> {
@@ -199,7 +206,10 @@ impl ToTokens for ApplicativeExpansion<'_> {
 
         let mut generics = self.self_ty.1.clone();
         generics.params.push(rhs_ty.clone().into());
-        for field_ty in self.fields.iter().map(|f| &f.ty) {
+        let mut used_fields_count = 0;
+        for field_ty in self.fields.iter().enumerate().filter_map(|(n, field)| {
+            (!self.skipped_fields.contains(&n)).then_some(&field.ty)
+        }) {
             if !field_ty.contains_type_structurally(&self_ty)
                 && !field_ty.contains_type_structurally(&implementor_ty)
             {
@@ -207,8 +217,9 @@ impl ToTokens for ApplicativeExpansion<'_> {
                     #field_ty: derive_more::core::ops:: #trait_ty <#rhs_ty, Output = #field_ty>
                 });
             }
+            used_fields_count += 1;
         }
-        if self.fields.len() > 1 {
+        if used_fields_count > 1 {
             generics.make_where_clause().predicates.push(parse_quote! {
                 #rhs_ty: derive_more::core::marker::Copy
             });
@@ -219,7 +230,7 @@ impl ToTokens for ApplicativeExpansion<'_> {
             let method_path =
                 parse_quote! { derive_more::core::ops::#trait_ty::#method_ident };
             let self_pat = self.fields.exhaustive_arm_pattern("__self_");
-            let fields_expr = self.fields.arm_expr(&method_path);
+            let fields_expr = self.fields.arm_expr(&method_path, &self.skipped_fields);
 
             quote! {
                 match self {
@@ -247,28 +258,44 @@ impl ToTokens for ApplicativeExpansion<'_> {
     }
 }
 
-/// Extension of [`syn::Fields`] used by a [`ApplicativeExpansion`].
+/// Extension of [`syn::Fields`] used by an [`ApplicativeExpansion`].
 trait ApplicativeExpansionFieldsExt {
     /// Generates a resulting expression with these [`syn::Fields`] in a matched arm of a `match`
     /// expression, by applying the specified method.
-    fn arm_expr(&self, method: &syn::Path) -> TokenStream;
+    fn arm_expr(
+        &self,
+        method: &syn::Path,
+        skipped_indices: &SkippedFields,
+    ) -> TokenStream;
 }
 
 impl ApplicativeExpansionFieldsExt for syn::Fields {
-    fn arm_expr(&self, method_path: &syn::Path) -> TokenStream {
+    fn arm_expr(
+        &self,
+        method_path: &syn::Path,
+        skipped_indices: &SkippedFields,
+    ) -> TokenStream {
         match self {
             Self::Named(fields) => {
                 let fields = fields.named.iter().enumerate().map(|(num, field)| {
                     let name = &field.ident;
                     let self_val = format_ident!("__self_{num}");
-                    quote! { #name: #method_path(#self_val, __rhs) }
+                    if skipped_indices.contains(&num) {
+                        quote! { #name: #self_val }
+                    } else {
+                        quote! { #name: #method_path(#self_val, __rhs) }
+                    }
                 });
                 quote! {{ #( #fields , )* }}
             }
             Self::Unnamed(fields) => {
                 let fields = (0..fields.unnamed.len()).map(|num| {
                     let self_val = format_ident!("__self_{num}");
-                    quote! { #method_path(#self_val, __rhs) }
+                    if skipped_indices.contains(&num) {
+                        quote! { #self_val }
+                    } else {
+                        quote! { #method_path(#self_val, __rhs) }
+                    }
                 });
                 quote! {( #( #fields , )* )}
             }

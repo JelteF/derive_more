@@ -1,0 +1,5 @@
+error: `Mul` can be derived for enums only when using `#[mul(forward)]` attribute
+ --> tests/compile_fail/mul/enum_non_forward.rs:2:1
+  |
+2 | enum Foo {
+  | ^^^^

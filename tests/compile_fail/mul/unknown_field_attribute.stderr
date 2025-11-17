@@ -1,11 +1,11 @@
 error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/mul/unknown_field_attribute.rs:3:18
+ --> tests/compile_fail/mul/unknown_field_attribute.rs:2:18
   |
-3 | struct Foo(#[mul(unknown)] i32);
+2 | struct Foo(#[mul(unknown)] i32);
   |                  ^^^^^^^
 
-error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/mul/unknown_field_attribute.rs:8:17
+error: `Mul` can be derived for enums only when using `#[mul(forward)]` attribute
+ --> tests/compile_fail/mul/unknown_field_attribute.rs:5:1
   |
-8 |     Bar { #[mul(unknown)] i: i32 },
-  |                 ^^^^^^^
+5 | enum Enum {
+  | ^^^^
