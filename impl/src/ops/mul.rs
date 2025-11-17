@@ -169,9 +169,13 @@ fn expand_applicative<'i>(
 /// struct.
 struct ApplicativeExpansion<'i> {
     /// [`syn::Ident`] of the implemented trait.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     trait_ty: syn::Ident,
 
     /// [`syn::Ident`] and [`syn::Receiver`] of the implemented method in trait.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     method_ident: syn::Ident,
 
     /// [`syn::Ident`] and [`syn::Generics`] of the implementor struct.

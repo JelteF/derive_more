@@ -30,9 +30,13 @@ type SkippedFields = HashSet<usize>;
 /// receiver for an enum or a struct.
 struct AssignStructuralExpansion<'i> {
     /// [`syn::Ident`] of the implemented trait.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     trait_ty: syn::Ident,
 
     /// [`syn::Ident`] and [`syn::Receiver`] of the implemented method in trait.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     method_ident: syn::Ident,
 
     /// [`syn::Ident`] and [`syn::Generics`] of the implementor enum/struct.
@@ -147,9 +151,13 @@ impl ToTokens for AssignStructuralExpansion<'_> {
 /// receiver for an enum or a struct.
 struct StructuralExpansion<'i> {
     /// [`syn::Ident`] of the implemented trait.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     trait_ty: syn::Ident,
 
     /// [`syn::Ident`] and [`syn::Receiver`] of the implemented method in trait.
+    ///
+    /// [`syn::Ident`]: struct@syn::Ident
     method_ident: syn::Ident,
 
     /// [`syn::Ident`] and [`syn::Generics`] of the implementor enum/struct.
