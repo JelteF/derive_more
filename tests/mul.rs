@@ -1,6 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(dead_code)] // some code is tested for type checking only
 
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+use alloc::string::ToString;
+
 mod structs {
     mod applicative {
         use derive_more::Mul;
@@ -244,8 +250,12 @@ mod structs {
 }
 
 mod enums {
+    use super::*;
+
     mod structural {
         use derive_more::Mul;
+
+        use super::*;
 
         #[test]
         fn empty() {
@@ -310,6 +320,8 @@ mod enums {
 
         mod ignore {
             use derive_more::Mul;
+
+            use super::*;
 
             #[test]
             fn multi() {
