@@ -173,13 +173,6 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     generics
 }
 
-pub fn add_extra_ty_param_bound_op<'a>(
-    generics: &'a Generics,
-    trait_ident: &'a Ident,
-) -> Generics {
-    add_extra_ty_param_bound(generics, &quote! { derive_more::core::ops::#trait_ident })
-}
-
 pub fn add_extra_ty_param_bound<'a>(
     generics: &'a Generics,
     bound: &'a TokenStream,
@@ -312,14 +305,6 @@ impl AttrParams {
             struct_: params.clone(),
             variant: params.clone(),
             field: params,
-        }
-    }
-    pub fn struct_(params: Vec<&'static str>) -> AttrParams {
-        AttrParams {
-            enum_: vec![],
-            struct_: params,
-            variant: vec![],
-            field: vec![],
         }
     }
 }

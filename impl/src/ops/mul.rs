@@ -26,11 +26,26 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
     let trait_name = normalize_trait_name(trait_name);
     let attr_name = format_ident!("{}", trait_name_to_attribute_name(trait_name));
 
-    if attr::Forward::parse_attrs(&input.attrs, &attr_name)?.is_some() {
-        expand_structural(input, trait_name, attr_name).map(ToTokens::into_token_stream)
-    } else {
-        expand_applicative(input, trait_name, attr_name)
-            .map(ToTokens::into_token_stream)
+    match &input.data {
+        syn::Data::Struct(data) if matches!(data.fields, syn::Fields::Unit) => {
+            Err(syn::Error::new(
+                data.struct_token.span(),
+                format!("`{trait_name}` cannot be derived for unit structs"),
+            ))
+        }
+        syn::Data::Union(data) => Err(syn::Error::new(
+            data.union_token.span(),
+            format!("`{trait_name}` cannot be derived for unions"),
+        )),
+        _ => {
+            if attr::Forward::parse_attrs(&input.attrs, &attr_name)?.is_some() {
+                expand_structural(input, trait_name, attr_name)
+                    .map(ToTokens::into_token_stream)
+            } else {
+                expand_applicative(input, trait_name, attr_name)
+                    .map(ToTokens::into_token_stream)
+            }
+        }
     }
 }
 
@@ -43,12 +58,6 @@ fn expand_structural<'i>(
     let mut variants = vec![];
     match &input.data {
         syn::Data::Struct(data) => {
-            if matches!(data.fields, syn::Fields::Unit) {
-                return Err(syn::Error::new(
-                    data.struct_token.span(),
-                    format!("`{trait_name}` cannot be derived for unit structs"),
-                ));
-            }
             let mut skipped_fields = SkippedFields::default();
             for (n, field) in data.fields.iter().enumerate() {
                 if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some() {
@@ -98,12 +107,7 @@ fn expand_structural<'i>(
                 variants.push((Some(&variant.ident), &variant.fields, skipped_fields));
             }
         }
-        syn::Data::Union(data) => {
-            return Err(syn::Error::new(
-                data.union_token.span(),
-                format!("`{trait_name}` cannot be derived for unions"),
-            ));
-        }
+        syn::Data::Union(_) => unreachable!(),
     }
 
     Ok(StructuralExpansion {
@@ -124,12 +128,6 @@ fn expand_applicative<'i>(
     let mut skipped_fields = SkippedFields::default();
     let fields = match &input.data {
         syn::Data::Struct(data) => {
-            if matches!(data.fields, syn::Fields::Unit) {
-                return Err(syn::Error::new(
-                    data.struct_token.span(),
-                    format!("`{trait_name}` cannot be derived for unit structs"),
-                ));
-            }
             for (n, field) in data.fields.iter().enumerate() {
                 if attr::Skip::parse_attrs(&field.attrs, &attr_name)?.is_some() {
                     _ = skipped_fields.insert(n);
@@ -155,12 +153,7 @@ fn expand_applicative<'i>(
                 ),
             ));
         }
-        syn::Data::Union(data) => {
-            return Err(syn::Error::new(
-                data.union_token.span(),
-                format!("`{trait_name}` cannot be derived for unions"),
-            ));
-        }
+        syn::Data::Union(_) => unreachable!(),
     };
 
     Ok(ApplicativeExpansion {
