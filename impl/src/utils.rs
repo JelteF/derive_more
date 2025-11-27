@@ -3032,7 +3032,7 @@ pub(crate) mod structural_inclusion {
     feature = "mul_assign",
 ))]
 pub(crate) mod pattern_matching {
-    //! Helper extensions of [`syn`] types for pattern matching.
+    //! Helper extensions of [`syn`] types for pattern matching code generation.
 
     use proc_macro2::TokenStream;
     use quote::{format_ident, quote};
@@ -3040,7 +3040,7 @@ pub(crate) mod pattern_matching {
     #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
     use crate::utils::HashSet;
 
-    /// Extension of [`syn::Fields`] for pattern matching.
+    /// Extension of [`syn::Fields`] for pattern matching code generation.
     pub(crate) trait FieldsExt {
         #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
         /// Generates a pattern for matching these [`syn::Fields`] non-exhaustively (considering the
