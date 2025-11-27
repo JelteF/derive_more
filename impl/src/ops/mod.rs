@@ -176,6 +176,12 @@ struct StructuralExpansion<'i> {
 impl StructuralExpansion<'_> {
     /// Generates body of the method implementation for this [`StructuralExpansion`].
     fn body(&self) -> TokenStream {
+        // TODO: Try remove once MSRV is bumped up.
+        // Special case: empty enum.
+        if self.is_enum && self.variants.is_empty() {
+            return quote! { match self {} };
+        }
+
         let method_name = self.method_ident.to_string();
         let method_path = {
             let trait_ty = &self.trait_ty;
