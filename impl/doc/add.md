@@ -68,7 +68,7 @@ The behaviour is similar with more or less fields.
 
 ### Ignoring
 
-Sometimes the struct needs to hold a field (most commonly `PhantomData`) that doesn't
+Sometimes a struct needs to hold a field (most commonly `PhantomData`) that doesn't
 participate in `Add` implementation. Such field could be ignored using the `#[add(skip)]`
 attribute.
 
@@ -124,7 +124,7 @@ This generates code equivalent to:
 #     Unit,
 # }
 #
-impl derive_more::core::ops::Add for MixedInts {
+impl Add for MixedInts {
     type Output = Result<Self, derive_more::BinaryError>;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -185,5 +185,5 @@ enum MixedInts {
 }
 ```
 
-Ignoring all the fields of a variant or ignoring the variant itself is not allowed
-(results in a compilation error).
+> **NOTE**: Ignoring all the fields of a variant or ignoring the variant itself is not allowed
+>           (results in a compilation error).

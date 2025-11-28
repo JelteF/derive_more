@@ -1,7 +1,10 @@
 # What `#[derive(Mul)]` generates
 
-Deriving `Mul` is quite different from deriving `Add`. It is not used to
-multiply two structs together. Instead it will normally multiply a struct, which
+> **NOTE**: `Div`, `Rem`, `Shr` and `Shl` derives are fully equivalent
+>           to the `Mul` derive described below.
+
+Deriving `Mul` is quite different from deriving `Add`. It is not used to multiply
+two structs together. Instead, it will normally multiply a struct, which
 can have multiple fields, with a single primitive type (e.g. a `u64`). A new
 struct is then created with all the fields from the previous struct multiplied
 by this other value.
@@ -20,132 +23,196 @@ with the same semantics as `Add`.
 
 
 
-## Tuple structs
+## Scalar implementation
 
-When deriving for a tuple struct with a single field (i.e. a newtype) like this:
+
+### Structs
+
+Deriving `Mul` for a struct with a single field multiplies its field with
+anything `Mul`tiplicable, producing the resulting struct.
+
 
 ```rust
 # use derive_more::Mul;
 #
 #[derive(Mul)]
 struct MyInt(i32);
+
+#[derive(Mul)]
+struct Point1D {
+    x: i32,
+}
 ```
-
-Code like this will be generated:
-
+This generates code equivalent to:
 ```rust
+# use std::ops::Mul;
+#
 # struct MyInt(i32);
-impl<__RhsT> derive_more::core::ops::Mul<__RhsT> for MyInt
-    where i32: derive_more::core::ops::Mul<__RhsT, Output = i32>
+#
+# struct Point1D {
+#     x: i32,
+# }
+#
+impl<Rhs> Mul<Rhs> for MyInt
+where
+    i32: Mul<Rhs, Output = i32>
 {
-    type Output = MyInt;
-    fn mul(self, rhs: __RhsT) -> MyInt {
-        MyInt(self.0.mul(rhs))
+    type Output = Self;
+
+    fn mul(self, rhs: Rhs) -> Self::Output {
+        match self {
+            Self(self_0) => Self(Mul::mul(self_0, rhs)),
+        }
+    }
+}
+
+impl<Rhs> Mul<Rhs> for Point1D
+where
+    i32: Mul<Rhs, Output = i32>
+{
+    type Output = Self;
+
+    fn mul(self, rhs: Rhs) -> Self::Output {
+        match self {
+            Self { x: self_0 } => Self { x: Mul::mul(self_0, rhs) },
+        }
     }
 }
 ```
 
 The behaviour is slightly different for multiple fields, since the right hand
 side of the multiplication now needs the `Copy` trait.
-For instance when deriving for a tuple struct with two fields like this:
 
 ```rust
 # use derive_more::Mul;
 #
 #[derive(Mul)]
 struct MyInts(i32, i32);
-```
 
-Code like this will be generated:
-
-```rust
-# struct MyInts(i32, i32);
-impl<__RhsT: Copy> derive_more::core::ops::Mul<__RhsT> for MyInts
-    where i32: derive_more::core::ops::Mul<__RhsT, Output = i32>
-{
-    type Output = MyInts;
-    fn mul(self, rhs: __RhsT) -> MyInts {
-        MyInts(self.0.mul(rhs), self.1.mul(rhs))
-    }
-}
-```
-
-The behaviour is similar with more or less fields.
-
-
-
-
-## Regular structs
-
-When deriving `Mul` for a regular struct with a single field like this:
-
-```rust
-# use derive_more::Mul;
-#
-#[derive(Mul)]
-struct Point1D {
-    x: i32,
-}
-```
-
-Code like this will be generated:
-
-```rust
-# struct Point1D {
-#     x: i32,
-# }
-impl<__RhsT> derive_more::core::ops::Mul<__RhsT> for Point1D
-    where i32: derive_more::core::ops::Mul<__RhsT, Output = i32>
-{
-    type Output = Point1D;
-    fn mul(self, rhs: __RhsT) -> Point1D {
-        Point1D { x: self.x.mul(rhs) }
-    }
-}
-```
-
-The behaviour is again slightly different when deriving for a struct with multiple
-fields, because it still needs the `Copy` as well.
-For instance when deriving for a tuple struct with two fields like this:
-
-```rust
-# use derive_more::Mul;
-#
 #[derive(Mul)]
 struct Point2D {
     x: i32,
     y: i32,
 }
 ```
-
-Code like this will be generated:
-
+This generates code equivalent to:
 ```rust
+# use std::ops::Mul;
+#
+# struct MyInts(i32, i32);
+#
 # struct Point2D {
 #     x: i32,
 #     y: i32,
 # }
-impl<__RhsT: Copy> derive_more::core::ops::Mul<__RhsT> for Point2D
-    where i32: derive_more::core::ops::Mul<__RhsT, Output = i32>
+#
+impl<Rhs: Copy> Mul<Rhs> for MyInts
+where
+    i32: Mul<Rhs, Output = i32>
 {
-    type Output = Point2D;
-    fn mul(self, rhs: __RhsT) -> Point2D {
-        Point2D {
-            x: self.x.mul(rhs),
-            y: self.y.mul(rhs),
+    type Output = Self;
+
+    fn mul(self, rhs: Rhs) -> Self::Output {
+        match self {
+            Self(self_0, self_1) => {
+                Self(Mul::mul(self_0, rhs), Mul::mul(self_1, rhs))
+            }
+        }
+    }
+}
+
+impl<Rhs: Copy> Mul<Rhs> for Point2D
+where
+    i32: Mul<Rhs, Output = i32>
+{
+    type Output = Self;
+
+    fn mul(self, rhs: Rhs) -> Self::Output {
+        match self {
+            Self { x: self_0, y: self_1 } => Self {
+                x: Mul::mul(self_0, rhs),
+                y: Mul::mul(self_1, rhs),
+            },
         }
     }
 }
 ```
 
 
+### Enums
+
+Deriving scalar `Mul` implementation for enums is not (yet) supported.
+
+Although it shouldn't be impossible no effort has been put into this yet.
 
 
-## Skipping fields
 
-Struct marked with `#[mul(forward)]` can hold zero sized fields, most commonly
-`PhantomData`. A field containing a ZST can be skipped using the
-`#[mul(skip)]` attribute like this
+
+## Structural implementation
+
+Specifying the `#[mul(forward)]` attribute generates a structural `Mul`
+implementation with the same semantics as `Add`: `Mul`tiplying respective
+fields together and producing a new value with this fields.
+
+
+### Structs
+
+```rust
+# use derive_more::Mul;
+#
+#[derive(Mul)]
+#[mul(forward)]
+struct MyInts(i32, i32);
+
+#[derive(Mul)]
+#[mul(forward)]
+struct Point2D {
+    x: i32,
+    y: i32,
+}
+```
+This generates code equivalent to:
+```rust
+# use std::ops::Mul;
+#
+# struct MyInts(i32, i32);
+#
+# struct Point2D {
+#     x: i32,
+#     y: i32,
+# }
+#
+impl Mul for MyInts {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Self(self_0, self_1), Self(rhs_0, rhs_1)) => {
+                Self(Mul::mul(self_0, rhs_0), Mul::mul(self_1, rhs_1))
+            }
+        }
+    }
+}
+
+impl Mul for Point2D {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Self { x: self_0, y: self_1 }, Self { x: rhs_0, y: rhs_1 }) => {
+                Self { x: Mul::mul(self_0, rhs_0), y: Mul::mul(self_1, rhs_1) }
+            }
+        }
+    }
+}
+```
+The behaviour is similar with more or less fields.
+
+#### Ignoring
+
+Sometimes a struct needs to hold a field (most commonly `PhantomData`) that doesn't
+participate in structural `Mul` implementation. Such field could be ignored using
+the `#[mul(skip)]` attribute.
 
 ```rust
 # use core::marker::PhantomData;
@@ -159,16 +226,89 @@ struct TupleWithZst<T>(i32, #[mul(skip)] PhantomData<T>);
 #[mul(forward)]
 struct StructWithZst<T> {
     x: i32,
-    #[mul(skip)]
+    #[mul(skip)] // or #[mul(ignore)]
     _marker: PhantomData<T>,
 }
 ```
 
 
+### Enums
 
+For enums each variant can be `Mul`tiplied structurally in a similar way to another
+instance of the same variant. There's one big difference however: it returns
+a `Result<EnumType>`, because an error is returned when two different variants are
+`Mul`tiplied together.
 
-## Enums
+```rust
+# use derive_more::Mul;
+#
+#[derive(Mul)]
+#[mul(forward)]
+enum MixedInts {
+    BigInt(i64),
+    NamedSmallInts { x: i32, y: i32 },
+    Unit,
+}
+```
+This generates code equivalent to:
+```rust
+# use std::ops::Mul;
+#
+# enum MixedInts {
+#     BigInt(i64),
+#     NamedSmallInts { x: i32, y: i32 },
+#     Unit,
+# }
+#
+impl Mul for MixedInts {
+    type Output = Result<Self, derive_more::BinaryError>;
 
-Deriving `Mul` for enums is not (yet) supported, except when you use
-`#[mul(forward)]`.
-Although it shouldn't be impossible no effort has been put into this yet.
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Self::BigInt(self_0), Self::BigInt(rhs_0)) => {
+                Ok(Self::BigInt(Mul::mul(self_0, rhs_0)))
+            }
+            (Self::NamedSmallInts { x: self_0, y: self_1 },
+             Self::NamedSmallInts { x: rhs_0, y: rhs_1 }) => {
+                Ok(Self::NamedSmallInts {
+                    x: Mul::mul(self_0, rhs_0),
+                    y: Mul::mul(self_1, rhs_1),
+                })
+            }
+            (Self::Unit, Self::Unit) => Err(derive_more::BinaryError::Unit(
+                derive_more::UnitError::new("add"),
+            )),
+            _ => Err(derive_more::BinaryError::Mismatch(
+                derive_more::WrongVariantError::new("add"),
+            )),
+        }
+    }
+}
+```
+
+Also note the `Unit` variant that throws a `derive_more::UnitError` when `Mul`tiplying it
+to itself.
+
+#### Ignoring
+
+Similarly to structs, enum fields could be ignored using the `#[add(skip)]` attribute.
+
+```rust
+# use derive_more::Mul;
+#
+struct I32(i32); // doesn't implement `Mul`
+
+#[derive(Mul)]
+#[mul(forward)]
+enum MixedInts {
+    TwoSmallInts(i32, #[mul(skip)] I32),
+    NamedSmallInts {
+        #[mul(skip)] // or #[mul(ignore)]
+        x: I32,
+        y: i32,
+    },
+}
+```
+
+> **NOTE**: Ignoring all the fields of a variant or ignoring the variant itself is not allowed
+>           (results in a compilation error).

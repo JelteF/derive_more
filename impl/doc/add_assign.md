@@ -67,7 +67,7 @@ The behaviour is similar with more or less fields.
 
 ### Ignoring
 
-Sometimes the struct needs to hold a field (most commonly `PhantomData`) that doesn't
+Sometimes a struct needs to hold a field (most commonly `PhantomData`) that doesn't
 participate in `AddAssign` implementation. Such field could be ignored using the
 `#[add_assign(skip)]` attribute.
 
