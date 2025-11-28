@@ -12,7 +12,7 @@ to their type structure).
 ## Structs
 
 The derived `Add` implementation will allow two structs of the same type to be
-added together. This is done by adding their respective fields together and
+added together. This is done by `Add`ing their respective fields together and
 creating a new struct with those values.
 
 ```rust
