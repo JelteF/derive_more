@@ -23,7 +23,7 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
@@ -34,7 +34,7 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
@@ -60,7 +60,7 @@ jobs:
           - windows
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: SebRollen/toml-action@v1.2.0
         id: msrv
@@ -84,7 +84,7 @@ jobs:
   no_std:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
@@ -113,7 +113,7 @@ jobs:
           - nightly
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
@@ -128,7 +128,7 @@ jobs:
         std: ["std", "no_std"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
@@ -155,7 +155,7 @@ jobs:
         opts: ["", "--document-private-items"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
@@ -188,7 +188,7 @@ jobs:
       - test-features
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Parse release version
         id: release
@@ -199,6 +199,15 @@ jobs:
           test "${{ steps.release.outputs.version }}" \
             == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
 
+      - name: Ensure CHANGELOG date is today
+        run: |
+          today="$(date '+%Y-%m-%d')"
+          changelog="$(grep -E '^## ${{ steps.release.outputs.version }} -'\
+                            CHANGELOG.md \
+                       | cut -d' ' -f4 | tr -d ' ')"
+          echo "Changelog: $changelog"
+          echo "Today: $today"
+          [ "$changelog" = "$today" ]
       - name: Parse CHANGELOG link
         id: changelog
         run: echo "link=${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## ${{ steps.release.outputs.version }}/{s/^## \([^ ]*\) - \([0-9].*\)/\1---\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)"

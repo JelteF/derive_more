@@ -1,0 +1,11 @@
+error: `Mul` cannot be derived for unit structs
+ --> tests/compile_fail/mul/unit_struct.rs:2:1
+  |
+2 | struct Foo;
+  | ^^^^^^
+
+error: `Mul` cannot be derived for unit structs
+ --> tests/compile_fail/mul/unit_struct.rs:6:1
+  |
+6 | struct Bar;
+  | ^^^^^^

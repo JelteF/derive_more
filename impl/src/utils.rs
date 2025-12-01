@@ -13,6 +13,8 @@ use syn::{
 };
 
 #[cfg(any(
+    feature = "add",
+    feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
     feature = "display",
@@ -20,14 +22,27 @@ use syn::{
     feature = "from",
     feature = "from_str",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) use self::either::Either;
 #[cfg(any(feature = "from", feature = "into"))]
 pub(crate) use self::fields_ext::FieldsExt;
-#[cfg(any(feature = "as_ref", feature = "eq", feature = "from_str"))]
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "as_ref",
+    feature = "eq",
+    feature = "from_str",
+    feature = "mul",
+    feature = "mul_assign",
+))]
 pub(crate) use self::generics_search::GenericsSearch;
 #[cfg(any(
+    feature = "add",
+    feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
     feature = "display",
@@ -35,7 +50,10 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "from",
     feature = "from_str",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) use self::spanning::Spanning;
 
@@ -153,13 +171,6 @@ pub fn add_extra_type_param_bound_op_output<'a>(
     }
 
     generics
-}
-
-pub fn add_extra_ty_param_bound_op<'a>(
-    generics: &'a Generics,
-    trait_ident: &'a Ident,
-) -> Generics {
-    add_extra_ty_param_bound(generics, &quote! { derive_more::core::ops::#trait_ident })
 }
 
 pub fn add_extra_ty_param_bound<'a>(
@@ -294,14 +305,6 @@ impl AttrParams {
             struct_: params.clone(),
             variant: params.clone(),
             field: params,
-        }
-    }
-    pub fn struct_(params: Vec<&'static str>) -> AttrParams {
-        AttrParams {
-            enum_: vec![],
-            struct_: params,
-            variant: vec![],
-            field: vec![],
         }
     }
 }
@@ -1316,6 +1319,8 @@ pub fn is_type_parameter_used_in_type(
 }
 
 #[cfg(any(
+    feature = "add",
+    feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
     feature = "display",
@@ -1323,7 +1328,10 @@ pub fn is_type_parameter_used_in_type(
     feature = "from",
     feature = "from_str",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 mod either {
     use proc_macro2::TokenStream;
@@ -1389,6 +1397,8 @@ mod either {
 }
 
 #[cfg(any(
+    feature = "add",
+    feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
     feature = "display",
@@ -1396,7 +1406,10 @@ mod either {
     feature = "from",
     feature = "from_str",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 mod spanning {
     use std::ops::{Deref, DerefMut};
@@ -1486,6 +1499,8 @@ mod spanning {
 }
 
 #[cfg(any(
+    feature = "add",
+    feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
     feature = "display",
@@ -1493,7 +1508,10 @@ mod spanning {
     feature = "from",
     feature = "from_str",
     feature = "into",
+    feature = "mul",
+    feature = "mul_assign",
     feature = "try_from",
+    feature = "try_into",
 ))]
 pub(crate) mod attr {
     use std::any::Any;
@@ -1512,22 +1530,33 @@ pub(crate) mod attr {
         feature = "try_from"
     ))]
     pub(crate) use self::empty::Empty;
+    #[cfg(any(feature = "from_str", feature = "try_into"))]
+    pub(crate) use self::error::Error;
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "from",
+        feature = "mul",
+        feature = "mul_assign",
+    ))]
+    pub(crate) use self::forward::Forward;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
+        feature = "add",
+        feature = "add_assign",
         feature = "as_ref",
         feature = "debug",
         feature = "eq",
         feature = "from",
         feature = "into",
+        feature = "mul",
+        feature = "mul_assign",
     ))]
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     pub(crate) use self::types::Types;
     #[cfg(any(feature = "as_ref", feature = "from"))]
-    pub(crate) use self::{
-        conversion::Conversion, field_conversion::FieldConversion, forward::Forward,
-    };
+    pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
 
@@ -1723,7 +1752,12 @@ pub(crate) mod attr {
         }
     }
 
-    #[cfg(any(feature = "as_ref", feature = "from"))]
+    #[cfg(any(
+        feature = "as_ref",
+        feature = "from",
+        feature = "mul",
+        feature = "mul_assign",
+    ))]
     mod forward {
         use syn::{
             parse::{Parse, ParseStream},
@@ -1847,12 +1881,16 @@ pub(crate) mod attr {
     }
 
     #[cfg(any(
+        feature = "add",
+        feature = "add_assign",
         feature = "as_ref",
         feature = "debug",
         feature = "display",
         feature = "eq",
         feature = "from",
         feature = "into",
+        feature = "mul",
+        feature = "mul_assign",
     ))]
     mod skip {
         use syn::{
@@ -2113,6 +2151,73 @@ pub(crate) mod attr {
                     .map(|v| v.map(Self::from))
             }
         }
+    }
+
+    #[cfg(any(feature = "from_str", feature = "try_into"))]
+    pub(crate) mod error {
+        use syn::parse::{Parse, ParseStream};
+
+        use super::{Either, ParseMultiple};
+
+        /// Representation of an attribute, specifying the error type and, optionally, a
+        /// [`Conversion`] from a built-in error type.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(error(<ty>))]
+        /// #[<attribute>(error(<ty>, <conv>))]
+        /// ```
+        pub(crate) struct Error {
+            /// Type to convert the error into.
+            pub(crate) ty: syn::TypePath,
+
+            /// Custom conversion.
+            ///
+            /// If [`None`], then [`Into`] conversion should be applied.
+            pub(crate) conv: Option<Conversion>,
+        }
+
+        impl Parse for Error {
+            fn parse(input: ParseStream) -> syn::Result<Self> {
+                let prefix = syn::Ident::parse(input)?;
+                if prefix != "error" {
+                    return Err(syn::Error::new(
+                        prefix.span(),
+                        "expected `error` argument here",
+                    ));
+                }
+
+                let inner;
+                syn::parenthesized!(inner in input);
+
+                let ty = syn::TypePath::parse(&inner)?;
+                if inner.is_empty() {
+                    return Ok(Self { ty, conv: None });
+                }
+
+                _ = syn::token::Comma::parse(&inner)?;
+
+                let conv = Conversion::parse(&inner)?;
+                if inner.is_empty() {
+                    Ok(Self {
+                        ty,
+                        conv: Some(conv),
+                    })
+                } else {
+                    Err(syn::Error::new(
+                        inner.span(),
+                        "no more arguments allowed here",
+                    ))
+                }
+            }
+        }
+
+        impl ParseMultiple for Error {}
+
+        /// Possible conversions of an [`attr::Error`].
+        ///
+        /// [`attr::Error`]: Error
+        pub(crate) type Conversion =
+            Either<syn::ExprCall, Either<syn::Path, syn::ExprClosure>>;
     }
 
     #[cfg(feature = "try_from")]
@@ -2404,7 +2509,15 @@ mod fields_ext {
     impl<T: Len + ?Sized> FieldsExt for T {}
 }
 
-#[cfg(any(feature = "as_ref", feature = "eq", feature = "from_str"))]
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "as_ref",
+    feature = "eq",
+    feature = "from_str",
+    feature = "mul",
+    feature = "mul_assign",
+))]
 mod generics_search {
     use syn::visit::Visit;
 
@@ -2748,6 +2861,262 @@ pub(crate) mod replace_self {
             };
 
             assert_eq!(actual, expected);
+        }
+    }
+}
+
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "eq",
+    feature = "mul",
+    feature = "mul_assign",
+))]
+pub(crate) mod structural_inclusion {
+    //! Helper extensions of [`syn`] types for checking structural inclusion.
+
+    /// Extension of a [`syn::Type`] providing helper methods checking for structural inclusion of
+    /// other types.
+    pub(crate) trait TypeExt {
+        /// Checks whether the provided [`syn::Type`] is contained within this [`syn::Type`]
+        /// structurally (part of the actual structure).
+        ///
+        /// # False positives
+        ///
+        /// This check naturally gives a false positive when a type parameter is not used directly
+        /// in a field, but its associative type does (e.g. `struct Foo<T: Some>(T::Assoc);`). This
+        /// is because the structure of the type cannot be scanned by its name only.
+        fn contains_type_structurally(&self, needle: &syn::Type) -> bool;
+    }
+
+    impl TypeExt for syn::Type {
+        fn contains_type_structurally(&self, needle: &Self) -> bool {
+            if self == needle {
+                return true;
+            }
+            match self {
+                syn::Type::Array(syn::TypeArray { elem, .. })
+                | syn::Type::Group(syn::TypeGroup { elem, .. })
+                | syn::Type::Paren(syn::TypeParen { elem, .. })
+                | syn::Type::Ptr(syn::TypePtr { elem, .. })
+                | syn::Type::Reference(syn::TypeReference { elem, .. })
+                | syn::Type::Slice(syn::TypeSlice { elem, .. }) => {
+                    elem.contains_type_structurally(needle)
+                }
+                syn::Type::Tuple(syn::TypeTuple { elems, .. }) => {
+                    elems.iter().any(|elem| elem.contains_type_structurally(needle))
+                }
+                syn::Type::Path(syn::TypePath { path, .. }) => path
+                    .segments
+                    .iter()
+                    .filter_map(|seg| {
+                        if let syn::PathArguments::AngleBracketed(args) = &seg.arguments {
+                            Some(&args.args)
+                        } else {
+                            None
+                        }
+                    })
+                    .flatten()
+                    .any(|generic_arg| {
+                        matches!(
+                            generic_arg,
+                            syn::GenericArgument::Type(ty) if ty.contains_type_structurally(needle),
+                        )
+                    }),
+                syn::Type::BareFn(_)
+                | syn::Type::ImplTrait(_)
+                | syn::Type::Infer(_)
+                | syn::Type::Macro(_)
+                | syn::Type::Never(_)
+                | syn::Type::TraitObject(_)
+                | syn::Type::Verbatim(_) => false,
+                _ => unimplemented!(
+                    "syntax is not supported by `derive_more`, please report a bug",
+                ),
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod type_ext_spec {
+        use quote::ToTokens as _;
+        use syn::parse_quote;
+
+        use super::TypeExt as _;
+
+        #[test]
+        fn contains() {
+            for (input, container) in [
+                (parse_quote! { Self }, parse_quote! { Self }),
+                (parse_quote! { Self }, parse_quote! { (Self) }),
+                (parse_quote! { Self }, parse_quote! { (Self,) }),
+                (parse_quote! { Self }, parse_quote! { (Self, Foo) }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { (Foo, Bar, Baz, Self) },
+                ),
+                (parse_quote! { Self }, parse_quote! { [Self] }),
+                (parse_quote! { Self }, parse_quote! { [Self; N] }),
+                (parse_quote! { Self }, parse_quote! { *const Self }),
+                (parse_quote! { Self }, parse_quote! { *mut Self }),
+                (parse_quote! { Self }, parse_quote! { &'a Self }),
+                (parse_quote! { Self }, parse_quote! { &'a mut Self }),
+                (parse_quote! { Self }, parse_quote! { Box<Self> }),
+                (parse_quote! { Self }, parse_quote! { PhantomData<Self> }),
+                (parse_quote! { Self }, parse_quote! { Arc<Mutex<Self>> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { [*const (&'a [Arc<Mutex<Self>>],); 0] },
+                ),
+            ] {
+                let container: syn::Type = container; // for type inference only
+                assert!(
+                    container.contains_type_structurally(&input),
+                    "cannot find type `{}` in type `{}`",
+                    input.into_token_stream(),
+                    container.into_token_stream(),
+                );
+            }
+        }
+
+        #[test]
+        fn not_contains() {
+            for (input, container) in [
+                (parse_quote! { Self }, parse_quote! { Foo }),
+                (parse_quote! { Self }, parse_quote! { (Foo) }),
+                (parse_quote! { Self }, parse_quote! { (Foo,) }),
+                (parse_quote! { Self }, parse_quote! { (Foo, Bar, Baz) }),
+                (parse_quote! { Self }, parse_quote! { [Foo] }),
+                (parse_quote! { Self }, parse_quote! { [Foo; N] }),
+                (parse_quote! { Self }, parse_quote! { *const Foo }),
+                (parse_quote! { Self }, parse_quote! { *mut Foo }),
+                (parse_quote! { Self }, parse_quote! { &'a Foo }),
+                (parse_quote! { Self }, parse_quote! { &'a mut Foo }),
+                (parse_quote! { Self }, parse_quote! { Box<Foo> }),
+                (parse_quote! { Self }, parse_quote! { PhantomData<Foo> }),
+                (parse_quote! { Self }, parse_quote! { Arc<Mutex<Foo>> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { [*const (&'a [Arc<Mutex<Foo>>],); 0] },
+                ),
+                (parse_quote! { Self }, parse_quote! { fn(Self) -> Foo }),
+                (parse_quote! { Self }, parse_quote! { fn(Foo) -> Self }),
+                (parse_quote! { Self }, parse_quote! { impl Foo<Self> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { impl Foo<Type = Self> },
+                ),
+                (parse_quote! { Self }, parse_quote! { dyn Foo<Self> }),
+                (
+                    parse_quote! { Self },
+                    parse_quote! { dyn Sync + Foo<Type = Self> },
+                ),
+            ] {
+                let container: syn::Type = container; // for type inference only
+                assert!(
+                    !container.contains_type_structurally(&input),
+                    "found type `{}` in type `{}`",
+                    input.into_token_stream(),
+                    container.into_token_stream(),
+                );
+            }
+        }
+    }
+}
+
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "eq",
+    feature = "mul",
+    feature = "mul_assign",
+))]
+pub(crate) mod pattern_matching {
+    //! Helper extensions of [`syn`] types for pattern matching code generation.
+
+    use proc_macro2::TokenStream;
+    use quote::{format_ident, quote};
+
+    #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+    use crate::utils::HashSet;
+
+    /// Extension of [`syn::Fields`] for pattern matching code generation.
+    pub(crate) trait FieldsExt {
+        #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+        /// Generates a pattern for matching these [`syn::Fields`] non-exhaustively (considering the
+        /// provided `skipped_indices`) in an arm of a `match` expression.
+        ///
+        /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
+        fn non_exhaustive_arm_pattern(
+            &self,
+            prefix: &str,
+            skipped_indices: &HashSet<usize>,
+        ) -> TokenStream;
+
+        #[cfg(any(feature = "add", feature = "mul"))]
+        /// Generates a pattern for matching these [`syn::Fields`] exhaustively in an arm of a
+        /// `match` expression.
+        ///
+        /// All the [`syn::Fields`] will be assigned as `{prefix}{num}` bindings for use.
+        fn exhaustive_arm_pattern(&self, prefix: &str) -> TokenStream;
+    }
+
+    impl FieldsExt for syn::Fields {
+        #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+        fn non_exhaustive_arm_pattern(
+            &self,
+            prefix: &str,
+            skipped_indices: &HashSet<usize>,
+        ) -> TokenStream {
+            match self {
+                Self::Named(fields) => {
+                    let fields = fields
+                        .named
+                        .iter()
+                        .enumerate()
+                        .filter(|(num, _)| !skipped_indices.contains(num))
+                        .map(|(num, field)| {
+                            let name = &field.ident;
+                            let binding = format_ident!("{prefix}{num}");
+                            quote! { #name: #binding }
+                        });
+                    let wildcard =
+                        (!skipped_indices.is_empty()).then(syn::token::DotDot::default);
+                    quote! {{ #( #fields , )* #wildcard }}
+                }
+                Self::Unnamed(fields) => {
+                    let fields = (0..fields.unnamed.len()).map(|num| {
+                        if skipped_indices.contains(&num) {
+                            quote! { _ }
+                        } else {
+                            let binding = format_ident!("{prefix}{num}");
+                            quote! { #binding }
+                        }
+                    });
+                    quote! {( #( #fields , )* )}
+                }
+                Self::Unit => quote! {},
+            }
+        }
+
+        #[cfg(any(feature = "add", feature = "mul"))]
+        fn exhaustive_arm_pattern(&self, prefix: &str) -> TokenStream {
+            match self {
+                Self::Named(fields) => {
+                    let fields = fields.named.iter().enumerate().map(|(num, field)| {
+                        let name = &field.ident;
+                        let binding = format_ident!("{prefix}{num}");
+                        quote! { #name: #binding }
+                    });
+                    quote! {{ #( #fields , )* }}
+                }
+                Self::Unnamed(fields) => {
+                    let fields = (0..fields.unnamed.len())
+                        .map(|num| format_ident!("{prefix}{num}"));
+                    quote! {( #( #fields , )* )}
+                }
+                Self::Unit => quote! {},
+            }
         }
     }
 }

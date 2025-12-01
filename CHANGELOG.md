@@ -29,11 +29,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#477](https://github.com/JelteF/derive_more/pull/477))
 - Support `Deref` and `DerefMut` derives for enums.
   ([#485](https://github.com/JelteF/derive_more/pull/485))
+- Support custom error in `FromStr` derive.
+  ([#494](https://github.com/JelteF/derive_more/pull/494))
+- Support custom error in `TryInto` derive.
+  ([#503](https://github.com/JelteF/derive_more/pull/503))
+- Support skipping fields in `Add`-like, `AddAssign`-like, `Mul`-like and
+  `MulAssign`-like derives.
+  ([#472](https://github.com/JelteF/derive_more/pull/472))
 
 ### Changed
 
 - The minimum supported Rust version (MSRV) is now Rust 1.81.
   ([#466](https://github.com/JelteF/derive_more/pull/466))
+- `Add`-like, `AddAssign`-like, `Mul`-like and `MulAssign`-like derives now
+  infer trait bounds for generics structurally (bound field types instead of
+  type parameters directly).
+  ([#472](https://github.com/JelteF/derive_more/pull/472))
 
 ### Fixed
 
@@ -46,6 +57,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Erroneous code generated in `Try`/`TryInto` derives when `Self` type is present in
   the struct or enum definition.
   ([#489](https://github.com/JelteF/derive_more/pull/489))
+- Dependency on unstable `feature(error_generic_member_access)` in `Error` derive when
+  using `Backtrace` on a non-nightly toolchain.
+  ([#513](https://github.com/JelteF/derive_more/pull/513))
 - Support `#[<display-trait>("default formatting")]` attribute without `{_variant}`
   to be used as default for variants without explicit formatting.
   ([#495](https://github.com/JelteF/derive_more/pull/495))

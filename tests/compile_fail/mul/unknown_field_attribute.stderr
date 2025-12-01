@@ -1,0 +1,11 @@
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/mul/unknown_field_attribute.rs:2:18
+  |
+2 | struct Foo(#[mul(unknown)] i32);
+  |                  ^^^^^^^
+
+error: `Mul` can be derived for enums only when using `#[mul(forward)]` attribute
+ --> tests/compile_fail/mul/unknown_field_attribute.rs:5:1
+  |
+5 | enum Enum {
+  | ^^^^

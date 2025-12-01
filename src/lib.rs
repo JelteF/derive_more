@@ -44,7 +44,7 @@
     doc = core::include_str!("../README.md")
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(any(not(docsrs), ci), deny(rustdoc::all))]
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(clippy::nonstandard_macro_braces)]
@@ -73,17 +73,17 @@ pub mod __private {
 
 // The modules containing error types and other helpers.
 
-#[cfg(feature = "add")]
+#[cfg(any(feature = "add", feature = "mul"))]
 mod add;
-#[cfg(feature = "add")]
+#[cfg(any(feature = "add", feature = "mul"))]
 pub use crate::add::{BinaryError, WrongVariantError};
 
 #[cfg(feature = "eq")]
 mod cmp;
 
-#[cfg(any(feature = "add", feature = "not"))]
+#[cfg(any(feature = "add", feature = "not", feature = "mul"))]
 mod ops;
-#[cfg(any(feature = "add", feature = "not"))]
+#[cfg(any(feature = "add", feature = "not", feature = "mul"))]
 pub use crate::ops::UnitError;
 
 #[cfg(feature = "as_ref")]

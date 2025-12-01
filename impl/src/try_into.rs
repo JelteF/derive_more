@@ -3,30 +3,72 @@ use crate::utils::{
     AttrParams, DeriveType, MultiFieldData, State,
 };
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{DeriveInput, Result};
+use quote::{format_ident, quote, ToTokens};
 
-use crate::utils::HashMap;
+use crate::utils::{
+    attr::{self, ParseMultiple as _},
+    HashMap, Spanning,
+};
 
-/// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`
+/// Provides the hook to expand `#[derive(TryInto)]` into an implementation of `TryInto`.
 #[allow(clippy::cognitive_complexity)]
-pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStream> {
-    let input = &input.replace_self_type();
+pub fn expand(
+    input: &syn::DeriveInput,
+    trait_name: &'static str,
+) -> syn::Result<TokenStream> {
+    let input = &mut input.replace_self_type();
+    let trait_attr = "try_into";
+
+    // TODO: Use `Vec::extract_if` once MSRV is bumped to 1.87 or above.
+    let (error_indices, error_attrs) = input
+        .attrs
+        .iter()
+        .enumerate()
+        .filter(|(_, attr)| {
+            attr.path().is_ident(trait_attr)
+                && attr.parse_args_with(detect_error_attr).is_ok()
+        })
+        .map(|(i, attr)| (i, attr.clone()))
+        .unzip::<_, _, Vec<_>, Vec<_>>();
+    for i in error_indices {
+        _ = &mut input.attrs.remove(i);
+    }
+    let custom_error =
+        attr::Error::parse_attrs(error_attrs, &format_ident!("{trait_attr}"))?
+            .map(Spanning::into_inner);
 
     let state = State::with_attr_params(
         input,
         trait_name,
-        "try_into".into(),
+        trait_attr.into(),
         AttrParams {
             enum_: vec!["ignore", "owned", "ref", "ref_mut"],
             variant: vec!["ignore", "owned", "ref", "ref_mut"],
             struct_: vec!["ignore", "owned", "ref", "ref_mut"],
             field: vec!["ignore"],
         },
-    )?;
+    ).map_err(|e| {
+        // Temporary adjustment of attribute parsing errors until these attributes are reimplemented
+        // via `utils::attr` machinery.
+        let msg = &e.to_string();
+        if msg == "Only a single attribute is allowed" {
+            syn::Error::new(
+                e.span(),
+                "Only a single attribute is allowed.\n\
+                 For the top-level attribute, an additional `#[try_into(error(...))]` may be \
+                 provided.",
+            )
+        } else if msg.starts_with(
+            "Attribute parameter not supported. Supported attribute parameters are:",
+        ) {
+            syn::Error::new(e.span(), format!("{msg}, error"))
+        } else {
+            e
+        }
+    })?;
     assert!(
         state.derive_type == DeriveType::Enum,
-        "Only enums can derive TryInto"
+        "only enums can derive `TryInto`",
     );
 
     let mut variants_per_types = HashMap::default();
@@ -86,7 +128,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             .iter()
             .map(|d| {
                 d.variant_name
-                    .expect("Somehow there was no variant name")
+                    .expect("somehow there was no variant name")
                     .to_string()
             })
             .collect::<Vec<_>>()
@@ -101,26 +143,34 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
             input.generics.split_for_impl()
         };
 
-        let error = quote! {
+        let mut error_ty = quote! {
             derive_more::TryIntoError<#reference_with_lifetime #input_type #ty_generics>
         };
+        let mut error_conv = quote! {};
+        if let Some(custom_error) = custom_error.as_ref() {
+            error_ty = custom_error.ty.to_token_stream();
+            error_conv = custom_error.conv.as_ref().map_or_else(
+                || quote! { .map_err(derive_more::core::convert::Into::into) },
+                |conv| quote! { .map_err(#conv) },
+            );
+        }
 
         let try_from = quote! {
             #[automatically_derived]
             impl #impl_generics derive_more::core::convert::TryFrom<
                 #reference_with_lifetime #input_type #ty_generics
             > for (#(#reference_with_lifetime #original_types),*) #where_clause {
-                type Error = #error;
+                type Error = #error_ty;
 
                 #[inline]
                 fn try_from(
                     value: #reference_with_lifetime #input_type #ty_generics,
-                ) -> derive_more::core::result::Result<Self, #error> {
+                ) -> derive_more::core::result::Result<Self, #error_ty> {
                     match value {
                         #(#matchers)|* => derive_more::core::result::Result::Ok(#vars),
                         _ => derive_more::core::result::Result::Err(
                             derive_more::TryIntoError::new(value, #variant_names, #output_type),
-                        ),
+                        )#error_conv,
                     }
                 }
             }
@@ -128,4 +178,19 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         try_from.to_tokens(&mut tokens)
     }
     Ok(tokens)
+}
+
+/// Checks whether the inner of a [`syn::Attribute`] represents an [`attr::Error`].
+fn detect_error_attr(input: syn::parse::ParseStream) -> syn::Result<()> {
+    mod ident {
+        syn::custom_keyword!(error);
+    }
+
+    let ahead = input.lookahead1();
+    if ahead.peek(ident::error) {
+        let _ = input.parse::<TokenStream>();
+        Ok(())
+    } else {
+        Err(ahead.error())
+    }
 }

@@ -1,0 +1,11 @@
+error: `Mul` cannot be derived for unions
+ --> tests/compile_fail/mul/union.rs:2:1
+  |
+2 | union IntOrFloat {
+  | ^^^^^
+
+error: `Mul` cannot be derived for unions
+ --> tests/compile_fail/mul/union.rs:8:1
+  |
+8 | union Float {
+  | ^^^^^

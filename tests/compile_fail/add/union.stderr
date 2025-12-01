@@ -1,0 +1,5 @@
+error: `Add` cannot be derived for unions
+ --> tests/compile_fail/add/union.rs:2:1
+  |
+2 | union IntOrFloat {
+  | ^^^^^

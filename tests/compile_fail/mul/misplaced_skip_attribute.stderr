@@ -1,0 +1,17 @@
+error: only `forward` allowed here
+ --> tests/compile_fail/mul/misplaced_skip_attribute.rs:2:7
+  |
+2 | #[mul(ignore)]
+  |       ^^^^^^
+
+error: only `forward` allowed here
+ --> tests/compile_fail/mul/misplaced_skip_attribute.rs:6:7
+  |
+6 | #[mul(skip)]
+  |       ^^^^
+
+error: `#[mul(skip)]` attribute can be placed only on variant fields
+  --> tests/compile_fail/mul/misplaced_skip_attribute.rs:14:5
+   |
+14 |     #[mul(skip)]
+   |     ^

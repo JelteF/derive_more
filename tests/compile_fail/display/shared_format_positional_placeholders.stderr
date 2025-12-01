@@ -20,6 +20,11 @@ error: multiple unused formatting arguments
    |           |          |
    |           |          argument never used
    |           multiple missing formatting specifiers
+   |
+help: format specifiers use curly braces, consider adding 2 format specifiers
+   |
+14 | #[display("Stuff(){}{}", _0, _2)]
+   |                   ++++
 
 error[E0425]: cannot find value `_0` in this scope
   --> tests/compile_fail/display/shared_format_positional_placeholders.rs:14:22

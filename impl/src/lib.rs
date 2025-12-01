@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![recursion_limit = "128"]
 #![cfg_attr(any(not(docsrs), ci), deny(rustdoc::all))]
 #![forbid(non_ascii_idents, unsafe_code)]
@@ -10,17 +10,6 @@ use syn::parse::Error as ParseError;
 
 mod utils;
 
-#[cfg(any(feature = "add_assign", feature = "mul_assign"))]
-mod add_assign_like;
-#[cfg(any(
-    feature = "add",
-    feature = "add_assign",
-    feature = "mul",
-    feature = "mul_assign",
-))]
-mod add_helpers;
-#[cfg(any(feature = "add", feature = "mul"))]
-mod add_like;
 #[cfg(feature = "as_ref")]
 mod r#as;
 #[cfg(feature = "eq")]
@@ -49,14 +38,15 @@ mod into;
 mod into_iterator;
 #[cfg(feature = "is_variant")]
 mod is_variant;
-#[cfg(feature = "mul_assign")]
-mod mul_assign_like;
-#[cfg(any(feature = "mul", feature = "mul_assign"))]
-mod mul_helpers;
-#[cfg(feature = "mul")]
-mod mul_like;
 #[cfg(feature = "not")]
 mod not_like;
+#[cfg(any(
+    feature = "add",
+    feature = "add_assign",
+    feature = "mul",
+    feature = "mul_assign"
+))]
+mod ops;
 #[cfg(any(feature = "debug", feature = "display"))]
 pub(crate) mod parsing;
 #[cfg(feature = "sum")]
@@ -109,31 +99,46 @@ macro_rules! create_derive(
     }
 );
 
-create_derive!("add", add_like, Add, add_derive);
-create_derive!("add", add_like, Sub, sub_derive);
-create_derive!("add", add_like, BitAnd, bit_and_derive);
-create_derive!("add", add_like, BitOr, bit_or_derive);
-create_derive!("add", add_like, BitXor, bit_xor_derive);
+create_derive!("add", ops::add, Add, add_derive, add);
+create_derive!("add", ops::add, Sub, sub_derive, sub);
+create_derive!("add", ops::add, BitAnd, bit_and_derive, bitand);
+create_derive!("add", ops::add, BitOr, bit_or_derive, bitor);
+create_derive!("add", ops::add, BitXor, bit_xor_derive, bitxor);
 
-create_derive!("add_assign", add_assign_like, AddAssign, add_assign_derive,);
-create_derive!("add_assign", add_assign_like, SubAssign, sub_assign_derive,);
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
+    AddAssign,
+    add_assign_derive,
+    add_assign,
+);
+create_derive!(
+    "add_assign",
+    ops::add_assign,
+    SubAssign,
+    sub_assign_derive,
+    sub_assign,
+);
+create_derive!(
+    "add_assign",
+    ops::add_assign,
     BitAndAssign,
     bit_and_assign_derive,
+    bitand_assign,
 );
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
     BitOrAssign,
     bit_or_assign_derive,
+    bitor_assign,
 );
 create_derive!(
     "add_assign",
-    add_assign_like,
+    ops::add_assign,
     BitXorAssign,
     bit_xor_assign_derive,
+    bitxor_assign,
 );
 
 create_derive!("as_ref", r#as::r#mut, AsMut, as_mut_derive, as_mut);
@@ -229,43 +234,43 @@ create_derive!(
     is_variant,
 );
 
-create_derive!("mul", mul_like, Mul, mul_derive, mul);
-create_derive!("mul", mul_like, Div, div_derive, div);
-create_derive!("mul", mul_like, Rem, rem_derive, rem);
-create_derive!("mul", mul_like, Shr, shr_derive, shr);
-create_derive!("mul", mul_like, Shl, shl_derive, shl);
+create_derive!("mul", ops::mul, Mul, mul_derive, mul);
+create_derive!("mul", ops::mul, Div, div_derive, div);
+create_derive!("mul", ops::mul, Rem, rem_derive, rem);
+create_derive!("mul", ops::mul, Shr, shr_derive, shr);
+create_derive!("mul", ops::mul, Shl, shl_derive, shl);
 
 create_derive!(
     "mul_assign",
-    mul_assign_like,
+    ops::mul_assign,
     MulAssign,
     mul_assign_derive,
     mul_assign,
 );
 create_derive!(
     "mul_assign",
-    mul_assign_like,
+    ops::mul_assign,
     DivAssign,
     div_assign_derive,
     div_assign,
 );
 create_derive!(
     "mul_assign",
-    mul_assign_like,
+    ops::mul_assign,
     RemAssign,
     rem_assign_derive,
     rem_assign,
 );
 create_derive!(
     "mul_assign",
-    mul_assign_like,
+    ops::mul_assign,
     ShrAssign,
     shr_assign_derive,
     shr_assign,
 );
 create_derive!(
     "mul_assign",
-    mul_assign_like,
+    ops::mul_assign,
     ShlAssign,
     shl_assign_derive,
     shl_assign,
