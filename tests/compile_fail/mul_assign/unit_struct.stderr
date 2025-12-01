@@ -1,0 +1,11 @@
+error: `MulAssign` cannot be derived for unit structs
+ --> tests/compile_fail/mul_assign/unit_struct.rs:2:1
+  |
+2 | struct Foo;
+  | ^^^^^^
+
+error: `MulAssign` cannot be derived for unit structs
+ --> tests/compile_fail/mul_assign/unit_struct.rs:6:1
+  |
+6 | struct Bar;
+  | ^^^^^^

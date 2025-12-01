@@ -1,0 +1,11 @@
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/add/unknown_field_attribute.rs:2:18
+  |
+2 | struct Foo(#[add(unknown)] i32);
+  |                  ^^^^^^^
+
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/add/unknown_field_attribute.rs:6:17
+  |
+6 |     Bar { #[add(unknown)] i: i32 },
+  |                 ^^^^^^^

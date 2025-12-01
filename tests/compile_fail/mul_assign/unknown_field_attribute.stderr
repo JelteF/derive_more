@@ -1,0 +1,5 @@
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/mul_assign/unknown_field_attribute.rs:2:25
+  |
+2 | struct Foo(#[mul_assign(unknown)] i32);
+  |                         ^^^^^^^

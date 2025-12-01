@@ -1,11 +1,11 @@
 error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/partial_eq/unknow_field_attribute.rs:2:25
+ --> tests/compile_fail/partial_eq/unknown_field_attribute.rs:2:25
   |
 2 | struct Foo(#[partial_eq(unknown)] i32);
   |                         ^^^^^^^
 
 error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/partial_eq/unknow_field_attribute.rs:6:24
+ --> tests/compile_fail/partial_eq/unknown_field_attribute.rs:6:24
   |
 6 |     Bar { #[partial_eq(unknown)] i: i32 },
   |                        ^^^^^^^

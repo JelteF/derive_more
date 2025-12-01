@@ -1,11 +1,11 @@
 error: only `skip`/`ignore` allowed here
- --> tests/compile_fail/eq/unknow_field_attribute.rs:2:17
+ --> tests/compile_fail/eq/unknown_field_attribute.rs:2:17
   |
 2 | struct Foo(#[eq(unknown)] i32);
   |                 ^^^^^^^
 
 error: only `skip`/`ignore` allowed here
-  --> tests/compile_fail/eq/unknow_field_attribute.rs:12:16
+  --> tests/compile_fail/eq/unknown_field_attribute.rs:12:16
    |
 12 |     Bar { #[eq(unknown)] i: i32 },
    |                ^^^^^^^

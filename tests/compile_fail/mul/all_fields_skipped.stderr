@@ -1,0 +1,17 @@
+error: `Mul` cannot be derived for structs with all the fields being skipped
+ --> tests/compile_fail/mul/all_fields_skipped.rs:2:1
+  |
+2 | struct Foo(#[mul(skip)] i32);
+  | ^^^^^^
+
+error: `Mul` cannot be derived for structs with all the fields being skipped
+ --> tests/compile_fail/mul/all_fields_skipped.rs:6:1
+  |
+6 | struct Bar(#[mul(skip)] i32);
+  | ^^^^^^
+
+error: `Mul` cannot be derived for enum with all the fields being skipped in its variants
+  --> tests/compile_fail/mul/all_fields_skipped.rs:11:5
+   |
+11 |     Baz { #[mul(skip)] x: i32, #[mul(ignore)] y: i32 },
+   |     ^^^

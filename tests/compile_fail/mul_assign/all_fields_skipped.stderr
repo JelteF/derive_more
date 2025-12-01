@@ -1,0 +1,11 @@
+error: `MulAssign` cannot be derived for structs with all the fields being skipped
+ --> tests/compile_fail/mul_assign/all_fields_skipped.rs:2:1
+  |
+2 | struct Foo(#[mul_assign(skip)] i32);
+  | ^^^^^^
+
+error: `MulAssign` cannot be derived for structs with all the fields being skipped
+ --> tests/compile_fail/mul_assign/all_fields_skipped.rs:6:1
+  |
+6 | struct Bar(#[mul_assign(skip)] i32);
+  | ^^^^^^

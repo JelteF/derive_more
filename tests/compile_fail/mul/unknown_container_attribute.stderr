@@ -1,0 +1,11 @@
+error: only `forward` allowed here
+ --> tests/compile_fail/mul/unknown_container_attribute.rs:2:7
+  |
+2 | #[mul(unknown)]
+  |       ^^^^^^^
+
+error: only `forward` allowed here
+ --> tests/compile_fail/mul/unknown_container_attribute.rs:6:7
+  |
+6 | #[mul(unknown)]
+  |       ^^^^^^^

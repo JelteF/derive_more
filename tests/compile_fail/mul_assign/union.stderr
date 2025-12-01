@@ -1,0 +1,5 @@
+error: `MulAssign` cannot be derived for unions
+ --> tests/compile_fail/mul_assign/union.rs:2:1
+  |
+2 | union IntOrFloat {
+  | ^^^^^

@@ -1,0 +1,5 @@
+error: only `forward` allowed here
+ --> tests/compile_fail/mul_assign/unknown_container_attribute.rs:2:14
+  |
+2 | #[mul_assign(unknown)]
+  |              ^^^^^^^

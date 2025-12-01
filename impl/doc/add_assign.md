@@ -1,70 +1,90 @@
 # What `#[derive(AddAssign)]` generates
 
-This code is very similar to the code that is generated for `#[derive(Add)]`.
-The difference is that it mutates the existing instance instead of creating a
-new one.
+> **NOTE**: `SubAssign`, `BitAndAssign`, `BitOrAssign` and `BitXorAssign` derives
+>           are fully equivalent to the `AddAssign` derive described below.
+
+Deriving `AddAssign` works very similar to deriving `Add`. The difference is that
+it mutates the existing value in-place instead of creating a new one.
 
 
 
 
-## Tuple structs
+## Structs
 
-When deriving `AddAssign` for a tuple struct with two fields like this:
+The derived `AddAssign` implementation will allow two structs of the same type to
+be added together, mutating the first one in-place. This is done by `AddAssign`ing
+their respective fields.
 
 ```rust
 # use derive_more::AddAssign;
 #
 #[derive(AddAssign)]
 struct MyInts(i32, i32);
-```
 
-Code like this will be generated:
-
-```rust
-# struct MyInts(i32, i32);
-impl derive_more::core::ops::AddAssign for MyInts {
-    fn add_assign(&mut self, rhs: MyInts) {
-        self.0.add_assign(rhs.0);
-        self.1.add_assign(rhs.1);
-    }
-}
-```
-
-The behaviour is similar with more or less fields.
-
-
-
-
-## Regular structs
-
-When deriving for a regular struct with two fields like this:
-
-```rust
-# use derive_more::AddAssign;
-#
 #[derive(AddAssign)]
 struct Point2D {
     x: i32,
     y: i32,
 }
 ```
-
-Code like this will be generated:
-
+This generates code equivalent to:
 ```rust
+# use std::ops::AddAssign;
+#
+# struct MyInts(i32, i32);
+#
 # struct Point2D {
 #     x: i32,
 #     y: i32,
 # }
-impl derive_more::core::ops::AddAssign for Point2D {
-    fn add_assign(&mut self, rhs: Point2D) {
-        self.x.add_assign(rhs.x);
-        self.y.add_assign(rhs.y);
+#
+impl AddAssign for MyInts {
+    fn add_assign(&mut self, rhs: Self) {
+        match (self, rhs) {
+            (Self(self_0, self_1), Self(rhs_0, rhs_1)) => {
+                AddAssign::add_assign(self_0, rhs_0);
+                AddAssign::add_assign(self_1, rhs_1);
+            }
+        }
+    }
+}
+
+impl AddAssign for Point2D {
+    fn add_assign(&mut self, rhs: Self) {
+        match (self, rhs) {
+            (Self { x: self_0, y: self_1 },
+             Self { x: rhs_0, y: rhs_1 }) => {
+                AddAssign::add_assign(self_0, rhs_0);
+                AddAssign::add_assign(self_1, rhs_1);
+            }
+        }
     }
 }
 ```
 
 The behaviour is similar with more or less fields.
+
+
+### Ignoring
+
+Sometimes a struct needs to hold a field (most commonly `PhantomData`) that doesn't
+participate in `AddAssign` implementation. Such field could be ignored using the
+`#[add_assign(skip)]` attribute.
+
+```rust
+# use core::marker::PhantomData;
+# use derive_more::AddAssign;
+#
+#[derive(AddAssign)]
+struct TupleWithZst<T>(i32, #[add_assign(skip)] PhantomData<T>);
+
+#[derive(AddAssign)]
+struct StructWithZst<T> {
+    x: i32,
+    #[add_assign(skip)] // or #[add_assign(ignore)]
+    _marker: PhantomData<T>,
+}
+```
 
 
 
@@ -72,7 +92,7 @@ The behaviour is similar with more or less fields.
 ## Enums
 
 Deriving `AddAssign` is not (yet) supported for enums.
+
 This is mostly due to the fact that it is not trivial convert the `Add`
-derivation code, because that returns a `Result<EnumType>` instead of an
-`EnumType`.
+derivation code, because that returns a `Result<EnumType>` instead of an `EnumType`.
 Handling the case where it errors would be hard and maybe impossible.
