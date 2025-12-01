@@ -3,27 +3,25 @@
 > **NOTE**: `Div`, `Rem`, `Shr` and `Shl` derives are fully equivalent
 >           to the `Mul` derive described below.
 
-Deriving `Mul` is quite different from deriving `Add`. It is not used to multiply
-two structs together. Instead, it will normally multiply a struct, which
-can have multiple fields, with a single primitive type (e.g. a `u64`). A new
-struct is then created with all the fields from the previous struct multiplied
-by this other value.
-
-A simple way of explaining the reasoning behind this difference between `Add`
-and `Mul` deriving, is looking at arithmetic on meters.
-One meter can be added to one meter, to get two meters. Also, one meter times
-two would be two meters, but one meter times one meter would be one square meter.
-As this second case clearly requires more knowledge about the meaning of the
-type in question deriving for this is not implemented.
-
-NOTE: In case you don't want this behaviour you can add `#[mul(forward)]` in
-addition to `#[derive(Mul)]`. This will instead generate a `Mul` implementation
-with the same semantics as `Add`.
+In contrast with deriving `Add`, there are two ways to derive `Mul`: scalar and structural.
 
 
 
 
 ## Scalar implementation
+
+By default, deriving `Mul` is quite different from deriving `Add`. It is not used
+to multiply two structs together. Instead, it will normally multiply a struct,
+which can have multiple fields, with a single primitive type (e.g. a `u64`).
+A new struct is then created with all the fields from the previous struct
+multiplied by this other value.
+
+A simple way of explaining the reasoning behind this difference between `Add`
+and `Mul` deriving, is looking at arithmetic on meters. One meter can be added
+to one meter, to get two meters. Also, one meter times two would be two meters,
+but one meter times one meter would be one square meter. As this second case
+clearly requires more knowledge about the meaning of the type in question
+deriving for this is not implemented.
 
 
 ### Structs
@@ -138,6 +136,29 @@ where
 }
 ```
 
+#### Ignoring
+
+Sometimes a struct needs to hold a field (most commonly `PhantomData`) that doesn't
+participate in a scalar `Mul` implementation. Such field could be ignored using
+the `#[mul(skip)]` attribute.
+
+```rust
+# use core::marker::PhantomData;
+# use derive_more::Mul;
+#
+#[derive(Mul)]
+struct TupleWithZst<T>(i32, #[mul(skip)] PhantomData<T>);
+
+#[derive(Mul)]
+struct StructWithZst<T> {
+    x: i32,
+    #[mul(skip)] // or #[mul(ignore)]
+    _marker: PhantomData<T>,
+}
+```
+
+
+
 
 ### Enums
 
@@ -152,7 +173,7 @@ Although it shouldn't be impossible no effort has been put into this yet.
 
 Specifying the `#[mul(forward)]` attribute generates a structural `Mul`
 implementation with the same semantics as `Add`: `Mul`tiplying respective
-fields together and producing a new value with this fields.
+fields together and producing a new value with these fields.
 
 
 ### Structs
@@ -211,7 +232,7 @@ The behaviour is similar with more or less fields.
 #### Ignoring
 
 Sometimes a struct needs to hold a field (most commonly `PhantomData`) that doesn't
-participate in structural `Mul` implementation. Such field could be ignored using
+participate in a structural `Mul` implementation. Such field could be ignored using
 the `#[mul(skip)]` attribute.
 
 ```rust
