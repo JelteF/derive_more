@@ -42,7 +42,7 @@ pub fn expand(input: &syn::DeriveInput, trait_name: &str) -> syn::Result<TokenSt
                 expand_structural(input, trait_name, attr_name)
                     .map(ToTokens::into_token_stream)
             } else {
-                expand_applicative(input, trait_name, attr_name)
+                expand_scalar(input, trait_name, attr_name)
                     .map(ToTokens::into_token_stream)
             }
         }
@@ -119,12 +119,12 @@ fn expand_structural<'i>(
     })
 }
 
-/// Expands an [`ops::Mul`]-like derive macro in an applicative manner.
-fn expand_applicative<'i>(
+/// Expands an [`ops::Mul`]-like derive macro in a scalar manner.
+fn expand_scalar<'i>(
     input: &'i syn::DeriveInput,
     trait_name: &str,
     attr_name: syn::Ident,
-) -> syn::Result<ApplicativeExpansion<'i>> {
+) -> syn::Result<ScalarExpansion<'i>> {
     let mut skipped_fields = SkippedFields::default();
     let fields = match &input.data {
         syn::Data::Struct(data) => {
@@ -156,7 +156,7 @@ fn expand_applicative<'i>(
         syn::Data::Union(_) => unreachable!(),
     };
 
-    Ok(ApplicativeExpansion {
+    Ok(ScalarExpansion {
         trait_ty: format_ident!("{trait_name}"),
         method_ident: format_ident!("{}", trait_name_to_method_name(trait_name)),
         self_ty: (&input.ident, &input.generics),
@@ -165,9 +165,9 @@ fn expand_applicative<'i>(
     })
 }
 
-/// Expansion of a macro for generating an applicative [`ops::Mul`]-like trait implementation for a
+/// Expansion of a macro for generating a scalar [`ops::Mul`]-like trait implementation for a
 /// struct.
-struct ApplicativeExpansion<'i> {
+struct ScalarExpansion<'i> {
     /// [`syn::Ident`] of the implemented trait.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
@@ -183,14 +183,14 @@ struct ApplicativeExpansion<'i> {
     /// [`syn::Ident`]: struct@syn::Ident
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
-    /// [`syn::Fields`] of the struct to be used in this [`ApplicativeExpansion`].
+    /// [`syn::Fields`] of the struct to be used in this [`ScalarExpansion`].
     fields: &'i syn::Fields,
 
     /// Indices of the struct [`syn::Fields`] marked with an [`attr::Skip`].
     skipped_fields: SkippedFields,
 }
 
-impl ToTokens for ApplicativeExpansion<'_> {
+impl ToTokens for ScalarExpansion<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let trait_ty = &self.trait_ty;
         let method_ident = &self.method_ident;
@@ -255,8 +255,8 @@ impl ToTokens for ApplicativeExpansion<'_> {
     }
 }
 
-/// Extension of [`syn::Fields`] used by an [`ApplicativeExpansion`].
-trait ApplicativeExpansionFieldsExt {
+/// Extension of [`syn::Fields`] used by a [`ScalarExpansion`].
+trait ScalarExpansionFieldsExt {
     /// Generates a resulting expression with these [`syn::Fields`] in a matched arm of a `match`
     /// expression, by applying the specified method.
     fn arm_expr(
@@ -266,7 +266,7 @@ trait ApplicativeExpansionFieldsExt {
     ) -> TokenStream;
 }
 
-impl ApplicativeExpansionFieldsExt for syn::Fields {
+impl ScalarExpansionFieldsExt for syn::Fields {
     fn arm_expr(
         &self,
         method_path: &syn::Path,

@@ -5,7 +5,7 @@
 extern crate alloc;
 
 mod structs {
-    mod applicative {
+    mod scalar {
         use derive_more::Mul;
 
         #[test]

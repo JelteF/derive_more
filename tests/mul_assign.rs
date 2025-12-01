@@ -2,7 +2,7 @@
 #![allow(dead_code)] // some code is tested for type checking only
 
 mod structs {
-    mod applicative {
+    mod scalar {
         use derive_more::MulAssign;
 
         #[test]
