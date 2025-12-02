@@ -1,5 +1,11 @@
-error: implicit formatting of unit enum variant is supported only for `Display` macro, use `#[upper_hex("...")]` to explicitly specify the formatting
+error: implicit formatting of unit enum variant is supported only for `Display` macro, use `#[upper_hex("...")]` to explicitly specify the formatting on every variant or the enum
  --> tests/compile_fail/display/non_display_implicit_enum_unit_variant.rs:3:5
   |
 3 |     UnitVariant,
+  |     ^^^^^^^^^^^
+
+error: implicit formatting of unit enum variant is supported only for `Display` macro, use `#[upper_hex("...")]` to explicitly specify the formatting on every variant when using `{_variant}`
+ --> tests/compile_fail/display/non_display_implicit_enum_unit_variant.rs:9:5
+  |
+9 |     UnitVariant,
   |     ^^^^^^^^^^^

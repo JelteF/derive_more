@@ -60,6 +60,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Dependency on unstable `feature(error_generic_member_access)` in `Error` derive when
   using `Backtrace` on a non-nightly toolchain.
   ([#513](https://github.com/JelteF/derive_more/pull/513))
+- Broken support for `#[<display-trait>("default formatting")]` attribute without `{_variant}`
+  being used as default for enum variants without explicit formatting.
+  ([#495](https://github.com/JelteF/derive_more/pull/495))
 
 ## 2.0.1 - 2025-02-03
 

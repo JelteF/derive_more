@@ -260,15 +260,27 @@ fn expand_enum(
 
             if attrs.common.fmt.is_none()
                 && variant.fields.is_empty()
-                && attr_name != "display"
-            {
-                return Err(syn::Error::new(
-                    e.variants.span(),
-                    format!(
-                        "implicit formatting of unit enum variant is supported only for `Display` \
-                         macro, use `#[{attr_name}(\"...\")]` to explicitly specify the formatting",
-                    ),
-                ));
+                && attr_name != "display" {
+                let container_fmt = container_attrs.common.fmt.as_ref();
+                if container_fmt.is_none() {
+                    return Err(syn::Error::new(
+                        e.variants.span(),
+                        format!(
+                            "implicit formatting of unit enum variant is supported only for \
+                             `Display` macro, use `#[{attr_name}(\"...\")]` to explicitly specify \
+                             the formatting on every variant or the enum",
+                        ),
+                    ));
+                } else if container_fmt.is_some_and(|fmt| fmt.contains_arg("_variant")) {
+                    return Err(syn::Error::new_spanned(
+                        variant,
+                        format!(
+                            "implicit formatting of unit enum variant is supported only for \
+                             `Display` macro, use `#[{attr_name}(\"...\")]` to explicitly specify \
+                             the formatting on every variant when using `{{_variant}}`",
+                        ),
+                    ));
+                }
             }
 
             if let Some(rename_all) = container_attrs.rename_all {
