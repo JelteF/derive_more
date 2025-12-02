@@ -1024,8 +1024,8 @@ mod enums {
             fn assert() {
                 assert_eq!(format!("{:b}", Unit::A), "Binary");
                 assert_eq!(format!("{:b}", Unit::B), "Binary Custom");
-                assert_eq!(format!("{:}", Unit::A), "Display");
-                assert_eq!(format!("{:}", Unit::B), "Display Custom");
+                assert_eq!(Unit::A.to_string(), "Display");
+                assert_eq!(Unit::B.to_string(), "Display Custom");
                 assert_eq!(format!("{:e}", Unit::A), "LowerExp");
                 assert_eq!(format!("{:e}", Unit::B), "LowerExp Custom");
                 assert_eq!(format!("{:x}", Unit::A), "LowerHex");

@@ -250,14 +250,6 @@ fn expand_enum(
         }
     }
 
-    let shared_fmt_contains_variant = container_attrs
-        .common
-        .fmt
-        .iter()
-        .flat_map(|attr| attr.placeholders_by_arg("_variant"))
-        .next()
-        .is_some();
-
     let (bounds, match_arms) = e.variants.iter().try_fold(
         (Vec::new(), TokenStream::new()),
         |(mut bounds, mut arms), variant| {
@@ -267,31 +259,28 @@ fn expand_enum(
             let ident = &variant.ident;
 
             if attrs.common.fmt.is_none()
-                && container_attrs.common.fmt.is_none()
                 && variant.fields.is_empty()
-                && attr_name != "display"
-            {
-                return Err(syn::Error::new(
-                    e.variants.span(),
-                    format!(
-                        "implicit formatting of unit enum variant is supported only for `Display` \
-                         macro, use `#[{attr_name}(\"...\")]` to explicitly specify the formatting \
-                         on every variant or the enum",
-                    ),
-                ));
-            }
-
-            if attrs.common.fmt.is_none()
-                && shared_fmt_contains_variant
                 && attr_name != "display" {
-                return Err(syn::Error::new_spanned(
-                    variant,
-                    format!(
-                        "implicit formatting of unit enum variant is supported only for `Display` \
-                         macro, use `#[{attr_name}(\"...\")]` to explicitly specify the formatting \
-                         on every variant when using `{{_variant}}`",
-                    ),
-                ));
+                let container_fmt = container_attrs.common.fmt.as_ref();
+                if container_fmt.is_none() {
+                    return Err(syn::Error::new(
+                        e.variants.span(),
+                        format!(
+                            "implicit formatting of unit enum variant is supported only for \
+                             `Display` macro, use `#[{attr_name}(\"...\")]` to explicitly specify \
+                             the formatting on every variant or the enum",
+                        ),
+                    ));
+                } else if container_fmt.is_some_and(|fmt| fmt.contains_arg("_variant")) {
+                    return Err(syn::Error::new_spanned(
+                        variant,
+                        format!(
+                            "implicit formatting of unit enum variant is supported only for\
+                             `Display` macro, use `#[{attr_name}(\"...\")]` to explicitly specify \
+                             the formatting on every variant when using `{{_variant}}`",
+                        ),
+                    ));
+                }
             }
 
             if let Some(rename_all) = container_attrs.rename_all {
