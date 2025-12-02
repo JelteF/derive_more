@@ -275,7 +275,7 @@ fn expand_enum(
                     return Err(syn::Error::new_spanned(
                         variant,
                         format!(
-                            "implicit formatting of unit enum variant is supported only for\
+                            "implicit formatting of unit enum variant is supported only for \
                              `Display` macro, use `#[{attr_name}(\"...\")]` to explicitly specify \
                              the formatting on every variant when using `{{_variant}}`",
                         ),
