@@ -7,6 +7,22 @@ use super::*;
 
 type RenamedOption<T> = Option<T>;
 
+// Asserts that `derive(Error)` macro expansion is hygienic enough to not conflict
+// with `.as_dyn_error()` method name.
+pub trait ErrorExt {
+    fn as_dyn_error<'a>(&self) -> &(dyn core::error::Error + 'a)
+    where
+        Self: 'a;
+}
+impl<E: core::error::Error> ErrorExt for E {
+    fn as_dyn_error<'a>(&self) -> &(dyn core::error::Error + 'a)
+    where
+        Self: 'a,
+    {
+        self
+    }
+}
+
 #[test]
 fn unit() {
     assert!(SimpleErr.source().is_none());
