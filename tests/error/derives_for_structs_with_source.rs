@@ -39,6 +39,36 @@ fn named_implicit_source() {
 }
 
 #[test]
+fn named_implicit_source_with_external_as_dyn_error_trait() {
+    pub trait ErrorExt {
+        fn as_dyn_error<'a>(&self) -> &(dyn core::error::Error + 'a)
+        where
+            Self: 'a;
+    }
+
+    impl<E: core::error::Error> ErrorExt for E {
+        fn as_dyn_error<'a>(&self) -> &(dyn core::error::Error + 'a)
+        where
+            Self: 'a,
+        {
+            self
+        }
+    }
+
+    derive_display!(TestErr);
+    #[derive(Default, Debug, Error)]
+    struct TestErr {
+        source: SimpleErr,
+        field: i32,
+    }
+
+    let err = TestErr::default();
+
+    assert!(err.source().is_some());
+    assert!(err.source().unwrap().is::<SimpleErr>());
+}
+
+#[test]
 fn named_implicit_boxed_source() {
     derive_display!(TestErr);
     #[derive(Debug, Error)]
