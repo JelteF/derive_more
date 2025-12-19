@@ -1,6 +1,6 @@
 [package]
 name = "derive_more"
-version = "2.1.0"
+version = "2.1.1"
 edition = "2021"
 rust-version = "1.81.0"
 description = "Adds #[derive(x)] macros for more traits"
@@ -27,7 +27,7 @@ include = [
 members = ["impl"]
 
 [dependencies]
-derive_more-impl = { version = "=2.1.0", path = "impl" }
+derive_more-impl = { version = "=2.1.1", path = "impl" }
 
 [build-dependencies]
 rustc_version = { version = "0.4", optional = true }

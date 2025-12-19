@@ -1,6 +1,6 @@
 [package]
 name = "derive_more-impl"
-version = "2.1.0"
+version = "2.1.1"
 edition = "2021"
 rust-version = "1.81.0"
 description = "Internal implementation of `derive_more` crate"
