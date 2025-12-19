@@ -287,7 +287,7 @@ fn render_some(mut expr: TokenStream, unpack: bool) -> TokenStream {
     if unpack {
         expr = quote! { derive_more::core::option::Option::as_ref(#expr)? }
     }
-    quote! { Some(#expr.__as_dyn_error()) }
+    quote! { Some(#expr.__derive_more_as_dyn_error()) }
 }
 
 fn parse_fields<'input, 'state>(

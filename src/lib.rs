@@ -68,7 +68,7 @@ pub mod __private {
     pub use crate::cmp::AssertParamIsEq;
 
     #[cfg(feature = "error")]
-    pub use crate::vendor::thiserror::aserror::AsDynError;
+    pub use crate::as_dyn_error::AsDynError;
 }
 
 // The modules containing error types and other helpers.
@@ -93,7 +93,7 @@ mod r#as;
 mod fmt;
 
 #[cfg(feature = "error")]
-mod vendor;
+mod as_dyn_error;
 
 #[cfg(feature = "from_str")]
 mod r#str;
