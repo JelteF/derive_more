@@ -444,17 +444,16 @@ impl<'input> State<'input> {
             first_match.map_or(true, |info| !info.enabled.unwrap())
         };
 
+        // Default to owned true, unless the struct_meta_info or first attribute has ref type specified.
+        // - struct attribute with ref type specified means default false
+        // - not a single attribute means default true
+        // - an attribute, but non of owned, ref or ref_mut means default true
+        // - an attribute, and owned, ref or ref_mut means default false
+        let default_owned = !struct_meta_info.is_ref_type_specified() && first_match.map_or(true, |info| !info.is_ref_type_specified());
         let defaults = struct_meta_info.into_full(FullMetaInfo {
             enabled: default_enabled,
             forward: false,
-            // Default to owned true, except when first attribute has one of owned,
-            // ref or ref_mut
-            // - not a single attribute means default true
-            // - an attribute, but non of owned, ref or ref_mut means default true
-            // - an attribute, and owned, ref or ref_mut means default false
-            owned: first_match.map_or(true, |info| {
-                info.owned.is_none() && info.ref_.is_none() || info.ref_mut.is_none()
-            }),
+            owned: default_owned,
             ref_: false,
             ref_mut: false,
             info: MetaInfo::default(),
@@ -1244,6 +1243,10 @@ impl MetaInfo {
             ref_mut: self.ref_mut.unwrap_or(defaults.ref_mut),
             info: self,
         }
+    }
+
+    fn is_ref_type_specified(&self) -> bool {
+        self.owned.is_some() || self.ref_.is_some() || self.ref_mut.is_some()
     }
 }
 
