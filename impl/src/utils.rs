@@ -21,6 +21,7 @@ use syn::{
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -36,6 +37,7 @@ pub(crate) use self::fields_ext::FieldsExt;
     feature = "as_ref",
     feature = "eq",
     feature = "from_str",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -47,6 +49,7 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "debug",
     feature = "display",
     feature = "eq",
+    feature = "hash",
     feature = "from",
     feature = "from_str",
     feature = "into",
@@ -1327,6 +1330,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -1405,6 +1409,7 @@ mod either {
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -1507,6 +1512,7 @@ mod spanning {
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -1548,6 +1554,7 @@ pub(crate) mod attr {
         feature = "debug",
         feature = "eq",
         feature = "from",
+        feature = "hash",
         feature = "into",
         feature = "mul",
         feature = "mul_assign",
@@ -1888,6 +1895,7 @@ pub(crate) mod attr {
         feature = "display",
         feature = "eq",
         feature = "from",
+        feature = "hash",
         feature = "into",
         feature = "mul",
         feature = "mul_assign",
@@ -2515,6 +2523,7 @@ mod fields_ext {
     feature = "as_ref",
     feature = "eq",
     feature = "from_str",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -2869,6 +2878,7 @@ pub(crate) mod replace_self {
     feature = "add",
     feature = "add_assign",
     feature = "eq",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -3028,6 +3038,7 @@ pub(crate) mod structural_inclusion {
     feature = "add",
     feature = "add_assign",
     feature = "eq",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -3037,12 +3048,12 @@ pub(crate) mod pattern_matching {
     use proc_macro2::TokenStream;
     use quote::{format_ident, quote};
 
-    #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+    #[cfg(any(feature = "add_assign", feature = "eq", feature = "hash", feature = "mul_assign"))]
     use crate::utils::HashSet;
 
     /// Extension of [`syn::Fields`] for pattern matching code generation.
     pub(crate) trait FieldsExt {
-        #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+        #[cfg(any(feature = "add_assign", feature = "eq", feature = "hash", feature = "mul_assign"))]
         /// Generates a pattern for matching these [`syn::Fields`] non-exhaustively (considering the
         /// provided `skipped_indices`) in an arm of a `match` expression.
         ///
@@ -3062,7 +3073,7 @@ pub(crate) mod pattern_matching {
     }
 
     impl FieldsExt for syn::Fields {
-        #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+        #[cfg(any(feature = "add_assign", feature = "eq",  feature = "hash", feature = "mul_assign"))]
         fn non_exhaustive_arm_pattern(
             &self,
             prefix: &str,

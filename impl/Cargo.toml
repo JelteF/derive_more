@@ -61,6 +61,7 @@ eq = ["syn/extra-traits", "syn/visit"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
 from_str = ["syn/full", "syn/visit", "dep:convert_case"]
+hash = ["syn/extra-traits", "syn/visit"]
 index = []
 index_mut = []
 into = ["syn/extra-traits", "syn/visit-mut"]
@@ -88,6 +89,7 @@ full = [
     "error",
     "from",
     "from_str",
+    "hash",
     "index",
     "index_mut",
     "into",

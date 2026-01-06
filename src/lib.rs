@@ -25,6 +25,7 @@
 //! [`MulAssign`-like]: macro@crate::MulAssign
 //! [`Eq`]: macro@crate::Eq
 //! [`PartialEq`]: macro@crate::PartialEq
+//! [`Hash`]: macro@crate::Hash
 //!
 //! [`Constructor`]: macro@crate::Constructor
 //! [`IsVariant`]: macro@crate::IsVariant
@@ -285,6 +286,9 @@ pub mod with_trait {
         #[cfg(feature = "from_str")]
         pub use derive_more_impl::FromStr;
 
+        #[cfg(feature = "hash")]
+        pub use derive_more_impl::Hash;
+
         #[cfg(feature = "index")]
         pub use derive_more_impl::Index;
 
@@ -459,6 +463,7 @@ pub mod with_trait {
     feature = "error",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "index",
     feature = "index_mut",
     feature = "into",
