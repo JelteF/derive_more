@@ -8,6 +8,7 @@ Deriving `Hash` for enums/structs works in a similar way to the one in `std`,
 by hashing all the available fields, but, in contrast:
 1. Does not overconstrain generic parameters.
 2. Allows to ignore fields, whole structs or enum variants via `#[hash(skip)]` attribute.
+3. Allows to use a custom hash function for a field via `#[hash(with(function))]` attribute.
 
 ### Structs
 
@@ -213,3 +214,56 @@ impl Hash for Enum {
     }
 }
 ```
+
+### Custom hash function
+
+The `#[hash(with(function))]` attribute can be used to specify a custom hash function for a field.
+The function must have the signature `fn<H: Hasher>(value: &FieldType, state: &mut H)`.
+
+```rust
+# use derive_more::Hash;
+#
+mod my_hash {
+    use core::hash::Hasher;
+
+    pub fn hash_abs<H: Hasher>(value: &i32, state: &mut H) {
+        state.write_i32(value.abs());
+    }
+}
+
+#[derive(Hash)]
+struct Foo {
+    #[hash(with(my_hash::hash_abs))]
+    value: i32,
+}
+```
+
+This generates code equivalent to:
+
+```rust
+# use derive_more::core::hash::{Hash, Hasher};
+#
+# mod my_hash {
+#     use derive_more::core::hash::Hasher;
+#
+#     pub fn hash_abs<H: Hasher>(value: &i32, state: &mut H) {
+#         state.write_i32(value.abs());
+#     }
+# }
+#
+# struct Foo {
+#     value: i32,
+# }
+#
+impl Hash for Foo {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Self { value: self_0 } => {
+                my_hash::hash_abs(self_0, state);
+            }
+        }
+    }
+}
+```
+
+This is useful for types that don't implement `Hash` but can be hashed in a custom way, or when you need different hashing behavior than the default.

@@ -1,10 +1,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-fn do_hash<T: std::hash::Hash>(t: &T) -> u64 {
+fn do_hash<T: derive_more::core::hash::Hash>(t: &T) -> u64 {
     use std::hash::{DefaultHasher, Hasher};
     let mut hasher = DefaultHasher::default();
     t.hash(&mut hasher);
     hasher.finish()
+}
+mod utils {
+    pub fn alternate_u32_hash_function<H: derive_more::core::hash::Hasher>(value: &u32, state: &mut H) {
+        state.write_u32(42);
+        state.write_u32(*value)
+    }
 }
 
 mod structs {
@@ -35,7 +41,7 @@ mod structs {
         #[test]
         fn assert() {
             assert_eq!(do_hash(&Tuple(42)), do_hash(&42));
-            assert_eq!(do_hash(&Struct { field: 42 }), do_hash(&42));
+            assert_eq!(do_hash(&Struct { field: 42}), do_hash(&42));
             assert_eq!(do_hash(&StructSkipped { _skipped: 42 }), do_hash(&()));
             assert_eq!(do_hash(&StructFullySkipped { _skipped: 42 }), do_hash(&()));
         }
@@ -54,6 +60,15 @@ mod structs {
             b: String,
             c: bool,
         }
+
+        #[derive(Hash)]
+        struct StructWithAlternateHashFunction {
+            #[hash(with(crate::utils::alternate_u32_hash_function))]
+            a: u32,
+            b: String,
+            c: bool,
+        }
+
 
         #[derive(Hash)]
         struct MixedSkip {
@@ -76,6 +91,14 @@ mod structs {
                     c: true
                 }),
                 do_hash(&(42, "test".to_string(), true))
+            );
+            assert_eq!(
+                do_hash(&StructWithAlternateHashFunction {
+                    a:42,
+                    b: "test".to_string(),
+                    c: true
+                }),
+                do_hash(&(42, 42, "test".to_string(), true))
             );
             assert_eq!(
                 do_hash(&MixedSkip {
@@ -146,14 +169,15 @@ mod enums {
     }
 
     #[derive(Hash)]
-    enum WithSkip {
+    enum WithAndSkip {
         A {
             field: i32,
             #[hash(skip)]
             _skipped: String,
         },
         B(
-            i32,
+            #[hash(with(crate::utils::alternate_u32_hash_function))]
+            u32,
             #[hash(skip)]
             #[allow(unused)]
             String,
@@ -202,16 +226,16 @@ mod enums {
         let sc = StructEnum::C;
         assert_eq!(do_hash(&sc), do_hash(&std::mem::discriminant(&sc)));
 
-        let wa = WithSkip::A {
+        let wa = WithAndSkip::A {
             field: 42,
             _skipped: "ignored".to_string(),
         };
         assert_eq!(do_hash(&wa), do_hash(&(std::mem::discriminant(&wa), 42)));
 
-        let wb = WithSkip::B(42, "ignored".to_string());
-        assert_eq!(do_hash(&wb), do_hash(&(std::mem::discriminant(&wb), 42)));
+        let wb = WithAndSkip::B(42, "ignored".to_string());
+        assert_eq!(do_hash(&wb), do_hash(&(std::mem::discriminant(&wb), 42, 42)));
 
-        let wc = WithSkip::C(42);
+        let wc = WithAndSkip::C(42);
         assert_eq!(do_hash(&wc), do_hash(&std::mem::discriminant(&wc)));
 
     }

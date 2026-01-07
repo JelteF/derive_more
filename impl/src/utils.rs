@@ -1566,6 +1566,9 @@ pub(crate) mod attr {
     pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
+    
+    #[cfg(feature = "hash")]
+    pub(crate) use self::with::With;
 
     /// [`Parse`]ing with additional state or metadata.
     pub(crate) trait Parser {
@@ -2396,6 +2399,32 @@ pub(crate) mod attr {
         }
 
         impl ParseMultiple for RenameAll {}
+    }
+
+    #[cfg(feature = "hash")]
+    mod with {
+        use syn::parenthesized;
+        use syn::parse::{Parse, ParseStream};
+        use crate::utils::attr::ParseMultiple;
+
+        pub struct With {
+            pub path: syn::Path,
+        }
+        
+        impl Parse for With {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let with = input.parse::<syn::Ident>()?;
+                if with != "with" {
+                    return Err(syn::Error::new(with.span(), "unknown attribute argument, expected `with` argument here"));
+                }
+                let path_and_parents;
+                parenthesized!(path_and_parents in input);
+                let path = path_and_parents.parse::<syn::Path>()?;
+                Ok(Self {path})
+            }
+        }
+        
+        impl ParseMultiple for With {}
     }
 }
 
