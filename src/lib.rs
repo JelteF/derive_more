@@ -209,6 +209,8 @@ pub mod with_trait {
 
         re_export_traits!("from_str", from_str_traits, core::str, FromStr);
 
+        re_export_traits!("hash", hash_traits, core::hash, Hash);
+
         re_export_traits!("index", index_traits, core::ops, Index);
 
         re_export_traits!("index_mut", index_mut_traits, core::ops, IndexMut);
@@ -387,6 +389,10 @@ pub mod with_trait {
     #[cfg(feature = "from_str")]
     #[doc(hidden)]
     pub use all_traits_and_derives::FromStr;
+
+    #[cfg(feature = "hash")]
+    #[doc(hidden)]
+    pub use all_traits_and_derives::Hash;
 
     #[cfg(feature = "index")]
     #[doc(hidden)]

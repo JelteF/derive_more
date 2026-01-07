@@ -188,6 +188,11 @@ path = "tests/hash.rs"
 required-features = ["hash"]
 
 [[test]]
+name = "hash_and_eq"
+path = "tests/hash_and_eq.rs"
+required-features = ["hash", "eq"]
+
+[[test]]
 name = "index_mut"
 path = "tests/index_mut.rs"
 required-features = ["index_mut"]

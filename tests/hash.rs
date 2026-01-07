@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 fn do_hash<T: std::hash::Hash>(t: &T) -> u64 {
     use std::hash::{DefaultHasher, Hasher};
     let mut hasher = DefaultHasher::default();
@@ -7,8 +9,8 @@ fn do_hash<T: std::hash::Hash>(t: &T) -> u64 {
 
 mod structs {
     mod single_field {
-        use derive_more::Hash;
         use crate::do_hash;
+        use derive_more::Hash;
 
         #[derive(Hash)]
         struct Tuple(i32);
@@ -24,17 +26,24 @@ mod structs {
             _skipped: i32,
         }
 
+        #[derive(Hash)]
+        #[hash(skip)]
+        struct StructFullySkipped {
+            _skipped: i32,
+        }
+
         #[test]
         fn assert() {
             assert_eq!(do_hash(&Tuple(42)), do_hash(&42));
             assert_eq!(do_hash(&Struct { field: 42 }), do_hash(&42));
             assert_eq!(do_hash(&StructSkipped { _skipped: 42 }), do_hash(&()));
+            assert_eq!(do_hash(&StructFullySkipped { _skipped: 42 }), do_hash(&()));
         }
     }
 
     mod multi_field {
-        use derive_more::Hash;
         use crate::do_hash;
+        use derive_more::Hash;
 
         #[derive(Hash)]
         struct MultiTuple(i32, String, bool);
@@ -78,11 +87,42 @@ mod structs {
             );
         }
     }
+
+    mod generics {
+        use crate::do_hash;
+        use derive_more::Hash;
+
+        trait SomeTraitWithTypes {
+            type TraitType;
+        }
+
+        #[derive(Hash)]
+        struct GenericStruct<T: SomeTraitWithTypes, U> {
+            a: T::TraitType,
+            b: U,
+        }
+
+        // this struct doesn't implement `Hash` but implements `SomeTraitWithTypes` with `TraitType = i32`
+        // this means that `GenericStruct<SomeTraitWithTypesImpl>` should be hashable as well
+        struct SomeTraitWithTypesImpl;
+        impl SomeTraitWithTypes for SomeTraitWithTypesImpl {
+            type TraitType = i32;
+        }
+
+        #[test]
+        fn assert() {
+            let instance: GenericStruct<SomeTraitWithTypesImpl, _> = GenericStruct {
+                a: 42,
+                b: "test".to_string(),
+            };
+            assert_eq!(do_hash(&instance), do_hash(&(42, "test".to_string())));
+        }
+    }
 }
 
 mod enums {
-    use derive_more::Hash;
     use crate::do_hash;
+    use derive_more::Hash;
 
     #[derive(Hash)]
     enum SimpleEnum {
@@ -112,7 +152,15 @@ mod enums {
             #[hash(skip)]
             _skipped: String,
         },
-        B(i32, #[hash(skip)] #[allow(unused)] String),
+        B(
+            i32,
+            #[hash(skip)]
+            #[allow(unused)]
+            String,
+        ),
+        #[hash(skip)]
+        #[allow(unused)]
+        C(i32),
     }
 
     #[test]
@@ -162,5 +210,9 @@ mod enums {
 
         let wb = WithSkip::B(42, "ignored".to_string());
         assert_eq!(do_hash(&wb), do_hash(&(std::mem::discriminant(&wb), 42)));
+
+        let wc = WithSkip::C(42);
+        assert_eq!(do_hash(&wc), do_hash(&std::mem::discriminant(&wc)));
+
     }
 }

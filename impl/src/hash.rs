@@ -20,13 +20,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     let attr_name = format_ident!("hash");
     let secondary_attr_name = format_ident!("eq");
     let tertiary_attr_name = format_ident!("partial_eq");
+    let attr_names = [attr_name, secondary_attr_name, tertiary_attr_name];
 
     let mut has_skipped_variants = false;
     let mut variants = vec![];
 
     match &input.data {
         syn::Data::Struct(data) => {
-            for attr_name in [&attr_name, &secondary_attr_name, &tertiary_attr_name] {
+            for attr_name in &attr_names {
                 if attr::Skip::parse_attrs(&input.attrs, attr_name)?.is_some() {
                     has_skipped_variants = true;
                     break;
@@ -35,7 +36,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             if !has_skipped_variants {
                 let mut skipped_fields = SkippedFields::default();
                 'fields: for (n, field) in data.fields.iter().enumerate() {
-                    for attr_name in [&attr_name, &secondary_attr_name, &tertiary_attr_name] {
+                    for attr_name in &attr_names {
                         if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
                             _ = skipped_fields.insert(n);
                             continue 'fields;
@@ -47,7 +48,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         }
         syn::Data::Enum(data) => {
             'variants: for variant in &data.variants {
-                for attr_name in [&attr_name, &secondary_attr_name, &tertiary_attr_name] {
+                for attr_name in &attr_names {
                     if attr::Skip::parse_attrs(&variant.attrs, attr_name)?.is_some() {
                         has_skipped_variants = true;
                         continue 'variants;
@@ -55,7 +56,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 }
                 let mut skipped_fields = SkippedFields::default();
                 'fields: for (n, field) in variant.fields.iter().enumerate() {
-                    for attr_name in [&attr_name, &secondary_attr_name, &tertiary_attr_name] {
+                    for attr_name in &attr_names {
                         if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
                             _ = skipped_fields.insert(n);
                             continue 'fields;
@@ -107,7 +108,7 @@ impl StructuralExpansion<'_> {
     /// Generates body of the [`Hash::hash()`] method implementation for this
     /// [`StructuralExpansion`], if it's required.
     fn body(&self) -> TokenStream {
-        let no_op_body = quote! {  };
+        let no_op_body = quote! { };
 
         // Special case: empty enum.
         if self.is_enum && self.variants.is_empty() && !self.has_skipped_variants {
@@ -128,28 +129,26 @@ impl StructuralExpansion<'_> {
         }
 
         let match_arms = self
-                                      .variants
-                                      .iter()
-                                      .filter_map(|(variant, all_fields, skipped_fields)| {
-                                          let variant = variant.map(|variant| quote! { :: #variant });
-                                          let self_pattern = all_fields
-                                              .non_exhaustive_arm_pattern("__self_", skipped_fields);
-                                          
-                                          let mut hash_exprs = (0..all_fields.len())
-                                              .filter(|num| !skipped_fields.contains(num))
-                                              .map(|num| {
-                                                  let self_val = format_ident!("__self_{num}");
-                                                  punctuated::Pair::Punctuated(quote! { derive_more::core::hash::Hash::hash(#self_val, state) }, quote!(;))
-                                              })
-                                              .collect::<Punctuated<TokenStream, _>>();
-                                          _ = hash_exprs.pop_punct();
-                                          Some(quote! {
-                                              (Self #variant #self_pattern) => { #hash_exprs },
-                })
+            .variants
+            .iter()
+            .filter_map(|(variant, all_fields, skipped_fields)| {
+                let variant = variant.map(|variant| quote! { :: #variant });
+                let self_pattern = all_fields
+                    .non_exhaustive_arm_pattern("__self_", skipped_fields);
+
+                let mut hash_exprs = (0..all_fields.len())
+                    .filter(|num| !skipped_fields.contains(num))
+                    .map(|num| {
+                        let self_val = format_ident!("__self_{num}");
+                        punctuated::Pair::Punctuated(quote! { derive_more::core::hash::Hash::hash(#self_val, state) }, quote!(;))
+                    })
+                    .collect::<Punctuated<TokenStream, _>>();
+                _ = hash_exprs.pop_punct();
+                Some(quote! { (Self #variant #self_pattern) => { #hash_exprs } })
             })
             .collect::<Vec<_>>();
 
-        let discriminant_exprs = self.is_enum.then( || quote!(
+        let discriminant_exprs = self.is_enum.then(|| quote!(
             let __self_discr = derive_more::core::mem::discriminant(self);
             derive_more::core::hash::Hash::hash(&__self_discr, state);
         ));
@@ -159,7 +158,7 @@ impl StructuralExpansion<'_> {
             let no_fields_arm = (match_arms.len() != self.variants.len()
                 || self.has_skipped_variants)
                 .then(|| {
-                    quote! { _ => #no_op_body }
+                    quote! { _ => {} }
                 });
 
             quote! {
@@ -198,7 +197,7 @@ impl ToTokens for StructuralExpansion<'_> {
                         && !field_ty.contains_type_structurally(&implementor_ty)
                     {
                         generics.make_where_clause().predicates.push(parse_quote! {
-                            #field_ty: derive_more::core::cmp::PartialEq
+                            #field_ty: derive_more::core::hash::Hash
                         });
                     }
                 }
