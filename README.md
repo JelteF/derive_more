@@ -125,6 +125,11 @@ These are traits that can be used for operator overloading.
     `ShrAssign` and `ShlAssign`
 11. [`Eq`], [`PartialEq`]
 
+### Other traits
+
+1. [`Clone`]
+2. [`Copy`]
+
 
 ### Static methods
 
