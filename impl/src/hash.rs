@@ -199,7 +199,7 @@ struct StructuralExpansion<'i> {
 }
 
 impl StructuralExpansion<'_> {
-    /// Generates body of the [`Hash::hash()`] method implementation for this
+    /// Generates body of the [`core::hash::Hash::hash()`] method implementation for this
     /// [`StructuralExpansion`], if it's required.
     fn body(&self) -> TokenStream {
         let no_op_body = quote! {};
@@ -225,7 +225,7 @@ impl StructuralExpansion<'_> {
         let match_arms = self
             .variants
             .iter()
-            .filter_map(
+            .map(
                 |(variant, all_fields, skipped_fields, alternate_hash_functions)| {
                     let variant = variant.map(|variant| quote! { :: #variant });
                     let self_pattern = all_fields
@@ -244,21 +244,21 @@ impl StructuralExpansion<'_> {
 
                             punctuated::Pair::Punctuated(
                                 quote! { #hash_function(#self_val, state) },
-                                quote!(;),
+                                quote! {;},
                             )
                         })
                         .collect::<Punctuated<TokenStream, _>>();
                     _ = hash_exprs.pop_punct();
-                    Some(quote! { (Self #variant #self_pattern) => { #hash_exprs } })
+                    quote! { (Self #variant #self_pattern) => { #hash_exprs } }
                 },
             )
             .collect::<Vec<_>>();
 
         let discriminant_exprs = self.is_enum.then(|| {
-            quote!(
+            quote! {
                 let __self_discr = derive_more::core::mem::discriminant(self);
                 derive_more::core::hash::Hash::hash(&__self_discr, state);
-            )
+            }
         });
 
         let match_expr = (!match_arms.is_empty()).then(|| {

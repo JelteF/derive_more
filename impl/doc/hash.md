@@ -148,7 +148,7 @@ k1 == k2 -> hash(k1) == hash(k2)
 That is [expected](https://doc.rust-lang.org/std/hash/trait.Hash.html#hash-and-eq) from `Hash` implementations.
 
 ```rust
-# use derive_more::core::hash::Hash;
+# use derive_more::Hash;
 #
 #[derive(Debug)]
 struct NoHash; // doesn't implement `Hash`
@@ -178,7 +178,6 @@ This generates code equivalent to:
 
 ```rust
 # use derive_more::core::hash::{Hash, Hasher};
-#
 # struct NoHash;
 #
 # struct Foo { num: i32, ignored: f32 }
@@ -222,7 +221,6 @@ The function must have the signature `fn<H: Hasher>(value: &FieldType, state: &m
 
 ```rust
 # use derive_more::Hash;
-#
 mod my_hash {
     use core::hash::Hasher;
 
@@ -242,7 +240,6 @@ This generates code equivalent to:
 
 ```rust
 # use derive_more::core::hash::{Hash, Hasher};
-#
 # mod my_hash {
 #     use derive_more::core::hash::Hasher;
 #

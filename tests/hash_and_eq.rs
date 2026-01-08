@@ -1,12 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use std::hash::{DefaultHasher, Hash, Hasher};
-
-fn do_hash<T: Hash>(t: &T) -> u64 {
-    let mut hasher = DefaultHasher::default();
-    t.hash(&mut hasher);
-    hasher.finish()
-}
+mod hash_utils;
+use hash_utils::do_hash;
 
 mod hash_respects_eq_skip {
     use super::*;
@@ -16,7 +11,7 @@ mod hash_respects_eq_skip {
     struct Struct {
         field: i32,
         #[eq(skip)]
-        _skipped: String,
+        _skipped: &'static str,
     }
 
     #[derive(Hash, Eq, PartialEq)]
@@ -24,7 +19,7 @@ mod hash_respects_eq_skip {
         A {
             field: i32,
             #[partial_eq(skip)]
-            _skipped: String,
+            _skipped: &'static str,
         },
     }
 
@@ -33,19 +28,19 @@ mod hash_respects_eq_skip {
         assert_eq!(
             do_hash(&Struct {
                 field: 42,
-                _skipped: "ignored".to_string()
+                _skipped: "ignored"
             }),
             do_hash(&42)
         );
         assert_eq!(
             do_hash(&Enum::A {
                 field: 42,
-                _skipped: "ignored".to_string()
+                _skipped: "ignored"
             }),
             do_hash(&(
-                std::mem::discriminant(&Enum::A {
+                core::mem::discriminant(&Enum::A {
                     field: 0,
-                    _skipped: String::new()
+                    _skipped: "ignored"
                 }),
                 42
             ))

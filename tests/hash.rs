@@ -1,13 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-fn do_hash<T: derive_more::core::hash::Hash>(t: &T) -> u64 {
-    use std::hash::{DefaultHasher, Hasher};
-    let mut hasher = DefaultHasher::default();
-    t.hash(&mut hasher);
-    hasher.finish()
-}
-mod utils {
-    pub fn alternate_u32_hash_function<H: derive_more::core::hash::Hasher>(value: &u32, state: &mut H) {
+mod hash_utils;
+use hash_utils::do_hash;
+
+pub mod utils {
+    pub fn alternate_u32_hash_function<H: core::hash::Hasher>(
+        value: &u32,
+        state: &mut H,
+    ) {
         state.write_u32(42);
         state.write_u32(*value)
     }
@@ -41,69 +41,69 @@ mod structs {
         #[test]
         fn assert() {
             assert_eq!(do_hash(&Tuple(42)), do_hash(&42));
-            assert_eq!(do_hash(&Struct { field: 42}), do_hash(&42));
+            assert_eq!(do_hash(&Struct { field: 42 }), do_hash(&42));
             assert_eq!(do_hash(&StructSkipped { _skipped: 42 }), do_hash(&()));
             assert_eq!(do_hash(&StructFullySkipped { _skipped: 42 }), do_hash(&()));
         }
     }
 
     mod multi_field {
+        use super::super::utils;
         use crate::do_hash;
         use derive_more::Hash;
 
         #[derive(Hash)]
-        struct MultiTuple(i32, String, bool);
+        struct MultiTuple(i32, &'static str, bool);
 
         #[derive(Hash)]
         struct MultiStruct {
             a: i32,
-            b: String,
+            b: &'static str,
             c: bool,
         }
 
         #[derive(Hash)]
         struct StructWithAlternateHashFunction {
-            #[hash(with(crate::utils::alternate_u32_hash_function))]
+            #[hash(with(utils::alternate_u32_hash_function))]
             a: u32,
-            b: String,
+            b: &'static str,
             c: bool,
         }
-
 
         #[derive(Hash)]
         struct MixedSkip {
             field1: i32,
             #[hash(skip)]
-            _skipped: String,
+            _skipped: &'static str,
             field2: bool,
         }
 
         #[test]
         fn assert() {
             assert_eq!(
-                do_hash(&MultiTuple(42, "test".to_string(), true)),
-                do_hash(&(42, "test".to_string(), true))
+                do_hash(&MultiTuple(42, "test", true)),
+                do_hash(&(42, "test", true))
             );
             assert_eq!(
                 do_hash(&MultiStruct {
                     a: 42,
-                    b: "test".to_string(),
+                    b: "test",
                     c: true
                 }),
-                do_hash(&(42, "test".to_string(), true))
+                do_hash(&(42, "test", true))
             );
             assert_eq!(
                 do_hash(&StructWithAlternateHashFunction {
-                    a:42,
-                    b: "test".to_string(),
+                    a: 42,
+                    b: "test",
                     c: true
                 }),
-                do_hash(&(42, 42, "test".to_string(), true))
+                do_hash(&(42, 42, "test", true))
             );
             assert_eq!(
                 do_hash(&MixedSkip {
                     field1: 42,
-                    _skipped: "ignored".to_string(),
+                    _skipped: "ignored",
                     field2: true
                 }),
                 do_hash(&(42, true))
@@ -134,16 +134,15 @@ mod structs {
 
         #[test]
         fn assert() {
-            let instance: GenericStruct<SomeTraitWithTypesImpl, _> = GenericStruct {
-                a: 42,
-                b: "test".to_string(),
-            };
-            assert_eq!(do_hash(&instance), do_hash(&(42, "test".to_string())));
+            let instance: GenericStruct<SomeTraitWithTypesImpl, _> =
+                GenericStruct { a: 42, b: "test" };
+            assert_eq!(do_hash(&instance), do_hash(&(42, "test")));
         }
     }
 }
 
 mod enums {
+    use super::utils;
     use crate::do_hash;
     use derive_more::Hash;
 
@@ -157,14 +156,14 @@ mod enums {
     #[derive(Hash)]
     enum TupleEnum {
         A(i32),
-        B(String, bool),
+        B(&'static str, bool),
         C,
     }
 
     #[derive(Hash)]
     enum StructEnum {
         A { x: i32 },
-        B { y: String, z: bool },
+        B { y: &'static str, z: bool },
         C,
     }
 
@@ -173,14 +172,13 @@ mod enums {
         A {
             field: i32,
             #[hash(skip)]
-            _skipped: String,
+            _skipped: &'static str,
         },
         B(
-            #[hash(with(crate::utils::alternate_u32_hash_function))]
-            u32,
+            #[hash(with(utils::alternate_u32_hash_function))] u32,
             #[hash(skip)]
             #[allow(unused)]
-            String,
+            &'static str,
         ),
         #[hash(skip)]
         #[allow(unused)]
@@ -191,52 +189,51 @@ mod enums {
     fn assert() {
         assert_eq!(
             do_hash(&SimpleEnum::A),
-            do_hash(&std::mem::discriminant(&SimpleEnum::A))
+            do_hash(&core::mem::discriminant(&SimpleEnum::A))
         );
         assert_eq!(
             do_hash(&SimpleEnum::B),
-            do_hash(&std::mem::discriminant(&SimpleEnum::B))
+            do_hash(&core::mem::discriminant(&SimpleEnum::B))
         );
         assert_eq!(
             do_hash(&SimpleEnum::C),
-            do_hash(&std::mem::discriminant(&SimpleEnum::C))
+            do_hash(&core::mem::discriminant(&SimpleEnum::C))
         );
         let ta = TupleEnum::A(42);
-        let tb = TupleEnum::B("test".to_string(), true);
-        assert_eq!(do_hash(&ta), do_hash(&(std::mem::discriminant(&ta), 42)));
+        let tb = TupleEnum::B("test", true);
+        assert_eq!(do_hash(&ta), do_hash(&(core::mem::discriminant(&ta), 42)));
         assert_eq!(
             do_hash(&tb),
-            do_hash(&(std::mem::discriminant(&tb), "test".to_string(), true))
+            do_hash(&(core::mem::discriminant(&tb), "test", true))
         );
         let tc = TupleEnum::C;
-        assert_eq!(do_hash(&tc), do_hash(&std::mem::discriminant(&tc)));
+        assert_eq!(do_hash(&tc), do_hash(&core::mem::discriminant(&tc)));
 
         let sa = StructEnum::A { x: 42 };
-        assert_eq!(do_hash(&sa), do_hash(&(std::mem::discriminant(&sa), 42)));
+        assert_eq!(do_hash(&sa), do_hash(&(core::mem::discriminant(&sa), 42)));
 
-        let sb = StructEnum::B {
-            y: "test".to_string(),
-            z: true,
-        };
+        let sb = StructEnum::B { y: "test", z: true };
         assert_eq!(
             do_hash(&sb),
-            do_hash(&(std::mem::discriminant(&sb), "test".to_string(), true))
+            do_hash(&(core::mem::discriminant(&sb), "test", true))
         );
 
         let sc = StructEnum::C;
-        assert_eq!(do_hash(&sc), do_hash(&std::mem::discriminant(&sc)));
+        assert_eq!(do_hash(&sc), do_hash(&core::mem::discriminant(&sc)));
 
         let wa = WithAndSkip::A {
             field: 42,
-            _skipped: "ignored".to_string(),
+            _skipped: "ignored",
         };
-        assert_eq!(do_hash(&wa), do_hash(&(std::mem::discriminant(&wa), 42)));
+        assert_eq!(do_hash(&wa), do_hash(&(core::mem::discriminant(&wa), 42)));
 
-        let wb = WithAndSkip::B(42, "ignored".to_string());
-        assert_eq!(do_hash(&wb), do_hash(&(std::mem::discriminant(&wb), 42, 42)));
+        let wb = WithAndSkip::B(42, "ignored");
+        assert_eq!(
+            do_hash(&wb),
+            do_hash(&(core::mem::discriminant(&wb), 42, 42))
+        );
 
         let wc = WithAndSkip::C(42);
-        assert_eq!(do_hash(&wc), do_hash(&std::mem::discriminant(&wc)));
-
+        assert_eq!(do_hash(&wc), do_hash(&core::mem::discriminant(&wc)));
     }
 }

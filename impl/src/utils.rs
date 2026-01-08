@@ -1566,7 +1566,7 @@ pub(crate) mod attr {
     pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
-    
+
     #[cfg(feature = "hash")]
     pub(crate) use self::with::With;
 
@@ -2403,27 +2403,30 @@ pub(crate) mod attr {
 
     #[cfg(feature = "hash")]
     mod with {
+        use crate::utils::attr::ParseMultiple;
         use syn::parenthesized;
         use syn::parse::{Parse, ParseStream};
-        use crate::utils::attr::ParseMultiple;
 
         pub struct With {
             pub path: syn::Path,
         }
-        
+
         impl Parse for With {
             fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
                 let with = input.parse::<syn::Ident>()?;
                 if with != "with" {
-                    return Err(syn::Error::new(with.span(), "unknown attribute argument, expected `with` argument here"));
+                    return Err(syn::Error::new(
+                        with.span(),
+                        "unknown attribute argument, expected `with` argument here",
+                    ));
                 }
                 let path_and_parents;
                 parenthesized!(path_and_parents in input);
                 let path = path_and_parents.parse::<syn::Path>()?;
-                Ok(Self {path})
+                Ok(Self { path })
             }
         }
-        
+
         impl ParseMultiple for With {}
     }
 }
@@ -3077,12 +3080,22 @@ pub(crate) mod pattern_matching {
     use proc_macro2::TokenStream;
     use quote::{format_ident, quote};
 
-    #[cfg(any(feature = "add_assign", feature = "eq", feature = "hash", feature = "mul_assign"))]
+    #[cfg(any(
+        feature = "add_assign",
+        feature = "eq",
+        feature = "hash",
+        feature = "mul_assign"
+    ))]
     use crate::utils::HashSet;
 
     /// Extension of [`syn::Fields`] for pattern matching code generation.
     pub(crate) trait FieldsExt {
-        #[cfg(any(feature = "add_assign", feature = "eq", feature = "hash", feature = "mul_assign"))]
+        #[cfg(any(
+            feature = "add_assign",
+            feature = "eq",
+            feature = "hash",
+            feature = "mul_assign"
+        ))]
         /// Generates a pattern for matching these [`syn::Fields`] non-exhaustively (considering the
         /// provided `skipped_indices`) in an arm of a `match` expression.
         ///
@@ -3102,7 +3115,12 @@ pub(crate) mod pattern_matching {
     }
 
     impl FieldsExt for syn::Fields {
-        #[cfg(any(feature = "add_assign", feature = "eq",  feature = "hash", feature = "mul_assign"))]
+        #[cfg(any(
+            feature = "add_assign",
+            feature = "eq",
+            feature = "hash",
+            feature = "mul_assign"
+        ))]
         fn non_exhaustive_arm_pattern(
             &self,
             prefix: &str,
