@@ -183,7 +183,7 @@ struct StructuralExpansion<'i> {
     /// [`syn::Ident`]: struct@syn::Ident
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
-    /// [`syn::Fields`] of the enum/struct to be compared in this [`StructuralExpansion`].
+    /// [`syn::Fields`] of the enum/struct to be hashed in this [`StructuralExpansion`].
     variants: Vec<(
         Option<&'i syn::Ident>,
         &'i syn::Fields,
