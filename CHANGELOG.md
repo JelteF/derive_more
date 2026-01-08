@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+ - Add `Hash` derive similar to `std`'s one, but considering generics correctly,
+   and supporting custom hash functions per field or skipping fields.
+   ([#532](https://github.com/JelteF/derive_more/pull/532))
+
+
 ## 2.1.1 - 2025-12-22
 
 ### Fixed
