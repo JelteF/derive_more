@@ -74,7 +74,7 @@ fn default(fields: &Fields, variant: Option<TokenStream>) -> TokenStream {
             quote! { Self #variant { #(#defaults),* } }
         }
         Fields::Unnamed(unnamed) => {
-            let defaults = unnamed.unnamed.iter().map(|f| field_default_value(f));
+            let defaults = unnamed.unnamed.iter().map(field_default_value);
             quote! { Self #variant (#(#defaults),*) }
         }
         Fields::Unit => quote! { Self #variant },
