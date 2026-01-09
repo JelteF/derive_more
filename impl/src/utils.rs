@@ -19,7 +19,7 @@ use syn::{
     feature = "clone",
     feature = "copy",
     feature = "debug",
-    feature = "default",
+    feature = "default_derive",
     feature = "display",
     feature = "eq",
     feature = "from",
@@ -52,7 +52,7 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "clone",
     feature = "copy",
     feature = "debug",
-    feature = "default",
+    feature = "default_derive",
     feature = "display",
     feature = "eq",
     feature = "hash",
@@ -1336,7 +1336,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
-    feature = "default",
+    feature = "default_derive",
     feature = "display",
     feature = "clone",
     feature = "copy",
@@ -1420,7 +1420,7 @@ mod either {
     feature = "clone",
     feature = "copy",
     feature = "debug",
-    feature = "default",
+    feature = "default_derive",
     feature = "display",
     feature = "eq",
     feature = "from",
@@ -1524,7 +1524,7 @@ mod spanning {
     feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
-    feature = "default",
+    feature = "default_derive",
     feature = "display",
     feature = "clone",
     feature = "copy",
@@ -1550,7 +1550,7 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "debug",
-        feature = "default",
+        feature = "default_derive",
         feature = "display",
         feature = "clone",
         feature = "copy"
@@ -1728,7 +1728,7 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "debug",
-        feature = "default",
+        feature = "default_derive",
         feature = "display",
         feature = "clone",
         feature = "copy"
