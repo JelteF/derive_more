@@ -140,7 +140,7 @@ mod enums {
         impl Foo for FooImpl {
             type Bar = i32;
         }
-        
+
         let baz: Baz<FooImpl> = Baz::Value(42);
         let copy = baz;
         match (baz, copy) {
