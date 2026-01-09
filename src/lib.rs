@@ -454,6 +454,7 @@ pub mod with_trait {
     feature = "constructor",
     feature = "copy",
     feature = "debug",
+    feature = "default_derive",
     feature = "deref",
     feature = "deref_mut",
     feature = "display",
