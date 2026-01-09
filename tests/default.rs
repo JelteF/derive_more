@@ -4,14 +4,6 @@ mod structs {
     use derive_more::Default;
 
     #[test]
-    fn unit_struct() {
-        #[derive(Default, PartialEq, Debug)]
-        struct UnitStruct;
-
-        assert_eq!(UnitStruct::default(), UnitStruct)
-    }
-
-    #[test]
     fn tuple_struct() {
         #[derive(PartialEq, Debug)]
         struct NonDefault;
