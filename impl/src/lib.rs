@@ -158,7 +158,7 @@ create_derive!("copy", copy, Copy, copy_derive, copy);
 
 create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
 
-create_derive!("default", default, Default, default_derive, default);
+create_derive!("default_derive", default, Default, default_derive, default);
 
 create_derive!("deref", deref, Deref, deref_derive, deref);
 
