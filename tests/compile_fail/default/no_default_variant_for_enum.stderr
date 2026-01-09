@@ -1,0 +1,5 @@
+error: one variant must be marked with #[default]
+ --> tests/compile_fail/default/no_default_variant_for_enum.rs:2:6
+  |
+2 | enum Foo { Bar, Baz}
+  |      ^^^
