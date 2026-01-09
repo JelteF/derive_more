@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
    in more situations. Custom trait bounds can be specified via
    `#[clone(bound(...))]` and `#[copy(bound(...))]` attributes.
    ([#533](https://github.com/JelteF/derive_more/pull/533))
+ - Add `Default` derive, similar to `std`'s one, but not adding any trait bounds, 
+   the ability to specify custom default values for fields, using non-unit enum 
+   variants as default values and set custom bounds.
+   ([#534](https://github.com/JelteF/derive_more/pull/534))
 
 ## 2.1.1 - 2025-12-22
 
