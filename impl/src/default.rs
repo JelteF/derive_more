@@ -1,7 +1,7 @@
+use crate::utils::attr::{self, ParseMultiple};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Data, DeriveInput, Fields};
-use crate::utils::attr::{self, ParseMultiple};
 
 pub fn expand(input: &DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     let name = &input.ident;
@@ -61,7 +61,6 @@ pub fn expand(input: &DeriveInput, _: &'static str) -> syn::Result<TokenStream> 
             }
         }
     })
-
 }
 
 fn default(fields: &Fields, variant: Option<TokenStream>) -> TokenStream {
@@ -75,9 +74,7 @@ fn default(fields: &Fields, variant: Option<TokenStream>) -> TokenStream {
             quote! { Self #variant { #(#defaults),* } }
         }
         Fields::Unnamed(unnamed) => {
-            let defaults = unnamed.unnamed.iter().map(|f| {
-                field_default_value(f)
-            });
+            let defaults = unnamed.unnamed.iter().map(|f| field_default_value(f));
             quote! { Self #variant (#(#defaults),*) }
         }
         Fields::Unit => quote! { Self #variant },
