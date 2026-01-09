@@ -54,14 +54,14 @@ fn clone_struct(fields: &Fields) -> TokenStream {
         Fields::Named(named) => {
             let clones = named.named.iter().map(|f| {
                 let name = &f.ident;
-                quote! { #name: ::core::clone::Clone::clone(&self.#name) }
+                quote! { #name: derive_more::core::clone::Clone::clone(&self.#name) }
             });
             quote! { Self { #(#clones),* } }
         }
         Fields::Unnamed(unnamed) => {
             let clones = (0..unnamed.unnamed.len()).map(|i| {
                 let idx = syn::Index::from(i);
-                quote! { ::core::clone::Clone::clone(&self.#idx) }
+                quote! { derive_more::core::clone::Clone::clone(&self.#idx) }
             });
             quote! { Self(#(#clones),*) }
         }
