@@ -20,6 +20,8 @@ mod cmp;
 mod constructor;
 #[cfg(feature = "copy")]
 mod copy;
+#[cfg(feature = "default_derive")]
+mod default;
 #[cfg(feature = "deref")]
 mod deref;
 #[cfg(feature = "deref_mut")]
@@ -155,6 +157,8 @@ create_derive!("constructor", constructor, Constructor, constructor_derive);
 create_derive!("copy", copy, Copy, copy_derive, copy);
 
 create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
+
+create_derive!("default", default, Default, default_derive, default);
 
 create_derive!("deref", deref, Deref, deref_derive, deref);
 

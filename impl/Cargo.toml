@@ -56,6 +56,7 @@ clone = ["syn/extra-traits"]
 constructor = []
 copy = ["syn/extra-traits"]
 debug = ["syn/extra-traits", "dep:unicode-ident"]
+default_derive = ["syn/extra-traits"] # can't use `default` as a feature name as it's reserved
 deref = []
 deref_mut = []
 display = ["syn/extra-traits", "dep:unicode-ident", "dep:convert_case"]
@@ -85,6 +86,7 @@ full = [
     "constructor",
     "copy",
     "debug",
+    "default_derive",
     "deref",
     "deref_mut",
     "display",

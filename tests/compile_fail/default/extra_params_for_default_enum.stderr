@@ -1,0 +1,5 @@
+error: #[default] on variant must not have arguments
+ --> tests/compile_fail/default/extra_params_for_default_enum.rs:2:12
+  |
+2 | enum Foo { #[default(nope)] Bar, Baz}
+  |            ^^^^^^^^^^^^^^^^
