@@ -8,44 +8,11 @@ use crate::utils::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::parse::{Parse, ParseStream};
 use syn::{
     parse_quote,
     punctuated::{self, Punctuated},
     spanned::Spanned as _,
 };
-
-enum FieldAttributes {
-    Skip,
-    With(attr::With),
-}
-
-impl Parse for FieldAttributes {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        mod ident {
-            use syn::custom_keyword;
-
-            custom_keyword!(with);
-            custom_keyword!(skip);
-            custom_keyword!(ignore);
-        }
-
-        // We use `.lookahead1()` with all possible idents to form a nice error message including
-        // all the possible variants.
-        let ahead = input.lookahead1();
-
-        if ahead.peek(ident::with) {
-            Ok(Self::With(input.parse()?))
-        } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
-            let _: attr::Skip = input.parse()?;
-            Ok(Self::Skip)
-        } else {
-            Err(ahead.error())
-        }
-    }
-}
-
-impl ParseMultiple for FieldAttributes {}
 
 /// Expands a [`Hash`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -71,7 +38,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut alternate_hash_functions =
                     FieldsWithAlternateHashFunction::default();
                 'fields: for (n, field) in data.fields.iter().enumerate() {
-                    match FieldAttributes::parse_attrs(&field.attrs, &attr_name)? {
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
                             for attr_name in &secondary_attr_names {
                                 if attr::Skip::parse_attrs(&field.attrs, attr_name)?
@@ -83,14 +50,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             }
                         }
                         Some(Spanning {
-                            item: FieldAttributes::Skip,
+                            item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
                             skipped_fields.insert(n);
                         }
 
                         Some(Spanning {
-                            item: FieldAttributes::With(with),
+                            item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
                             alternate_hash_functions.insert(n, with.path.clone());
@@ -117,7 +84,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut alternate_hash_functions =
                     FieldsWithAlternateHashFunction::default();
                 'fields: for (n, field) in variant.fields.iter().enumerate() {
-                    match FieldAttributes::parse_attrs(&field.attrs, &attr_name)? {
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
                             for attr_name in &secondary_attr_names {
                                 if attr::Skip::parse_attrs(&field.attrs, attr_name)?
@@ -129,14 +96,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             }
                         }
                         Some(Spanning {
-                            item: FieldAttributes::Skip,
+                            item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
                             skipped_fields.insert(n);
                         }
 
                         Some(Spanning {
-                            item: FieldAttributes::With(with),
+                            item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
                             alternate_hash_functions.insert(n, with.path.clone());

@@ -1571,8 +1571,10 @@ pub(crate) mod attr {
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
 
-    #[cfg(feature = "hash")]
+    #[cfg(any(feature = "hash", feature = "eq"))]
     pub(crate) use self::with::With;
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    pub(crate) use self::with_or_skip::WithOrSkip;
 
     /// [`Parse`]ing with additional state or metadata.
     pub(crate) trait Parser {
@@ -2405,7 +2407,7 @@ pub(crate) mod attr {
         impl ParseMultiple for RenameAll {}
     }
 
-    #[cfg(feature = "hash")]
+    #[cfg(any(feature = "hash", feature = "eq"))]
     mod with {
         use crate::utils::attr::ParseMultiple;
         use syn::parenthesized;
@@ -2433,6 +2435,47 @@ pub(crate) mod attr {
 
         impl ParseMultiple for With {}
     }
+
+
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    mod with_or_skip {
+        use syn::parse::{Parse, ParseStream};
+        use crate::utils::attr;
+        use crate::utils::attr::ParseMultiple;
+
+        pub enum WithOrSkip {
+            Skip,
+            With(attr::With),
+        }
+
+        impl Parse for WithOrSkip {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                mod ident {
+                    use syn::custom_keyword;
+
+                    custom_keyword!(with);
+                    custom_keyword!(skip);
+                    custom_keyword!(ignore);
+                }
+
+                // We use `.lookahead1()` with all possible idents to form a nice error message including
+                // all the possible variants.
+                let ahead = input.lookahead1();
+
+                if ahead.peek(ident::with) {
+                    Ok(Self::With(input.parse()?))
+                } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
+                    let _: attr::Skip = input.parse()?;
+                    Ok(Self::Skip)
+                } else {
+                    Err(ahead.error())
+                }
+            }
+        }
+
+        impl ParseMultiple for WithOrSkip {}
+        }
+
 }
 
 #[cfg(any(feature = "from", feature = "into"))]
