@@ -8,7 +8,6 @@ use crate::utils::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::parse::{Parse, ParseStream};
 use syn::{
     parse_quote,
     punctuated::{self, Punctuated},
@@ -39,7 +38,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut alternate_hash_functions =
                     FieldsWithAlternateHashFunction::default();
                 'fields: for (n, field) in data.fields.iter().enumerate() {
-                    match FieldAttributes::parse_attrs(&field.attrs, &attr_name)? {
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
                             for attr_name in &secondary_attr_names {
                                 if attr::Skip::parse_attrs(&field.attrs, attr_name)?
@@ -51,14 +50,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             }
                         }
                         Some(Spanning {
-                            item: FieldAttributes::Skip,
+                            item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
                             skipped_fields.insert(n);
                         }
 
                         Some(Spanning {
-                            item: FieldAttributes::With(with),
+                            item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
                             alternate_hash_functions.insert(n, with.func.clone());
@@ -85,7 +84,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut alternate_hash_functions =
                     FieldsWithAlternateHashFunction::default();
                 'fields: for (n, field) in variant.fields.iter().enumerate() {
-                    match FieldAttributes::parse_attrs(&field.attrs, &attr_name)? {
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
                             for attr_name in &secondary_attr_names {
                                 if attr::Skip::parse_attrs(&field.attrs, attr_name)?
@@ -97,14 +96,14 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             }
                         }
                         Some(Spanning {
-                            item: FieldAttributes::Skip,
+                            item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
                             skipped_fields.insert(n);
                         }
 
                         Some(Spanning {
-                            item: FieldAttributes::With(with),
+                            item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
                             alternate_hash_functions.insert(n, with.func.clone());
@@ -135,44 +134,6 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     }
     .into_token_stream())
 }
-
-/// Custom combination of an [`attr::Skip`] and [`attr::With`] used for a better error message
-/// including all the possible variants.
-enum FieldAttributes {
-    /// Parsed [`attr::Skip`].
-    Skip,
-
-    /// Parsed [`attr::With`].
-    With(attr::With),
-}
-
-// TODO: Try generalize in `Either`.
-impl Parse for FieldAttributes {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        mod ident {
-            use syn::custom_keyword;
-
-            custom_keyword!(with);
-            custom_keyword!(skip);
-            custom_keyword!(ignore);
-        }
-
-        // `.lookahead1()` with all possible idents forms a nice error message including all the
-        // possible variants.
-        let ahead = input.lookahead1();
-
-        if ahead.peek(ident::with) {
-            Ok(Self::With(input.parse()?))
-        } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
-            _ = input.parse::<attr::Skip>()?;
-            Ok(Self::Skip)
-        } else {
-            Err(ahead.error())
-        }
-    }
-}
-
-impl ParseMultiple for FieldAttributes {}
 
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
