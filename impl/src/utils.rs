@@ -2436,12 +2436,11 @@ pub(crate) mod attr {
         impl ParseMultiple for With {}
     }
 
-
     #[cfg(any(feature = "hash", feature = "eq"))]
     mod with_or_skip {
-        use syn::parse::{Parse, ParseStream};
         use crate::utils::attr;
         use crate::utils::attr::ParseMultiple;
+        use syn::parse::{Parse, ParseStream};
 
         pub enum WithOrSkip {
             Skip,
@@ -2474,8 +2473,7 @@ pub(crate) mod attr {
         }
 
         impl ParseMultiple for WithOrSkip {}
-        }
-
+    }
 }
 
 #[cfg(any(feature = "from", feature = "into"))]
