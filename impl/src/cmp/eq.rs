@@ -28,7 +28,12 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             if !is_skipped {
                 'fields: for field in &data.fields {
                     for attr_name in [&attr_name, &secondary_attr_name] {
-                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                        if attr::WithOrSkip::parse_attrs(&field.attrs, attr_name)?
+                            .is_some()
+                        {
+                            // if skipped, we don't want to add a bound on the field type
+                            // if a with function is provided, then adding a bound is counterproductive
+                            // as the with function may handle types that do not implement Eq
                             continue 'fields;
                         }
                     }
@@ -45,7 +50,12 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 }
                 'fields: for field in &variant.fields {
                     for attr_name in [&attr_name, &secondary_attr_name] {
-                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
+                        if attr::WithOrSkip::parse_attrs(&field.attrs, attr_name)?
+                            .is_some()
+                        {
+                            // if skipped, we don't want to add a bound on the field type
+                            // if a with function is provided, then adding a bound is counterproductive
+                            // as the with function may handle types that do not implement Eq
                             continue 'fields;
                         }
                     }

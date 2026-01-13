@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `Hash` derive similar to `std`'s one, but considering generics correctly,
   and supporting custom hash functions per field or skipping fields.
   ([#532](https://github.com/JelteF/derive_more/pull/532))
+- Add support for custom eq functions in `PartialEq` derive.
+  ([#535](https://github.com/JelteF/derive_more/pull/535))
 
 ### Fixed
 

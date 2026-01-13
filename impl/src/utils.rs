@@ -2442,12 +2442,11 @@ pub(crate) mod attr {
         impl ParseMultiple for With {}
     }
 
-
     #[cfg(any(feature = "hash", feature = "eq"))]
     mod with_or_skip {
-        use syn::parse::{Parse, ParseStream};
         use crate::utils::attr;
         use crate::utils::attr::ParseMultiple;
+        use syn::parse::{Parse, ParseStream};
 
         /// Custom combination of an [`attr::Skip`] and [`attr::With`] used for a better error message
         /// including all the possible variants.
@@ -2485,8 +2484,7 @@ pub(crate) mod attr {
         }
 
         impl ParseMultiple for WithOrSkip {}
-        }
-
+    }
 }
 
 #[cfg(any(feature = "from", feature = "into"))]
