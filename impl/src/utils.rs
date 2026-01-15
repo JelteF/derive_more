@@ -1539,10 +1539,10 @@ pub(crate) mod attr {
         feature = "mul_assign",
     ))]
     pub(crate) use self::forward::Forward;
+    #[cfg(feature = "from_str")]
+    pub(crate) use self::rename::Rename;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
-    #[cfg(any(feature = "display", feature = "from_str"))]
-    pub(crate) use self::rename::Rename;
     #[cfg(any(
         feature = "add",
         feature = "add_assign",

@@ -133,6 +133,7 @@ struct FlatExpansion<'i> {
     /// a value-specific [`attr::RenameAll`] overriding [`FlatExpansion::rename_all`], if any.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
+    #[allow(clippy::type_complexity)]
     matches: Vec<(
         &'i syn::Ident,
         Either<&'i syn::DataStruct, &'i syn::Variant>,
@@ -174,12 +175,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
                         "only structs with no fields can derive `FromStr`",
                     ));
                 }
-                vec![(
-                    &input.ident,
-                    Either::Left(data),
-                    rename.clone(),
-                    rename_all.clone(),
-                )]
+                vec![(&input.ident, Either::Left(data), rename, rename_all)]
             }
             syn::Data::Enum(data) => data
                 .variants
@@ -555,7 +551,9 @@ impl attr::ParseMultiple for FlatVariantAttributes {
         if new.rename.and_then(|n| prev.rename.replace(n)).is_some() {
             return Err(syn::Error::new(
                 new_span,
-                format!("multiple `#[{name}(rename=\"...\")]` attributes aren't allowed"),
+                format!(
+                    "multiple `#[{name}(rename=\"...\")]` attributes aren't allowed"
+                ),
             ));
         }
 
@@ -650,7 +648,9 @@ impl attr::ParseMultiple for FlatContainerAttributes {
         if new.rename.and_then(|n| prev.rename.replace(n)).is_some() {
             return Err(syn::Error::new(
                 new_span,
-                format!("multiple `#[{name}(rename=\"...\")]` attributes aren't allowed"),
+                format!(
+                    "multiple `#[{name}(rename=\"...\")]` attributes aren't allowed"
+                ),
             ));
         }
 
