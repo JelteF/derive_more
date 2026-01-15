@@ -1,0 +1,5 @@
+error: `A`, `B` variants cannot have the same "a" string representation
+ --> tests/compile_fail/from_str/rename_duplicate.rs:4:6
+  |
+4 | enum E {
+  |      ^

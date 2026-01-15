@@ -1,0 +1,5 @@
+error: `A`, `B` variants cannot have the same "b" string representation
+ --> tests/compile_fail/from_str/rename_collision.rs:5:6
+  |
+5 | enum E {
+  |      ^
