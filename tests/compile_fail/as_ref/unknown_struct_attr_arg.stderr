@@ -1,4 +1,4 @@
-error[E0412]: cannot find type `baz` in this scope
+error[E0425]: cannot find type `baz` in this scope
  --> tests/compile_fail/as_ref/unknown_struct_attr_arg.rs:2:10
   |
 2 | #[as_ref(baz)]
