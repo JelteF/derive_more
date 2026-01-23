@@ -9,7 +9,8 @@ help: the trait `std::cmp::Eq` is not implemented for `NotEq<IntOrFloat>`
    |
 14 | struct NotEq<T>(f32, T);
    | ^^^^^^^^^^^^^^^
-   = help: the trait `std::cmp::Eq` is implemented for `Box<T, A>`
+help: the trait `std::cmp::Eq` is implemented for `Box<T, A>`
+  --> $RUST/alloc/src/boxed.rs
    = note: required for `Box<NotEq<IntOrFloat>>` to implement `std::cmp::Eq`
 note: required by a bound in `derive_more::__private::AssertParamIsEq`
   --> src/cmp.rs
