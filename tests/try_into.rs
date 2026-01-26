@@ -290,7 +290,7 @@ mod enums {
             pub struct BarWrapper<V>(V);
 
             #[derive(TryInto, Debug, PartialEq)]
-            #[try_into(ref, ref_mut)]
+            #[try_into(owned, ref, ref_mut)]
             pub enum Bar<V>
             where
                 Self: 'static,
@@ -319,7 +319,7 @@ mod enums {
             struct Wrapper<'a, const Y: usize, U>(&'a [U; Y]);
 
             #[derive(TryInto, Debug, PartialEq)]
-            #[try_into(ref, ref_mut)]
+            #[try_into(owned, ref, ref_mut)]
             enum Foo<'lt: 'static, T: Clone, const X: usize> {
                 X(Wrapper<'lt, X, T>),
             }

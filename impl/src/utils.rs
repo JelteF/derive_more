@@ -449,7 +449,8 @@ impl<'input> State<'input> {
         // - not a single attribute means default true
         // - an attribute, but non of owned, ref or ref_mut means default true
         // - an attribute, and owned, ref or ref_mut means default false
-        let default_owned = !struct_meta_info.is_ref_type_specified() && first_match.map_or(true, |info| !info.is_ref_type_specified());
+        let default_owned = !struct_meta_info.is_ref_type_specified()
+            && first_match.map_or(true, |info| !info.is_ref_type_specified());
         let defaults = struct_meta_info.into_full(FullMetaInfo {
             enabled: default_enabled,
             forward: false,
