@@ -63,7 +63,7 @@ enum Single {
 
 #[derive(Unwrap)]
 #[derive(Debug, PartialEq)]
-#[unwrap(owned, ref, ref_mut)]
+#[unwrap(ref, ref_mut)]
 enum Tuple<T> {
     None,
     Single(T),
