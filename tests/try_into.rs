@@ -274,7 +274,7 @@ mod enums {
             type Error = ();
 
             fn try_into(self) -> core::result::Result<i32, Self::Error> {
-                todo!()
+                unimplemented!()
             }
         }
 
