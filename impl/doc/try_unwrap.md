@@ -87,7 +87,7 @@ impl<T> Maybe<T> {
             val @ _ => Err(todo!("TryUnwrapError::new(val, /* omitted */)")),
         }
     }
-    pub fn try_unwrap_just_mut(&self) -> Result<&mut T, TryUnwrapError<&mut Self>> {
+    pub fn try_unwrap_just_mut(&mut self) -> Result<&mut T, TryUnwrapError<&mut Self>> {
         match self {
             Maybe::Just(field_0) => Ok(field_0),
             val @ _ => Err(todo!("TryUnwrapError::new(val, /* omitted */)")),
