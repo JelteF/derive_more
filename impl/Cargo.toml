@@ -52,7 +52,9 @@ default = []
 add = ["syn/extra-traits", "syn/visit"]
 add_assign = ["syn/extra-traits", "syn/visit"]
 as_ref = ["syn/extra-traits", "syn/visit"]
+clone = ["syn/extra-traits"]
 constructor = []
+copy = ["syn/extra-traits"]
 debug = ["syn/extra-traits", "dep:unicode-ident"]
 deref = []
 deref_mut = []
@@ -79,7 +81,9 @@ full = [
     "add",
     "add_assign",
     "as_ref",
+    "clone",
     "constructor",
+    "copy",
     "debug",
     "deref",
     "deref_mut",

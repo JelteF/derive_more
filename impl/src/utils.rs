@@ -16,6 +16,8 @@ use syn::{
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "clone",
+    feature = "copy",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -44,6 +46,8 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "clone",
+    feature = "copy",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1324,6 +1328,8 @@ pub fn is_type_parameter_used_in_type(
     feature = "as_ref",
     feature = "debug",
     feature = "display",
+    feature = "clone",
+    feature = "copy",
     feature = "eq",
     feature = "from",
     feature = "from_str",
@@ -1400,6 +1406,8 @@ mod either {
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "clone",
+    feature = "copy",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1504,6 +1512,8 @@ mod spanning {
     feature = "as_ref",
     feature = "debug",
     feature = "display",
+    feature = "clone",
+    feature = "copy",
     feature = "eq",
     feature = "from",
     feature = "from_str",
@@ -1522,6 +1532,14 @@ pub(crate) mod attr {
     };
 
     use super::{Either, Spanning};
+
+    #[cfg(any(
+        feature = "debug",
+        feature = "display",
+        feature = "clone",
+        feature = "copy"
+    ))]
+    pub(crate) use self::bounds::Bounds;
 
     #[cfg(any(
         feature = "as_ref",
@@ -1687,6 +1705,87 @@ pub(crate) mod attr {
                 ))
             })
         }
+    }
+
+    #[cfg(any(
+        feature = "debug",
+        feature = "display",
+        feature = "clone",
+        feature = "copy"
+    ))]
+    mod bounds {
+        use crate::utils::attr::ParseMultiple;
+        use syn::{
+            parse::{Parse, ParseStream},
+            punctuated::Punctuated,
+            spanned::Spanned as _,
+            token,
+        };
+
+        /// Representation of a `bound` macro attribute, expressing additional trait bounds.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(bound(<where-predicates>))]
+        /// #[<attribute>(bounds(<where-predicates>))]
+        /// #[<attribute>(where(<where-predicates>))]
+        /// ```
+        #[derive(Debug, Default)]
+        pub struct Bounds(pub Punctuated<syn::WherePredicate, token::Comma>);
+
+        impl Parse for Bounds {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                Self::check_legacy_fmt(input)?;
+
+                let _ = input.parse::<syn::Path>().and_then(|p| {
+                    if ["bound", "bounds", "where"]
+                        .into_iter()
+                        .any(|i| p.is_ident(i))
+                    {
+                        Ok(p)
+                    } else {
+                        Err(syn::Error::new(
+                            p.span(),
+                            "unknown attribute argument, expected `bound(...)`",
+                        ))
+                    }
+                })?;
+
+                let content;
+                syn::parenthesized!(content in input);
+
+                content
+                    .parse_terminated(syn::WherePredicate::parse, token::Comma)
+                    .map(Self)
+            }
+        }
+
+        impl Bounds {
+            /// Errors in case legacy syntax is encountered: `bound = "..."`.
+            fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
+                let fork = input.fork();
+
+                let path = fork
+                    .parse::<syn::Path>()
+                    .and_then(|path| fork.parse::<token::Eq>().map(|_| path));
+                match path {
+                    Ok(path) if path.is_ident("bound") => fork
+                        .parse::<syn::Lit>()
+                        .ok()
+                        .and_then(|lit| match lit {
+                            syn::Lit::Str(s) => Some(s.value()),
+                            _ => None,
+                        })
+                        .map_or(Ok(()), |bound| {
+                            Err(syn::Error::new(
+                                input.span(),
+                                format!("legacy syntax, use `bound({bound})` instead"),
+                            ))
+                        }),
+                    Ok(_) | Err(_) => Ok(()),
+                }
+            }
+        }
+        impl ParseMultiple for Bounds {}
     }
 
     #[cfg(any(

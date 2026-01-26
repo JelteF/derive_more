@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+
+### Added
+ - Add `Clone` and `Copy` derives, similar to `std`'s ones. These derives do not
+   add any trait bounds on generic parameters by default, making them usable
+   in more situations. Custom trait bounds can be specified via
+   `#[clone(bound(...))]` and `#[copy(bound(...))]` attributes.
+   ([#533](https://github.com/JelteF/derive_more/pull/533))
+
 ## 2.1.1 - 2025-12-22
 
 ### Fixed
