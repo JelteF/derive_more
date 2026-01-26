@@ -4,7 +4,7 @@
 
 use std::iter;
 
-use unicode_xid::UnicodeXID as XID;
+use unicode_ident::{is_xid_continue, is_xid_start};
 
 /// Output of the [`format_string`] parser.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -517,10 +517,10 @@ fn identifier(input: &str) -> Option<(LeftToParse<'_>, Identifier<'_>)> {
     map(
         alt(&mut [
             &mut map(
-                check_char(XID::is_xid_start),
-                take_while0(check_char(XID::is_xid_continue)),
+                check_char(is_xid_start),
+                take_while0(check_char(is_xid_continue)),
             ),
-            &mut and_then(char('_'), take_while1(check_char(XID::is_xid_continue))),
+            &mut and_then(char('_'), take_while1(check_char(is_xid_continue))),
         ]),
         |(i, _)| (i, &input[..(input.len() - i.len())]),
     )(input)

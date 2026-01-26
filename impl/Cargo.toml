@@ -27,7 +27,7 @@ proc-macro2 = "1.0"
 quote = "1.0"
 syn = "2.0.45"
 convert_case = { version = "0.10", optional = true }
-unicode-xid = { version = "0.2.2", optional = true }
+unicode-ident = { version = "1.0", optional = true }
 
 [build-dependencies]
 rustc_version = "0.4"
@@ -55,10 +55,10 @@ as_ref = ["syn/extra-traits", "syn/visit"]
 clone = ["syn/extra-traits"]
 constructor = []
 copy = ["syn/extra-traits"]
-debug = ["syn/extra-traits", "dep:unicode-xid"]
+debug = ["syn/extra-traits", "dep:unicode-ident"]
 deref = []
 deref_mut = []
-display = ["syn/extra-traits", "dep:unicode-xid", "dep:convert_case"]
+display = ["syn/extra-traits", "dep:unicode-ident", "dep:convert_case"]
 eq = ["syn/extra-traits", "syn/visit"]
 error = ["syn/extra-traits"]
 from = ["syn/extra-traits"]
