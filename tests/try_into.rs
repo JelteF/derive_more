@@ -262,6 +262,28 @@ mod enums {
     }
 
     #[test]
+    fn only_ref() {
+        #[derive(TryInto, Clone, Copy, Debug, PartialEq)]
+        #[try_into(ref, ref_mut)]
+        enum MixedInts {
+            SmallInt(i32),
+        }
+
+        // Test that `owned` is not enabled when `ref`/`ref_mut` are enabled without `owned`.
+        impl TryInto<i32> for MixedInts {
+            type Error = ();
+
+            fn try_into(self) -> core::result::Result<i32, Self::Error> {
+                unimplemented!()
+            }
+        }
+
+        let mut i = MixedInts::SmallInt(42);
+        assert_eq!(TryInto::<&i32>::try_into(&i).unwrap(), &42);
+        assert_eq!(TryInto::<&mut i32>::try_into(&mut i).unwrap(), &mut 42);
+    }
+
+    #[test]
     fn error_preserves_input() {
         #[derive(TryInto, Clone, Copy, Debug, PartialEq)]
         #[try_into(owned, ref, ref_mut)]
@@ -290,7 +312,7 @@ mod enums {
             pub struct BarWrapper<V>(V);
 
             #[derive(TryInto, Debug, PartialEq)]
-            #[try_into(ref, ref_mut)]
+            #[try_into(owned, ref, ref_mut)]
             pub enum Bar<V>
             where
                 Self: 'static,
@@ -319,7 +341,7 @@ mod enums {
             struct Wrapper<'a, const Y: usize, U>(&'a [U; Y]);
 
             #[derive(TryInto, Debug, PartialEq)]
-            #[try_into(ref, ref_mut)]
+            #[try_into(owned, ref, ref_mut)]
             enum Foo<'lt: 'static, T: Clone, const X: usize> {
                 X(Wrapper<'lt, X, T>),
             }
