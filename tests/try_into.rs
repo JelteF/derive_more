@@ -273,7 +273,7 @@ mod enums {
         impl TryInto<i32> for MixedInts {
             type Error = ();
 
-            fn try_into(self) -> std::result::Result<i32, Self::Error> {
+            fn try_into(self) -> core::result::Result<i32, Self::Error> {
                 todo!()
             }
         }
