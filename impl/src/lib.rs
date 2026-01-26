@@ -12,10 +12,16 @@ mod utils;
 
 #[cfg(feature = "as_ref")]
 mod r#as;
+#[cfg(feature = "clone")]
+mod clone;
 #[cfg(feature = "eq")]
 mod cmp;
 #[cfg(feature = "constructor")]
 mod constructor;
+#[cfg(feature = "copy")]
+mod copy;
+#[cfg(feature = "default_derive")]
+mod default;
 #[cfg(feature = "deref")]
 mod deref;
 #[cfg(feature = "deref_mut")]
@@ -144,9 +150,15 @@ create_derive!(
 create_derive!("as_ref", r#as::r#mut, AsMut, as_mut_derive, as_mut);
 create_derive!("as_ref", r#as::r#ref, AsRef, as_ref_derive, as_ref);
 
+create_derive!("clone", clone, Clone, clone_derive, clone);
+
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 
+create_derive!("copy", copy, Copy, copy_derive, copy);
+
 create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
+
+create_derive!("default_derive", default, Default, default_derive, default);
 
 create_derive!("deref", deref, Deref, deref_derive, deref);
 
