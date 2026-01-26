@@ -10,10 +10,10 @@ However, unlike `Unwrap`, it does not panic if the conversion fails. Also, value
 
 ```rust
 # use derive_more::TryUnwrap;
-# 
+#
 # #[derive(Debug, PartialEq)]
 #[derive(TryUnwrap)]
-#[try_unwrap(ref)]
+#[try_unwrap(owned, ref)]
 enum Maybe<T> {
     Nothing,
     Just(T),

@@ -18,7 +18,7 @@ enum Either<TLeft, TRight> {
 
 #[derive(TryUnwrap)]
 #[derive(Debug, PartialEq)]
-#[try_unwrap(ref, ref_mut)]
+#[try_unwrap(owned, ref, ref_mut)]
 enum Maybe<T> {
     Nothing,
     Just(T),
@@ -69,7 +69,7 @@ enum Single {
 
 #[derive(TryUnwrap)]
 #[derive(Debug, PartialEq)]
-#[try_unwrap(ref, ref_mut)]
+#[try_unwrap(owned, ref, ref_mut)]
 enum Tuple<T> {
     None,
     Single(T),

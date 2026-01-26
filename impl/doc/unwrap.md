@@ -14,7 +14,7 @@ If you want to treat a reference, you can put the `#[unwrap(ref)]` attribute on 
 # 
 # #[derive(Debug, PartialEq)]
 #[derive(Unwrap)]
-#[unwrap(ref)]
+#[unwrap(owned, ref)]
 enum Maybe<T> {
     Just(T),
     Nothing,
