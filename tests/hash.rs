@@ -1,7 +1,35 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod hash_utils;
-use hash_utils::do_hash;
+#[cfg(feature = "std")]
+pub fn do_hash<T: core::hash::Hash>(t: &T) -> u64 {
+    use std::hash::{DefaultHasher, Hasher};
+    let mut hasher = DefaultHasher::default();
+    t.hash(&mut hasher);
+    hasher.finish()
+}
+
+#[cfg(not(feature = "std"))]
+pub fn do_hash<T: core::hash::Hash>(t: &T) -> u64 {
+    use core::hash::Hasher;
+    // Simple FNV-1a hasher for no_std, for testing purposes only.
+    struct FnvHasher(u64);
+
+    impl core::hash::Hasher for FnvHasher {
+        fn write(&mut self, bytes: &[u8]) {
+            for byte in bytes {
+                self.0 ^= *byte as u64;
+                self.0 = self.0.wrapping_mul(0x100000001b3);
+            }
+        }
+        fn finish(&self) -> u64 {
+            self.0
+        }
+    }
+
+    let mut hasher = FnvHasher(0xcbf29ce484222325);
+    t.hash(&mut hasher);
+    hasher.finish()
+}
 
 pub mod utils {
     pub fn alternate_u32_hash_function<H: core::hash::Hasher>(
@@ -235,5 +263,51 @@ mod enums {
 
         let wc = WithAndSkip::C(42);
         assert_eq!(do_hash(&wc), do_hash(&core::mem::discriminant(&wc)));
+    }
+}
+
+#[cfg(feature = "eq")]
+mod hash_respects_eq_skip {
+    use super::*;
+    use derive_more::{Eq, Hash, PartialEq};
+
+    #[derive(Hash, Eq, PartialEq)]
+    struct Struct {
+        field: i32,
+        #[eq(skip)]
+        _skipped: &'static str,
+    }
+
+    #[derive(Hash, Eq, PartialEq)]
+    enum Enum {
+        A {
+            field: i32,
+            #[partial_eq(skip)]
+            _skipped: &'static str,
+        },
+    }
+
+    #[test]
+    fn assert() {
+        assert_eq!(
+            do_hash(&Struct {
+                field: 42,
+                _skipped: "ignored"
+            }),
+            do_hash(&42)
+        );
+        assert_eq!(
+            do_hash(&Enum::A {
+                field: 42,
+                _skipped: "ignored"
+            }),
+            do_hash(&(
+                core::mem::discriminant(&Enum::A {
+                    field: 0,
+                    _skipped: "ignored"
+                }),
+                42
+            ))
+        );
     }
 }
