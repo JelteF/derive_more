@@ -106,6 +106,12 @@ mod structs {
             field2: bool,
         }
 
+        #[derive(Hash)]
+        struct PossibleCollision {
+            a: &'static str,
+            b: &'static str,
+        }
+
         #[test]
         fn assert() {
             assert_eq!(
@@ -135,6 +141,10 @@ mod structs {
                     field2: true
                 }),
                 do_hash(&(42, true))
+            );
+            assert_ne!(
+                do_hash(&PossibleCollision { a: "a", b: "bc" }),
+                do_hash(&PossibleCollision { a: "ab", b: "c" })
             );
         }
     }
@@ -189,6 +199,13 @@ mod enums {
     }
 
     #[derive(Hash)]
+    enum SameDataEnum {
+        A(i32),
+        B(i32),
+        C(i32),
+    }
+
+    #[derive(Hash)]
     enum StructEnum {
         A { x: i32 },
         B { y: &'static str, z: bool },
@@ -227,6 +244,12 @@ mod enums {
             do_hash(&SimpleEnum::C),
             do_hash(&core::mem::discriminant(&SimpleEnum::C))
         );
+        let sa = SameDataEnum::A(42);
+        assert_eq!(do_hash(&sa), do_hash(&(core::mem::discriminant(&sa), 42)));
+        let sb = SameDataEnum::B(42);
+        assert_eq!(do_hash(&sb), do_hash(&(core::mem::discriminant(&sb), 42)));
+        let sc = SameDataEnum::C(42);
+        assert_eq!(do_hash(&sc), do_hash(&(core::mem::discriminant(&sc), 42)));
         let ta = TupleEnum::A(42);
         let tb = TupleEnum::B("test", true);
         assert_eq!(do_hash(&ta), do_hash(&(core::mem::discriminant(&ta), 42)));
