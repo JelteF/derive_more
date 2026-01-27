@@ -5,13 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## master
 
 ### Added
- - Add `Hash` derive similar to `std`'s one, but considering generics correctly,
-   and supporting custom hash functions per field or skipping fields.
-   ([#532](https://github.com/JelteF/derive_more/pull/532))
+- Add `Hash` derive similar to `std`'s one, but considering generics correctly,
+  and supporting custom hash functions per field or skipping fields.
+  ([#532](https://github.com/JelteF/derive_more/pull/532))
 
+### Fixed
+
+- Mistakenly generated code for `owned` type in `TryInto`, `Unwrap` and `TryUnwrap`
+  derives when it shouldn't be there (`ref`/`ref_mut` specified without `owned`).
+  ([#531](https://github.com/JelteF/derive_more/pull/531))
 
 ## 2.1.1 - 2025-12-22
 
