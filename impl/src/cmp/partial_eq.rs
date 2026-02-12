@@ -12,7 +12,7 @@ use crate::utils::{
     attr::{self, ParseMultiple as _},
     pattern_matching::FieldsExt as _,
     structural_inclusion::TypeExt as _,
-    GenericsSearch, HashSet,
+    GenericsSearch, HashMap, HashSet, Spanning,
 };
 
 /// Expands a [`PartialEq`] derive macro.
@@ -33,15 +33,35 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             }
             if !has_skipped_variants {
                 let mut skipped_fields = SkippedFields::default();
+                let mut alternate_eq_functions =
+                    FieldsWithAlternateEqFunction::default();
                 'fields: for (n, field) in data.fields.iter().enumerate() {
                     for attr_name in [&attr_name, &secondary_attr_name] {
-                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
-                            _ = skipped_fields.insert(n);
-                            continue 'fields;
+                        match attr::WithOrSkip::parse_attrs(&field.attrs, attr_name)? {
+                            Some(Spanning {
+                                item: attr::WithOrSkip::Skip,
+                                ..
+                            }) => {
+                                _ = skipped_fields.insert(n);
+                                continue 'fields;
+                            }
+                            Some(Spanning {
+                                item: attr::WithOrSkip::With(with),
+                                ..
+                            }) => {
+                                alternate_eq_functions.insert(n, with.path);
+                                continue 'fields;
+                            }
+                            None => {}
                         }
                     }
                 }
-                variants.push((None, &data.fields, skipped_fields));
+                variants.push((
+                    None,
+                    &data.fields,
+                    skipped_fields,
+                    alternate_eq_functions,
+                ));
             }
         }
         syn::Data::Enum(data) => {
@@ -53,15 +73,35 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     }
                 }
                 let mut skipped_fields = SkippedFields::default();
+                let mut alternate_eq_functions =
+                    FieldsWithAlternateEqFunction::default();
                 'fields: for (n, field) in variant.fields.iter().enumerate() {
                     for attr_name in [&attr_name, &secondary_attr_name] {
-                        if attr::Skip::parse_attrs(&field.attrs, attr_name)?.is_some() {
-                            _ = skipped_fields.insert(n);
-                            continue 'fields;
+                        match attr::WithOrSkip::parse_attrs(&field.attrs, attr_name)? {
+                            Some(Spanning {
+                                item: attr::WithOrSkip::Skip,
+                                ..
+                            }) => {
+                                _ = skipped_fields.insert(n);
+                                continue 'fields;
+                            }
+                            Some(Spanning {
+                                item: attr::WithOrSkip::With(with),
+                                ..
+                            }) => {
+                                alternate_eq_functions.insert(n, with.path);
+                                continue 'fields;
+                            }
+                            None => {}
                         }
                     }
                 }
-                variants.push((Some(&variant.ident), &variant.fields, skipped_fields));
+                variants.push((
+                    Some(&variant.ident),
+                    &variant.fields,
+                    skipped_fields,
+                    alternate_eq_functions,
+                ));
             }
         }
         syn::Data::Union(data) => {
@@ -84,6 +124,10 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
+/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the alternate
+/// eq function.
+type FieldsWithAlternateEqFunction = HashMap<usize, syn::Path>;
+
 /// Expansion of a macro for generating a structural [`PartialEq`] implementation of an enum or a
 /// struct.
 struct StructuralExpansion<'i> {
@@ -93,7 +137,12 @@ struct StructuralExpansion<'i> {
     self_ty: (&'i syn::Ident, &'i syn::Generics),
 
     /// [`syn::Fields`] of the enum/struct to be compared in this [`StructuralExpansion`].
-    variants: Vec<(Option<&'i syn::Ident>, &'i syn::Fields, SkippedFields)>,
+    variants: Vec<(
+        Option<&'i syn::Ident>,
+        &'i syn::Fields,
+        SkippedFields,
+        FieldsWithAlternateEqFunction,
+    )>,
 
     /// Indicator whether some original enum variants where skipped with an [`attr::Skip`].
     has_skipped_variants: bool,
@@ -144,7 +193,7 @@ impl StructuralExpansion<'_> {
         let match_arms = self
             .variants
             .iter()
-            .filter_map(|(variant, all_fields, skipped_fields)| {
+            .filter_map(|(variant, all_fields, skipped_fields, alternate_eq_functions)| {
                 if all_fields.is_empty() || skipped_fields.len() == all_fields.len() {
                     return None;
                 }
@@ -160,7 +209,16 @@ impl StructuralExpansion<'_> {
                     .map(|num| {
                         let self_val = format_ident!("__self_{num}");
                         let other_val = format_ident!("__other_{num}");
-                        punctuated::Pair::Punctuated(quote! { #self_val #cmp #other_val }, &chain)
+                        let equality = alternate_eq_functions
+                            .get(&num)
+                            .map(|eq_fn| {
+                                let maybe_not = (!eq).then(|| quote! {!});
+                                quote! { #maybe_not #eq_fn(#self_val, #other_val) }
+                            }
+                            ).unwrap_or_else(||
+                            quote! { #self_val #cmp #other_val }
+                        );
+                        punctuated::Pair::Punctuated(equality, &chain)
                     })
                     .collect::<Punctuated<TokenStream, _>>();
                 _ = val_eqs.pop_punct();
@@ -178,14 +236,14 @@ impl StructuralExpansion<'_> {
                 });
             let unreachable_arm = (self.variants.len() > 1
                 && no_fields_arm.is_none())
-            .then(|| {
-                quote! {
+                .then(|| {
+                    quote! {
                     // SAFETY: This arm is never reachable due to `mem::discriminant()` comparison
                     //         preceding the expanded `match (self, other)` expression, but is
                     //         required by it when there is more than one variant.
                     _ => unsafe { derive_more::core::hint::unreachable_unchecked() },
                 }
-            });
+                });
 
             quote! {
                 match (self, __other) {
@@ -221,7 +279,7 @@ impl ToTokens for StructuralExpansion<'_> {
         {
             let self_ty: syn::Type = parse_quote! { Self };
             let implementor_ty: syn::Type = parse_quote! { #ty #ty_generics };
-            for (_, all_fields, skipped_fields) in &self.variants {
+            for (_, all_fields, skipped_fields, _) in &self.variants {
                 for field_ty in
                     all_fields.iter().enumerate().filter_map(|(n, field)| {
                         (!skipped_fields.contains(&n)).then_some(&field.ty)

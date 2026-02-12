@@ -1,0 +1,5 @@
+error: expected one of: `with`, `skip`, `ignore`
+ --> tests/compile_fail/hash/unknown_field_attribute.rs:2:19
+  |
+2 | struct Foo(#[hash(unknown)] i32);
+  |                   ^^^^^^^
