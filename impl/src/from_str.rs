@@ -133,9 +133,11 @@ struct FlatExpansion<'i> {
     /// a value-specific [`attr::RenameAll`] overriding [`FlatExpansion::rename_all`], if any.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
+    #[allow(clippy::type_complexity)]
     matches: Vec<(
         &'i syn::Ident,
         Either<&'i syn::DataStruct, &'i syn::Variant>,
+        Option<attr::Rename>,
         Option<attr::RenameAll>,
     )>,
 
@@ -157,6 +159,14 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
     fn try_from(input: &'i syn::DeriveInput) -> syn::Result<Self> {
         let attr_ident = &format_ident!("from_str");
 
+        let FlatContainerAttributes {
+            rename,
+            rename_all,
+            error: custom_error,
+        } = FlatContainerAttributes::parse_attrs(&input.attrs, attr_ident)?
+            .map(Spanning::into_inner)
+            .unwrap_or_default();
+
         let matches = match &input.data {
             syn::Data::Struct(data) => {
                 if !data.fields.is_empty() {
@@ -165,7 +175,7 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
                         "only structs with no fields can derive `FromStr`",
                     ));
                 }
-                vec![(&input.ident, Either::Left(data), None)]
+                vec![(&input.ident, Either::Left(data), rename, rename_all)]
             }
             syn::Data::Enum(data) => data
                 .variants
@@ -177,10 +187,16 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
                             "only enums with no fields can derive `FromStr`",
                         ));
                     }
-                    let attr =
-                        attr::RenameAll::parse_attrs(&variant.attrs, attr_ident)?
-                            .map(Spanning::into_inner);
-                    Ok((&variant.ident, Either::Right(variant), attr))
+                    let attrs =
+                        FlatVariantAttributes::parse_attrs(&variant.attrs, attr_ident)?
+                            .map(Spanning::into_inner)
+                            .unwrap_or_default();
+                    Ok((
+                        &variant.ident,
+                        Either::Right(variant),
+                        attrs.rename,
+                        attrs.rename_all,
+                    ))
                 })
                 .collect::<syn::Result<_>>()?,
             syn::Data::Union(_) => {
@@ -191,19 +207,20 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
             }
         };
 
-        let FlatContainerAttributes {
-            rename_all,
-            error: custom_error,
-        } = FlatContainerAttributes::parse_attrs(&input.attrs, attr_ident)?
-            .map(Spanning::into_inner)
-            .unwrap_or_default();
-
         let mut similar_matches = <HashMap<_, Vec<_>>>::new();
         if rename_all.is_none() {
-            for (ident, _, renaming) in &matches {
+            for (ident, _, rename, renaming) in &matches {
                 let name = ident.to_string();
                 let lowercased = name.to_lowercase();
-                if let Some(rename) = renaming {
+                if let Some(rename) = rename {
+                    let renamed_lowercased = rename.as_str().to_lowercase();
+                    if renamed_lowercased != lowercased {
+                        similar_matches
+                            .entry(renamed_lowercased)
+                            .or_default()
+                            .push(*ident);
+                    }
+                } else if let Some(rename) = renaming {
                     let renamed_lowercased = rename.convert_case(&name);
                     if renamed_lowercased != lowercased {
                         similar_matches
@@ -217,9 +234,11 @@ impl<'i> TryFrom<&'i syn::DeriveInput> for FlatExpansion<'i> {
         }
 
         let mut exact_matches = <HashMap<String, Vec<String>>>::new();
-        for (ident, _, renaming) in &matches {
+        for (ident, _, rename, renaming) in &matches {
             let name = ident.to_string();
-            let exact = if let Some(default_renaming) = &rename_all {
+            let exact = if let Some(rename) = rename {
+                rename.as_str().to_owned()
+            } else if let Some(default_renaming) = &rename_all {
                 renaming
                     .as_ref()
                     .unwrap_or(default_renaming)
@@ -273,10 +292,14 @@ impl ToTokens for FlatExpansion<'_> {
         let match_arms = if let Some(default_renaming) = self.rename_all {
             self.matches
                 .iter()
-                .map(|(ident, value, renaming)| {
-                    let converted = renaming
-                        .unwrap_or(default_renaming)
-                        .convert_case(&ident.to_string());
+                .map(|(ident, value, rename, renaming)| {
+                    let converted = if let Some(rename) = rename {
+                        rename.as_str().to_owned()
+                    } else {
+                        renaming
+                            .unwrap_or(default_renaming)
+                            .convert_case(&ident.to_string())
+                    };
                     let constructor = value.self_constructor_empty();
 
                     quote! { #converted => #constructor, }
@@ -285,10 +308,14 @@ impl ToTokens for FlatExpansion<'_> {
         } else {
             self.matches
                 .iter()
-                .map(|(ident, value, renaming)| {
+                .map(|(ident, value, rename, renaming)| {
                     let name = ident.to_string();
                     let constructor = value.self_constructor_empty();
-                    if let Some(rename) = renaming {
+                    if let Some(rename) = rename {
+                        let exact_name = rename.as_str();
+
+                        quote! { _ if s == #exact_name => #constructor, }
+                    } else if let Some(rename) = renaming {
                         let exact_name = rename.convert_case(&name);
 
                         quote! { _ if s == #exact_name => #constructor, }
@@ -465,6 +492,89 @@ impl<L: FieldsExt, R: FieldsExt> FieldsExt for Either<&L, &R> {
     }
 }
 
+/// Representation of possible [`FromStr`] derive macro attributes placed on a variant.
+///
+/// ```rust,ignore
+/// #[<attribute>(rename = "...")]
+/// #[<attribute>(rename_all = "<casing>")]
+/// ```
+#[derive(Default)]
+struct FlatVariantAttributes {
+    /// [`attr::Rename`] for custom renaming.
+    rename: Option<attr::Rename>,
+
+    /// [`attr::RenameAll`] for case conversion.
+    rename_all: Option<attr::RenameAll>,
+}
+
+impl Parse for FlatVariantAttributes {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        mod ident {
+            use syn::custom_keyword;
+
+            custom_keyword!(rename);
+            custom_keyword!(rename_all);
+        }
+
+        let ahead = input.lookahead1();
+        if ahead.peek(ident::rename) {
+            Ok(Self {
+                rename: Some(input.parse()?),
+                ..Default::default()
+            })
+        } else if ahead.peek(ident::rename_all) {
+            Ok(Self {
+                rename_all: Some(input.parse()?),
+                ..Default::default()
+            })
+        } else {
+            Err(ahead.error())
+        }
+    }
+}
+
+impl attr::ParseMultiple for FlatVariantAttributes {
+    fn merge_attrs(
+        prev: Spanning<Self>,
+        new: Spanning<Self>,
+        name: &syn::Ident,
+    ) -> syn::Result<Spanning<Self>> {
+        let Spanning {
+            span: prev_span,
+            item: mut prev,
+        } = prev;
+        let Spanning {
+            span: new_span,
+            item: new,
+        } = new;
+
+        if new.rename.and_then(|n| prev.rename.replace(n)).is_some() {
+            return Err(syn::Error::new(
+                new_span,
+                format!(
+                    "multiple `#[{name}(rename=\"...\")]` attributes aren't allowed"
+                ),
+            ));
+        }
+
+        if new
+            .rename_all
+            .and_then(|n| prev.rename_all.replace(n))
+            .is_some()
+        {
+            return Err(syn::Error::new(
+                new_span,
+                format!("multiple `#[{name}(rename_all=\"...\")]` attributes aren't allowed"),
+            ));
+        }
+
+        Ok(Spanning::new(
+            prev,
+            prev_span.join(new_span).unwrap_or(prev_span),
+        ))
+    }
+}
+
 /// Representation of possible [`FromStr`] derive macro attributes placed on an enum or a struct for
 /// a [`FlatExpansion`].
 ///
@@ -478,6 +588,9 @@ impl<L: FieldsExt, R: FieldsExt> FieldsExt for Either<&L, &R> {
 /// be specified only once.
 #[derive(Default)]
 struct FlatContainerAttributes {
+    /// [`attr::Rename`] for custom renaming.
+    rename: Option<attr::Rename>,
+
     /// [`attr::RenameAll`] for case conversion.
     rename_all: Option<attr::RenameAll>,
 
@@ -491,6 +604,7 @@ impl Parse for FlatContainerAttributes {
             use syn::custom_keyword;
 
             custom_keyword!(error);
+            custom_keyword!(rename);
             custom_keyword!(rename_all);
         }
 
@@ -498,6 +612,11 @@ impl Parse for FlatContainerAttributes {
         if ahead.peek(ident::error) {
             Ok(Self {
                 error: Some(input.parse()?),
+                ..Default::default()
+            })
+        } else if ahead.peek(ident::rename) {
+            Ok(Self {
+                rename: Some(input.parse()?),
                 ..Default::default()
             })
         } else if ahead.peek(ident::rename_all) {
@@ -525,6 +644,15 @@ impl attr::ParseMultiple for FlatContainerAttributes {
             span: new_span,
             item: new,
         } = new;
+
+        if new.rename.and_then(|n| prev.rename.replace(n)).is_some() {
+            return Err(syn::Error::new(
+                new_span,
+                format!(
+                    "multiple `#[{name}(rename=\"...\")]` attributes aren't allowed"
+                ),
+            ));
+        }
 
         if new
             .rename_all

@@ -1543,6 +1543,8 @@ pub(crate) mod attr {
         feature = "mul_assign",
     ))]
     pub(crate) use self::forward::Forward;
+    #[cfg(feature = "from_str")]
+    pub(crate) use self::rename::Rename;
     #[cfg(any(feature = "display", feature = "from_str"))]
     pub(crate) use self::rename_all::RenameAll;
     #[cfg(any(
@@ -2392,6 +2394,53 @@ pub(crate) mod attr {
         }
 
         impl ParseMultiple for RenameAll {}
+    }
+
+    #[cfg(any(feature = "display", feature = "from_str"))]
+    mod rename {
+        use syn::{
+            parse::{Parse, ParseStream},
+            spanned::Spanned as _,
+            token,
+        };
+
+        use super::ParseMultiple;
+
+        /// Representation of a `rename` macro attribute.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(rename = "...")]
+        /// ```
+        #[derive(Clone, Debug)]
+        pub(crate) struct Rename(String);
+
+        impl Rename {
+            pub(crate) fn as_str(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl Parse for Rename {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let _ = input.parse::<syn::Path>().and_then(|p| {
+                    if p.is_ident("rename") {
+                        Ok(p)
+                    } else {
+                        Err(syn::Error::new(
+                            p.span(),
+                            "unknown attribute argument, expected `rename = \"...\"`",
+                        ))
+                    }
+                })?;
+
+                input.parse::<token::Eq>()?;
+
+                let lit: syn::LitStr = input.parse()?;
+                Ok(Self(lit.value()))
+            }
+        }
+
+        impl ParseMultiple for Rename {}
     }
 }
 
