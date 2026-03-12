@@ -442,6 +442,19 @@ mod structs {
             );
         }
 
+        #[test]
+        fn rename() {
+            #[derive(Debug, Eq, FromStr, PartialEq)]
+            #[from_str(rename = "Bar")]
+            struct Foo;
+
+            assert_eq!("Bar".parse::<Foo>().unwrap(), Foo);
+            assert_eq!(
+                "Foo".parse::<Foo>().unwrap_err().to_string(),
+                "Invalid `Foo` string representation",
+            );
+        }
+
         mod rename_all {
             use super::*;
 
@@ -724,6 +737,79 @@ mod enums {
                 "other".parse::<Enum>().unwrap_err().to_string(),
                 "Invalid `Enum` string representation",
             );
+        }
+
+        mod rename {
+            use super::*;
+
+            #[test]
+            fn basic() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                enum Enum {
+                    #[from_str(rename = "foo")]
+                    Foo,
+                    #[from_str(rename = "bar")]
+                    Bar,
+                }
+
+                assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+                assert_eq!("bar".parse::<Enum>().unwrap(), Enum::Bar);
+
+                assert_eq!(
+                    "Foo".parse::<Enum>().unwrap_err().to_string(),
+                    "Invalid `Enum` string representation",
+                );
+            }
+
+            #[test]
+            fn override_rename_all() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                #[from_str(rename_all = "UPPERCASE")]
+                enum Enum {
+                    #[from_str(rename = "foo")]
+                    Foo,
+                    Bar,
+                }
+
+                assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+                assert_eq!("BAR".parse::<Enum>().unwrap(), Enum::Bar);
+
+                assert_eq!(
+                    "FOO".parse::<Enum>().unwrap_err().to_string(),
+                    "Invalid `Enum` string representation",
+                );
+            }
+
+            #[test]
+            fn mixed() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                enum Enum {
+                    #[from_str(rename = "foo")]
+                    Foo,
+                    Bar,
+                }
+
+                assert_eq!("foo".parse::<Enum>().unwrap(), Enum::Foo);
+                // Default is case-insensitive
+                assert_eq!("Bar".parse::<Enum>().unwrap(), Enum::Bar);
+                assert_eq!("bar".parse::<Enum>().unwrap(), Enum::Bar);
+            }
+
+            #[test]
+            fn case_sensitivity() {
+                #[derive(Debug, Eq, FromStr, PartialEq)]
+                enum Enum {
+                    #[from_str(rename = "Foo")]
+                    Foo,
+                }
+
+                assert_eq!("Foo".parse::<Enum>().unwrap(), Enum::Foo);
+                // rename attribute is strict
+                assert_eq!(
+                    "foo".parse::<Enum>().unwrap_err().to_string(),
+                    "Invalid `Enum` string representation",
+                );
+            }
         }
 
         mod rename_all {
