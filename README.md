@@ -125,6 +125,12 @@ These are traits that can be used for operator overloading.
     `ShrAssign` and `ShlAssign`
 11. [`Eq`], [`PartialEq`]
 
+### Other traits
+
+1. [`Clone`]
+2. [`Copy`]
+3. [`Default`]
+
 
 ### Static methods
 
@@ -263,6 +269,10 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 [`MulAssign`-like]: https://docs.rs/derive_more/latest/derive_more/derive.MulAssign.html
 [`Eq`]: https://docs.rs/derive_more/latest/derive_more/derive.Eq.html
 [`PartialEq`]: https://docs.rs/derive_more/latest/derive_more/derive.PartialEq.html
+
+[`Clone`]: https://docs.rs/derive_more/latest/derive_more/derive.Clone.html
+[`Copy`]: https://docs.rs/derive_more/latest/derive_more/derive.Copy.html
+[`Default`]: https://docs.rs/derive_more/latest/derive_more/derive.Default.html
 
 [`Constructor`]: https://docs.rs/derive_more/latest/derive_more/derive.Constructor.html
 [`IsVariant`]: https://docs.rs/derive_more/latest/derive_more/derive.IsVariant.html
