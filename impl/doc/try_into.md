@@ -38,10 +38,10 @@ let mut mixed_int3 = mixed_int1.clone();
 
 assert_eq!(123u32, mixed_int1.try_into().unwrap());
 
-let int_ref : &u32 = (&mixed_int2).try_into().unwrap();
+let int_ref: &u32 = (&mixed_int2).try_into().unwrap();
 assert_eq!(&123u32, int_ref);
 
-let int_ref_mut : &mut u32 = (&mut mixed_int3).try_into().unwrap();
+let int_ref_mut: &mut u32 = (&mut mixed_int3).try_into().unwrap();
 assert_eq!(&mut 123u32, int_ref_mut);
 
 assert_eq!("foo".to_string(), String::try_from(mixed_string.clone()).unwrap());
