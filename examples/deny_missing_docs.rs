@@ -4,7 +4,7 @@
 #![allow(dead_code)] // for illustration purposes
 
 use derive_more::{
-    Add, AddAssign, Constructor, Deref, DerefMut, Display, From, FromStr, Index,
+    Add, AddAssign, Constructor, Deref, DerefMut, Display, From, FromStr, Hash, Index,
     IndexMut, Into, IsVariant, Mul, MulAssign, Not, TryInto,
 };
 
@@ -18,6 +18,7 @@ fn main() {}
     Display,
     From,
     FromStr,
+    Hash,
     Into,
     Mul,
     MulAssign,

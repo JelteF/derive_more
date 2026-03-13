@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `NonHashable: Hash` is not satisfied
+ --> tests/compile_fail/hash/non_hash_field.rs:3:10
+  |
+3 | #[derive(derive_more::Hash)]
+  |          ^^^^^^^^^^^^^^^^^ the trait `Hash` is not implemented for `NonHashable`
+  |
+  = note: this error originates in the derive macro `derive_more::Hash` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider annotating `NonHashable` with `#[derive(Hash)]`
+  |
+1 + #[derive(Hash)]
+2 | struct NonHashable(i32);
+  |
