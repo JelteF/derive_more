@@ -1,0 +1,5 @@
+error: Clone cannot be derived for unions
+ --> tests/compile_fail/clone/union.rs:2:1
+  |
+2 | union MyUnion {
+  | ^^^^^

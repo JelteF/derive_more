@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## master
 
+### Added
+- Add `Clone` and `Copy` derives, similar to `std`'s ones. These derives do not
+  add any trait bounds on generic parameters by default, making them usable
+  in more situations. Custom trait bounds can be specified via
+  `#[clone(bound(...))]` and `#[copy(bound(...))]` attributes.
+  ([#533](https://github.com/JelteF/derive_more/pull/533))
+
 ### Fixed
 
 - Mistakenly generated code for `owned` type in `TryInto`, `Unwrap` and `TryUnwrap`
