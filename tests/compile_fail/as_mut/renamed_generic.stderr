@@ -10,7 +10,7 @@ error[E0599]: the method `as_mut` exists for struct `Baz<i32>`, but its trait bo
 11 |     let _: &mut Bar<i32> = item.as_mut();
    |                                 ^^^^^^ method cannot be called on `Baz<i32>` due to unsatisfied trait bounds
    |
-   = note: trait bound `Foo<i32>: AsMut<Foo<i32>>` was not satisfied
+note: trait bound `Foo<i32>: AsMut<Foo<i32>>` was not satisfied
 note: the trait `AsMut` must be implemented
   --> $RUST/core/src/convert/mod.rs
    = help: items from traits can only be used if the trait is implemented and in scope
