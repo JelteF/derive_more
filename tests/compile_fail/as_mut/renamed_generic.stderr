@@ -10,9 +10,15 @@ error[E0599]: the method `as_mut` exists for struct `Baz<i32>`, but its trait bo
 11 |     let _: &mut Bar<i32> = item.as_mut();
    |                                 ^^^^^^ method cannot be called on `Baz<i32>` due to unsatisfied trait bounds
    |
-   = note: trait bound `Foo<i32>: AsMut<Foo<i32>>` was not satisfied
+note: trait bound `Foo<i32>: AsMut<Foo<i32>>` was not satisfied
+  --> tests/compile_fail/as_mut/renamed_generic.rs:5:10
+   |
+ 5 | #[derive(derive_more::AsMut)]
+   |          ^^^^^^^^^^^^^^^^^^ type parameter would need to implement `AsMut`
 note: the trait `AsMut` must be implemented
   --> $RUST/core/src/convert/mod.rs
+   = help: consider manually implementing the trait to avoid undesired bounds
    = help: items from traits can only be used if the trait is implemented and in scope
    = note: the following trait defines an item `as_mut`, perhaps you need to implement it:
            candidate #1: `AsMut`
+   = note: this error originates in the derive macro `derive_more::AsMut` (in Nightly builds, run with -Z macro-backtrace for more info)
