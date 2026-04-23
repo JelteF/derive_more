@@ -65,6 +65,7 @@ eq = ["derive_more-impl/eq"]
 error = ["derive_more-impl/error"]
 from = ["derive_more-impl/from"]
 from_str = ["derive_more-impl/from_str"]
+hash = ["derive_more-impl/hash"]
 index = ["derive_more-impl/index"]
 index_mut = ["derive_more-impl/index_mut"]
 into = ["derive_more-impl/into"]
@@ -93,6 +94,7 @@ full = [
     "error",
     "from",
     "from_str",
+    "hash",
     "index",
     "index_mut",
     "into",
@@ -179,6 +181,11 @@ required-features = ["from"]
 name = "from_str"
 path = "tests/from_str.rs"
 required-features = ["from_str"]
+
+[[test]]
+name = "hash"
+path = "tests/hash.rs"
+required-features = ["hash"]
 
 [[test]]
 name = "index_mut"

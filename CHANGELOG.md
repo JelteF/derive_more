@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## master
 
+### Added
+- Add `Hash` derive similar to `std`'s one, but considering generics correctly,
+  and supporting custom hash functions per field or skipping fields.
+  ([#532](https://github.com/JelteF/derive_more/pull/532))
+
 ### Fixed
 
 - Mistakenly generated code for `owned` type in `TryInto`, `Unwrap` and `TryUnwrap`
