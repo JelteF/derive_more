@@ -56,8 +56,11 @@ default = ["std"]
 add = ["derive_more-impl/add"]
 add_assign = ["derive_more-impl/add_assign"]
 as_ref = ["derive_more-impl/as_ref"]
+clone = ["derive_more-impl/clone"]
 constructor = ["derive_more-impl/constructor"]
+copy = ["derive_more-impl/copy"]
 debug = ["derive_more-impl/debug"]
+default_derive = ["derive_more-impl/default_derive"] # can't use `default` as a feature name as it's reserved
 deref = ["derive_more-impl/deref"]
 deref_mut = ["derive_more-impl/deref_mut"]
 display = ["derive_more-impl/display"]
@@ -84,8 +87,11 @@ full = [
     "add",
     "add_assign",
     "as_ref",
+    "clone",
     "constructor",
+    "copy",
     "debug",
+    "default_derive",
     "deref",
     "deref_mut",
     "display",
@@ -136,14 +142,29 @@ path = "tests/boats_display_derive.rs"
 required-features = ["display"]
 
 [[test]]
+name = "clone"
+path = "tests/clone.rs"
+required-features = ["clone"]
+
+[[test]]
 name = "constructor"
 path = "tests/constructor.rs"
 required-features = ["constructor"]
 
 [[test]]
+name = "copy"
+path = "tests/copy.rs"
+required-features = ["copy", "clone"]
+
+[[test]]
 name = "debug"
 path = "tests/debug.rs"
 required-features = ["debug"]
+
+[[test]]
+name = "default"
+path = "tests/default.rs"
+required-features = ["default_derive"]
 
 [[test]]
 name = "deref"
