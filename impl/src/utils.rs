@@ -21,6 +21,7 @@ use syn::{
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -36,6 +37,7 @@ pub(crate) use self::fields_ext::FieldsExt;
     feature = "as_ref",
     feature = "eq",
     feature = "from_str",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -47,6 +49,7 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "debug",
     feature = "display",
     feature = "eq",
+    feature = "hash",
     feature = "from",
     feature = "from_str",
     feature = "into",
@@ -1331,6 +1334,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -1409,6 +1413,7 @@ mod either {
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -1511,6 +1516,7 @@ mod spanning {
     feature = "eq",
     feature = "from",
     feature = "from_str",
+    feature = "hash",
     feature = "into",
     feature = "mul",
     feature = "mul_assign",
@@ -1552,6 +1558,7 @@ pub(crate) mod attr {
         feature = "debug",
         feature = "eq",
         feature = "from",
+        feature = "hash",
         feature = "into",
         feature = "mul",
         feature = "mul_assign",
@@ -1563,6 +1570,11 @@ pub(crate) mod attr {
     pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
+
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    pub(crate) use self::with::With;
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    pub(crate) use self::with_or_skip::WithOrSkip;
 
     /// [`Parse`]ing with additional state or metadata.
     pub(crate) trait Parser {
@@ -1892,6 +1904,7 @@ pub(crate) mod attr {
         feature = "display",
         feature = "eq",
         feature = "from",
+        feature = "hash",
         feature = "into",
         feature = "mul",
         feature = "mul_assign",
@@ -2393,6 +2406,74 @@ pub(crate) mod attr {
 
         impl ParseMultiple for RenameAll {}
     }
+
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    mod with {
+        use crate::utils::attr::ParseMultiple;
+        use syn::parenthesized;
+        use syn::parse::{Parse, ParseStream};
+
+        pub struct With {
+            pub path: syn::Path,
+        }
+
+        impl Parse for With {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let with = input.parse::<syn::Ident>()?;
+                if with != "with" {
+                    return Err(syn::Error::new(
+                        with.span(),
+                        "unknown attribute argument, expected `with` argument here",
+                    ));
+                }
+                let path_and_parents;
+                parenthesized!(path_and_parents in input);
+                let path = path_and_parents.parse::<syn::Path>()?;
+                Ok(Self { path })
+            }
+        }
+
+        impl ParseMultiple for With {}
+    }
+
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    mod with_or_skip {
+        use crate::utils::attr;
+        use crate::utils::attr::ParseMultiple;
+        use syn::parse::{Parse, ParseStream};
+
+        pub enum WithOrSkip {
+            Skip,
+            With(attr::With),
+        }
+
+        impl Parse for WithOrSkip {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                mod ident {
+                    use syn::custom_keyword;
+
+                    custom_keyword!(with);
+                    custom_keyword!(skip);
+                    custom_keyword!(ignore);
+                }
+
+                // We use `.lookahead1()` with all possible idents to form a nice error message including
+                // all the possible variants.
+                let ahead = input.lookahead1();
+
+                if ahead.peek(ident::with) {
+                    Ok(Self::With(input.parse()?))
+                } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
+                    let _: attr::Skip = input.parse()?;
+                    Ok(Self::Skip)
+                } else {
+                    Err(ahead.error())
+                }
+            }
+        }
+
+        impl ParseMultiple for WithOrSkip {}
+    }
 }
 
 #[cfg(any(feature = "from", feature = "into"))]
@@ -2519,6 +2600,7 @@ mod fields_ext {
     feature = "as_ref",
     feature = "eq",
     feature = "from_str",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -2873,6 +2955,7 @@ pub(crate) mod replace_self {
     feature = "add",
     feature = "add_assign",
     feature = "eq",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -3032,6 +3115,7 @@ pub(crate) mod structural_inclusion {
     feature = "add",
     feature = "add_assign",
     feature = "eq",
+    feature = "hash",
     feature = "mul",
     feature = "mul_assign",
 ))]
@@ -3041,12 +3125,22 @@ pub(crate) mod pattern_matching {
     use proc_macro2::TokenStream;
     use quote::{format_ident, quote};
 
-    #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+    #[cfg(any(
+        feature = "add_assign",
+        feature = "eq",
+        feature = "hash",
+        feature = "mul_assign"
+    ))]
     use crate::utils::HashSet;
 
     /// Extension of [`syn::Fields`] for pattern matching code generation.
     pub(crate) trait FieldsExt {
-        #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+        #[cfg(any(
+            feature = "add_assign",
+            feature = "eq",
+            feature = "hash",
+            feature = "mul_assign"
+        ))]
         /// Generates a pattern for matching these [`syn::Fields`] non-exhaustively (considering the
         /// provided `skipped_indices`) in an arm of a `match` expression.
         ///
@@ -3066,7 +3160,12 @@ pub(crate) mod pattern_matching {
     }
 
     impl FieldsExt for syn::Fields {
-        #[cfg(any(feature = "add_assign", feature = "eq", feature = "mul_assign"))]
+        #[cfg(any(
+            feature = "add_assign",
+            feature = "eq",
+            feature = "hash",
+            feature = "mul_assign"
+        ))]
         fn non_exhaustive_arm_pattern(
             &self,
             prefix: &str,
