@@ -1570,7 +1570,6 @@ pub(crate) mod attr {
     pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
-
     #[cfg(feature = "hash")]
     pub(crate) use self::with::With;
 
@@ -2407,12 +2406,20 @@ pub(crate) mod attr {
 
     #[cfg(feature = "hash")]
     mod with {
-        use crate::utils::attr::ParseMultiple;
         use syn::parenthesized;
         use syn::parse::{Parse, ParseStream};
 
-        pub struct With {
-            pub path: syn::Path,
+        use crate::utils::attr::ParseMultiple;
+
+        /// Representation of an attribute, specifying a custom function for a trait method.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(with(<path>))]
+        /// #[<attribute>(error(<ty>, <conv>))]
+        /// ```
+        pub(crate) struct With {
+            /// Custom function.
+            pub(crate) func: syn::Path, // TODO: Support `syn::ExprCall` and `syn::ExprClosure` too.
         }
 
         impl Parse for With {
@@ -2421,13 +2428,13 @@ pub(crate) mod attr {
                 if with != "with" {
                     return Err(syn::Error::new(
                         with.span(),
-                        "unknown attribute argument, expected `with` argument here",
+                        "unknown attribute argument, expected `with(...)` argument here",
                     ));
                 }
                 let path_and_parents;
                 parenthesized!(path_and_parents in input);
-                let path = path_and_parents.parse::<syn::Path>()?;
-                Ok(Self { path })
+                let func = path_and_parents.parse::<syn::Path>()?;
+                Ok(Self { func })
             }
         }
 

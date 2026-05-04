@@ -1,4 +1,4 @@
-//! Implementation of an [`Hash`] derive macro.
+//! Implementation of a [`Hash`] derive macro.
 
 use crate::utils::{
     attr::{self, ParseMultiple},
@@ -14,38 +14,6 @@ use syn::{
     punctuated::{self, Punctuated},
     spanned::Spanned as _,
 };
-
-enum FieldAttributes {
-    Skip,
-    With(attr::With),
-}
-
-impl Parse for FieldAttributes {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        mod ident {
-            use syn::custom_keyword;
-
-            custom_keyword!(with);
-            custom_keyword!(skip);
-            custom_keyword!(ignore);
-        }
-
-        // We use `.lookahead1()` with all possible idents to form a nice error message including
-        // all the possible variants.
-        let ahead = input.lookahead1();
-
-        if ahead.peek(ident::with) {
-            Ok(Self::With(input.parse()?))
-        } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
-            let _: attr::Skip = input.parse()?;
-            Ok(Self::Skip)
-        } else {
-            Err(ahead.error())
-        }
-    }
-}
-
-impl ParseMultiple for FieldAttributes {}
 
 /// Expands a [`Hash`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
@@ -168,6 +136,38 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     .into_token_stream())
 }
 
+enum FieldAttributes {
+    Skip,
+    With(attr::With),
+}
+
+impl Parse for FieldAttributes {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        mod ident {
+            use syn::custom_keyword;
+
+            custom_keyword!(with);
+            custom_keyword!(skip);
+            custom_keyword!(ignore);
+        }
+
+        // We use `.lookahead1()` with all possible idents to form a nice error message including
+        // all the possible variants.
+        let ahead = input.lookahead1();
+
+        if ahead.peek(ident::with) {
+            Ok(Self::With(input.parse()?))
+        } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
+            let _: attr::Skip = input.parse()?;
+            Ok(Self::Skip)
+        } else {
+            Err(ahead.error())
+        }
+    }
+}
+
+impl ParseMultiple for FieldAttributes {}
+
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
@@ -175,8 +175,7 @@ type SkippedFields = HashSet<usize>;
 /// hash function.
 type FieldsWithAlternateHashFunction = HashMap<usize, syn::Path>;
 
-/// Expansion of a macro for generating a structural [`Hash`] implementation of an enum or a
-/// struct.
+/// Expansion of a macro for generating a structural [`Hash`] implementation of an enum or a struct.
 struct StructuralExpansion<'i> {
     /// [`syn::Ident`] and [`syn::Generics`] of the enum/struct.
     ///
@@ -199,8 +198,10 @@ struct StructuralExpansion<'i> {
 }
 
 impl StructuralExpansion<'_> {
-    /// Generates body of the [`core::hash::Hash::hash()`] method implementation for this
-    /// [`StructuralExpansion`], if it's required.
+    /// Generates a body of the [`Hash::hash()`] method implementation for this 
+    /// [`StructuralExpansion`].
+    /// 
+    /// [`Hash::hash()`]: core::hash::Hash::hash
     fn body(&self) -> TokenStream {
         let no_op_body = quote! {};
 

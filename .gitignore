@@ -17,5 +17,5 @@ gh-pages
 .swp
 /tags
 
-# RustRover/Other jetbrains IDE files
+# RustRover/Other JetBrains IDE files
 .idea/
