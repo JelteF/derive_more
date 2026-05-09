@@ -2,6 +2,9 @@
 
 Deriving `Hash` works by hashing values according to their type structure.
 
+
+
+
 ## Structural hashing
 
 Deriving `Hash` for enums/structs works in a similar way to the one in `std`,
@@ -9,6 +12,7 @@ by hashing all the available fields, but, in contrast:
 1. Does not overconstrain generic parameters.
 2. Allows to ignore fields, whole structs or enum variants via `#[hash(skip)]` attribute.
 3. Allows to use a custom hash function for a field via `#[hash(with(function))]` attribute.
+
 
 ### Structs
 
@@ -135,17 +139,19 @@ where
 }
 ```
 
+
 ### Ignoring
 
 The `#[hash(skip)]` attribute can be used to ignore fields, a whole struct or enum variants in the expansion.
 
-Note that if you also implement the `Eq` or `PartialEq` traits, fields marked with `#[eq(skip)]` or `#[partial_eq(skip)]` 
-will be ignored during hashing. This is done so that this property holds:
+Note, that if you also implement the `Eq` or `PartialEq` traits, fields marked with
+`#[eq(skip)]` or `#[partial_eq(skip)]` will be ignored during hashing. This is done so that this property holds:
 
 ```txt
 k1 == k2 -> hash(k1) == hash(k2)
 ```
-That is [expected](https://doc.rust-lang.org/std/hash/trait.Hash.html#hash-and-eq) from `Hash` implementations.
+That is the [expected](https://doc.rust-lang.org/std/hash/trait.Hash.html#hash-and-eq) property from `Hash`
+implementations.
 
 ```rust
 # use derive_more::Hash;
@@ -214,6 +220,7 @@ impl Hash for Enum {
 }
 ```
 
+
 ### Custom hash function
 
 The `#[hash(with(function))]` attribute can be used to specify a custom hash function for a field.
@@ -263,4 +270,5 @@ impl Hash for Foo {
 }
 ```
 
-This is useful for types that don't implement `Hash` but can be hashed in a custom way, or when you need different hashing behavior than the default.
+This is useful for types that don't implement `Hash` but can be hashed in a custom way, or when you need different
+hashing behavior than the default.

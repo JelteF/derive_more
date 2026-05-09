@@ -1566,12 +1566,12 @@ pub(crate) mod attr {
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     pub(crate) use self::types::Types;
+    #[cfg(feature = "hash")]
+    pub(crate) use self::with::With;
     #[cfg(any(feature = "as_ref", feature = "from"))]
     pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
-    #[cfg(feature = "hash")]
-    pub(crate) use self::with::With;
 
     /// [`Parse`]ing with additional state or metadata.
     pub(crate) trait Parser {
@@ -2415,7 +2415,6 @@ pub(crate) mod attr {
         ///
         /// ```rust,ignore
         /// #[<attribute>(with(<path>))]
-        /// #[<attribute>(error(<ty>, <conv>))]
         /// ```
         pub(crate) struct With {
             /// Custom function.

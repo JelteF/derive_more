@@ -61,7 +61,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             item: FieldAttributes::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.path.clone());
+                            alternate_hash_functions.insert(n, with.func.clone());
                         }
                     }
                 }
@@ -107,7 +107,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             item: FieldAttributes::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.path.clone());
+                            alternate_hash_functions.insert(n, with.func.clone());
                         }
                     }
                 }
@@ -136,11 +136,17 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     .into_token_stream())
 }
 
+/// Custom combination of an [`attr::Skip`] and [`attr::With`] used for a better error message
+/// including all the possible variants.
 enum FieldAttributes {
+    /// Parsed [`attr::Skip`].
     Skip,
+
+    /// Parsed [`attr::With`].
     With(attr::With),
 }
 
+// TODO: Try generalize in `Either`.
 impl Parse for FieldAttributes {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         mod ident {
@@ -151,14 +157,14 @@ impl Parse for FieldAttributes {
             custom_keyword!(ignore);
         }
 
-        // We use `.lookahead1()` with all possible idents to form a nice error message including
-        // all the possible variants.
+        // `.lookahead1()` with all possible idents forms a nice error message including all the
+        // possible variants.
         let ahead = input.lookahead1();
 
         if ahead.peek(ident::with) {
             Ok(Self::With(input.parse()?))
         } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
-            let _: attr::Skip = input.parse()?;
+            _ = input.parse::<attr::Skip>()?;
             Ok(Self::Skip)
         } else {
             Err(ahead.error())
@@ -198,9 +204,9 @@ struct StructuralExpansion<'i> {
 }
 
 impl StructuralExpansion<'_> {
-    /// Generates a body of the [`Hash::hash()`] method implementation for this 
+    /// Generates a body of the [`Hash::hash()`] method implementation for this
     /// [`StructuralExpansion`].
-    /// 
+    ///
     /// [`Hash::hash()`]: core::hash::Hash::hash
     fn body(&self) -> TokenStream {
         let no_op_body = quote! {};
@@ -271,7 +277,7 @@ impl StructuralExpansion<'_> {
 
             quote! {
                 match (self) {
-                    #( #match_arms  )*
+                    #( #match_arms )*
                     #no_fields_arm
                 }
             }

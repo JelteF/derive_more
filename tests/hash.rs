@@ -43,8 +43,9 @@ pub mod utils {
 
 mod structs {
     mod single_field {
-        use crate::do_hash;
         use derive_more::Hash;
+
+        use crate::do_hash;
 
         #[derive(Hash)]
         struct Tuple(i32);
@@ -76,9 +77,9 @@ mod structs {
     }
 
     mod multi_field {
-        use super::super::utils;
-        use crate::do_hash;
         use derive_more::Hash;
+
+        use crate::{do_hash, utils};
 
         #[derive(Hash)]
         struct MultiTuple(i32, &'static str, bool);
@@ -150,8 +151,9 @@ mod structs {
     }
 
     mod generics {
-        use crate::do_hash;
         use derive_more::Hash;
+
+        use crate::do_hash;
 
         trait SomeTraitWithTypes {
             type TraitType;
@@ -163,8 +165,9 @@ mod structs {
             b: U,
         }
 
-        // this struct doesn't implement `Hash` but implements `SomeTraitWithTypes` with `TraitType = i32`
-        // this means that `GenericStruct<SomeTraitWithTypesImpl>` should be hashable as well
+        // this struct doesn't implement `Hash` but implements `SomeTraitWithTypes` with
+        // `TraitType = i32` this means that `GenericStruct<SomeTraitWithTypesImpl>` should be
+        // hashable as well
         struct SomeTraitWithTypesImpl;
         impl SomeTraitWithTypes for SomeTraitWithTypesImpl {
             type TraitType = i32;
@@ -180,9 +183,9 @@ mod structs {
 }
 
 mod enums {
-    use super::utils;
-    use crate::do_hash;
     use derive_more::Hash;
+
+    use crate::{do_hash, utils};
 
     #[derive(Hash)]
     enum SimpleEnum {
@@ -234,29 +237,34 @@ mod enums {
     fn assert() {
         assert_eq!(
             do_hash(&SimpleEnum::A),
-            do_hash(&core::mem::discriminant(&SimpleEnum::A))
+            do_hash(&core::mem::discriminant(&SimpleEnum::A)),
         );
         assert_eq!(
             do_hash(&SimpleEnum::B),
-            do_hash(&core::mem::discriminant(&SimpleEnum::B))
+            do_hash(&core::mem::discriminant(&SimpleEnum::B)),
         );
         assert_eq!(
             do_hash(&SimpleEnum::C),
-            do_hash(&core::mem::discriminant(&SimpleEnum::C))
+            do_hash(&core::mem::discriminant(&SimpleEnum::C)),
         );
+
         let sa = SameDataEnum::A(42);
         assert_eq!(do_hash(&sa), do_hash(&(core::mem::discriminant(&sa), 42)));
+
         let sb = SameDataEnum::B(42);
         assert_eq!(do_hash(&sb), do_hash(&(core::mem::discriminant(&sb), 42)));
+
         let sc = SameDataEnum::C(42);
         assert_eq!(do_hash(&sc), do_hash(&(core::mem::discriminant(&sc), 42)));
+
         let ta = TupleEnum::A(42);
         let tb = TupleEnum::B("test", true);
         assert_eq!(do_hash(&ta), do_hash(&(core::mem::discriminant(&ta), 42)));
         assert_eq!(
             do_hash(&tb),
-            do_hash(&(core::mem::discriminant(&tb), "test", true))
+            do_hash(&(core::mem::discriminant(&tb), "test", true)),
         );
+
         let tc = TupleEnum::C;
         assert_eq!(do_hash(&tc), do_hash(&core::mem::discriminant(&tc)));
 
@@ -266,7 +274,7 @@ mod enums {
         let sb = StructEnum::B { y: "test", z: true };
         assert_eq!(
             do_hash(&sb),
-            do_hash(&(core::mem::discriminant(&sb), "test", true))
+            do_hash(&(core::mem::discriminant(&sb), "test", true)),
         );
 
         let sc = StructEnum::C;
@@ -281,7 +289,7 @@ mod enums {
         let wb = WithAndSkip::B(42, "ignored");
         assert_eq!(
             do_hash(&wb),
-            do_hash(&(core::mem::discriminant(&wb), 42, 42))
+            do_hash(&(core::mem::discriminant(&wb), 42, 42)),
         );
 
         let wc = WithAndSkip::C(42);
@@ -291,8 +299,9 @@ mod enums {
 
 #[cfg(feature = "eq")]
 mod hash_respects_eq_skip {
-    use super::*;
     use derive_more::{Eq, Hash, PartialEq};
+
+    use super::do_hash;
 
     #[derive(Hash, Eq, PartialEq)]
     struct Struct {
@@ -315,21 +324,21 @@ mod hash_respects_eq_skip {
         assert_eq!(
             do_hash(&Struct {
                 field: 42,
-                _skipped: "ignored"
+                _skipped: "ignored",
             }),
-            do_hash(&42)
+            do_hash(&42),
         );
         assert_eq!(
             do_hash(&Enum::A {
                 field: 42,
-                _skipped: "ignored"
+                _skipped: "ignored",
             }),
             do_hash(&(
                 core::mem::discriminant(&Enum::A {
                     field: 0,
-                    _skipped: "ignored"
+                    _skipped: "ignored",
                 }),
-                42
+                42,
             ))
         );
     }
