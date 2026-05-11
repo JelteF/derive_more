@@ -149,7 +149,7 @@ fn render_enum(
             provide_match_arms.push(expr);
         }
 
-        bounds.extend(parsed_fields.bounds.into_iter());
+        bounds.extend(parsed_fields.bounds);
     }
 
     let render = |match_arms: &mut Vec<TokenStream>, unmatched| {
