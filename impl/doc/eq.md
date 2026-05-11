@@ -289,7 +289,7 @@ impl PartialEq for Enum {
 
 ### Custom comparison with `with`
 
-Both `#[eq(with(...))]` and  `#[partial_eq(with(...))]` attribute allows specifying a custom comparison function
+Both `#[eq(with(...))]` and `#[partial_eq(with(...))]` attributes allows specifying a custom comparison function
 for a field. The function must have the signature `fn(&T, &T) -> bool` where `T` is the field type.
 
 ```rust

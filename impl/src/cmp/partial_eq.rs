@@ -215,8 +215,7 @@ impl StructuralExpansion<'_> {
                                 let maybe_not = (!eq).then(|| quote! {!});
                                 quote! { #maybe_not #eq_fn(#self_val, #other_val) }
                             }
-                            ).unwrap_or_else(||
-                            quote! { #self_val #cmp #other_val }
+                            ).unwrap_or_else(|| quote! { #self_val #cmp #other_val }
                         );
                         punctuated::Pair::Punctuated(equality, &chain)
                     })

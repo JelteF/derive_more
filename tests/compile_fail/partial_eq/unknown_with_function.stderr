@@ -20,8 +20,8 @@ error[E0061]: this function takes 1 argument but 2 arguments were supplied
 note: function defined here
  --> tests/compile_fail/partial_eq/unknown_with_function.rs:4:4
   |
-4 | fn incompatible_types(a:& str) ->i32 {0}
-  |    ^^^^^^^^^^^^^^^^^^ -------
+4 | fn incompatible_types(_a: &str) ->i32 {0}
+  |    ^^^^^^^^^^^^^^^^^^ --------
 
 error[E0308]: mismatched types
  --> tests/compile_fail/partial_eq/unknown_with_function.rs:6:10
@@ -35,21 +35,21 @@ error[E0308]: mismatched types
   = note: this error originates in the derive macro `derive_more::PartialEq` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0425]: cannot find function `unknown` in this scope
-  --> tests/compile_fail/partial_eq/unknown_with_function.rs:12:29
+  --> tests/compile_fail/partial_eq/unknown_with_function.rs:11:29
    |
-12 |     Bar { #[partial_eq(with(unknown))] i: i32 },
+11 |     Bar { #[partial_eq(with(unknown))] i: i32 },
    |                             ^^^^^^^ not found in this scope
 
 error[E0061]: this function takes 1 argument but 2 arguments were supplied
-  --> tests/compile_fail/partial_eq/unknown_with_function.rs:13:29
+  --> tests/compile_fail/partial_eq/unknown_with_function.rs:12:29
    |
-10 | #[derive(derive_more::PartialEq)]
+ 9 | #[derive(derive_more::PartialEq)]
    |          ----------------------
    |          |
    |          expected `&str`, found `&i32`
    |          unexpected argument #2 of type `&i32`
 ...
-13 |     Baz { #[partial_eq(with(incompatible_types))] i: i32 },
+12 |     Baz { #[partial_eq(with(incompatible_types))] i: i32 },
    |                             ^^^^^^^^^^^^^^^^^^
    |
    = note: expected reference `&str`
@@ -57,24 +57,16 @@ error[E0061]: this function takes 1 argument but 2 arguments were supplied
 note: function defined here
   --> tests/compile_fail/partial_eq/unknown_with_function.rs:4:4
    |
- 4 | fn incompatible_types(a:& str) ->i32 {0}
-   |    ^^^^^^^^^^^^^^^^^^ -------
+ 4 | fn incompatible_types(_a: &str) ->i32 {0}
+   |    ^^^^^^^^^^^^^^^^^^ --------
 
 error[E0308]: mismatched types
-  --> tests/compile_fail/partial_eq/unknown_with_function.rs:10:10
-   |
-10 | #[derive(derive_more::PartialEq)]
-   |          ^^^^^^^^^^^^^^^^^^^^^^
-   |          |
-   |          expected `bool`, found `i32`
-   |          expected `bool` because of return type
-   |
-   = note: this error originates in the derive macro `derive_more::PartialEq` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-warning: unused variable: `a`
- --> tests/compile_fail/partial_eq/unknown_with_function.rs:4:23
+ --> tests/compile_fail/partial_eq/unknown_with_function.rs:9:10
   |
-4 | fn incompatible_types(a:& str) ->i32 {0}
-  |                       ^ help: if this is intentional, prefix it with an underscore: `_a`
+9 | #[derive(derive_more::PartialEq)]
+  |          ^^^^^^^^^^^^^^^^^^^^^^
+  |          |
+  |          expected `bool`, found `i32`
+  |          expected `bool` because of return type
   |
-  = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+  = note: this error originates in the derive macro `derive_more::PartialEq` (in Nightly builds, run with -Z macro-backtrace for more info)
