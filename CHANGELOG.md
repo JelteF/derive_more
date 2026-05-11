@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#532](https://github.com/JelteF/derive_more/pull/532))
 - Add support for custom eq functions in `PartialEq`/`Eq` derive.
   ([#535](https://github.com/JelteF/derive_more/pull/535))
+- Support `syn::ExprCall` and `syn::ExprClosure` (function call expressions and
+  closures) in addition to `syn::Path` in `#[hash(with(...))]`,
+  `#[partial_eq(with(...))]` and `#[eq(with(...))]` attributes.
 
 ### Fixed
 

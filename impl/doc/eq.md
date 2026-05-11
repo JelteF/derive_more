@@ -342,3 +342,14 @@ impl PartialEq for Foo {
     }
 }
 ```
+
+A closure or a function call expression returning a callable can be used in place of a path too:
+
+```rust
+# use derive_more::PartialEq;
+#[derive(Debug, PartialEq)]
+struct Foo(#[partial_eq(with(|a: &i32, b: &i32| a % 10 == b % 10))] i32);
+
+assert_eq!(Foo(12), Foo(42));
+assert_ne!(Foo(12), Foo(13));
+```

@@ -309,6 +309,30 @@ mod structs {
                 assert_eq!(Foo(12, 13), Foo(14, 15));
                 assert!(!(Foo(12, 13) != Foo(14, 15)));
             }
+
+            #[test]
+            fn closure() {
+                #[derive(Debug, PartialEq)]
+                struct Foo(
+                    #[partial_eq(with(|a: &i32, b: &i32| a % 10 == b % 10))] i32,
+                );
+
+                assert_eq!(Foo(12), Foo(42));
+                assert_ne!(Foo(12), Foo(13));
+            }
+
+            #[test]
+            fn fn_call() {
+                fn make_eq_fn() -> fn(&i32, &i32) -> bool {
+                    |a, b| a % 10 == b % 10
+                }
+
+                #[derive(Debug, PartialEq)]
+                struct Foo(#[partial_eq(with(make_eq_fn()))] i32);
+
+                assert_eq!(Foo(12), Foo(42));
+                assert_ne!(Foo(12), Foo(13));
+            }
         }
 
         mod generic {
@@ -1068,6 +1092,36 @@ mod enums {
 
                 assert!(!(E::Foo(73, 1) == E::Bar));
                 assert_ne!(E::Foo(73, 1), E::Bar);
+            }
+
+            #[test]
+            fn closure() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(|a: &i32, b: &i32| a % 10 == b % 10))] i32),
+                    Bar,
+                }
+
+                assert_eq!(E::Foo(12), E::Foo(42));
+                assert_ne!(E::Foo(12), E::Foo(13));
+                assert_ne!(E::Foo(12), E::Bar);
+            }
+
+            #[test]
+            fn fn_call() {
+                fn make_eq_fn() -> fn(&i32, &i32) -> bool {
+                    |a, b| a % 10 == b % 10
+                }
+
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(make_eq_fn()))] i32),
+                    Bar,
+                }
+
+                assert_eq!(E::Foo(12), E::Foo(42));
+                assert_ne!(E::Foo(12), E::Foo(13));
+                assert_ne!(E::Foo(12), E::Bar);
             }
 
             #[test]

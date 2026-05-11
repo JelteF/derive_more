@@ -39,6 +39,13 @@ pub mod utils {
         state.write_u32(42);
         state.write_u32(*value)
     }
+
+    pub fn make_u32_hash_function() -> fn(&u32, &mut dyn core::hash::Hasher) {
+        |value, state| {
+            state.write_u32(1337);
+            state.write_u32(*value);
+        }
+    }
 }
 
 mod structs {
@@ -100,6 +107,23 @@ mod structs {
         }
 
         #[derive(Hash)]
+        struct StructWithClosureHashFunction {
+            #[hash(with(|value: &u32, state: &mut _| {
+                core::hash::Hasher::write_u32(state, 42);
+                core::hash::Hasher::write_u32(state, *value);
+            }))]
+            a: u32,
+            b: &'static str,
+        }
+
+        #[derive(Hash)]
+        struct StructWithCallExprHashFunction {
+            #[hash(with(utils::make_u32_hash_function()))]
+            a: u32,
+            b: &'static str,
+        }
+
+        #[derive(Hash)]
         struct MixedSkip {
             field1: i32,
             #[hash(skip)]
@@ -134,6 +158,14 @@ mod structs {
                     c: true
                 }),
                 do_hash(&(42, 42, "test", true))
+            );
+            assert_eq!(
+                do_hash(&StructWithClosureHashFunction { a: 42, b: "test" }),
+                do_hash(&(42, 42, "test"))
+            );
+            assert_eq!(
+                do_hash(&StructWithCallExprHashFunction { a: 42, b: "test" }),
+                do_hash(&(1337, 42, "test"))
             );
             assert_eq!(
                 do_hash(&MixedSkip {
@@ -231,6 +263,14 @@ mod enums {
         #[hash(skip)]
         #[allow(unused)]
         C(i32),
+        D(
+            #[hash(with(|value: &u32, state: &mut _| {
+                core::hash::Hasher::write_u32(state, 7);
+                core::hash::Hasher::write_u32(state, *value);
+            }))]
+            u32,
+        ),
+        E(#[hash(with(utils::make_u32_hash_function()))] u32),
     }
 
     #[test]
@@ -294,6 +334,18 @@ mod enums {
 
         let wc = WithAndSkip::C(42);
         assert_eq!(do_hash(&wc), do_hash(&core::mem::discriminant(&wc)));
+
+        let wd = WithAndSkip::D(42);
+        assert_eq!(
+            do_hash(&wd),
+            do_hash(&(core::mem::discriminant(&wd), 7, 42)),
+        );
+
+        let we = WithAndSkip::E(42);
+        assert_eq!(
+            do_hash(&we),
+            do_hash(&(core::mem::discriminant(&we), 1337, 42)),
+        );
     }
 }
 

@@ -172,9 +172,8 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
-/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the custom
-/// hash function.
-type FieldsWithCustomHashFunction = HashMap<usize, syn::Path>;
+/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the custom hash function.
+type FieldsWithCustomHashFunction = HashMap<usize, attr::Callable>;
 
 /// Expansion of a macro for generating a structural [`Hash`] implementation of an enum or a struct.
 struct StructuralExpansion<'i> {
@@ -239,9 +238,9 @@ impl StructuralExpansion<'_> {
                             let self_val = format_ident!("__self_{num}");
                             let hash_function = custom_hash_functions
                                 .get(&num)
-                                .map(|it| quote! {#it})
+                                .map(|it| quote! { (#it) })
                                 .unwrap_or_else(
-                                    || quote! {derive_more::core::hash::Hash::hash},
+                                    || quote! { derive_more::core::hash::Hash::hash },
                                 );
 
                             punctuated::Pair::Punctuated(

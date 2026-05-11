@@ -201,6 +201,29 @@ mod structs {
 
                 let _: AssertParamIsEq<Foo>;
             }
+
+            #[test]
+            fn closure() {
+                #[derive(Eq, PartialEq)]
+                struct Foo(
+                    #[partial_eq(with(|_: &NotPartialEq, _: &NotPartialEq| true))]
+                    NotPartialEq,
+                );
+
+                let _: AssertParamIsEq<Foo>;
+            }
+
+            #[test]
+            fn fn_call() {
+                fn make_eq_fn() -> fn(&NotPartialEq, &NotPartialEq) -> bool {
+                    |_, _| true
+                }
+
+                #[derive(Eq, PartialEq)]
+                struct Foo(#[partial_eq(with(make_eq_fn()))] NotPartialEq);
+
+                let _: AssertParamIsEq<Foo>;
+            }
         }
 
         mod generic {
@@ -631,6 +654,35 @@ mod enums {
                         #[partial_eq(with(eq_special))] NotPartialEq,
                         #[partial_eq(with(eq_special))] NotPartialEq,
                     ),
+                    Bar,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn closure() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(
+                        #[partial_eq(with(|_: &NotPartialEq, _: &NotPartialEq| true))]
+                        NotPartialEq,
+                    ),
+                    Bar,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn fn_call() {
+                fn make_eq_fn() -> fn(&NotPartialEq, &NotPartialEq) -> bool {
+                    |_, _| true
+                }
+
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(make_eq_fn()))] NotPartialEq),
                     Bar,
                 }
 

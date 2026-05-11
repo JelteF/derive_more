@@ -130,9 +130,8 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
-/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the custom
-/// eq function.
-type FieldsWithCustomEqFunction = HashMap<usize, syn::Path>;
+/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the custom eq function.
+type FieldsWithCustomEqFunction = HashMap<usize, attr::Callable>;
 
 /// Expansion of a macro for generating a structural [`PartialEq`] implementation of an enum or a
 /// struct.
@@ -219,7 +218,7 @@ impl StructuralExpansion<'_> {
                             .get(&num)
                             .map(|eq_fn| {
                                 let maybe_not = (!eq).then(|| quote! {!});
-                                quote! { #maybe_not #eq_fn(#self_val, #other_val) }
+                                quote! { #maybe_not (#eq_fn)(#self_val, #other_val) }
                             }
                             ).unwrap_or_else(|| quote! { #self_val #cmp #other_val }
                         );
