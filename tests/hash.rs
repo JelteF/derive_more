@@ -39,6 +39,13 @@ pub mod utils {
         state.write_u32(42);
         state.write_u32(*value)
     }
+
+    pub fn make_u32_hash_function() -> fn(&u32, &mut dyn core::hash::Hasher) {
+        |value, state| {
+            state.write_u32(1337);
+            state.write_u32(*value);
+        }
+    }
 }
 
 mod structs {
@@ -100,6 +107,23 @@ mod structs {
         }
 
         #[derive(Hash)]
+        struct StructWithClosureHashFunction {
+            #[hash(with(|value: &u32, state: &mut _| {
+                core::hash::Hasher::write_u32(state, 42);
+                core::hash::Hasher::write_u32(state, *value);
+            }))]
+            a: u32,
+            b: &'static str,
+        }
+
+        #[derive(Hash)]
+        struct StructWithCallExprHashFunction {
+            #[hash(with(utils::make_u32_hash_function()))]
+            a: u32,
+            b: &'static str,
+        }
+
+        #[derive(Hash)]
         struct MixedSkip {
             field1: i32,
             #[hash(skip)]
@@ -134,6 +158,14 @@ mod structs {
                     c: true
                 }),
                 do_hash(&(42, 42, "test", true))
+            );
+            assert_eq!(
+                do_hash(&StructWithClosureHashFunction { a: 42, b: "test" }),
+                do_hash(&(42, 42, "test"))
+            );
+            assert_eq!(
+                do_hash(&StructWithCallExprHashFunction { a: 42, b: "test" }),
+                do_hash(&(1337, 42, "test"))
             );
             assert_eq!(
                 do_hash(&MixedSkip {
@@ -231,6 +263,14 @@ mod enums {
         #[hash(skip)]
         #[allow(unused)]
         C(i32),
+        D(
+            #[hash(with(|value: &u32, state: &mut _| {
+                core::hash::Hasher::write_u32(state, 7);
+                core::hash::Hasher::write_u32(state, *value);
+            }))]
+            u32,
+        ),
+        E(#[hash(with(utils::make_u32_hash_function()))] u32),
     }
 
     #[test]
@@ -294,6 +334,56 @@ mod enums {
 
         let wc = WithAndSkip::C(42);
         assert_eq!(do_hash(&wc), do_hash(&core::mem::discriminant(&wc)));
+
+        let wd = WithAndSkip::D(42);
+        assert_eq!(
+            do_hash(&wd),
+            do_hash(&(core::mem::discriminant(&wd), 7, 42)),
+        );
+
+        let we = WithAndSkip::E(42);
+        assert_eq!(
+            do_hash(&we),
+            do_hash(&(core::mem::discriminant(&we), 1337, 42)),
+        );
+    }
+}
+
+#[cfg(feature = "eq")]
+mod partial_eq_with_requires_hash_attr {
+    use derive_more::{Eq, Hash, PartialEq};
+
+    use super::{do_hash, utils};
+
+    fn eq_mod_10(a: &u32, b: &u32) -> bool {
+        a % 10 == b % 10
+    }
+
+    // Field uses a custom equality, so a matching custom hash function is provided.
+    #[derive(Hash, Eq, PartialEq)]
+    struct WithBoth {
+        #[partial_eq(with(eq_mod_10))]
+        #[hash(with(utils::alternate_u32_hash_function))]
+        a: u32,
+        b: i32,
+    }
+
+    // Field uses a custom equality and is skipped from hashing — also consistent.
+    #[derive(Hash, Eq, PartialEq)]
+    struct WithSkip {
+        #[partial_eq(with(eq_mod_10))]
+        #[hash(skip)]
+        a: u32,
+        b: i32,
+    }
+
+    #[test]
+    fn assert() {
+        assert_eq!(
+            do_hash(&WithBoth { a: 42, b: 7 }),
+            do_hash(&(42u32, 42u32, 7i32)),
+        );
+        assert_eq!(do_hash(&WithSkip { a: 42, b: 7 }), do_hash(&7i32));
     }
 }
 

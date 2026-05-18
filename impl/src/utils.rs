@@ -1566,12 +1566,25 @@ pub(crate) mod attr {
     pub(crate) use self::skip::Skip;
     #[cfg(any(feature = "as_ref", feature = "from", feature = "try_from"))]
     pub(crate) use self::types::Types;
-    #[cfg(feature = "hash")]
+    #[cfg(any(feature = "hash", feature = "eq"))]
     pub(crate) use self::with::With;
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    pub(crate) use self::with_or_skip::WithOrSkip;
     #[cfg(any(feature = "as_ref", feature = "from"))]
     pub(crate) use self::{conversion::Conversion, field_conversion::FieldConversion};
     #[cfg(feature = "try_from")]
     pub(crate) use self::{repr_conversion::ReprConversion, repr_int::ReprInt};
+
+    /// A callable expression accepted as an attribute argument: a function call
+    /// (`foo(arg)`), a path to a function (`foo::bar`), or a closure (`|x| ...`).
+    #[cfg(any(
+        feature = "eq",
+        feature = "from_str",
+        feature = "hash",
+        feature = "try_into",
+    ))]
+    pub(crate) type Callable =
+        Either<syn::ExprCall, Either<syn::Path, syn::ExprClosure>>;
 
     /// [`Parse`]ing with additional state or metadata.
     pub(crate) trait Parser {
@@ -2171,10 +2184,10 @@ pub(crate) mod attr {
     pub(crate) mod error {
         use syn::parse::{Parse, ParseStream};
 
-        use super::{Either, ParseMultiple};
+        use super::{Callable, ParseMultiple};
 
         /// Representation of an attribute, specifying the error type and, optionally, a
-        /// [`Conversion`] from a built-in error type.
+        /// [`Callable`] conversion from a built-in error type.
         ///
         /// ```rust,ignore
         /// #[<attribute>(error(<ty>))]
@@ -2187,7 +2200,7 @@ pub(crate) mod attr {
             /// Custom conversion.
             ///
             /// If [`None`], then [`Into`] conversion should be applied.
-            pub(crate) conv: Option<Conversion>,
+            pub(crate) conv: Option<Callable>,
         }
 
         impl Parse for Error {
@@ -2210,7 +2223,7 @@ pub(crate) mod attr {
 
                 _ = syn::token::Comma::parse(&inner)?;
 
-                let conv = Conversion::parse(&inner)?;
+                let conv = Callable::parse(&inner)?;
                 if inner.is_empty() {
                     Ok(Self {
                         ty,
@@ -2226,12 +2239,6 @@ pub(crate) mod attr {
         }
 
         impl ParseMultiple for Error {}
-
-        /// Possible conversions of an [`attr::Error`].
-        ///
-        /// [`attr::Error`]: Error
-        pub(crate) type Conversion =
-            Either<syn::ExprCall, Either<syn::Path, syn::ExprClosure>>;
     }
 
     #[cfg(feature = "try_from")]
@@ -2404,21 +2411,21 @@ pub(crate) mod attr {
         impl ParseMultiple for RenameAll {}
     }
 
-    #[cfg(feature = "hash")]
+    #[cfg(any(feature = "hash", feature = "eq"))]
     mod with {
         use syn::parenthesized;
         use syn::parse::{Parse, ParseStream};
 
-        use crate::utils::attr::ParseMultiple;
+        use crate::utils::attr::{Callable, ParseMultiple};
 
         /// Representation of an attribute, specifying a custom function for a trait method.
         ///
         /// ```rust,ignore
-        /// #[<attribute>(with(<path>))]
+        /// #[<attribute>(with(<func>))]
         /// ```
         pub(crate) struct With {
             /// Custom function.
-            pub(crate) func: syn::Path, // TODO: Support `syn::ExprCall` and `syn::ExprClosure` too.
+            pub(crate) func: Callable,
         }
 
         impl Parse for With {
@@ -2430,14 +2437,58 @@ pub(crate) mod attr {
                         "unknown attribute argument, expected `with(...)` argument here",
                     ));
                 }
-                let path_and_parents;
-                parenthesized!(path_and_parents in input);
-                let func = path_and_parents.parse::<syn::Path>()?;
+                let func_tokens;
+                parenthesized!(func_tokens in input);
+                let func = func_tokens.parse::<Callable>()?;
                 Ok(Self { func })
             }
         }
 
         impl ParseMultiple for With {}
+    }
+
+    #[cfg(any(feature = "hash", feature = "eq"))]
+    mod with_or_skip {
+        use crate::utils::attr;
+        use crate::utils::attr::ParseMultiple;
+        use syn::parse::{Parse, ParseStream};
+
+        /// Custom combination of an [`attr::Skip`] and [`attr::With`] used for a better error message
+        /// including all the possible variants.
+        pub enum WithOrSkip {
+            /// Parsed [`attr::Skip`].
+            Skip,
+            /// Parsed [`attr::With`].
+            With(attr::With),
+        }
+
+        // TODO: Try generalize in `Either`.
+        impl Parse for WithOrSkip {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                mod ident {
+                    use syn::custom_keyword;
+
+                    custom_keyword!(with);
+                    custom_keyword!(skip);
+                    custom_keyword!(ignore);
+                }
+
+                // `.lookahead1()` with all possible idents forms a nice error message including all the
+                // possible variants.
+                let ahead = input.lookahead1();
+
+                if ahead.peek(ident::with) {
+                    Ok(Self::With(input.parse()?))
+                } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
+                    _ = input.parse::<attr::Skip>()?;
+                    Ok(Self::Skip)
+                } else {
+                    Err(ahead.error())
+                }
+            }
+        }
+
+        impl ParseMultiple for WithOrSkip {}
     }
 }
 

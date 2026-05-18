@@ -162,6 +162,70 @@ mod structs {
             }
         }
 
+        mod with {
+            use derive_more::{__private::AssertParamIsEq, Eq, PartialEq};
+
+            fn eq_special(_: &NotPartialEq, _: &NotPartialEq) -> bool {
+                true
+            }
+
+            struct NotPartialEq(i32);
+
+            #[test]
+            fn single_field() {
+                #[derive(Eq, PartialEq)]
+                struct Foo(#[partial_eq(with(eq_special))] NotPartialEq);
+
+                let _: AssertParamIsEq<Foo>;
+            }
+
+            #[test]
+            fn multiple_fields() {
+                #[derive(Eq, PartialEq)]
+                struct Foo {
+                    #[partial_eq(with(eq_special))]
+                    a: NotPartialEq,
+                    b: i32,
+                }
+
+                let _: AssertParamIsEq<Foo>;
+            }
+
+            #[test]
+            fn tuple_all() {
+                #[derive(Eq, PartialEq)]
+                struct Foo(
+                    #[partial_eq(with(eq_special))] NotPartialEq,
+                    #[partial_eq(with(eq_special))] NotPartialEq,
+                );
+
+                let _: AssertParamIsEq<Foo>;
+            }
+
+            #[test]
+            fn closure() {
+                #[derive(Eq, PartialEq)]
+                struct Foo(
+                    #[partial_eq(with(|_: &NotPartialEq, _: &NotPartialEq| true))]
+                    NotPartialEq,
+                );
+
+                let _: AssertParamIsEq<Foo>;
+            }
+
+            #[test]
+            fn fn_call() {
+                fn make_eq_fn() -> fn(&NotPartialEq, &NotPartialEq) -> bool {
+                    |_, _| true
+                }
+
+                #[derive(Eq, PartialEq)]
+                struct Foo(#[partial_eq(with(make_eq_fn()))] NotPartialEq);
+
+                let _: AssertParamIsEq<Foo>;
+            }
+        }
+
         mod generic {
             #[cfg(not(feature = "std"))]
             use ::alloc::{boxed::Box, vec::Vec};
@@ -541,6 +605,113 @@ mod enums {
                         b: bool,
                     },
                     Baz,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+        }
+
+        mod with {
+            use derive_more::{__private::AssertParamIsEq, Eq, PartialEq};
+
+            fn eq_special(_: &NotPartialEq, _: &NotPartialEq) -> bool {
+                true
+            }
+
+            struct NotPartialEq(i32);
+
+            #[test]
+            fn single_field() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(eq_special))] NotPartialEq),
+                    Bar,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn multiple_fields() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo {
+                        #[partial_eq(with(eq_special))]
+                        a: NotPartialEq,
+                        b: i32,
+                    },
+                    Bar,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn tuple_all() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(
+                        #[partial_eq(with(eq_special))] NotPartialEq,
+                        #[partial_eq(with(eq_special))] NotPartialEq,
+                    ),
+                    Bar,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn closure() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(
+                        #[partial_eq(with(|_: &NotPartialEq, _: &NotPartialEq| true))]
+                        NotPartialEq,
+                    ),
+                    Bar,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn fn_call() {
+                fn make_eq_fn() -> fn(&NotPartialEq, &NotPartialEq) -> bool {
+                    |_, _| true
+                }
+
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(make_eq_fn()))] NotPartialEq),
+                    Bar,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn multi_variant() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(eq_special))] NotPartialEq),
+                    Bar {
+                        #[partial_eq(with(eq_special))]
+                        val: NotPartialEq,
+                    },
+                    Baz,
+                }
+
+                let _: AssertParamIsEq<E>;
+            }
+
+            #[test]
+            fn with_skip_combined() {
+                #[derive(Eq, PartialEq)]
+                enum E {
+                    Foo(
+                        #[partial_eq(with(eq_special))] NotPartialEq,
+                        #[partial_eq(skip)] NotPartialEq,
+                    ),
                 }
 
                 let _: AssertParamIsEq<E>;
