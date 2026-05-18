@@ -8,27 +8,30 @@ use crate::utils::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use syn::parse::{Parse, ParseStream};
 use syn::{
     parse_quote,
     punctuated::{self, Punctuated},
     spanned::Spanned as _,
 };
 
+const PARTIAL_EQ_WITH_WITHOUT_HASH_ERROR: &str =
+    "field has `#[partial_eq(with(...))]` but no `#[hash(with(...))]` or `#[hash(skip)]`: a custom \
+     equality function requires a consistent `Hash` implementation to uphold the `Hash`/`Eq` \
+     invariant (`a == b` implies `hash(a) == hash(b)`)";
+
 /// Expands a [`Hash`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     let attr_name = format_ident!("hash");
-    let secondary_attr_name = format_ident!("eq");
-    let tertiary_attr_name = format_ident!("partial_eq");
-    let attr_names = [&attr_name, &secondary_attr_name, &tertiary_attr_name];
-    let secondary_attr_names = [&secondary_attr_name, &tertiary_attr_name];
+    let partial_eq_attr_name = format_ident!("partial_eq");
+    let eq_attr_name = format_ident!("eq");
+    let skip_attr_names = [&attr_name, &partial_eq_attr_name, &eq_attr_name];
 
     let mut has_skipped_variants = false;
     let mut variants = vec![];
 
     match &input.data {
         syn::Data::Struct(data) => {
-            for attr_name in &attr_names {
+            for attr_name in skip_attr_names {
                 if attr::Skip::parse_attrs(&input.attrs, attr_name)?.is_some() {
                     has_skipped_variants = true;
                     break;
@@ -36,32 +39,47 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             }
             if !has_skipped_variants {
                 let mut skipped_fields = SkippedFields::default();
-                let mut alternate_hash_functions =
-                    FieldsWithAlternateHashFunction::default();
-                'fields: for (n, field) in data.fields.iter().enumerate() {
-                    match FieldAttributes::parse_attrs(&field.attrs, &attr_name)? {
+                let mut custom_hash_functions = FieldsWithCustomHashFunction::default();
+                for (n, field) in data.fields.iter().enumerate() {
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
-                            for attr_name in &secondary_attr_names {
-                                if attr::Skip::parse_attrs(&field.attrs, attr_name)?
-                                    .is_some()
-                                {
-                                    _ = skipped_fields.insert(n);
-                                    continue 'fields;
+                            if let Some(Spanning { item, span, .. }) =
+                                attr::WithOrSkip::parse_attrs(
+                                    &field.attrs,
+                                    &partial_eq_attr_name,
+                                )?
+                            {
+                                match item {
+                                    attr::WithOrSkip::Skip => {
+                                        _ = skipped_fields.insert(n);
+                                    }
+                                    attr::WithOrSkip::With(_) => {
+                                        return Err(syn::Error::new(
+                                            span,
+                                            PARTIAL_EQ_WITH_WITHOUT_HASH_ERROR,
+                                        ));
+                                    }
                                 }
+                            } else if attr::Skip::parse_attrs(
+                                &field.attrs,
+                                &eq_attr_name,
+                            )?
+                            .is_some()
+                            {
+                                _ = skipped_fields.insert(n);
                             }
                         }
                         Some(Spanning {
-                            item: FieldAttributes::Skip,
+                            item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
-                            skipped_fields.insert(n);
+                            _ = skipped_fields.insert(n);
                         }
-
                         Some(Spanning {
-                            item: FieldAttributes::With(with),
+                            item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.func.clone());
+                            custom_hash_functions.insert(n, with.func);
                         }
                     }
                 }
@@ -69,45 +87,60 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     None,
                     &data.fields,
                     skipped_fields,
-                    alternate_hash_functions,
+                    custom_hash_functions,
                 ));
             }
         }
         syn::Data::Enum(data) => {
             'variants: for variant in &data.variants {
-                for attr_name in &attr_names {
+                for attr_name in skip_attr_names {
                     if attr::Skip::parse_attrs(&variant.attrs, attr_name)?.is_some() {
                         has_skipped_variants = true;
                         continue 'variants;
                     }
                 }
                 let mut skipped_fields = SkippedFields::default();
-                let mut alternate_hash_functions =
-                    FieldsWithAlternateHashFunction::default();
-                'fields: for (n, field) in variant.fields.iter().enumerate() {
-                    match FieldAttributes::parse_attrs(&field.attrs, &attr_name)? {
+                let mut custom_hash_functions = FieldsWithCustomHashFunction::default();
+                for (n, field) in variant.fields.iter().enumerate() {
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
-                            for attr_name in &secondary_attr_names {
-                                if attr::Skip::parse_attrs(&field.attrs, attr_name)?
-                                    .is_some()
-                                {
-                                    _ = skipped_fields.insert(n);
-                                    continue 'fields;
+                            if let Some(Spanning { item, span, .. }) =
+                                attr::WithOrSkip::parse_attrs(
+                                    &field.attrs,
+                                    &partial_eq_attr_name,
+                                )?
+                            {
+                                match item {
+                                    attr::WithOrSkip::Skip => {
+                                        _ = skipped_fields.insert(n);
+                                    }
+                                    attr::WithOrSkip::With(_) => {
+                                        return Err(syn::Error::new(
+                                            span,
+                                            PARTIAL_EQ_WITH_WITHOUT_HASH_ERROR,
+                                        ));
+                                    }
                                 }
+                            } else if attr::Skip::parse_attrs(
+                                &field.attrs,
+                                &eq_attr_name,
+                            )?
+                            .is_some()
+                            {
+                                _ = skipped_fields.insert(n);
                             }
                         }
                         Some(Spanning {
-                            item: FieldAttributes::Skip,
+                            item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
-                            skipped_fields.insert(n);
+                            _ = skipped_fields.insert(n);
                         }
-
                         Some(Spanning {
-                            item: FieldAttributes::With(with),
+                            item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.func.clone());
+                            custom_hash_functions.insert(n, with.func);
                         }
                     }
                 }
@@ -115,7 +148,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     Some(&variant.ident),
                     &variant.fields,
                     skipped_fields,
-                    alternate_hash_functions,
+                    custom_hash_functions,
                 ));
             }
         }
@@ -136,50 +169,12 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
     .into_token_stream())
 }
 
-/// Custom combination of an [`attr::Skip`] and [`attr::With`] used for a better error message
-/// including all the possible variants.
-enum FieldAttributes {
-    /// Parsed [`attr::Skip`].
-    Skip,
-
-    /// Parsed [`attr::With`].
-    With(attr::With),
-}
-
-// TODO: Try generalize in `Either`.
-impl Parse for FieldAttributes {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        mod ident {
-            use syn::custom_keyword;
-
-            custom_keyword!(with);
-            custom_keyword!(skip);
-            custom_keyword!(ignore);
-        }
-
-        // `.lookahead1()` with all possible idents forms a nice error message including all the
-        // possible variants.
-        let ahead = input.lookahead1();
-
-        if ahead.peek(ident::with) {
-            Ok(Self::With(input.parse()?))
-        } else if ahead.peek(ident::skip) || ahead.peek(ident::ignore) {
-            _ = input.parse::<attr::Skip>()?;
-            Ok(Self::Skip)
-        } else {
-            Err(ahead.error())
-        }
-    }
-}
-
-impl ParseMultiple for FieldAttributes {}
-
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
-/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the alternate
+/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the custom
 /// hash function.
-type FieldsWithAlternateHashFunction = HashMap<usize, syn::Path>;
+type FieldsWithCustomHashFunction = HashMap<usize, syn::Path>;
 
 /// Expansion of a macro for generating a structural [`Hash`] implementation of an enum or a struct.
 struct StructuralExpansion<'i> {
@@ -193,7 +188,7 @@ struct StructuralExpansion<'i> {
         Option<&'i syn::Ident>,
         &'i syn::Fields,
         SkippedFields,
-        FieldsWithAlternateHashFunction,
+        FieldsWithCustomHashFunction,
     )>,
 
     /// Indicator whether some original enum variants where skipped with an [`attr::Skip`].
@@ -233,7 +228,7 @@ impl StructuralExpansion<'_> {
             .variants
             .iter()
             .map(
-                |(variant, all_fields, skipped_fields, alternate_hash_functions)| {
+                |(variant, all_fields, skipped_fields, custom_hash_functions)| {
                     let variant = variant.map(|variant| quote! { :: #variant });
                     let self_pattern = all_fields
                         .non_exhaustive_arm_pattern("__self_", skipped_fields);
@@ -242,7 +237,7 @@ impl StructuralExpansion<'_> {
                         .filter(|num| !skipped_fields.contains(num))
                         .map(|num| {
                             let self_val = format_ident!("__self_{num}");
-                            let hash_function = alternate_hash_functions
+                            let hash_function = custom_hash_functions
                                 .get(&num)
                                 .map(|it| quote! {#it})
                                 .unwrap_or_else(

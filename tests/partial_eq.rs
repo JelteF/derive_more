@@ -248,6 +248,69 @@ mod structs {
             }
         }
 
+        mod with {
+            use derive_more::PartialEq;
+
+            #[test]
+            fn single_field() {
+                #[derive(Debug)]
+                struct NotPartialEq(i32);
+                fn eq_special(a: &NotPartialEq, b: &NotPartialEq) -> bool {
+                    a.0 == b.0
+                }
+
+                #[derive(Debug, PartialEq)]
+                struct Foo(#[partial_eq(with(eq_special))] NotPartialEq);
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(Foo(NotPartialEq(42)), Foo(NotPartialEq(42)));
+                assert!(!(Foo(NotPartialEq(42)) != Foo(NotPartialEq(42))));
+
+                assert!(!(Foo(NotPartialEq(42)) == Foo(NotPartialEq(73))));
+                assert_ne!(Foo(NotPartialEq(42)), Foo(NotPartialEq(73)));
+            }
+
+            fn eq_special_always_equal(_: &u32, _: &u32) -> bool {
+                true
+            }
+
+            #[test]
+            fn multiple_fields() {
+                #[derive(Debug, PartialEq)]
+                struct Foo {
+                    #[partial_eq(with(eq_special_always_equal))]
+                    a: u32,
+                    b: u32,
+                }
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(Foo { a: 73, b: 1 }, Foo { a: 42, b: 1 });
+                assert!(!(Foo { a: 73, b: 1 } != Foo { a: 42, b: 1 }));
+
+                assert!(!(Foo { a: 73, b: 1 } == Foo { a: 42, b: 2 }));
+                assert_ne!(Foo { a: 73, b: 1 }, Foo { a: 42, b: 2 });
+            }
+
+            #[test]
+            fn tuple_all() {
+                mod eq {
+                    pub fn always_eq(_: &i32, _: &i32) -> bool {
+                        true
+                    }
+                }
+
+                #[derive(Debug, PartialEq)]
+                struct Foo(
+                    #[partial_eq(with(eq::always_eq))] i32,
+                    #[partial_eq(with(eq::always_eq))] i32,
+                );
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(Foo(12, 13), Foo(14, 15));
+                assert!(!(Foo(12, 13) != Foo(14, 15)));
+            }
+        }
+
         mod generic {
             #[cfg(not(feature = "std"))]
             use ::alloc::{boxed::Box, vec, vec::Vec};
@@ -924,6 +987,145 @@ mod enums {
                 assert_ne!(E::Foo(true, 0), E::Bar { a: NoEq, b: true });
                 assert_ne!(E::Foo(true, 0), E::Baz);
                 assert_ne!(E::Bar { a: NoEq, b: true }, E::Baz);
+            }
+        }
+
+        mod with {
+            use derive_more::PartialEq;
+
+            #[test]
+            fn single_field() {
+                #[derive(Debug)]
+                struct NotPartialEq(i32);
+                fn eq_special(a: &NotPartialEq, b: &NotPartialEq) -> bool {
+                    a.0 == b.0
+                }
+
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(eq_special))] NotPartialEq),
+                    Bar,
+                }
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(E::Foo(NotPartialEq(42)), E::Foo(NotPartialEq(42)));
+                assert!(!(E::Foo(NotPartialEq(42)) != E::Foo(NotPartialEq(42))));
+
+                assert!(!(E::Foo(NotPartialEq(42)) == E::Foo(NotPartialEq(73))));
+                assert_ne!(E::Foo(NotPartialEq(42)), E::Foo(NotPartialEq(73)));
+
+                assert!(!(E::Foo(NotPartialEq(42)) == E::Bar));
+                assert_ne!(E::Foo(NotPartialEq(42)), E::Bar);
+            }
+
+            fn eq_special_always_equal(_: &u32, _: &u32) -> bool {
+                true
+            }
+
+            #[test]
+            fn multiple_fields() {
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo {
+                        #[partial_eq(with(eq_special_always_equal))]
+                        a: u32,
+                        b: u32,
+                    },
+                    Bar,
+                }
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(E::Foo { a: 73, b: 1 }, E::Foo { a: 42, b: 1 });
+                assert!(!(E::Foo { a: 73, b: 1 } != E::Foo { a: 42, b: 1 }));
+
+                assert!(!(E::Foo { a: 73, b: 1 } == E::Foo { a: 42, b: 2 }));
+                assert_ne!(E::Foo { a: 73, b: 1 }, E::Foo { a: 42, b: 2 });
+
+                assert!(!(E::Foo { a: 73, b: 1 } == E::Bar));
+                assert_ne!(E::Foo { a: 73, b: 1 }, E::Bar);
+            }
+
+            #[test]
+            fn tuple_all() {
+                mod eq {
+                    pub fn always_eq(_: &i32, _: &i32) -> bool {
+                        true
+                    }
+                }
+
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(
+                        #[partial_eq(with(eq::always_eq))] i32,
+                        #[partial_eq(with(eq::always_eq))] i32,
+                    ),
+                    Bar,
+                }
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(E::Foo(12, 13), E::Foo(14, 15));
+                assert!(!(E::Foo(12, 13) != E::Foo(14, 15)));
+
+                assert!(!(E::Foo(73, 1) == E::Bar));
+                assert_ne!(E::Foo(73, 1), E::Bar);
+            }
+
+            #[test]
+            fn multi_variant() {
+                fn eq_mod_10(a: &i32, b: &i32) -> bool {
+                    a % 10 == b % 10
+                }
+
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(eq_mod_10))] i32),
+                    Bar {
+                        #[partial_eq(with(eq_mod_10))]
+                        val: i32,
+                    },
+                    Baz,
+                }
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(E::Foo(13), E::Foo(23));
+                assert!(!(E::Foo(13) != E::Foo(23)));
+
+                assert_ne!(E::Foo(13), E::Foo(24));
+                assert!(!(E::Foo(13) == E::Foo(24)));
+
+                assert_eq!(E::Bar { val: 15 }, E::Bar { val: 25 });
+                assert!(!(E::Bar { val: 15 } != E::Bar { val: 25 }));
+
+                assert_ne!(E::Bar { val: 15 }, E::Bar { val: 26 });
+                assert!(!(E::Bar { val: 15 } == E::Bar { val: 26 }));
+
+                assert_eq!(E::Baz, E::Baz);
+                assert!(!(E::Baz != E::Baz));
+
+                assert_ne!(E::Foo(13), E::Bar { val: 13 });
+                assert!(!(E::Foo(13) == E::Bar { val: 13 }));
+
+                assert_ne!(E::Foo(13), E::Baz);
+                assert!(!(E::Foo(13) == E::Baz));
+
+                assert_ne!(E::Bar { val: 13 }, E::Baz);
+                assert!(!(E::Bar { val: 13 } == E::Baz));
+            }
+
+            #[test]
+            fn with_skip_combined() {
+                fn eq_always(_: &i32, _: &i32) -> bool {
+                    true
+                }
+
+                #[derive(Debug, PartialEq)]
+                enum E {
+                    Foo(#[partial_eq(with(eq_always))] i32, #[partial_eq(skip)] i32),
+                }
+
+                // assert both using == and != as both are overloaded
+                assert_eq!(E::Foo(1, 2), E::Foo(3, 4));
+                assert!(!(E::Foo(1, 2) != E::Foo(3, 4)));
             }
         }
 

@@ -272,3 +272,7 @@ impl Hash for Foo {
 
 This is useful for types that don't implement `Hash` but can be hashed in a custom way, or when you need different
 hashing behavior than the default.
+
+Note: if a field carries `#[partial_eq(with(...))]`, then `#[derive(Hash)]` requires either
+`#[hash(with(...))]` or `#[hash(skip)]` on the same field. Otherwise the default per-field hashing
+may disagree with the custom equality and break the `k1 == k2 -> hash(k1) == hash(k2)` invariant.

@@ -1,0 +1,11 @@
+error: field has `#[partial_eq(with(...))]` but no `#[hash(with(...))]` or `#[hash(skip)]`: a custom equality function requires a consistent `Hash` implementation to uphold the `Hash`/`Eq` invariant (`a == b` implies `hash(a) == hash(b)`)
+ --> tests/compile_fail/hash/partial_eq_with_without_hash.rs:6:12
+  |
+6 | struct Foo(#[partial_eq(with(always_eq))] i32);
+  |            ^
+
+error: field has `#[partial_eq(with(...))]` but no `#[hash(with(...))]` or `#[hash(skip)]`: a custom equality function requires a consistent `Hash` implementation to uphold the `Hash`/`Eq` invariant (`a == b` implies `hash(a) == hash(b)`)
+  --> tests/compile_fail/hash/partial_eq_with_without_hash.rs:11:9
+   |
+11 |         #[partial_eq(with(always_eq))]
+   |         ^

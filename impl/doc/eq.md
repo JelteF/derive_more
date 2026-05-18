@@ -286,3 +286,59 @@ impl PartialEq for Enum {
     }
 }
 ```
+
+### Custom comparison with `with`
+
+The `#[partial_eq(with(...))]` attribute allows specifying a custom comparison function for a field.
+The function must have the signature `fn(&T, &T) -> bool` where `T` is the field type. `derive(Eq)` honors
+`#[partial_eq(with(...))]` by not requiring an `Eq` bound on that field's type.
+
+```rust
+# use derive_more::{Eq, PartialEq};
+
+mod custom_eq {
+   #[derive(Debug)]
+   pub struct NotPartialEq(pub i32);
+   
+   pub fn compare(a: &NotPartialEq, b: &NotPartialEq) -> bool {
+       a.0 == b.0
+   }
+}
+use custom_eq::NotPartialEq;
+
+#[derive(Debug, PartialEq, Eq)]
+struct Foo(#[partial_eq(with(custom_eq::compare))] NotPartialEq);
+
+assert_eq!(Foo(NotPartialEq(42)), Foo(NotPartialEq(42)));
+assert_ne!(Foo(NotPartialEq(42)), Foo(NotPartialEq(73)));
+```
+
+This generates code equivalent to:
+
+```rust
+#
+# mod custom_eq {
+#    #[derive(Debug)]
+#    pub struct NotPartialEq(i32);
+# 
+#    pub fn compare(a: &NotPartialEq, b: &NotPartialEq) -> bool {
+#       a.0 == b.0
+#    }
+# }
+# use custom_eq::NotPartialEq;
+#
+# struct Foo(NotPartialEq);
+# 
+impl PartialEq for Foo {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self(self_0), Self(other_0)) => custom_eq::compare(self_0, other_0)
+        }
+    }
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self(self_0), Self(other_0)) => !custom_eq::compare(self_0, other_0)
+        }
+    }
+}
+```

@@ -1,0 +1,11 @@
+error: only `skip`/`ignore` allowed here
+ --> tests/compile_fail/eq/with_attribute.rs:6:17
+  |
+6 | struct Foo(#[eq(with(always_eq))] i32);
+  |                 ^^^^
+
+error: only `skip`/`ignore` allowed here
+  --> tests/compile_fail/eq/with_attribute.rs:17:14
+   |
+17 |         #[eq(with(always_eq))]
+   |              ^^^^
