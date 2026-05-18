@@ -1747,8 +1747,6 @@ pub(crate) mod attr {
 
         impl Parse for Bounds {
             fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-                Self::check_legacy_fmt(input)?;
-
                 let _ = input.parse::<syn::Path>().and_then(|p| {
                     if ["bound", "bounds", "where"]
                         .into_iter()
@@ -1772,32 +1770,6 @@ pub(crate) mod attr {
             }
         }
 
-        impl Bounds {
-            /// Errors in case legacy syntax is encountered: `bound = "..."`.
-            fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
-                let fork = input.fork();
-
-                let path = fork
-                    .parse::<syn::Path>()
-                    .and_then(|path| fork.parse::<token::Eq>().map(|_| path));
-                match path {
-                    Ok(path) if path.is_ident("bound") => fork
-                        .parse::<syn::Lit>()
-                        .ok()
-                        .and_then(|lit| match lit {
-                            syn::Lit::Str(s) => Some(s.value()),
-                            _ => None,
-                        })
-                        .map_or(Ok(()), |bound| {
-                            Err(syn::Error::new(
-                                input.span(),
-                                format!("legacy syntax, use `bound({bound})` instead"),
-                            ))
-                        }),
-                    Ok(_) | Err(_) => Ok(()),
-                }
-            }
-        }
         impl ParseMultiple for Bounds {}
     }
 
