@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `Hash` derive similar to `std`'s one, but considering generics correctly,
   and supporting custom hash functions per field or skipping fields.
   ([#532](https://github.com/JelteF/derive_more/pull/532))
+- Add `Clone` and `Copy` derives, similar to `std`'s ones. These derives do not
+  add any trait bounds on generic parameters by default, making them usable
+  in more situations. Custom trait bounds can be specified via
+  `#[clone(bound(...))]` and `#[copy(bound(...))]` attributes.
+  ([#533](https://github.com/JelteF/derive_more/pull/533))
+- Add `Default` derive, similar to `std`'s one, but not adding any trait bounds, 
+  the ability to specify custom default values for fields, using non-unit enum 
+  variants as default values and set custom bounds.
+  ([#534](https://github.com/JelteF/derive_more/pull/534))
 
 ### Fixed
 

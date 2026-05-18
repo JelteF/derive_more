@@ -16,7 +16,10 @@ use syn::{
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "clone",
+    feature = "copy",
     feature = "debug",
+    feature = "default_derive",
     feature = "display",
     feature = "eq",
     feature = "from",
@@ -46,7 +49,10 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "clone",
+    feature = "copy",
     feature = "debug",
+    feature = "default_derive",
     feature = "display",
     feature = "eq",
     feature = "hash",
@@ -1330,7 +1336,10 @@ pub fn is_type_parameter_used_in_type(
     feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
+    feature = "default_derive",
     feature = "display",
+    feature = "clone",
+    feature = "copy",
     feature = "eq",
     feature = "from",
     feature = "from_str",
@@ -1408,7 +1417,10 @@ mod either {
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "clone",
+    feature = "copy",
     feature = "debug",
+    feature = "default_derive",
     feature = "display",
     feature = "eq",
     feature = "from",
@@ -1512,7 +1524,10 @@ mod spanning {
     feature = "add_assign",
     feature = "as_ref",
     feature = "debug",
+    feature = "default_derive",
     feature = "display",
+    feature = "clone",
+    feature = "copy",
     feature = "eq",
     feature = "from",
     feature = "from_str",
@@ -1532,6 +1547,15 @@ pub(crate) mod attr {
     };
 
     use super::{Either, Spanning};
+
+    #[cfg(any(
+        feature = "debug",
+        feature = "default_derive",
+        feature = "display",
+        feature = "clone",
+        feature = "copy"
+    ))]
+    pub(crate) use self::bounds::Bounds;
 
     #[cfg(any(
         feature = "as_ref",
@@ -1700,6 +1724,60 @@ pub(crate) mod attr {
                 ))
             })
         }
+    }
+
+    #[cfg(any(
+        feature = "debug",
+        feature = "default_derive",
+        feature = "display",
+        feature = "clone",
+        feature = "copy"
+    ))]
+    mod bounds {
+        use crate::utils::attr::ParseMultiple;
+        use syn::{
+            parse::{Parse, ParseStream},
+            punctuated::Punctuated,
+            spanned::Spanned as _,
+            token,
+        };
+
+        /// Representation of a `bound` macro attribute, expressing additional trait bounds.
+        ///
+        /// ```rust,ignore
+        /// #[<attribute>(bound(<where-predicates>))]
+        /// #[<attribute>(bounds(<where-predicates>))]
+        /// #[<attribute>(where(<where-predicates>))]
+        /// ```
+        #[derive(Debug, Default)]
+        pub struct Bounds(pub Punctuated<syn::WherePredicate, token::Comma>);
+
+        impl Parse for Bounds {
+            fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+                let _ = input.parse::<syn::Path>().and_then(|p| {
+                    if ["bound", "bounds", "where"]
+                        .into_iter()
+                        .any(|i| p.is_ident(i))
+                    {
+                        Ok(p)
+                    } else {
+                        Err(syn::Error::new(
+                            p.span(),
+                            "unknown attribute argument, expected `bound(...)`",
+                        ))
+                    }
+                })?;
+
+                let content;
+                syn::parenthesized!(content in input);
+
+                content
+                    .parse_terminated(syn::WherePredicate::parse, token::Comma)
+                    .map(Self)
+            }
+        }
+
+        impl ParseMultiple for Bounds {}
     }
 
     #[cfg(any(

@@ -129,6 +129,9 @@ These are traits that can be used for operator overloading.
 ### Other traits
 
 1. [`Hash`]
+2. [`Clone`]
+3. [`Copy`]
+4. [`Default`]
 
 
 ### Static methods
@@ -270,6 +273,9 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 [`PartialEq`]: https://docs.rs/derive_more/latest/derive_more/derive.PartialEq.html
 
 [`Hash`]: https://docs.rs/derive_more/latest/derive_more/derive.Hash.html
+[`Clone`]: https://docs.rs/derive_more/latest/derive_more/derive.Clone.html
+[`Copy`]: https://docs.rs/derive_more/latest/derive_more/derive.Copy.html
+[`Default`]: https://docs.rs/derive_more/latest/derive_more/derive.Default.html
 
 [`Constructor`]: https://docs.rs/derive_more/latest/derive_more/derive.Constructor.html
 [`IsVariant`]: https://docs.rs/derive_more/latest/derive_more/derive.IsVariant.html
