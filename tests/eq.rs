@@ -175,11 +175,8 @@ mod structs {
             fn single_field() {
                 #[derive(Eq, PartialEq)]
                 struct Foo(#[partial_eq(with(eq_special))] NotPartialEq);
-                #[derive(Eq, PartialEq)]
-                struct Bar(#[eq(with(eq_special))] NotPartialEq);
 
                 let _: AssertParamIsEq<Foo>;
-                let _: AssertParamIsEq<Bar>;
             }
 
             #[test]
@@ -191,15 +188,7 @@ mod structs {
                     b: i32,
                 }
 
-                #[derive(Eq, PartialEq)]
-                struct Bar {
-                    #[eq(with(eq_special))]
-                    a: NotPartialEq,
-                    b: i32,
-                }
-
                 let _: AssertParamIsEq<Foo>;
-                let _: AssertParamIsEq<Bar>;
             }
 
             #[test]
@@ -210,13 +199,7 @@ mod structs {
                     #[partial_eq(with(eq_special))] NotPartialEq,
                 );
 
-                #[derive(Eq, PartialEq)]
-                struct Bar(
-                    #[eq(with(eq_special))] NotPartialEq,
-                    #[eq(with(eq_special))] NotPartialEq,
-                );
-
-                let _: AssertParamIsEq<Bar>;
+                let _: AssertParamIsEq<Foo>;
             }
         }
 
@@ -619,8 +602,7 @@ mod enums {
                 #[derive(Eq, PartialEq)]
                 enum E {
                     Foo(#[partial_eq(with(eq_special))] NotPartialEq),
-                    Bar(#[eq(with(eq_special))] NotPartialEq),
-                    Baz,
+                    Bar,
                 }
 
                 let _: AssertParamIsEq<E>;
@@ -635,12 +617,7 @@ mod enums {
                         a: NotPartialEq,
                         b: i32,
                     },
-                    Bar {
-                        #[eq(with(eq_special))]
-                        a: NotPartialEq,
-                        b: i32,
-                    },
-                    Baz,
+                    Bar,
                 }
 
                 let _: AssertParamIsEq<E>;
@@ -654,11 +631,7 @@ mod enums {
                         #[partial_eq(with(eq_special))] NotPartialEq,
                         #[partial_eq(with(eq_special))] NotPartialEq,
                     ),
-                    Bar(
-                        #[eq(with(eq_special))] NotPartialEq,
-                        #[eq(with(eq_special))] NotPartialEq,
-                    ),
-                    Baz,
+                    Bar,
                 }
 
                 let _: AssertParamIsEq<E>;

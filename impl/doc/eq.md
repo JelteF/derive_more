@@ -289,8 +289,9 @@ impl PartialEq for Enum {
 
 ### Custom comparison with `with`
 
-Both `#[eq(with(...))]` and `#[partial_eq(with(...))]` attributes allows specifying a custom comparison function
-for a field. The function must have the signature `fn(&T, &T) -> bool` where `T` is the field type.
+The `#[partial_eq(with(...))]` attribute allows specifying a custom comparison function for a field.
+The function must have the signature `fn(&T, &T) -> bool` where `T` is the field type. `derive(Eq)` honors
+`#[partial_eq(with(...))]` by not requiring an `Eq` bound on that field's type.
 
 ```rust
 # use derive_more::{Eq, PartialEq};

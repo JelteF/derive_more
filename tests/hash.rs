@@ -298,6 +298,44 @@ mod enums {
 }
 
 #[cfg(feature = "eq")]
+mod partial_eq_with_requires_hash_attr {
+    use derive_more::{Eq, Hash, PartialEq};
+
+    use super::{do_hash, utils};
+
+    fn eq_mod_10(a: &u32, b: &u32) -> bool {
+        a % 10 == b % 10
+    }
+
+    // Field uses a custom equality, so a matching custom hash function is provided.
+    #[derive(Hash, Eq, PartialEq)]
+    struct WithBoth {
+        #[partial_eq(with(eq_mod_10))]
+        #[hash(with(utils::alternate_u32_hash_function))]
+        a: u32,
+        b: i32,
+    }
+
+    // Field uses a custom equality and is skipped from hashing — also consistent.
+    #[derive(Hash, Eq, PartialEq)]
+    struct WithSkip {
+        #[partial_eq(with(eq_mod_10))]
+        #[hash(skip)]
+        a: u32,
+        b: i32,
+    }
+
+    #[test]
+    fn assert() {
+        assert_eq!(
+            do_hash(&WithBoth { a: 42, b: 7 }),
+            do_hash(&(42u32, 42u32, 7i32)),
+        );
+        assert_eq!(do_hash(&WithSkip { a: 42, b: 7 }), do_hash(&7i32));
+    }
+}
+
+#[cfg(feature = "eq")]
 mod hash_respects_eq_skip {
     use derive_more::{Eq, Hash, PartialEq};
 

@@ -14,20 +14,24 @@ use syn::{
     spanned::Spanned as _,
 };
 
+const PARTIAL_EQ_WITH_WITHOUT_HASH_ERROR: &str =
+    "field has `#[partial_eq(with(...))]` but no `#[hash(with(...))]` or `#[hash(skip)]`: a custom \
+     equality function requires a consistent `Hash` implementation to uphold the `Hash`/`Eq` \
+     invariant (`a == b` implies `hash(a) == hash(b)`)";
+
 /// Expands a [`Hash`] derive macro.
 pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStream> {
     let attr_name = format_ident!("hash");
-    let secondary_attr_name = format_ident!("eq");
-    let tertiary_attr_name = format_ident!("partial_eq");
-    let attr_names = [&attr_name, &secondary_attr_name, &tertiary_attr_name];
-    let secondary_attr_names = [&secondary_attr_name, &tertiary_attr_name];
+    let partial_eq_attr_name = format_ident!("partial_eq");
+    let eq_attr_name = format_ident!("eq");
+    let skip_attr_names = [&attr_name, &partial_eq_attr_name, &eq_attr_name];
 
     let mut has_skipped_variants = false;
     let mut variants = vec![];
 
     match &input.data {
         syn::Data::Struct(data) => {
-            for attr_name in &attr_names {
+            for attr_name in skip_attr_names {
                 if attr::Skip::parse_attrs(&input.attrs, attr_name)?.is_some() {
                     has_skipped_variants = true;
                     break;
@@ -37,30 +41,46 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut skipped_fields = SkippedFields::default();
                 let mut alternate_hash_functions =
                     FieldsWithAlternateHashFunction::default();
-                'fields: for (n, field) in data.fields.iter().enumerate() {
+                for (n, field) in data.fields.iter().enumerate() {
                     match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
-                            for attr_name in &secondary_attr_names {
-                                if attr::Skip::parse_attrs(&field.attrs, attr_name)?
-                                    .is_some()
-                                {
-                                    _ = skipped_fields.insert(n);
-                                    continue 'fields;
+                            if let Some(Spanning { item, span, .. }) =
+                                attr::WithOrSkip::parse_attrs(
+                                    &field.attrs,
+                                    &partial_eq_attr_name,
+                                )?
+                            {
+                                match item {
+                                    attr::WithOrSkip::Skip => {
+                                        _ = skipped_fields.insert(n);
+                                    }
+                                    attr::WithOrSkip::With(_) => {
+                                        return Err(syn::Error::new(
+                                            span,
+                                            PARTIAL_EQ_WITH_WITHOUT_HASH_ERROR,
+                                        ));
+                                    }
                                 }
+                            } else if attr::Skip::parse_attrs(
+                                &field.attrs,
+                                &eq_attr_name,
+                            )?
+                            .is_some()
+                            {
+                                _ = skipped_fields.insert(n);
                             }
                         }
                         Some(Spanning {
                             item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
-                            skipped_fields.insert(n);
+                            _ = skipped_fields.insert(n);
                         }
-
                         Some(Spanning {
                             item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.func.clone());
+                            alternate_hash_functions.insert(n, with.func);
                         }
                     }
                 }
@@ -74,7 +94,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
         }
         syn::Data::Enum(data) => {
             'variants: for variant in &data.variants {
-                for attr_name in &attr_names {
+                for attr_name in skip_attr_names {
                     if attr::Skip::parse_attrs(&variant.attrs, attr_name)?.is_some() {
                         has_skipped_variants = true;
                         continue 'variants;
@@ -83,30 +103,46 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut skipped_fields = SkippedFields::default();
                 let mut alternate_hash_functions =
                     FieldsWithAlternateHashFunction::default();
-                'fields: for (n, field) in variant.fields.iter().enumerate() {
+                for (n, field) in variant.fields.iter().enumerate() {
                     match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
-                            for attr_name in &secondary_attr_names {
-                                if attr::Skip::parse_attrs(&field.attrs, attr_name)?
-                                    .is_some()
-                                {
-                                    _ = skipped_fields.insert(n);
-                                    continue 'fields;
+                            if let Some(Spanning { item, span, .. }) =
+                                attr::WithOrSkip::parse_attrs(
+                                    &field.attrs,
+                                    &partial_eq_attr_name,
+                                )?
+                            {
+                                match item {
+                                    attr::WithOrSkip::Skip => {
+                                        _ = skipped_fields.insert(n);
+                                    }
+                                    attr::WithOrSkip::With(_) => {
+                                        return Err(syn::Error::new(
+                                            span,
+                                            PARTIAL_EQ_WITH_WITHOUT_HASH_ERROR,
+                                        ));
+                                    }
                                 }
+                            } else if attr::Skip::parse_attrs(
+                                &field.attrs,
+                                &eq_attr_name,
+                            )?
+                            .is_some()
+                            {
+                                _ = skipped_fields.insert(n);
                             }
                         }
                         Some(Spanning {
                             item: attr::WithOrSkip::Skip,
                             ..
                         }) => {
-                            skipped_fields.insert(n);
+                            _ = skipped_fields.insert(n);
                         }
-
                         Some(Spanning {
                             item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.func.clone());
+                            alternate_hash_functions.insert(n, with.func);
                         }
                     }
                 }

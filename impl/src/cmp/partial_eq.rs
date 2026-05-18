@@ -36,24 +36,28 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut alternate_eq_functions =
                     FieldsWithAlternateEqFunction::default();
                 'fields: for (n, field) in data.fields.iter().enumerate() {
-                    for attr_name in [&attr_name, &secondary_attr_name] {
-                        match attr::WithOrSkip::parse_attrs(&field.attrs, attr_name)? {
-                            Some(Spanning {
-                                item: attr::WithOrSkip::Skip,
-                                ..
-                            }) => {
-                                _ = skipped_fields.insert(n);
-                                continue 'fields;
-                            }
-                            Some(Spanning {
-                                item: attr::WithOrSkip::With(with),
-                                ..
-                            }) => {
-                                alternate_eq_functions.insert(n, with.func);
-                                continue 'fields;
-                            }
-                            None => {}
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
+                        Some(Spanning {
+                            item: attr::WithOrSkip::Skip,
+                            ..
+                        }) => {
+                            _ = skipped_fields.insert(n);
+                            continue 'fields;
                         }
+                        Some(Spanning {
+                            item: attr::WithOrSkip::With(with),
+                            ..
+                        }) => {
+                            alternate_eq_functions.insert(n, with.func);
+                            continue 'fields;
+                        }
+                        None => {}
+                    }
+                    if attr::Skip::parse_attrs(&field.attrs, &secondary_attr_name)?
+                        .is_some()
+                    {
+                        _ = skipped_fields.insert(n);
+                        continue 'fields;
                     }
                 }
                 variants.push((
@@ -76,24 +80,28 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                 let mut alternate_eq_functions =
                     FieldsWithAlternateEqFunction::default();
                 'fields: for (n, field) in variant.fields.iter().enumerate() {
-                    for attr_name in [&attr_name, &secondary_attr_name] {
-                        match attr::WithOrSkip::parse_attrs(&field.attrs, attr_name)? {
-                            Some(Spanning {
-                                item: attr::WithOrSkip::Skip,
-                                ..
-                            }) => {
-                                _ = skipped_fields.insert(n);
-                                continue 'fields;
-                            }
-                            Some(Spanning {
-                                item: attr::WithOrSkip::With(with),
-                                ..
-                            }) => {
-                                alternate_eq_functions.insert(n, with.func);
-                                continue 'fields;
-                            }
-                            None => {}
+                    match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
+                        Some(Spanning {
+                            item: attr::WithOrSkip::Skip,
+                            ..
+                        }) => {
+                            _ = skipped_fields.insert(n);
+                            continue 'fields;
                         }
+                        Some(Spanning {
+                            item: attr::WithOrSkip::With(with),
+                            ..
+                        }) => {
+                            alternate_eq_functions.insert(n, with.func);
+                            continue 'fields;
+                        }
+                        None => {}
+                    }
+                    if attr::Skip::parse_attrs(&field.attrs, &secondary_attr_name)?
+                        .is_some()
+                    {
+                        _ = skipped_fields.insert(n);
+                        continue 'fields;
                     }
                 }
                 variants.push((
