@@ -15,7 +15,6 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_quote,
     punctuated::Punctuated,
-    spanned::Spanned as _,
     token,
 };
 
@@ -23,70 +22,6 @@ use crate::{
     parsing::Expr,
     utils::{attr, Either, Spanning},
 };
-
-/// Representation of a `bound` macro attribute, expressing additional trait bounds.
-///
-/// ```rust,ignore
-/// #[<attribute>(bound(<where-predicates>))]
-/// #[<attribute>(bounds(<where-predicates>))]
-/// #[<attribute>(where(<where-predicates>))]
-/// ```
-#[derive(Debug, Default)]
-struct BoundsAttribute(Punctuated<syn::WherePredicate, token::Comma>);
-
-impl Parse for BoundsAttribute {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        Self::check_legacy_fmt(input)?;
-
-        let _ = input.parse::<syn::Path>().and_then(|p| {
-            if ["bound", "bounds", "where"]
-                .into_iter()
-                .any(|i| p.is_ident(i))
-            {
-                Ok(p)
-            } else {
-                Err(syn::Error::new(
-                    p.span(),
-                    "unknown attribute argument, expected `bound(...)`",
-                ))
-            }
-        })?;
-
-        let content;
-        syn::parenthesized!(content in input);
-
-        content
-            .parse_terminated(syn::WherePredicate::parse, token::Comma)
-            .map(Self)
-    }
-}
-
-impl BoundsAttribute {
-    /// Errors in case legacy syntax is encountered: `bound = "..."`.
-    fn check_legacy_fmt(input: ParseStream<'_>) -> syn::Result<()> {
-        let fork = input.fork();
-
-        let path = fork
-            .parse::<syn::Path>()
-            .and_then(|path| fork.parse::<token::Eq>().map(|_| path));
-        match path {
-            Ok(path) if path.is_ident("bound") => fork
-                .parse::<syn::Lit>()
-                .ok()
-                .and_then(|lit| match lit {
-                    syn::Lit::Str(s) => Some(s.value()),
-                    _ => None,
-                })
-                .map_or(Ok(()), |bound| {
-                    Err(syn::Error::new(
-                        input.span(),
-                        format!("legacy syntax, use `bound({bound})` instead"),
-                    ))
-                }),
-            Ok(_) | Err(_) => Ok(()),
-        }
-    }
-}
 
 /// Representation of a [`fmt`]-like attribute.
 ///
@@ -515,7 +450,7 @@ struct ContainerAttributes {
     fmt: Option<FmtAttribute>,
 
     /// Addition trait bounds.
-    bounds: BoundsAttribute,
+    bounds: attr::Bounds,
 }
 
 impl Parse for ContainerAttributes {
@@ -523,9 +458,9 @@ impl Parse for ContainerAttributes {
         // We do check `FmtAttribute::check_legacy_fmt` eagerly here, because `Either` will swallow
         // any error of the `Either::Left` if the `Either::Right` succeeds.
         FmtAttribute::check_legacy_fmt(input)?;
-        <Either<FmtAttribute, BoundsAttribute>>::parse(input).map(|v| match v {
+        <Either<FmtAttribute, attr::Bounds>>::parse(input).map(|v| match v {
             Either::Left(fmt) => Self {
-                bounds: BoundsAttribute::default(),
+                bounds: attr::Bounds::default(),
                 fmt: Some(fmt),
             },
             Either::Right(bounds) => Self { bounds, fmt: None },
