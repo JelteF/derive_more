@@ -1,5 +1,5 @@
-error: legacy syntax, use `bound(String: std::fmt::Display)` instead
- --> tests/compile_fail/display/legacy_bound_syntax.rs:2:11
+error: expected parentheses
+ --> tests/compile_fail/display/legacy_bound_syntax.rs:2:17
   |
 2 | #[display(bound = "String: std::fmt::Display")]
-  |           ^^^^^
+  |                 ^
