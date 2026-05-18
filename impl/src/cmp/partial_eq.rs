@@ -33,8 +33,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             }
             if !has_skipped_variants {
                 let mut skipped_fields = SkippedFields::default();
-                let mut alternate_eq_functions =
-                    FieldsWithAlternateEqFunction::default();
+                let mut custom_eq_functions = FieldsWithCustomEqFunction::default();
                 'fields: for (n, field) in data.fields.iter().enumerate() {
                     match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         Some(Spanning {
@@ -48,7 +47,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_eq_functions.insert(n, with.func);
+                            custom_eq_functions.insert(n, with.func);
                             continue 'fields;
                         }
                         None => {}
@@ -64,7 +63,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     None,
                     &data.fields,
                     skipped_fields,
-                    alternate_eq_functions,
+                    custom_eq_functions,
                 ));
             }
         }
@@ -77,8 +76,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     }
                 }
                 let mut skipped_fields = SkippedFields::default();
-                let mut alternate_eq_functions =
-                    FieldsWithAlternateEqFunction::default();
+                let mut custom_eq_functions = FieldsWithCustomEqFunction::default();
                 'fields: for (n, field) in variant.fields.iter().enumerate() {
                     match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         Some(Spanning {
@@ -92,7 +90,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_eq_functions.insert(n, with.func);
+                            custom_eq_functions.insert(n, with.func);
                             continue 'fields;
                         }
                         None => {}
@@ -108,7 +106,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     Some(&variant.ident),
                     &variant.fields,
                     skipped_fields,
-                    alternate_eq_functions,
+                    custom_eq_functions,
                 ));
             }
         }
@@ -132,9 +130,9 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
-/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the alternate
+/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the custom
 /// eq function.
-type FieldsWithAlternateEqFunction = HashMap<usize, syn::Path>;
+type FieldsWithCustomEqFunction = HashMap<usize, syn::Path>;
 
 /// Expansion of a macro for generating a structural [`PartialEq`] implementation of an enum or a
 /// struct.
@@ -149,7 +147,7 @@ struct StructuralExpansion<'i> {
         Option<&'i syn::Ident>,
         &'i syn::Fields,
         SkippedFields,
-        FieldsWithAlternateEqFunction,
+        FieldsWithCustomEqFunction,
     )>,
 
     /// Indicator whether some original enum variants where skipped with an [`attr::Skip`].
@@ -201,7 +199,7 @@ impl StructuralExpansion<'_> {
         let match_arms = self
             .variants
             .iter()
-            .filter_map(|(variant, all_fields, skipped_fields, alternate_eq_functions)| {
+            .filter_map(|(variant, all_fields, skipped_fields, custom_eq_functions)| {
                 if all_fields.is_empty() || skipped_fields.len() == all_fields.len() {
                     return None;
                 }
@@ -217,7 +215,7 @@ impl StructuralExpansion<'_> {
                     .map(|num| {
                         let self_val = format_ident!("__self_{num}");
                         let other_val = format_ident!("__other_{num}");
-                        let equality = alternate_eq_functions
+                        let equality = custom_eq_functions
                             .get(&num)
                             .map(|eq_fn| {
                                 let maybe_not = (!eq).then(|| quote! {!});

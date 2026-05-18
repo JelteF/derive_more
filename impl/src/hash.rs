@@ -39,8 +39,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
             }
             if !has_skipped_variants {
                 let mut skipped_fields = SkippedFields::default();
-                let mut alternate_hash_functions =
-                    FieldsWithAlternateHashFunction::default();
+                let mut custom_hash_functions = FieldsWithCustomHashFunction::default();
                 for (n, field) in data.fields.iter().enumerate() {
                     match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
@@ -80,7 +79,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.func);
+                            custom_hash_functions.insert(n, with.func);
                         }
                     }
                 }
@@ -88,7 +87,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     None,
                     &data.fields,
                     skipped_fields,
-                    alternate_hash_functions,
+                    custom_hash_functions,
                 ));
             }
         }
@@ -101,8 +100,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     }
                 }
                 let mut skipped_fields = SkippedFields::default();
-                let mut alternate_hash_functions =
-                    FieldsWithAlternateHashFunction::default();
+                let mut custom_hash_functions = FieldsWithCustomHashFunction::default();
                 for (n, field) in variant.fields.iter().enumerate() {
                     match attr::WithOrSkip::parse_attrs(&field.attrs, &attr_name)? {
                         None => {
@@ -142,7 +140,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                             item: attr::WithOrSkip::With(with),
                             ..
                         }) => {
-                            alternate_hash_functions.insert(n, with.func);
+                            custom_hash_functions.insert(n, with.func);
                         }
                     }
                 }
@@ -150,7 +148,7 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
                     Some(&variant.ident),
                     &variant.fields,
                     skipped_fields,
-                    alternate_hash_functions,
+                    custom_hash_functions,
                 ));
             }
         }
@@ -174,9 +172,9 @@ pub fn expand(input: &syn::DeriveInput, _: &'static str) -> syn::Result<TokenStr
 /// Indices of [`syn::Field`]s marked with an [`attr::Skip`].
 type SkippedFields = HashSet<usize>;
 
-/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the alternate
+/// Mapping from [`syn::Field`] marked with an [`attr::With`] to the [`syn::Path`] of the custom
 /// hash function.
-type FieldsWithAlternateHashFunction = HashMap<usize, syn::Path>;
+type FieldsWithCustomHashFunction = HashMap<usize, syn::Path>;
 
 /// Expansion of a macro for generating a structural [`Hash`] implementation of an enum or a struct.
 struct StructuralExpansion<'i> {
@@ -190,7 +188,7 @@ struct StructuralExpansion<'i> {
         Option<&'i syn::Ident>,
         &'i syn::Fields,
         SkippedFields,
-        FieldsWithAlternateHashFunction,
+        FieldsWithCustomHashFunction,
     )>,
 
     /// Indicator whether some original enum variants where skipped with an [`attr::Skip`].
@@ -230,7 +228,7 @@ impl StructuralExpansion<'_> {
             .variants
             .iter()
             .map(
-                |(variant, all_fields, skipped_fields, alternate_hash_functions)| {
+                |(variant, all_fields, skipped_fields, custom_hash_functions)| {
                     let variant = variant.map(|variant| quote! { :: #variant });
                     let self_pattern = all_fields
                         .non_exhaustive_arm_pattern("__self_", skipped_fields);
@@ -239,7 +237,7 @@ impl StructuralExpansion<'_> {
                         .filter(|num| !skipped_fields.contains(num))
                         .map(|num| {
                             let self_val = format_ident!("__self_{num}");
-                            let hash_function = alternate_hash_functions
+                            let hash_function = custom_hash_functions
                                 .get(&num)
                                 .map(|it| quote! {#it})
                                 .unwrap_or_else(
