@@ -56,6 +56,7 @@ default = ["std"]
 add = ["derive_more-impl/add"]
 add_assign = ["derive_more-impl/add_assign"]
 as_ref = ["derive_more-impl/as_ref"]
+borrow = ["derive_more-impl/borrow"]
 constructor = ["derive_more-impl/constructor"]
 debug = ["derive_more-impl/debug"]
 deref = ["derive_more-impl/deref"]
@@ -85,6 +86,7 @@ full = [
     "add",
     "add_assign",
     "as_ref",
+    "borrow",
     "constructor",
     "debug",
     "deref",
@@ -131,6 +133,16 @@ required-features = ["as_ref"]
 name = "as_ref"
 path = "tests/as_ref.rs"
 required-features = ["as_ref"]
+
+[[test]]
+name = "borrow"
+path = "tests/borrow.rs"
+required-features = ["borrow"]
+
+[[test]]
+name = "borrow_mut"
+path = "tests/borrow_mut.rs"
+required-features = ["borrow"]
 
 [[test]]
 name = "boats_display_derive"
@@ -260,7 +272,24 @@ required-features = ["unwrap"]
 [[test]]
 name = "compile_fail"
 path = "tests/compile_fail/mod.rs"
-required-features = ["as_ref", "debug", "display", "from", "into", "is_variant", "try_from", "try_into"]
+required-features = [
+    "add",
+    "add_assign",
+    "as_ref",
+    "borrow",
+    "debug",
+    "display",
+    "eq",
+    "from",
+    "from_str",
+    "hash",
+    "into",
+    "is_variant",
+    "mul",
+    "mul_assign",
+    "try_from",
+    "try_into",
+]
 
 [[test]]
 name = "no_std"

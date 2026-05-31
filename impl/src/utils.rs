@@ -16,6 +16,7 @@ use syn::{
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "borrow",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -35,6 +36,7 @@ pub(crate) use self::fields_ext::FieldsExt;
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "borrow",
     feature = "eq",
     feature = "from_str",
     feature = "hash",
@@ -46,6 +48,7 @@ pub(crate) use self::generics_search::GenericsSearch;
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "borrow",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1329,6 +1332,7 @@ pub fn is_type_parameter_used_in_type(
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "borrow",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1408,6 +1412,7 @@ mod either {
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "borrow",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1511,6 +1516,7 @@ mod spanning {
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "borrow",
     feature = "debug",
     feature = "display",
     feature = "eq",
@@ -1535,6 +1541,7 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "as_ref",
+        feature = "borrow",
         feature = "from",
         feature = "into",
         feature = "try_from"
@@ -1544,6 +1551,7 @@ pub(crate) mod attr {
     pub(crate) use self::error::Error;
     #[cfg(any(
         feature = "as_ref",
+        feature = "borrow",
         feature = "from",
         feature = "mul",
         feature = "mul_assign",
@@ -1555,6 +1563,7 @@ pub(crate) mod attr {
         feature = "add",
         feature = "add_assign",
         feature = "as_ref",
+        feature = "borrow",
         feature = "debug",
         feature = "eq",
         feature = "from",
@@ -1704,6 +1713,7 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "as_ref",
+        feature = "borrow",
         feature = "from",
         feature = "into",
         feature = "try_from"
@@ -1767,6 +1777,7 @@ pub(crate) mod attr {
 
     #[cfg(any(
         feature = "as_ref",
+        feature = "borrow",
         feature = "from",
         feature = "mul",
         feature = "mul_assign",
@@ -1897,6 +1908,7 @@ pub(crate) mod attr {
         feature = "add",
         feature = "add_assign",
         feature = "as_ref",
+        feature = "borrow",
         feature = "debug",
         feature = "display",
         feature = "eq",
@@ -2563,6 +2575,7 @@ mod fields_ext {
     feature = "add",
     feature = "add_assign",
     feature = "as_ref",
+    feature = "borrow",
     feature = "eq",
     feature = "from_str",
     feature = "hash",

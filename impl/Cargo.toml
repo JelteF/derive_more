@@ -52,6 +52,7 @@ default = []
 add = ["syn/extra-traits", "syn/visit"]
 add_assign = ["syn/extra-traits", "syn/visit"]
 as_ref = ["syn/extra-traits", "syn/visit"]
+borrow = ["syn/visit"]
 constructor = []
 debug = ["syn/extra-traits", "dep:unicode-ident"]
 deref = []
@@ -80,6 +81,7 @@ full = [
     "add",
     "add_assign",
     "as_ref",
+    "borrow",
     "constructor",
     "debug",
     "deref",

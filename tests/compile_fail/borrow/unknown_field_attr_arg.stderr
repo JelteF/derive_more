@@ -1,0 +1,5 @@
+error: expected one of: `forward`, `skip`, `ignore`
+ --> tests/compile_fail/borrow/unknown_field_attr_arg.rs:3:14
+  |
+3 |     #[borrow(baz)]
+  |              ^^^

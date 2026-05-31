@@ -1,0 +1,5 @@
+error: `Borrow` cannot be derived for enums
+ --> tests/compile_fail/borrow/enum.rs:2:1
+  |
+2 | enum Foo {
+  | ^^^^

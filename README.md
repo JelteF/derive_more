@@ -89,6 +89,7 @@ These are traits that are used to convert automatically between types.
 5. [`TryInto`]
 6. [`IntoIterator`]
 7. [`AsRef`], [`AsMut`]
+8. [`Borrow`], [`BorrowMut`]
 
 
 ### Formatting traits
@@ -250,6 +251,8 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 [`IntoIterator`]: https://docs.rs/derive_more/latest/derive_more/derive.IntoIterator.html
 [`AsRef`]: https://docs.rs/derive_more/latest/derive_more/derive.AsRef.html
 [`AsMut`]: https://docs.rs/derive_more/latest/derive_more/derive.AsMut.html
+[`Borrow`]: https://docs.rs/derive_more/latest/derive_more/derive.Borrow.html
+[`BorrowMut`]: https://docs.rs/derive_more/latest/derive_more/derive.BorrowMut.html
 
 [`Debug`]: https://docs.rs/derive_more/latest/derive_more/derive.Debug.html
 [`Display`-like]: https://docs.rs/derive_more/latest/derive_more/derive.Display.html

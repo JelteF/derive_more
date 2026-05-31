@@ -1,0 +1,5 @@
+error: only single kind of `#[borrow(...)]` attribute is allowed here
+ --> tests/compile_fail/borrow/multiple_field_attrs.rs:4:5
+  |
+4 |     #[borrow(forward)]
+  |     ^

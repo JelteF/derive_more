@@ -1,0 +1,5 @@
+error: `BorrowMut` cannot be derived for unions
+ --> tests/compile_fail/borrow_mut/union.rs:2:1
+  |
+2 | union Foo {
+  | ^^^^^

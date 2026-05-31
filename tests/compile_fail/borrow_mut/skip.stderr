@@ -1,0 +1,5 @@
+error: `#[borrow_mut(skip)]` cannot be used when deriving `BorrowMut` because exactly one field must be borrowed
+ --> tests/compile_fail/borrow_mut/skip.rs:2:12
+  |
+2 | struct Foo(#[borrow_mut(skip)] i32);
+  |            ^

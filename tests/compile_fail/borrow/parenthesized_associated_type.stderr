@@ -1,0 +1,5 @@
+error: `Borrow` cannot be derived for an associated type projection involving generic parameters because the impl can overlap with `core`'s blanket `Borrow` implementation
+ --> tests/compile_fail/borrow/parenthesized_associated_type.rs:8:22
+  |
+8 | struct Foo<T: Trait>((T::Assoc));
+  |                      ^^^^^^^^^^

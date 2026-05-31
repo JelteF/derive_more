@@ -1,0 +1,5 @@
+error: expected one of: `forward`, `skip`, `ignore`
+ --> tests/compile_fail/borrow_mut/unknown_field_attr_arg.rs:2:25
+  |
+2 | struct Foo(#[borrow_mut(baz)] i32);
+  |                         ^^^

@@ -1,0 +1,5 @@
+error: `BorrowMut` can only be derived for structs with exactly one field
+ --> tests/compile_fail/borrow_mut/unit.rs:2:1
+  |
+2 | struct Foo;
+  | ^^^^^^

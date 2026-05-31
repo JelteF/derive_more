@@ -1,0 +1,5 @@
+error: only `forward` allowed here
+ --> tests/compile_fail/borrow/unknown_struct_attr_arg.rs:2:10
+  |
+2 | #[borrow(baz)]
+  |          ^^^

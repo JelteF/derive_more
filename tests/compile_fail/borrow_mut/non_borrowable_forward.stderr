@@ -1,0 +1,23 @@
+error[E0277]: the trait bound `i32: BorrowMut<str>` is not satisfied
+  --> tests/compile_fail/borrow_mut/non_borrowable_forward.rs:10:28
+   |
+10 |     let _: &mut str = item.borrow_mut();
+   |                            ^^^^^^^^^^ the trait `BorrowMut<str>` is not implemented for `i32`
+   |
+help: the trait `BorrowMut<str>` is not implemented for `Foo`
+      but trait `BorrowMut<i32>` is implemented for it
+  --> tests/compile_fail/borrow_mut/non_borrowable_forward.rs:1:31
+   |
+ 1 | #[derive(derive_more::Borrow, derive_more::BorrowMut)]
+   |                               ^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `i32`, found `str`
+note: required for `Foo` to implement `BorrowMut<str>`
+  --> tests/compile_fail/borrow_mut/non_borrowable_forward.rs:4:8
+   |
+ 1 | #[derive(derive_more::Borrow, derive_more::BorrowMut)]
+   |                               ---------------------- type parameter would need to implement `BorrowMut<str>`
+...
+ 4 | struct Foo(i32);
+   |        ^^^
+   = help: consider manually implementing `BorrowMut<str>` to avoid undesired bounds
+   = note: this error originates in the derive macro `derive_more::BorrowMut` (in Nightly builds, run with -Z macro-backtrace for more info)

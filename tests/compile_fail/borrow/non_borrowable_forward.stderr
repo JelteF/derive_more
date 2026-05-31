@@ -1,0 +1,23 @@
+error[E0277]: the trait bound `i32: Borrow<str>` is not satisfied
+ --> tests/compile_fail/borrow/non_borrowable_forward.rs:9:24
+  |
+9 |     let _: &str = item.borrow();
+  |                        ^^^^^^ the trait `Borrow<str>` is not implemented for `i32`
+  |
+help: the trait `Borrow<str>` is not implemented for `Foo`
+      but trait `Borrow<i32>` is implemented for it
+ --> tests/compile_fail/borrow/non_borrowable_forward.rs:1:10
+  |
+1 | #[derive(derive_more::Borrow)]
+  |          ^^^^^^^^^^^^^^^^^^^
+  = help: for that trait implementation, expected `i32`, found `str`
+note: required for `Foo` to implement `Borrow<str>`
+ --> tests/compile_fail/borrow/non_borrowable_forward.rs:3:8
+  |
+1 | #[derive(derive_more::Borrow)]
+  |          ------------------- type parameter would need to implement `Borrow<str>`
+2 | #[borrow(forward)]
+3 | struct Foo(i32);
+  |        ^^^
+  = help: consider manually implementing `Borrow<str>` to avoid undesired bounds
+  = note: this error originates in the derive macro `derive_more::Borrow` (in Nightly builds, run with -Z macro-backtrace for more info)

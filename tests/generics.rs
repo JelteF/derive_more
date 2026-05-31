@@ -2,8 +2,8 @@
 #![allow(dead_code)] // some code is tested for type checking only
 
 use derive_more::{
-    Add, AddAssign, Constructor, Deref, DerefMut, Display, Error, From, FromStr, Index,
-    IndexMut, IntoIterator, Mul, MulAssign, Not, Sum, TryInto,
+    Add, AddAssign, Borrow, BorrowMut, Constructor, Deref, DerefMut, Display, Error,
+    From, FromStr, Index, IndexMut, IntoIterator, Mul, MulAssign, Not, Sum, TryInto,
 };
 
 #[derive(
@@ -21,6 +21,8 @@ use derive_more::{
     Deref,
     DerefMut,
     IntoIterator,
+    Borrow,
+    BorrowMut,
     Constructor
 )]
 #[deref(forward)]
@@ -54,6 +56,8 @@ struct WrappedDouble2<T: Clone, U: Clone>(T, U);
     Deref,
     DerefMut,
     IntoIterator,
+    Borrow,
+    BorrowMut,
     Constructor
 )]
 struct WrappedWithConst<T, const C: u32>(T);
@@ -72,6 +76,8 @@ struct WrappedWithConst<T, const C: u32>(T);
     Deref,
     DerefMut,
     IntoIterator,
+    Borrow,
+    BorrowMut,
     Constructor,
     Sum
 )]

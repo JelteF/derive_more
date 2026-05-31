@@ -12,6 +12,8 @@ mod utils;
 
 #[cfg(feature = "as_ref")]
 mod r#as;
+#[cfg(feature = "borrow")]
+mod borrow;
 #[cfg(feature = "eq")]
 mod cmp;
 #[cfg(feature = "constructor")]
@@ -90,14 +92,20 @@ impl Output for Result<proc_macro2::TokenStream, ParseError> {
 }
 
 macro_rules! create_derive(
-    ($feature:literal, $mod_:ident $(:: $mod_rest:ident)*, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
+    (@impl $feature:literal, $doc:literal, $mod_:ident $(:: $mod_rest:ident)*, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
         #[cfg(feature = $feature)]
         #[proc_macro_derive($trait_, attributes($($attribute),*))]
-        #[doc = include_str!(concat!("../doc/", $feature, ".md"))]
+        #[doc = include_str!(concat!("../doc/", $doc, ".md"))]
         pub fn $fn_name(input: TokenStream) -> TokenStream {
             let ast = syn::parse(input).unwrap();
             Output::process($mod_$(:: $mod_rest)*::expand(&ast, stringify!($trait_)))
         }
+    };
+    ($feature:literal, doc = $doc:literal, $mod_:ident $(:: $mod_rest:ident)*, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
+        create_derive!(@impl $feature, $doc, $mod_$(:: $mod_rest)*, $trait_, $fn_name $(,$attribute)*);
+    };
+    ($feature:literal, $mod_:ident $(:: $mod_rest:ident)*, $trait_:ident, $fn_name: ident $(,$attribute:ident)* $(,)?) => {
+        create_derive!(@impl $feature, $feature, $mod_$(:: $mod_rest)*, $trait_, $fn_name $(,$attribute)*);
     }
 );
 
@@ -143,8 +151,25 @@ create_derive!(
     bitxor_assign,
 );
 
-create_derive!("as_ref", r#as::r#mut, AsMut, as_mut_derive, as_mut);
+create_derive!(
+    "as_ref",
+    doc = "as_mut",
+    r#as::r#mut,
+    AsMut,
+    as_mut_derive,
+    as_mut
+);
 create_derive!("as_ref", r#as::r#ref, AsRef, as_ref_derive, as_ref);
+
+create_derive!("borrow", borrow, Borrow, borrow_derive, borrow);
+create_derive!(
+    "borrow",
+    doc = "borrow_mut",
+    borrow,
+    BorrowMut,
+    borrow_mut_derive,
+    borrow_mut,
+);
 
 create_derive!("constructor", constructor, Constructor, constructor_derive);
 

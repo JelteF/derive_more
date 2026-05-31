@@ -69,13 +69,12 @@ of the field itself, and types for which the field type implements `AsMut`.
 # use derive_more::AsMut;
 #
 #[derive(AsMut)]
-#[as_mut(str, [u8], String)]
+#[as_mut(str, String)]
 struct Types(String);
 
 let mut item = Types("test".to_owned());
 let _: &mut str = item.as_mut();
-let _: &mut [u8] = item.as_mut();
-let _: &mut String = item.as_mut();_
+let _: &mut String = item.as_mut();
 ```
 
 > **WARNING**: When either the field type, or the specified conversion type,
@@ -148,7 +147,7 @@ Generates:
 #     valid: bool,
 # }
 impl AsMut<str> for MyWrapper {
-    fn as_mut(&mut self) -> &mut String {
+    fn as_mut(&mut self) -> &mut str {
         self.name.as_mut()
     }
 }

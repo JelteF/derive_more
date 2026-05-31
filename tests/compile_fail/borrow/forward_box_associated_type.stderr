@@ -1,0 +1,5 @@
+error: `#[borrow(forward)]` cannot be used on a generic parameter field, an associated type projection involving generic parameters, or a forwarding pointer to one because the impl can overlap with `core`'s blanket `Borrow` implementation
+ --> tests/compile_fail/borrow/forward_box_associated_type.rs:7:22
+  |
+7 | struct Foo<T: Trait>(Box<T::Assoc>);
+  |                      ^^^

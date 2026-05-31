@@ -1,0 +1,5 @@
+error: only single kind of `#[borrow(...)]` attribute is allowed here
+ --> tests/compile_fail/borrow/skip_and_others.rs:4:5
+  |
+4 |     #[borrow(skip)]
+  |     ^

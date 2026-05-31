@@ -1,0 +1,5 @@
+error: `BorrowMut` cannot be derived for an associated type projection involving generic parameters because the impl can overlap with `core`'s blanket `BorrowMut` implementation
+ --> tests/compile_fail/borrow_mut/associated_type.rs:6:22
+  |
+6 | struct Foo<T: Trait>(T::Assoc);
+  |                      ^

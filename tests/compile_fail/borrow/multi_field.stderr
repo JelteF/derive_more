@@ -1,0 +1,9 @@
+error: `Borrow` can only be derived for structs with exactly one field
+ --> tests/compile_fail/borrow/multi_field.rs:2:12
+  |
+2 |   struct Foo {
+  |  ____________^
+3 | |     bar: i32,
+4 | |     baz: f32,
+5 | | }
+  | |_^
