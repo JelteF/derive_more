@@ -1,0 +1,7 @@
+error: only structs can derive a constructor
+ --> tests/compile_fail/constructor/enum.rs:2:1
+  |
+2 | / enum Foo {
+3 | |     Bar(i32),
+4 | | }
+  | |_^
