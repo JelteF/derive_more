@@ -40,7 +40,7 @@ pub fn expand(
         // Not using `#[inline]` here on purpose, since this is almost never part
         // of a hot codepath.
         quote! {
-            fn source(&self) -> Option<&(dyn derive_more::core::error::Error + 'static)> {
+            fn source(&self) -> derive_more::core::option::Option<&(dyn derive_more::core::error::Error + 'static)> {
                 use derive_more::__private::AsDynError as _;
                 #source
             }
@@ -166,7 +166,10 @@ fn render_enum(
         })
     };
 
-    let source = render(&mut source_match_arms, quote! { None });
+    let source = render(
+        &mut source_match_arms,
+        quote! { derive_more::core::option::Option::None },
+    );
     let provide = render(&mut provide_match_arms, quote! { () });
 
     Ok((bounds, source, provide))
@@ -287,7 +290,7 @@ fn render_some(mut expr: TokenStream, unpack: bool) -> TokenStream {
     if unpack {
         expr = quote! { derive_more::core::option::Option::as_ref(#expr)? }
     }
-    quote! { Some(#expr.__derive_more_as_dyn_error()) }
+    quote! { derive_more::core::option::Option::Some(#expr.__derive_more_as_dyn_error()) }
 }
 
 fn parse_fields<'input, 'state>(

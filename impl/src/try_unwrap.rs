@@ -165,9 +165,9 @@ fn failed_block(state: &State, enum_name: &Ident, func_name: &Ident) -> TokenStr
             let error = quote! {
                 derive_more::TryUnwrapError::<_>::new(
                     val,
-                    stringify!(#enum_name),
-                    stringify!(#variant_ident),
-                    stringify!(#func_name),
+                    derive_more::core::stringify!(#enum_name),
+                    derive_more::core::stringify!(#variant_ident),
+                    derive_more::core::stringify!(#func_name),
                 )
             };
             quote! {
