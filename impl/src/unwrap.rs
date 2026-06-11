@@ -160,7 +160,7 @@ fn failed_block(state: &State, enum_name: &Ident, fn_name: &Ident) -> TokenStrea
             let panic_msg = format!(
                 "called `{enum_name}::{fn_name}()` on a `{enum_name}::{variant_ident}` value"
             );
-            quote! { #enum_name :: #variant_ident #data_pattern => panic!(#panic_msg) }
+            quote! { #enum_name :: #variant_ident #data_pattern => derive_more::core::panic!(#panic_msg) }
         });
 
     quote! {

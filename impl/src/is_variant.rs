@@ -41,7 +41,7 @@ pub fn expand(input: &DeriveInput, trait_name: &'static str) -> Result<TokenStre
         };
         let func = quote! {
             #[doc = "Returns `true` if this value is of type `"]
-            #[doc = stringify!(#variant_ident)]
+            #[doc = derive_more::core::stringify!(#variant_ident)]
             #[doc = "`. Returns `false` otherwise"]
             #[inline]
             #[must_use]
