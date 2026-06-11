@@ -11,6 +11,9 @@ help: the trait `Eq` is not implemented for `NotEq<IntOrFloat>`
    | ^^^^^^^^^^^^^^^
 help: the trait `Eq` is implemented for `Box<T, A>`
   --> $RUST/alloc/src/boxed.rs
+   |
+   | impl<T: ?Sized + Eq, A: Allocator> Eq for Box<T, A> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: required for `Box<NotEq<IntOrFloat>>` to implement `Eq`
 note: required by a bound in `derive_more::__private::AssertParamIsEq`
   --> src/cmp.rs
