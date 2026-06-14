@@ -1,0 +1,5 @@
+error: only `into` is supported by `#[constructor(...)]`
+ --> tests/compile_fail/constructor/unknown_attribute_argument.rs:2:26
+  |
+2 | struct Foo(#[constructor(skip)] i32);
+  |                          ^^^^

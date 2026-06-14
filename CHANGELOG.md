@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `Hash` derive similar to `std`'s one, but considering generics correctly,
   and supporting custom hash functions per field or skipping fields.
   ([#532](https://github.com/JelteF/derive_more/pull/532))
+- Support `#[constructor(into)]` attribute on fields in `Constructor` derive, making
+  the generated `new()` method accept any `impl Into<_>` for that field.
+  ([#551](https://github.com/JelteF/derive_more/pull/551))
 
 ### Fixed
 

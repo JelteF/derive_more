@@ -146,7 +146,13 @@ create_derive!(
 create_derive!("as_ref", r#as::r#mut, AsMut, as_mut_derive, as_mut);
 create_derive!("as_ref", r#as::r#ref, AsRef, as_ref_derive, as_ref);
 
-create_derive!("constructor", constructor, Constructor, constructor_derive);
+create_derive!(
+    "constructor",
+    constructor,
+    Constructor,
+    constructor_derive,
+    constructor,
+);
 
 create_derive!("debug", fmt::debug, Debug, debug_derive, debug);
 
