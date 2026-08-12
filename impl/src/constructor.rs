@@ -52,9 +52,7 @@ fn tuple_body(return_type: &Ident, fields: &[&Field]) -> (TokenStream, Vec<Ident
 }
 
 fn struct_body(return_type: &Ident, fields: &[&Field]) -> (TokenStream, Vec<Ident>) {
-    let field_names: &Vec<Ident> =
-        &field_idents(fields).iter().map(|f| (**f).clone()).collect();
-    let vars = field_names;
-    let ret_vars = field_names.clone();
-    (quote! { #return_type{#(#field_names: #vars),*} }, ret_vars)
+    let field_names: Vec<Ident> =
+        field_idents(fields).iter().map(|f| (**f).clone()).collect();
+    (quote! { #return_type{#(#field_names),*} }, field_names)
 }
