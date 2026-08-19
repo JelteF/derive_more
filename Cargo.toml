@@ -71,6 +71,7 @@ index_mut = ["derive_more-impl/index_mut"]
 into = ["derive_more-impl/into"]
 into_iterator = ["derive_more-impl/into_iterator"]
 is_variant = ["derive_more-impl/is_variant"]
+is_variant_and = ["derive_more-impl/is_variant_and"]
 mul = ["derive_more-impl/mul"]
 mul_assign = ["derive_more-impl/mul_assign"]
 not = ["derive_more-impl/not"]
@@ -100,6 +101,7 @@ full = [
     "into",
     "into_iterator",
     "is_variant",
+    "is_variant_and",
     "mul",
     "mul_assign",
     "not",
@@ -211,6 +213,11 @@ required-features = ["into_iterator"]
 name = "is_variant"
 path = "tests/is_variant.rs"
 required-features = ["is_variant"]
+
+[[test]]
+name = "is_variant_and"
+path = "tests/is_variant_and.rs"
+required-features = ["is_variant_and"]
 
 [[test]]
 name = "mul"

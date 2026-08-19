@@ -14,5 +14,4 @@ error[E0277]: the trait bound `f32: Eq` is not satisfied
             u128
             u16
           and $N others
-  = help: see issue #48214
   = note: this error originates in the derive macro `derive_more::Eq` (in Nightly builds, run with -Z macro-backtrace for more info)

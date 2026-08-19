@@ -29,6 +29,7 @@
 //!
 //! [`Constructor`]: macro@crate::Constructor
 //! [`IsVariant`]: macro@crate::IsVariant
+//! [`IsVariantAnd`]: macro@crate::IsVariantAnd
 //! [`Unwrap`]: macro@crate::Unwrap
 //! [`TryUnwrap`]: macro@crate::TryUnwrap
 
@@ -306,6 +307,9 @@ pub mod with_trait {
         #[cfg(feature = "is_variant")]
         pub use derive_more_impl::IsVariant;
 
+        #[cfg(feature = "is_variant_and")]
+        pub use derive_more_impl::IsVariantAnd;
+
         #[cfg(feature = "mul")]
         pub use derive_more_impl::{Div, Mul, Rem, Shl, Shr};
 
@@ -414,6 +418,10 @@ pub mod with_trait {
     #[doc(hidden)]
     pub use all_traits_and_derives::IsVariant;
 
+    #[cfg(feature = "is_variant_and")]
+    #[doc(hidden)]
+    pub use all_traits_and_derives::IsVariantAnd;
+
     #[cfg(feature = "mul")]
     #[doc(hidden)]
     pub use all_traits_and_derives::{Div, Mul, Rem, Shl, Shr};
@@ -475,6 +483,7 @@ pub mod with_trait {
     feature = "into",
     feature = "into_iterator",
     feature = "is_variant",
+    feature = "is_variant_and",
     feature = "mul",
     feature = "mul_assign",
     feature = "not",

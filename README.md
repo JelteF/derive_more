@@ -139,8 +139,9 @@ These don't derive traits, but derive static methods instead.
    This is very basic if you need more customization for your constructor, check
    out the [`derive-new`] crate.
 2. [`IsVariant`], for each variant `foo` of an enum type, derives a `is_foo` method.
-3. [`Unwrap`], for each variant `foo` of an enum type, derives an `unwrap_foo` method.
-4. [`TryUnwrap`], for each variant `foo` of an enum type, derives an `try_unwrap_foo` method.
+3. [`IsVariantAnd`], for each variant `foo` of an enum type, derives a `is_foo_and` method.
+4. [`Unwrap`], for each variant `foo` of an enum type, derives an `unwrap_foo` method.
+5. [`TryUnwrap`], for each variant `foo` of an enum type, derives an `try_unwrap_foo` method.
 
 
 ### Re-exports
@@ -273,6 +274,7 @@ Changing [MSRV] (minimum supported Rust version) of this crate is treated as a *
 
 [`Constructor`]: https://docs.rs/derive_more/latest/derive_more/derive.Constructor.html
 [`IsVariant`]: https://docs.rs/derive_more/latest/derive_more/derive.IsVariant.html
+[`IsVariantAnd`]: https://docs.rs/derive_more/latest/derive_more/derive.IsVariantAnd.html
 [`Unwrap`]: https://docs.rs/derive_more/latest/derive_more/derive.Unwrap.html
 [`TryUnwrap`]: https://docs.rs/derive_more/latest/derive_more/derive.TryUnwrap.html
 
