@@ -67,6 +67,7 @@ index_mut = []
 into = ["syn/extra-traits", "syn/visit-mut"]
 into_iterator = []
 is_variant = ["dep:convert_case"]
+is_variant_and = ["dep:convert_case"]
 mul = ["syn/extra-traits", "syn/visit"]
 mul_assign = ["syn/extra-traits", "syn/visit"]
 not = ["syn/extra-traits"]
@@ -95,6 +96,7 @@ full = [
     "into",
     "into_iterator",
     "is_variant",
+    "is_variant_and",
     "mul",
     "mul_assign",
     "not",

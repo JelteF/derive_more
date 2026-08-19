@@ -40,6 +40,8 @@ mod into;
 mod into_iterator;
 #[cfg(feature = "is_variant")]
 mod is_variant;
+#[cfg(feature = "is_variant_and")]
+mod is_variant_and;
 #[cfg(feature = "not")]
 mod not_like;
 #[cfg(any(
@@ -236,6 +238,14 @@ create_derive!(
     IsVariant,
     is_variant_derive,
     is_variant,
+);
+
+create_derive!(
+    "is_variant_and",
+    is_variant_and,
+    IsVariantAnd,
+    is_variant_and_derive,
+    is_variant_and,
 );
 
 create_derive!("mul", ops::mul, Mul, mul_derive, mul);

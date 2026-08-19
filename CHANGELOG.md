@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `Hash` derive similar to `std`'s one, but considering generics correctly,
   and supporting custom hash functions per field or skipping fields.
   ([#532](https://github.com/JelteF/derive_more/pull/532))
+- Add `IsVariantAnd` derive, generating an `is_foo_and()` method for each enum
+  variant `foo` that also applies a closure to the variant's fields, similar to
+  `Option::is_some_and`.
+  ([#561](https://github.com/JelteF/derive_more/pull/561),
+   [#365](https://github.com/JelteF/derive_more/issues/365))
 
 ### Fixed
 
