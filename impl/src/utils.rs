@@ -2344,6 +2344,7 @@ pub(crate) mod attr {
 
         impl RenameAll {
             /// Converts the provided `name` into the case of this [`RenameAll`].
+            #[cfg(any(feature = "display_rename_all", feature = "from_str"))]
             pub(crate) fn convert_case(&self, name: &str) -> String {
                 use convert_case::Casing as _;
 

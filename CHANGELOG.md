@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## master
 
+### Breaking changes
+
+- `#[display(rename_all = "...")]` now requires the `display_rename_all` feature,
+  which is included in `full`. This keeps the `display` feature free of the
+  `convert_case` dependency.
+
 ### Added
 - Add `Hash` derive similar to `std`'s one, but considering generics correctly,
   and supporting custom hash functions per field or skipping fields.

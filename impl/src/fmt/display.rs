@@ -103,6 +103,17 @@ struct ContainerAttributes {
     common: super::ContainerAttributes,
 }
 
+impl ContainerAttributes {
+    /// Applies the [`attr::RenameAll`] of these attributes to the provided `name`, if any.
+    fn rename(&self, name: String) -> String {
+        #[cfg(feature = "display_rename_all")]
+        if let Some(rename_all) = &self.rename_all {
+            return rename_all.convert_case(&name);
+        }
+        name
+    }
+}
+
 impl Parse for ContainerAttributes {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         mod ident {
@@ -130,6 +141,12 @@ impl Parse for ContainerAttributes {
                 ..Default::default()
             })
         } else if ahead.peek(ident::rename_all) {
+            if !cfg!(feature = "display_rename_all") {
+                return Err(syn::Error::new(
+                    input.span(),
+                    "`rename_all` requires the `display_rename_all` feature of `derive_more`",
+                ));
+            }
             Ok(Self {
                 rename_all: Some(input.parse()?),
                 ..Self::default()
@@ -427,10 +444,7 @@ impl Expansion<'_> {
             None => {
                 if shared_attr_is_wrapping || !has_shared_attr {
                     body = if self.fields.is_empty() {
-                        let mut ident_str = self.ident.unraw().to_string();
-                        if let Some(rename_all) = &self.attrs.rename_all {
-                            ident_str = rename_all.convert_case(&ident_str);
-                        }
+                        let ident_str = self.attrs.rename(self.ident.unraw().to_string());
 
                         if shared_attr_is_wrapping {
                             quote! { #ident_str }
