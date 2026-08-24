@@ -233,6 +233,9 @@ assert_eq!(Enum::C.to_string(), "c");
 When no format is specified, deriving `Display` uses the variant name verbatim as its format.
 To control this the `#[display(rename_all = "...")]` attribute can be placed on structs, enums and variants.
 
+This attribute requires the `display_rename_all` feature, which is part of `full`. It is separate
+from `display` because the case conversion pulls in the `convert_case` dependency.
+
 The available casings are:
 - `lowercase`
 - `UPPERCASE`

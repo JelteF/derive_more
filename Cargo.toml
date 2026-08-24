@@ -61,6 +61,7 @@ debug = ["derive_more-impl/debug"]
 deref = ["derive_more-impl/deref"]
 deref_mut = ["derive_more-impl/deref_mut"]
 display = ["derive_more-impl/display"]
+display_rename_all = ["display", "derive_more-impl/display_rename_all"]
 eq = ["derive_more-impl/eq"]
 error = ["derive_more-impl/error"]
 from = ["derive_more-impl/from"]
@@ -90,6 +91,7 @@ full = [
     "deref",
     "deref_mut",
     "display",
+    "display_rename_all",
     "eq",
     "error",
     "from",
