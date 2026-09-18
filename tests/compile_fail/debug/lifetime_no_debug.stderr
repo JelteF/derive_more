@@ -4,7 +4,6 @@ error[E0277]: `NoDebug<'_>` doesn't implement `Debug`
 5 | #[derive(derive_more::Debug)]
   |          ^^^^^^^^^^^^^^^^^^ the trait `Debug` is not implemented for `NoDebug<'_>`
   |
-  = note: add `#[derive(Debug)]` to `NoDebug<'_>` or manually `impl Debug for NoDebug<'_>`
   = note: required for `&NoDebug<'_>` to implement `Debug`
   = note: required for the cast from `&&NoDebug<'_>` to `&dyn Debug`
   = note: this error originates in the derive macro `derive_more::Debug` (in Nightly builds, run with -Z macro-backtrace for more info)

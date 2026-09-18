@@ -202,7 +202,9 @@ impl ToTokens for ScalarExpansion<'_> {
         let rhs_ty: syn::TypeParam = parse_quote! { __derive_more_Rhs };
 
         let mut generics = self.self_ty.1.clone();
-        generics.params.push(rhs_ty.clone().into());
+        generics
+            .params
+            .push(syn::GenericParam::Type(rhs_ty.clone()));
         let mut used_fields_count = 0;
         for field_ty in self.fields.iter().enumerate().filter_map(|(n, field)| {
             (!self.skipped_fields.contains(&n)).then_some(&field.ty)

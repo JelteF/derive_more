@@ -146,6 +146,7 @@ impl Expansion<'_> {
             .collect();
         let fields_tys: Vec<_> = fields.iter().map(|(_, f)| &f.ty).collect();
         let fields_tuple = syn::Type::Tuple(syn::TypeTuple {
+            attrs: Vec::new(),
             paren_token: token::Paren::default(),
             elems: fields_tys.iter().cloned().cloned().collect(),
         });
@@ -164,7 +165,8 @@ impl Expansion<'_> {
 
             let gens = if let Some(lf) = lf.clone() {
                 let mut gens = input_generics.clone();
-                gens.params.push(syn::LifetimeParam::new(lf).into());
+                gens.params
+                    .push(syn::GenericParam::Lifetime(syn::LifetimeParam::new(lf)));
                 Cow::Owned(gens)
             } else {
                 Cow::Borrowed(input_generics)
@@ -558,7 +560,6 @@ where
                                     .parse_args_with(Punctuated::<_, token::Comma>::parse_terminated)
                                     .ok()?
                                     .pop()?
-                                    .into_value()
                                 {
                                     parse_list(list, attrs)
                                 } else {

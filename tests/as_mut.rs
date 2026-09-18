@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(nightly, feature(never_type))]
 #![allow(clippy::unnecessary_mut_passed)] // testing correct signatures rather than actual code
 #![allow(dead_code)] // some code is tested for type checking only
 

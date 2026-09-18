@@ -594,7 +594,7 @@ impl ContainsGenericsExt for syn::Type {
             return false;
         }
         match self {
-            Self::Path(syn::TypePath { qself, path }) => {
+            Self::Path(syn::TypePath { qself, path, .. }) => {
                 if let Some(qself) = qself {
                     if qself.ty.contains_generics(type_params) {
                         return true;
@@ -617,7 +617,7 @@ impl ContainsGenericsExt for syn::Type {
                 elem.contains_generics(type_params)
             }
 
-            Self::BareFn(syn::TypeBareFn { inputs, output, .. }) => {
+            Self::FnPtr(syn::TypeFnPtr { inputs, output, .. }) => {
                 inputs
                     .iter()
                     .any(|arg| arg.ty.contains_generics(type_params))
@@ -690,7 +690,9 @@ impl ContainsGenericsExt for syn::Path {
                 syn::PathArguments::Parenthesized(
                     syn::ParenthesizedGenericArguments { inputs, output, .. },
                 ) => {
-                    inputs.iter().any(|ty| ty.contains_generics(type_params))
+                    inputs
+                        .iter()
+                        .any(|arg| arg.ty.contains_generics(type_params))
                         || match output {
                             syn::ReturnType::Default => false,
                             syn::ReturnType::Type(_, ty) => {
