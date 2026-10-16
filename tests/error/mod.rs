@@ -46,6 +46,7 @@ macro_rules! derive_display {
     };
 }
 
+mod deprecated;
 mod derives_for_enums_with_source;
 mod derives_for_generic_enums_with_source;
 mod derives_for_generic_structs_with_source;

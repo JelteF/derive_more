@@ -92,6 +92,7 @@ pub fn expand(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let render = quote! {
+        #[allow(deprecated)] // omit warnings on deprecated fields/variants
         #[automatically_derived]
         impl #impl_generics derive_more::core::error::Error for #ident #ty_generics #where_clause {
             #source
