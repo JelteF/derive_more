@@ -205,12 +205,18 @@ pub fn add_extra_generic_type_param(
     generic_param: TokenStream,
 ) -> Generics {
     let generic_param: GenericParam = parse_quote! { #generic_param };
-    let lifetimes: Vec<GenericParam> =
-        generics.lifetimes().map(|x| x.clone().into()).collect();
-    let type_params: Vec<GenericParam> =
-        generics.type_params().map(|x| x.clone().into()).collect();
-    let const_params: Vec<GenericParam> =
-        generics.const_params().map(|x| x.clone().into()).collect();
+    let lifetimes: Vec<GenericParam> = generics
+        .lifetimes()
+        .map(|x| GenericParam::Lifetime(x.clone()))
+        .collect();
+    let type_params: Vec<GenericParam> = generics
+        .type_params()
+        .map(|x| GenericParam::Type(x.clone()))
+        .collect();
+    let const_params: Vec<GenericParam> = generics
+        .const_params()
+        .map(|x| GenericParam::Const(x.clone()))
+        .collect();
     let mut generics = generics.clone();
     generics.params = Default::default();
     generics.params.extend(lifetimes);
@@ -953,11 +959,11 @@ fn parse_punctuated_nested_meta(
                                             ),
                                         ));
                                     };
-                                    syn::TypePath {
+                                    syn::Type::Path(syn::TypePath {
+                                        attrs: Vec::new(),
                                         qself: None,
                                         path: path.clone().into(),
-                                    }
-                                    .into()
+                                    })
                                 }
                                 polyfill::NestedMeta::Lit(syn::Lit::Str(s)) => s.parse()?,
                                 polyfill::NestedMeta::Lit(lit) => return Err(Error::new(
@@ -2975,7 +2981,7 @@ pub(crate) mod structural_inclusion {
                             syn::GenericArgument::Type(ty) if ty.contains_type_structurally(needle),
                         )
                     }),
-                syn::Type::BareFn(_)
+                syn::Type::FnPtr(_)
                 | syn::Type::ImplTrait(_)
                 | syn::Type::Infer(_)
                 | syn::Type::Macro(_)

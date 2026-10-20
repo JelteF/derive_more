@@ -25,8 +25,8 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0"
-syn = "2.0.45"
-convert_case = { version = "0.11", optional = true }
+syn = "3.0.9"
+convert_case = { version = "0.12", optional = true }
 unicode-ident = { version = "1.0", optional = true }
 
 [build-dependencies]
@@ -34,7 +34,7 @@ rustc_version = "0.4"
 
 [dev-dependencies]
 derive_more = { path = "..", features = ["full"] }
-itertools = "0.14.0"
+itertools = "0.15.0"
 
 [badges]
 github = { repository = "JelteF/derive_more", workflow = "CI" }
