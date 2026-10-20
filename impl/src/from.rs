@@ -232,11 +232,9 @@ impl Expansion<'_> {
                             .make_where_clause()
                             .predicates
                             .push(parse_quote! { #ty: derive_more::core::convert::From<#ident> });
-                        generics
-                            .params
-                            .push(syn::GenericParam::Type(syn::TypeParam::from(
-                                ident.clone(),
-                            )));
+                        generics.params.push(syn::GenericParam::Type(
+                            syn::TypeParam::from(ident.clone()),
+                        ));
                     }
                     generics
                 };

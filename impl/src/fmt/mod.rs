@@ -690,7 +690,9 @@ impl ContainsGenericsExt for syn::Path {
                 syn::PathArguments::Parenthesized(
                     syn::ParenthesizedGenericArguments { inputs, output, .. },
                 ) => {
-                    inputs.iter().any(|arg| arg.ty.contains_generics(type_params))
+                    inputs
+                        .iter()
+                        .any(|arg| arg.ty.contains_generics(type_params))
                         || match output {
                             syn::ReturnType::Default => false,
                             syn::ReturnType::Type(_, ty) => {
